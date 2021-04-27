@@ -1,5 +1,5 @@
 Data/
 Logs/
 Workspaces/
-src/.vscode/
-__pycache__
+.vscode/
+**/__pycache__
