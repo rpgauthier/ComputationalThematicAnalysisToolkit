@@ -1,20 +1,20 @@
 # TAaML
 
 ## NEED TO BE INSTALLED using pip on windows or equalivilent on OSX
-python 3.8
-gensim
-matplotlib
-nltk
-numpy
-pandas
-python-dateutil
-requests
-spacy
-squarify
-wordcloud
-wxPython
-jsonpickle
-networkx
+- python 3.8
+- gensim
+- matplotlib
+- nltk
+- numpy
+- pandas
+- python-dateutil
+- requests
+- spacy
+- squarify
+- wordcloud
+- wxPython
+- jsonpickle
+- networkx
 
 pip install -U pip setuptools wheel
 pip install -U spacy
