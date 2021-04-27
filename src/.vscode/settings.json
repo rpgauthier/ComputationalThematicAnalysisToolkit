@@ -1,0 +1,5 @@
+{
+    "python.analysis.openFilesOnly": false,
+    "jupyter.jupyterServerType": "local",
+    "python.linting.pylintArgs": ["--extension-pkg-whitelist=wx"],
+}
