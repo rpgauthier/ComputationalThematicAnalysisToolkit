@@ -1,4 +1,4 @@
-# TAaML
+# TAME
 
 ## NEED TO BE INSTALLED using pip on windows or equalivilent on OSX
 - python 3.9
