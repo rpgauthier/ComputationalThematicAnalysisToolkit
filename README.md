@@ -19,9 +19,10 @@
 - pip install -U pip setuptools wheel
 - pip install -U spacy
 - pip install sentencepiece
+- pip install sklearn
 
 ## NEED TO BE RUN
-- python -m spacy download fr_core_web_sm
-- python -m spacy download en_core_web_sm
+- python -m spacy download fr_core_news_sm
 - python -m spacy download en_core_web_trf
+- python -m spacy download en_core_web_sm
 - #NOT WORKING: python -m spacy download fr_dep_news_trf
