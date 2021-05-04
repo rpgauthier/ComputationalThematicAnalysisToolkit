@@ -1,7 +1,7 @@
 # TAaML
 
 ## NEED TO BE INSTALLED using pip on windows or equalivilent on OSX
-- python 3.8
+- python 3.9
 
 - pip install gensim
 - pip install matplotlib
