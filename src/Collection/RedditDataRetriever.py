@@ -13,6 +13,17 @@ import requests
 
 from dateutil.relativedelta import relativedelta
 
+def DeleteFiles(sub):
+    logger = logging.getLogger(__name__+".FilesAvaliable["+sub+"]")
+    logger.info("Starting")
+    path = '../Data/Reddit/'+sub+'/'
+    if os.path.exists(path):
+        # r=root, d=directories, f = files
+        for r, d, f in os.walk(path):
+            for filename in f:
+                os.remove(os.path.join(path+filename))
+    logger.info("Finished")
+
 def FilesAvaliable(sub, start_date, end_date, prefix):
     logger = logging.getLogger(__name__+".FilesAvaliable["+sub+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
     logger.info("Starting")
@@ -36,9 +47,9 @@ def FilesAvaliable(sub, start_date, end_date, prefix):
         os.makedirs(path)
     # r=root, d=directories, f = files
     for r, d, f in os.walk(path):
-        for file in f:
-            if '.json' in file:
-                files.append(os.path.join(r, file))
+        for filename in f:
+            if '.json' in filename:
+                files.append(os.path.join(r, filename))
 
     dict_monthfiles = OrderedDict()
     for month in months:

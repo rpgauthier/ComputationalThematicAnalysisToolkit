@@ -146,10 +146,25 @@ class Datasets(Common):
     NO_DATA_RETRIEVED_ERROR = "No data retrieved.\nPlease trying again later as requested data may not yet be avaliable."
     NO_DATA_AVALIABLE_ERROR = "No data avaliable.\nPlease try enabling data retrieval."
 
-    REDDIT_PUSHSHIFT_TOOLTIP = "Enables retrieving data using what avaliable from Pushshift.io API"\
-                                       "\nWARNING: This may take between several minutes to hours for large subreddits"
-    REDDIT_API_TOOLTIP = "Enables updating all data using the Reddit API during retrieval"\
-                                 "\nWARNING: This is a slow operation and may take several hours"
+    REDDIT_ARCHIVED_TOOLTIP = "Use the local subreddit archive to create the dataset."
+    REDDIT_UPDATE_PUSHSHIFT_TOOLTIP = "For any part of the period between the start and end dates that the local subreddit archive does not have data,"\
+                                       "update the archive using pushshift.io API"\
+                                       "\nThen use the archive to create the dataset."\
+                                       "\nWARNING: This operation may take between several minutes to hours depending on sizze of existing local subreddit archive"
+    REDDIT_FULL_PUSHSHIFT_TOOLTIP = "Remove any existing local subreddit archive."\
+                                    "Then retrieve a new archive from pushshift.io API for the period between the start and end dates."\
+                                    "Then use the archive to create the dataset"\
+                                    "\nWARNING: This operation is a slow and may take several hours"
+    REDDIT_UPDATE_REDDITAPI_TOOLTIP = "For any part of the period between the start and end dates that the local subreddit archive does not have data,"\
+                                      "update the archive using pushshift.io API"\
+                                      "Then update the local subreddit archive for the period between the start and end dates using the Reddit API."\
+                                      "Then use the updated archive to create the dataset"\
+                                      "\nWARNING: This operation is slow and may take several hours"
+    REDDIT_FULL_REDDITAPI_TOOLTIP = "Remove any existing local subreddit archive."\
+                                    "Then retrieve a new archive from pushshift.io API for the period between the start and end dates."\
+                                    "Then update the archive for the period between the start and end dates using the Reddit API."\
+                                    "Then use the updated archive to create the dataset"\
+                                    "\nWARNING: This operation is slow and may take several hours"
     REDDIT_SUBMISSIONS_TOOLTIP = "Will retrieve any Reddit submissions between the start and end dates"
     REDDIT_COMMENTS_TOOLTIP = "Will retrieve any Reddit comments between the start and end dates"
     REDDIT_DISCUSSIONS = "Discussions"
@@ -164,6 +179,7 @@ class Datasets(Common):
 
     RETRIEVING_LABEL = "Retrieval Inprogress for Dataset: "
     RETRIEVING_BEGINNING_MSG = "Please wait while dataset is retrieved.\n"
+    RETRIEVING_BUSY_REMOVE_SUBREDDIT_ARCHIVE_MSG = "Deleting local archive for subreddit: "
     RETRIEVING_BUSY_PUSHSHIFT_DATA = "Retrieving Data from Pushshift"
     RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_MSG = "Preparing to download Submission Data"
     RETRIEVING_BUSY_DOWNLOADING_COMMENTS_MSG = "Preparing to download Comment Data"
@@ -205,8 +221,13 @@ class Datasets(Common):
     REDDIT_SUBREDDIT_MISSING_ERROR = "You must enter a Subreddit."
     REDDIT_SUBMISSIONS = "Submissions"
     REDDIT_COMMENTS = "Comments"
-    REDDIT_PUSHSHIFT = "Retrieve from Pushshift.io"
-    REDDIT_API = "Updated from Reddit API"
+
+    REDDIT_ARCHIVED = "Local Subreddit Archive"
+    REDDIT_UPDATE_PUSHSHIFT = "Local Subreddit Archive updated using Pushshift.io"
+    REDDIT_FULL_PUSHSHIFT = "Full retrieval from Pushshift.io"
+    
+    REDDIT_UPDATED_REDDITAPI = "Local Subreddit Archive and updated using Pushshift.io and Reddit API"
+    REDDIT_FULL_REDDITAPI = "Full retrieved from Pushshift.io and updated using Reddit API"
 
     CSV_LABEL = "CSV"
     CSV_DATASETFIELD = "Dataset Field"

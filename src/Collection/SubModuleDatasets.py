@@ -631,9 +631,18 @@ class DatasetDetailsPanel(wx.Panel):
                 self.sizer.Add(end_date_label, 0, wx.ALL, 5)
 
                 if dataset.retrieval_details['pushshift_flg']:
-                    retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_PUSHSHIFT)
+                    if dataset.retrieval_details['replace_archive_flg']:
+                        if dataset.retrieval_details['redditapi_flg']:
+                            retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_FULL_REDDITAPI)
+                        else:
+                            retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_FULL_PUSHSHIFT)
+                    else:
+                        if dataset.retrieval_details['redditapi_flg']:
+                            retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_UPDATE_REDDITAPI)
+                        else:
+                            retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_UPDATE_PUSHSHIFT)
                 else:
-                    retrieveonline_label = wx.StaticText(self, label=u'\u2610' + " " + GUIText.REDDIT_PUSHSHIFT)
+                    retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_ARCHIVED)
                 self.sizer.Add(retrieveonline_label, 0, wx.ALL, 5)
 
                 #TODO

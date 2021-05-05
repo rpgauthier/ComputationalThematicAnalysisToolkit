@@ -94,12 +94,19 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         end_date_sizer.Add(end_date_label)
         end_date_sizer.Add(self.end_date_ctrl)
 
-        #check box for whether to update with online data
-        self.retrieveonline_checkbox = wx.CheckBox(self, label=GUIText.REDDIT_PUSHSHIFT)
-        self.retrieveonline_checkbox.SetToolTip(GUIText.REDDIT_PUSHSHIFT_TOOLTIP)
+        #control where data is retrieved from
+        self.archived_radioctrl = wx.RadioButton(self, label=GUIText.REDDIT_ARCHIVED, style=wx.RB_GROUP)
+        self.archived_radioctrl.SetToolTip(GUIText.REDDIT_ARCHIVED_TOOLTIP)
+        self.archived_radioctrl.SetValue(True)
+        self.update_pushshift_radioctrl = wx.RadioButton(self, label=GUIText.REDDIT_UPDATE_PUSHSHIFT)
+        self.update_pushshift_radioctrl.SetToolTip(GUIText.REDDIT_UPDATE_PUSHSHIFT_TOOLTIP)
+        self.full_pushshift_radioctrl = wx.RadioButton(self, label=GUIText.REDDIT_FULL_PUSHSHIFT)
+        self.full_pushshift_radioctrl.SetToolTip(GUIText.REDDIT_FULL_PUSHSHIFT_TOOLTIP)
         #TODO add ability to dynamically update from reddit information like Score
-        #self.updateonline_checkbox = wx.CheckBox(self, label=GUIText.REDDIT_API)
-        #self.updateonline_checkbox.SetToolTipString(GUIText.REDDIT_API_TOOLTIP)
+        #self.update_redditapi_radioctrl = wx.RadioButton(self, label=GUIText.REDDIT_API)
+        #self.update_redditapi_radioctrl.SetToolTipString(GUIText.REDDIT_UPDATE_REDDITAPI_TOOLTIP)
+        #self.full_redditapi_radioctrl = wx.RadioButton(self, label=GUIText.REDDIT_API)
+        #self.full_redditapi_radioctrl.SetToolTipString(GUIText.REDDIT_FULL_REDDITAPI_TOOLTIP)
 
         #choose type of dataset to retrieve
         self.dataset_type_choice = wx.Choice(self, choices=[GUIText.REDDIT_DISCUSSIONS, GUIText.REDDIT_SUBMISSIONS, GUIText.REDDIT_COMMENTS])
@@ -116,8 +123,11 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         retriever_sizer.Add(subreddit_sizer)
         retriever_sizer.Add(start_date_sizer)
         retriever_sizer.Add(end_date_sizer)
-        retriever_sizer.Add(self.retrieveonline_checkbox)
-        #retriever_sizer.Add(self.updateonline_checkbox)
+        retriever_sizer.Add(self.archived_radioctrl)
+        retriever_sizer.Add(self.update_pushshift_radioctrl)
+        retriever_sizer.Add(self.full_pushshift_radioctrl)
+        #retriever_sizer.Add(self.update_redditapi_radioctrl)
+        #retriever_sizer.Add(self.full_redditapi_radioctrl)
         retriever_sizer.Add(self.dataset_type_choice)
         retriever_sizer.Add(button_sizer)
 
@@ -158,9 +168,13 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             logger.warning("Start Date[%s] not before End Date[%s]",
                            str(start_date), str(end_date))
             status_flag = False
-        pushshift_flg = self.retrieveonline_checkbox.IsChecked()
+        
+        #determine what type of retrieval is to be performed
+        replace_archive_flg = self.full_pushshift_radioctrl.GetValue() #or  self.full_redditapi_radioctrl.GetValue()
+        pushshift_flg = self.full_pushshift_radioctrl.GetValue() or self.update_pushshift_radioctrl.GetValue()
         redditapi_flg = False
-        #redditapi_flg = self.updateonline_checkbox.IsChecked()
+        #redditapi_flg = self.update_redditapi_radioctrl.GetValue() or self.full_redditapi_radioctrl.GetValue()
+
         dataset_type_id = self.dataset_type_choice.GetSelection()
         dataset_type = ""
         if dataset_type_id is wx.NOT_FOUND:
@@ -194,7 +208,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.Disable()
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
-            self.retrieval_thread = CollectionThreads.RetrieveRedditDatasetThread(self, main_frame, name, subreddit, start_date, end_date, pushshift_flg, redditapi_flg, dataset_type)
+            self.retrieval_thread = CollectionThreads.RetrieveRedditDatasetThread(self, main_frame, name, subreddit, start_date, end_date, replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type)
         logger.info("Finished")
 
 class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
@@ -425,9 +439,18 @@ class DatasetDetailsDialog(wx.Dialog):
             self.sizer.Add(end_date_label, 0, wx.ALL, 5)
 
             if dataset.retrieval_details['pushshift_flg']:
-                retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_PUSHSHIFT)
+                if dataset.retrieval_details['replace_archive_flg']:
+                    if dataset.retrieval_details['redditapi_flg']:
+                        retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_FULL_REDDITAPI)
+                    else:
+                        retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_FULL_PUSHSHIFT)
+                else:
+                    if dataset.retrieval_details['redditapi_flg']:
+                        retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_UPDATE_REDDITAPI)
+                    else:
+                        retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_UPDATE_PUSHSHIFT)
             else:
-                retrieveonline_label = wx.StaticText(self, label=u'\u2610' + " " + GUIText.REDDIT_PUSHSHIFT)
+                retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_ARCHIVED)
             self.sizer.Add(retrieveonline_label, 0, wx.ALL, 5)
 
             #TODO
