@@ -131,6 +131,7 @@ class Datasets(Common):
     FIELD = "Field"
 
     RETRIEVE_REDDIT_LABEL = "Retrieve New Reddit Dataset"
+    RETRIEVE_TWITTER_LABEL = "Retrieve New Twitter Dataset"
     RETRIEVE_CSV_LABEL = "Retrieve New CSV Dataset"
     GROUPED_DATASET_LABEL = "Grouped Dataset Details"
     RETRIEVED_REDDIT_LABEL = "Retrieved Reddit Dataset Details"
@@ -199,6 +200,7 @@ class Datasets(Common):
     #Retrieval specific fields
     START_DATE = "Start Date"
     END_DATE = "End Date"
+
     REDDIT_LABEL = "Reddit"
     REDDIT_SUBREDDIT = "Subreddit"
     REDDIT_SUBREDDIT_TOOLTIP = "Exact case-sensitive spelling of the subreddit for retrieval"
@@ -207,6 +209,12 @@ class Datasets(Common):
     REDDIT_COMMENTS = "Comments"
     REDDIT_PUSHSHIFT = "Retrieve from Pushshift.io"
     REDDIT_API = "Updated from Reddit API"
+
+    TWITTER_LABEL = "Twitter"
+    TWITTER_QUERY = "Query"
+    # TODO: make this more intuitive?
+    TWITTER_QUERY_TOOLTIP = "Query must follow these guidelines: https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
+    TWITTER_QUERY_MISSING_ERROR = "You must enter a query."
 
     CSV_LABEL = "CSV"
     CSV_DATASETFIELD = "Dataset Field"
@@ -316,6 +324,8 @@ class Collection(Main, Datasets):
     DATASETS_RETRIEVE_TOOLTIP = "Retrieve new datasets for workspace"
     DATASETS_RETRIEVE_REDDIT = "Retrieve " + Datasets.REDDIT_LABEL
     DATASETS_RETRIEVE_REDDIT_TOOLTIP = "Retrieve new Reddit datasets for workspace"
+    DATASETS_RETRIEVE_TWITTER = "Retrieve " + Datasets.TWITTER_LABEL
+    DATASETS_RETRIEVE_TWITTER_TOOLTIP = "Retrieve new Twitter datasets for workspace"
     DATASETS_RETRIEVE_CSV = "Retrieve " + Datasets.CSV_LABEL
     DATASETS_RETRIEVE_CSV_TOOLTIP = "Retrieve new CSV datasets for workspace"
     DATASETS_GROUP_TOOLTIP = "Selected datasets will be grouped"

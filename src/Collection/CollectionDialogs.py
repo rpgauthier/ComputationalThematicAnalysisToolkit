@@ -197,6 +197,117 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.retrieval_thread = CollectionThreads.RetrieveRedditDatasetThread(self, main_frame, name, subreddit, start_date, end_date, pushshift_flg, redditapi_flg, dataset_type)
         logger.info("Finished")
 
+class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
+    def __init__(self, parent):
+        logger = logging.getLogger(__name__+".TwitterRetrieverDialog.__init__")
+        logger.info("Starting")
+        wx.Dialog.__init__(self, parent, title=GUIText.RETRIEVE_TWITTER_LABEL)
+        self.retrieval_thread = None
+
+        name_label = wx.StaticText(self, label=GUIText.NAME + ": ")
+        self.name_ctrl = wx.TextCtrl(self)
+        self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
+        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        name_sizer.Add(name_label)
+        name_sizer.Add(self.name_ctrl)
+
+        query_label = wx.StaticText(self, label=GUIText.TWITTER_QUERY+": ")
+        self.query_ctrl = wx.TextCtrl(self)
+        self.query_ctrl.SetToolTip(GUIText.TWITTER_QUERY_TOOLTIP)
+        query_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        query_sizer.Add(query_label)
+        query_sizer.Add(self.query_ctrl)
+
+        start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
+        self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
+                                                style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
+        self.start_date_ctrl.SetToolTip(GUIText.START_DATE_TOOLTIP)
+        start_date_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        start_date_sizer.Add(start_date_label)
+        start_date_sizer.Add(self.start_date_ctrl)
+
+        end_date_label = wx.StaticText(self, label=GUIText.END_DATE+": ")
+        self.end_date_ctrl = wx.adv.DatePickerCtrl(self, name="endDate",
+                                              style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
+        self.end_date_ctrl.SetToolTip(GUIText.END_DATE_TOOLTIP)
+        end_date_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        end_date_sizer.Add(end_date_label)
+        end_date_sizer.Add(self.end_date_ctrl)
+
+        #Retriever button to collect the requested data
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        ok_button = wx.Button(self, label=GUIText.OK)
+        button_sizer.Add(ok_button)
+        cancel_button = wx.Button(self, wx.ID_CANCEL, label=GUIText.CANCEL)
+        button_sizer.Add(cancel_button)
+
+        retriever_sizer = wx.BoxSizer(wx.VERTICAL)
+        retriever_sizer.Add(name_sizer)
+        retriever_sizer.Add(query_sizer)
+        retriever_sizer.Add(start_date_sizer)
+        retriever_sizer.Add(end_date_sizer)
+        retriever_sizer.Add(button_sizer)
+
+        self.SetSizer(retriever_sizer)
+        self.Layout()
+        self.Fit()
+
+        ok_button.Bind(wx.EVT_BUTTON, self.OnRetrieveStart)
+        CustomEvents.EVT_PROGRESS(self, self.OnProgress)
+        CustomEvents.RETRIEVE_EVT_RESULT(self, self.OnRetrieveEnd)
+
+        logger.info("Finished")
+
+    def OnRetrieveStart(self, event):
+        logger = logging.getLogger(__name__+".TwitterRetrieverDialog.OnRetrieveStart")
+        logger.info("Starting")
+
+        status_flag = True
+        main_frame = wx.GetApp().GetTopWindow()
+        
+        name = self.name_ctrl.GetValue()
+        if name == "":
+            wx.MessageBox(GUIText.NAME_MISSING_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('No name entered')
+            status_flag = False
+        query = self.query_ctrl.GetValue()
+        if query == "":
+            wx.MessageBox(GUIText.TWITTER_QUERY_MISSING_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('No query entered')
+            status_flag = False
+        start_date = str(self.start_date_ctrl.GetValue().Format("%Y-%m-%d"))
+        end_date = str(self.end_date_ctrl.GetValue().Format("%Y-%m-%d"))
+        if start_date > end_date:
+            wx.MessageBox(GUIText.DATE_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning("Start Date[%s] not before End Date[%s]",
+                           str(start_date), str(end_date))
+            status_flag = False
+
+        dataset_source = "Twitter"
+        # TODO: is document type ok for tweets?
+        dataset_type = "document"
+
+        dataset_key = (name, dataset_source, dataset_type)
+        if dataset_key in main_frame.datasets:
+            wx.MessageBox(GUIText.NAME_EXISTS_ERROR,
+                          GUIText.ERROR,
+                          wx.OK | wx.ICON_ERROR)
+            logger.warning("Data with same name[%s] already exists", name)
+            status_flag = False
+
+        if status_flag:
+            main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+name,
+                                            warning=GUIText.SIZE_WARNING_MSG,
+                                            freeze=True)
+            self.Disable()
+            self.Freeze()
+            main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
+            self.retrieval_thread = CollectionThreads.RetrieveTwitterDatasetThread(self, main_frame, name, query, start_date, end_date, dataset_type)
+        logger.info("Finished")
+
 class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
     def __init__(self, parent):
         logger = logging.getLogger(__name__+".CSVRetrieverDialog.__init__")

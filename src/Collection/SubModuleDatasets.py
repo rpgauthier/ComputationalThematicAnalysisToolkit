@@ -41,6 +41,11 @@ class DatasetsPanel(wx.Panel):
                                           bitmap=wx.Bitmap(1, 1),
                                           shortHelp=GUIText.DATASETS_RETRIEVE_REDDIT_TOOLTIP)
         toolbar.Bind(wx.EVT_MENU, self.OnAddRedditDataset, add_reddit_tool)
+        add_twitter_tool = toolbar.AddTool(wx.ID_ANY,
+                                          label=GUIText.DATASETS_RETRIEVE_TWITTER,
+                                          bitmap=wx.Bitmap(1, 1),
+                                          shortHelp=GUIText.DATASETS_RETRIEVE_TWITTER_TOOLTIP)
+        toolbar.Bind(wx.EVT_MENU, self.OnAddTwitterDataset, add_twitter_tool)
         add_csv_tool = toolbar.AddTool(wx.ID_ANY,
                                           label=GUIText.DATASETS_RETRIEVE_CSV,
                                           bitmap=wx.Bitmap(1, 1),
@@ -153,6 +158,14 @@ class DatasetsPanel(wx.Panel):
         #create a retriever of chosen type in a popup
         main_frame = wx.GetApp().GetTopWindow()
         CollectionDialogs.RedditDatasetRetrieverDialog(self).Show()
+        logger.info("Finished")
+    
+    def OnAddTwitterDataset(self, event):
+        logger = logging.getLogger(__name__+".DatasetsPanel.OnAddTwitterDataset")
+        logger.info("Starting")
+        #create a retriever of chosen type in a popup
+        main_frame = wx.GetApp().GetTopWindow()
+        CollectionDialogs.TwitterDatasetRetrieverDialog(self).Show()
         logger.info("Finished")
     
     def OnAddCSVDataset(self, event):
@@ -433,9 +446,17 @@ class DatasetDetailsPanel(wx.Panel):
         main_frame = wx.GetApp().GetTopWindow()
         CollectionDialogs.RedditDatasetRetrieverDialog(self).Show()
         logger.info("Finished")
+    
+    def OnAddTwitterDataset(self, event):
+        logger = logging.getLogger(__name__+".DatasetsPanel.OnAddTwitterDataset")
+        logger.info("Starting")
+        #create a retriever of chosen type in a popup
+        main_frame = wx.GetApp().GetTopWindow()
+        CollectionDialogs.TwitterDatasetRetrieverDialog(self).Show()
+        logger.info("Finished")
 
     def OnAddCSVDataset(self, event):
-        logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnAddRedditDataset")
+        logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnAddCSVDataset")
         logger.info("Starting")
         #create a retriever of chosen type in a popup
         main_frame = wx.GetApp().GetTopWindow()
@@ -543,6 +564,11 @@ class DatasetDetailsPanel(wx.Panel):
                                             bitmap=wx.Bitmap(1, 1),
                                             shortHelp=GUIText.DATASETS_RETRIEVE_REDDIT_TOOLTIP)
             toolbar.Bind(wx.EVT_MENU, self.OnAddRedditDataset, add_reddit_tool)
+            add_twitter_tool = toolbar.AddTool(wx.ID_ANY,
+                                          label=GUIText.DATASETS_RETRIEVE_TWITTER,
+                                          bitmap=wx.Bitmap(1, 1),
+                                          shortHelp=GUIText.DATASETS_RETRIEVE_TWITTER_TOOLTIP)
+            toolbar.Bind(wx.EVT_MENU, self.OnAddTwitterDataset, add_twitter_tool)
             add_csv_tool = toolbar.AddTool(wx.ID_ANY,
                                            label=GUIText.DATASETS_RETRIEVE_CSV,
                                            bitmap=wx.Bitmap(1, 1),
