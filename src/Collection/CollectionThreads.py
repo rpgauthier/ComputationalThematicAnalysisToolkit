@@ -6,6 +6,7 @@ import calendar
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from threading import Thread
+import tweepy
 
 import wx
 
@@ -307,117 +308,63 @@ class RetrieveTwitterDatasetThread(Thread):
         self.end_date = end_date
         # This starts the thread running on creation, but you could
         # also make the GUI thread responsible for calling this
-
-        # TODO: convert to twitter
-        # self.start()
-        print(dataset_name, "\n", dataset_type, "\n", query, "\n", start_date, "\n", end_date);
+        self.start()
     
     def run(self):
-        logger = logging.getLogger(__name__+".RetrieveRedditDatasetThread.run")
+        logger = logging.getLogger(__name__+".RetrieveTwitterDatasetThread.run")
         logger.info("Starting")
         status_flag = True
-        dataset_key = (self.dataset_name, "Reddit", self.dataset_type)
+        dataset_key = (self.dataset_name, "Twitter", self.dataset_type)
         retrieval_details = {
-                'subreddit': self.subreddit,
+                'query': self.query,
                 'start_date': self.start_date,
                 'end_date': self.end_date,
-                'pushshift_flg': self.pushshift_flg,
-                'redditapi_flg': self.redditapi_flg
                 }
         data = {}
         dataset = None
         error_msg = ""
-        if self.dataset_type == "discussion":
-            if self.pushshift_flg:
-                try:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_MSG))
-                    self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_COMMENTS_MSG))
-                    self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
-                except RuntimeError:
-                    status_flag = False
-                    error_msg = GUIText.RETRIEVAL_FAILED_ERROR
+
+        if self.dataset_type == "document":
             if status_flag:
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_SUBMISSION_MSG))
-                submission_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_COMMENT_MSG))
-                comment_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
-                #convert data to discussion
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_DISCUSSION_MSG))
-                discussion_data = {}
-                for submission in submission_data:
-                    key = ("Reddit", "discussion", submission['id'])
-                    discussion_data[key] = {}
-                    discussion_data[key]['data_source'] = "Reddit"
-                    discussion_data[key]['data_type'] = "discussion"
-                    discussion_data[key]['id'] = submission['id']
-                    discussion_data[key]["url"] = "https://www.reddit.com/"+submission['id']
-                    discussion_data[key]['created_utc'] = submission['created_utc']
-                    if 'title' in submission:
-                        discussion_data[key]['title'] = submission['title']
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BEGINNING_MSG))
+
+                # TODO: get as input
+                consumer_key = "REPLACE"
+                consumer_secret = "REPLACE"
+                auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+                api = tweepy.API(auth)
+
+                # TODO: get data from files?
+                tweets_data = {}
+                tweets_data = tweepy.Cursor(api.search, self.query).items()
+
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_TWITTER_MSG))
+
+                for tweet in tweets_data:
+                    key = ("Twitter", "document", tweet.id)
+                    tweets_data[key] = {}
+                    tweets_data[key]['data_source'] = "Twitter"
+                    tweets_data[key]['data_type'] = "document"
+                    tweets_data[key]['id'] = tweet.id
+                    tweets_data[key]["url"] = "https://twitter.com/" + tweet.user.screen_name + "/status/" + tweet.id_str
+                    tweets_data[key]['created_utc'] = tweet.created_at
+                    if 'title' in tweet:
+                        tweets_data[key]['title'] = tweet.title
                     else:
-                        discussion_data[key]['title'] = ""
-                    if 'selftext' in submission:
-                        discussion_data[key]['text'] = [submission['selftext']]
+                        tweets_data[key]['title'] = ""
+                    if 'text' in tweet:
+                        status = api.get_status(tweet.id, tweet_mode="extended")
+                        try:
+                            tweets_data[key]['text'] = [status.retweeted_status.full_text]
+                        except AttributeError:  # Not a Retweet
+                            tweets_data[key]['text'] = [status.full_text]
                     else:
-                        discussion_data[key]['text'] = [""]
-                    for field in submission:
-                        discussion_data[key]["submission."+field] = submission[field]
-                for comment in comment_data:
-                    submission_id = comment['link_id'].split('_')[1]
-                    key = ("Reddit", "discussion", submission_id)
-                    if key in discussion_data:
-                        if 'body' in comment:
-                            discussion_data[key]['text'].append(comment['body'])
-                        for field in comment:
-                            if "comment."+field in discussion_data[key]:
-                                discussion_data[key]["comment."+field].append(comment[field])
-                            else:
-                                discussion_data[key]["comment."+field] = [comment[field]]
-                #save as a discussion dataset
-                data = discussion_data
-        elif self.dataset_type == "submission":
-            if self.pushshift_flg:
-                try:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_MSG))
-                    self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
-                except RuntimeError:
-                    status_flag = False
-                    error_msg = GUIText.RETRIEVAL_FAILED_ERROR
-            if status_flag:
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_SUBMISSION_MSG))
-                raw_submission_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
-                submission_data = {}
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_SUBMISSION_MSG))
-                for submission in raw_submission_data:
-                    key = ("Reddit", "submission", submission["id"])
-                    submission_data[key] = submission
-                    submission_data[key]["data_source"] = "Reddit"
-                    submission_data[key]["data_type"] = "submission"
-                    submission_data[key]["url"] = "https://www.reddit.com/"+submission['id']
-                data = submission_data
-        elif self.dataset_type == "comment":
-            if self.pushshift_flg:
-                try:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_COMMENTS_MSG))
-                    self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
-                except RuntimeError:
-                    status_flag = False
-                    error_msg = GUIText.RETRIEVAL_FAILED_ERROR
-            if status_flag:
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_COMMENT_MSG))
-                raw_comment_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
-                comment_data = {}
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_COMMENT_MSG))
-                for comment in raw_comment_data:
-                    key = ("Reddit", "comment", comment["id"])
-                    comment_data[key] = comment
-                    comment_data[key]["data_source"] = "Reddit"
-                    comment_data[key]["data_type"] = "comment"
-                    link_id = comment['link_id'].split('_')
-                    comment_data[key]["submission_id"] = link_id[1]
-                    comment_data[key]["url"] = "https://www.reddit.com/"+link_id[1]+"/_/"+comment['id']+"/"
-                data = comment_data
+                        tweets_data[key]['text'] = [""]
+                    for field in tweet:
+                        discussion_data[key]["tweet."+field] = tweet[field]
+                #save as a document dataset
+                data = tweets_data           
+        
         if status_flag:
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))

@@ -177,6 +177,7 @@ class Datasets(Common):
     RETRIEVING_BUSY_PREPARING_SUBMISSION_MSG = "Preparing Submission Data for Application use"
     RETRIEVING_BUSY_PREPARING_COMMENT_MSG = "Preparing Comment Data for Application use."
     RETRIEVING_BUSY_PREPARING_CSV_MSG = "Preparing CSV Data for Application use."
+    RETRIEVING_BUSY_PREPARING_TWITTER_MSG = "Preparing Twitter Data for Application use."
     RETRIEVING_BUSY_CONSTRUCTING_MSG = "Datasets are being constructed."
 
     TOKENIZING_BUSY_STARTING_FIELD_MSG = "Starting to tokenize field: "
