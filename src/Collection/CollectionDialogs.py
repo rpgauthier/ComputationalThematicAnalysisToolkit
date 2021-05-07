@@ -3,6 +3,7 @@ import json
 import csv
 import os.path
 import calendar
+import tweepy
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
@@ -204,12 +205,26 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         wx.Dialog.__init__(self, parent, title=GUIText.RETRIEVE_TWITTER_LABEL)
         self.retrieval_thread = None
 
-        name_label = wx.StaticText(self, label=GUIText.NAME + ": ")
+        name_label = wx.StaticText(self, label=GUIText.NAME+": ")
         self.name_ctrl = wx.TextCtrl(self)
         self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
         name_sizer = wx.BoxSizer(wx.HORIZONTAL)
         name_sizer.Add(name_label)
         name_sizer.Add(self.name_ctrl)
+
+        consumer_key_label = wx.StaticText(self, label=GUIText.CONSUMER_KEY + ": ")
+        self.consumer_key_ctrl = wx.TextCtrl(self)
+        self.consumer_key_ctrl.SetToolTip(GUIText.CONSUMER_KEY_TOOLTIP)
+        consumer_key_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        consumer_key_sizer.Add(consumer_key_label)
+        consumer_key_sizer.Add(self.consumer_key_ctrl)
+    
+        consumer_secret_label = wx.StaticText(self, label=GUIText.CONSUMER_SECRET + ": ")
+        self.consumer_secret_ctrl = wx.TextCtrl(self)
+        self.consumer_secret_ctrl.SetToolTip(GUIText.CONSUMER_SECRET_TOOLTIP)
+        consumer_secret_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        consumer_secret_sizer.Add(consumer_secret_label)
+        consumer_secret_sizer.Add(self.consumer_secret_ctrl)
 
         query_label = wx.StaticText(self, label=GUIText.TWITTER_QUERY+": ")
         self.query_ctrl = wx.TextCtrl(self)
@@ -243,6 +258,8 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         retriever_sizer = wx.BoxSizer(wx.VERTICAL)
         retriever_sizer.Add(name_sizer)
+        retriever_sizer.Add(consumer_key_sizer)
+        retriever_sizer.Add(consumer_secret_sizer)
         retriever_sizer.Add(query_sizer)
         retriever_sizer.Add(start_date_sizer)
         retriever_sizer.Add(end_date_sizer)
@@ -271,6 +288,38 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('No name entered')
             status_flag = False
+        consumer_key = self.consumer_key_ctrl.GetValue()
+        if consumer_key == "":
+            wx.MessageBox(GUIText.CONSUMER_KEY_MISSING_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('No consumer key entered')
+            status_flag = False
+        consumer_secret = self.consumer_secret_ctrl.GetValue()
+        if consumer_secret == "":
+            wx.MessageBox(GUIText.CONSUMER_SECRET_MISSING_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('No consumer secret entered')
+            status_flag = False
+
+        auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+        api = tweepy.API(auth)
+        valid_credentials = False
+        try:
+            valid_credentials = api.verify_credentials() # throws an error if user credentials are insufficient
+            if not valid_credentials:
+                wx.MessageBox(GUIText.INVALID_CREDENTIALS_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                logger.warning('Invalid credentials')
+                status_flag = False 
+        except tweepy.error.TweepError as e:
+            if e.api_code == 220:
+                # TODO: once user auth is implemented, verify user credentials are sufficient (input for valid user credentials still need to be added)
+                pass
+                # wx.MessageBox(GUIText.INSUFFICIENT_CREDENTIALS_ERROR,
+                #             GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                # logger.warning('User credentials do not allow access to this resource.')
+                # status_flag = False         
+
         query = self.query_ctrl.GetValue()
         if query == "":
             wx.MessageBox(GUIText.TWITTER_QUERY_MISSING_ERROR,
@@ -305,7 +354,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.Disable()
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
-            self.retrieval_thread = CollectionThreads.RetrieveTwitterDatasetThread(self, main_frame, name, query, start_date, end_date, dataset_type)
+            self.retrieval_thread = CollectionThreads.RetrieveTwitterDatasetThread(self, main_frame, name, consumer_key, consumer_secret, query, start_date, end_date, dataset_type)
         logger.info("Finished")
 
 class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):

@@ -57,6 +57,9 @@ class Common:
     BUSY_MSG_DEFAULT = "\n\n\n\n\n\n"
     
     SIZE_WARNING_MSG = "WARNING: may take some time for large datasets"
+
+    CONSUMER_KEY = "Consumer Key"
+    CONSUMER_SECRET = "Consumer Secret"
     
 
 class Main(Common):
@@ -101,6 +104,11 @@ class Main(Common):
 
     DELETE_CONFIRMATION = " will be deleted. Are you sure you want to proceed?"
 
+    CONSUMER_KEY_MISSING_ERROR = "You must enter a Consumer Key."
+    CONSUMER_SECRET_MISSING_ERROR = "You must enter a Consumer Secret."
+    INVALID_CREDENTIALS_ERROR = "Invalid credentials."
+    INSUFFICIENT_CREDENTIALS_ERROR = "Your credentials do not allow access to this resource."
+
     #Menu related text
     MODE_MENU = "Mode"
     VIEW_MENU = "View"
@@ -137,6 +145,8 @@ class Datasets(Common):
     RETRIEVED_REDDIT_LABEL = "Retrieved Reddit Dataset Details"
     RETRIEVED_CSV_LABEL = "Retrieved CSV Dataset Details"
     NAME_TOOLTIP = "Choose a unique name for the new dataset"
+    CONSUMER_KEY_TOOLTIP = "The API key of a project created in the Twitter Developer portal. Do not include quotes."
+    CONSUMER_SECRET_TOOLTIP = "The API secret of a project created in the Twitter Developer portal. Do not include quotes."
     START_DATE_TOOLTIP = "Must less than of equal to End Date"
     END_DATE_TOOLTIP = "Must greater than of equal to Start Date"
     DATE_ERROR = "Start Date must be before End Date"

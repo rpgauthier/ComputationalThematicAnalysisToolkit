@@ -258,6 +258,25 @@ avaliable_fields = {
             'type': 'string'
             },
         },
+    # TODO: add all fields
+    ('Twitter', 'document',): {
+        # 'created_at': { 
+        #     'desc': "The UTC time stamp of when the tweet was posted.",
+        #     'type': 'UTC-timestamp'
+        #     },
+        # 'user.screen_name': {
+        #     'desc': "The screen name of the user who posted this tweet (or retweet).",
+        #     'type': 'string'
+        #     },
+        'text': {
+            'desc': "The text in the tweet, truncated to 140 characters.",
+            'type': "string",
+            },
+        'full_text': {
+            'desc': "The full text of this tweet.",
+            'type': "string",
+            },
+        },
     }
 
 #definition of default fields chosen for use from the retrievers
@@ -288,4 +307,24 @@ chosen_fields = {
             'type': 'string'
             },
         },
+    # TODO: add all default fields
+    ('Twitter', 'document',): {
+        # 'created_at': { 
+        #     'desc': "The UTC time stamp of when the tweet was posted.",
+        #     'type': 'UTC-timestamp'
+        #     },
+        # 'user.screen_name': {
+        #     'desc': "The screen name of the user who posted this tweet (or retweet).",
+        #     'type': 'string'
+        #     },
+        # 'text': {
+        #     'desc': "The text in the tweet, truncated to 140 characters.",
+        #     'type': "string",
+        #     },
+        'full_text': {
+            'desc': "The full text of this tweet.",
+            'type': "string",
+            },
+        },
     }
+    

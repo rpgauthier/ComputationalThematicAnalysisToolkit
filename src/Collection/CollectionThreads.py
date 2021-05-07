@@ -296,16 +296,18 @@ class RetrieveRedditDatasetThread(Thread):
 # TODO: convert to twitter
 class RetrieveTwitterDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, query, start_date, end_date, dataset_type):
+    def __init__(self, notify_window, main_frame, dataset_name, consumer_key, consumer_secret, query, start_date, end_date, dataset_type):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
         self.main_frame = main_frame
         self.dataset_name = dataset_name
-        self.dataset_type = dataset_type
+        self.consumer_key = consumer_key
+        self.consumer_secret = consumer_secret
         self.query = query
         self.start_date = start_date
         self.end_date = end_date
+        self.dataset_type = dataset_type
         # This starts the thread running on creation, but you could
         # also make the GUI thread responsible for calling this
         self.start()
@@ -324,44 +326,57 @@ class RetrieveTwitterDatasetThread(Thread):
         dataset = None
         error_msg = ""
 
+        # tweepy auth
+        # TODO: user-level auth
+        consumer_key = self.consumer_key
+        consumer_secret = self.consumer_secret
+        auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+        api = tweepy.API(auth)
+
         if self.dataset_type == "document":
             if status_flag:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BEGINNING_MSG))
 
-                # TODO: get as input
-                consumer_key = "REPLACE"
-                consumer_secret = "REPLACE"
-                auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-                api = tweepy.API(auth)
-
                 # TODO: get data from files?
-                tweets_data = {}
-                tweets_data = tweepy.Cursor(api.search, self.query).items()
+                # TODO: remove cap on tweets, this takes a long time without saving to files(?)
+                tweets = tweepy.Cursor(api.search, self.query).items(10)
 
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_TWITTER_MSG))
-
-                for tweet in tweets_data:
+                
+                tweets_data = {}
+                for tweet in tweets:
                     key = ("Twitter", "document", tweet.id)
                     tweets_data[key] = {}
                     tweets_data[key]['data_source'] = "Twitter"
                     tweets_data[key]['data_type'] = "document"
                     tweets_data[key]['id'] = tweet.id
                     tweets_data[key]["url"] = "https://twitter.com/" + tweet.user.screen_name + "/status/" + tweet.id_str
-                    tweets_data[key]['created_utc'] = tweet.created_at
-                    if 'title' in tweet:
+                    tweets_data[key]['created_utc'] = tweet.created_at # TODO: should these field names match
+                    # TODO: is 'title' needed if tweets don't have titles?
+                    if hasattr(tweet, 'title'):
                         tweets_data[key]['title'] = tweet.title
                     else:
                         tweets_data[key]['title'] = ""
-                    if 'text' in tweet:
-                        status = api.get_status(tweet.id, tweet_mode="extended")
-                        try:
-                            tweets_data[key]['text'] = [status.retweeted_status.full_text]
-                        except AttributeError:  # Not a Retweet
-                            tweets_data[key]['text'] = [status.full_text]
+                    if hasattr(tweet, 'text'): 
+                        tweets_data[key]['text'] = [tweet.text]
                     else:
                         tweets_data[key]['text'] = [""]
-                    for field in tweet:
-                        discussion_data[key]["tweet."+field] = tweet[field]
+
+                    # tweet always has shortened 'text', but we should use 'full_text' if possible
+                    status = None
+                    try:
+                        status_attempt = api.get_status(tweet.id, tweet_mode="extended")
+                        status = status_attempt
+                    except tweepy.error.TweepError: # Could not retrieve status for this tweet id, so use shortened 'text'(?) TODO
+                        tweets_data[key]['full_text'] = [tweet.text]
+                    if status is not None:
+                        try: 
+                            tweets_data[key]['full_text'] = [status.retweeted_status.full_text]
+                        except AttributeError:  # Not a Retweet (no 'retweeted_status' field)
+                            tweets_data[key]['full_text'] = [status.full_text]
+                    
+                    for field, value in tweet.__dict__.items():
+                        tweets_data[key]["tweet."+field] = value
                 #save as a document dataset
                 data = tweets_data           
         
@@ -416,6 +431,7 @@ class RetrieveTwitterDatasetThread(Thread):
             dataset.merged_fields[merged_fields[key].key] = merged_fields[key]
         return dataset
 
+    #TODO: convert to twitter
     def UpdateDataFiles(self, subreddit, start_date, end_date, prefix):
         logger = logging.getLogger(__name__+".RedditRetrieverDialog.UpdateDataFiles["+subreddit+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
         logger.info("Starting")
@@ -448,6 +464,7 @@ class RetrieveTwitterDatasetThread(Thread):
             raise RuntimeError(str(len(errors)) + " Retrievals Failed")
         logger.info("Finished")
 
+    # TODO: convert to twitter
     def ImportDataFiles(self, subreddit, start_date, end_date, prefix):
         logger = logging.getLogger(__name__+".RedditRetrieverDialog.ImportDataFiles["+subreddit+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
         logger.info("Starting")
