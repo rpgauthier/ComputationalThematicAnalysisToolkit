@@ -6,6 +6,8 @@ import webbrowser
 
 import wx
 import wx.aui
+#import wx.lib.agw.flatnotebook as FNB
+import External.wxPython.flatnotebook_fix as FNB
 import wx.grid
 import wx.dataview as dv
 import wx.lib.agw.infobar as infobar
@@ -17,13 +19,14 @@ import Common.Objects.Datasets as Datasets
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
 import Common.Objects.DataViews.Codes as CodesDataViews
 
-class DataNotebook(wx.aui.AuiNotebook):
+class DataNotebook(FNB.FlatNotebook):
     def __init__(self, parent, grouped_dataset=None, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".DatasetDataNotebook.__init__")
         logger.info("Starting")
-        wx.aui.AuiNotebook.__init__(self, parent, style=Constants.NOTEBOOK_MOVEABLE, size=size)
+        FNB.FlatNotebook.__init__(self, parent, agwStyle=FNB.FNB_DEFAULT_STYLE|FNB.FNB_NO_X_BUTTON|FNB.FNB_HIDE_ON_SINGLE_TAB, size=size)
         self.dataset = grouped_dataset
 
+        #create dictionary to hold instances of dataset data panels for each field avaliable
         self.dataset_data_tabs = {}
 
         self.menu = wx.Menu()

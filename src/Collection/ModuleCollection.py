@@ -32,34 +32,24 @@ class CollectionPanel(wx.Panel):
         #Module's notes
         main_frame = wx.GetApp().GetTopWindow()
         self.notes_panel = Notes.NotesPanel(main_frame.notes_notebook, self)
-        self.notes_panel.Hide()
+        index = main_frame.notes_notebook.GetPageIndex(self.notes_panel)
+        if index is wx.NOT_FOUND:
+            main_frame.notes_notebook.AddPage(self.notes_panel,
+                                              GUIText.COLLECTION_LABEL)
 
         #Menu for Module
-        self.menu = wx.Menu()
-        self.toggle_notes_menuitem = self.menu.Append(wx.ID_ANY,
-                                                      GUIText.COLLECTION_NOTES_LABEL,
-                                                      GUIText.SHOW_HIDE+GUIText.COLLECTION_NOTES_LABEL,
-                                                      kind=wx.ITEM_CHECK)
-        main_frame.Bind(wx.EVT_MENU, self.OnToggleNotes, self.toggle_notes_menuitem)
-
-        #self.menu.AppendSeparator()
-        #view_menu = wx.Menu()
-        #self.menu.AppendSubMenu(view_menu, GUIText.VIEW_MENU)
-
-        self.menu.AppendSeparator()
-        mode_menu = wx.Menu()
-        self.toggle_datasets_menuitem = mode_menu.Append(wx.ID_ANY,
+        self.view_menu = wx.Menu()
+        self.toggle_datasets_menuitem = self.view_menu.Append(wx.ID_ANY,
                                                          GUIText.DATASETSLIST_LABEL,
                                                          GUIText.SHOW_HIDE+GUIText.DATASETSLIST_LABEL,
                                                          kind=wx.ITEM_CHECK)
         main_frame.Bind(wx.EVT_MENU, self.OnToggleDatasets, self.toggle_datasets_menuitem)
-        self.toggle_datasetsdata_menuitem = mode_menu.Append(wx.ID_ANY,
+        self.toggle_datasetsdata_menuitem = self.view_menu.Append(wx.ID_ANY,
                                                                GUIText.DATASETSDATA_LABEL,
                                                                GUIText.SHOW_HIDE+GUIText.DATASETSDATA_LABEL,
                                                                kind=wx.ITEM_CHECK)
         main_frame.Bind(wx.EVT_MENU, self.OnToggleDatasetsData, self.toggle_datasetsdata_menuitem)
-        self.menu.AppendSubMenu(mode_menu, GUIText.MODE_MENU)
-
+        
         #setup the default visable state
         self.toggle_datasets_menuitem.Check(False)
         self.OnToggleDatasets(None)
@@ -96,25 +86,6 @@ class CollectionPanel(wx.Panel):
         self.Layout()
         logger.info("Finished")
 
-    def OnToggleNotes(self, event):
-        logger = logging.getLogger(__name__+".CollectionNotebook.OnToggleNotes")
-        logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        if self.toggle_notes_menuitem.IsChecked():
-            index = main_frame.notes_notebook.GetPageIndex(self.notes_panel)
-            if index is wx.NOT_FOUND:
-                main_frame.notes_notebook.AddPage(self.notes_panel,
-                                                  GUIText.COLLECTION_LABEL)
-            main_frame.notes_frame.Show()
-        else:
-            index = main_frame.notes_notebook.GetPageIndex(self.notes_panel)
-            if index is not wx.NOT_FOUND:
-                main_frame.notes_notebook.RemovePage(index)
-                self.notes_panel.Hide()
-            if main_frame.notes_notebook.GetPageCount() == 0:
-                main_frame.notes_frame.Hide()
-        logger.info("Finished")
-
     #functions called by other classes or internally
 
     def DatasetsUpdated(self):
@@ -148,9 +119,6 @@ class CollectionPanel(wx.Panel):
             self.OnToggleDatasetsData(None)
         if 'notes' in saved_data:
             self.notes_panel.Load(saved_data['notes'])
-        if 'notes_toggle_flag' in saved_data:
-            self.toggle_notes_menuitem.Check(saved_data['notes_toggle_flag'])
-            self.OnToggleNotes(None)
         #load the submodules
         if 'datasets_submodule' in saved_data:
             self.datasets_submodule.Load(saved_data['datasets_submodule'])
@@ -170,6 +138,5 @@ class CollectionPanel(wx.Panel):
         #save configurations
         saved_data['datasets_toggle_flag'] = self.toggle_datasets_menuitem.IsChecked()
         saved_data['datasetsdata_toggle_flag'] = self.toggle_datasetsdata_menuitem.IsChecked()
-        saved_data['notes_toggle_flag'] = self.toggle_notes_menuitem.IsChecked()
         logger.info("Finished")
         return saved_data

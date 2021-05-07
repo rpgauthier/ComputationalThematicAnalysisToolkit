@@ -10,9 +10,7 @@ from collections import OrderedDict
 import gensim
 #biterm libraries
 import numpy as np
-from External.biterm.biterm.btm import oBTM
-from External.biterm.biterm.utility import vec_to_biterms
-from sklearn.feature_extraction.text import CountVectorizer
+import bitermplus as btm
 import pandas as pd
 import _pickle as cPickle
 
@@ -369,11 +367,11 @@ class LDASample(TopicSample):
             self.model = gensim.models.ldamodel.LdaModel.load(self._workspace_path+self._filedir+'/ldamodel.lda')
         logger.info("Finished")
 
-class BitermSample(Sample):
-    def __init__(self, name, dataset_key, model_parameters):
+class BitermSample(TopicSample):
+    def __init__(self, key, dataset_key, model_parameters):
         logger = logging.getLogger(__name__+".BitermSample["+str(key)+"].__init__")
         logger.info("Starting")
-        TopicSample.__init__(self, name, dataset_key, "Biterm", model_parameters)
+        TopicSample.__init__(self, key, dataset_key, "Biterm", model_parameters)
 
         #fixed properties that may be externally accessed but do not change after being initialized
         self._num_iterations = model_parameters['num_iterations']
@@ -692,15 +690,22 @@ class BitermTopicPart(TopicPart):
         if len(self.word_list) < value:
             self.word_list.clear()
             if isinstance(self.parent, ModelMergedPart):
-                topic_word_probs = self.parent.parent.model.phi_wz.T[self.key-1]
-                V_z = np.argsort(topic_word_probs)[:-(value + 1):-1]
-                word_list = list(zip(self.parent.parent.vocab[V_z], topic_word_probs[V_z]))
-                self.word_list.extend(word_list)
+                word_df = btm.get_top_topic_words(self.parent.parent.model, words_num=value, topics_idx=[self.key-1])
+                word_list = word_df.values.tolist()
+                prob_list = []
+                for word in word_list:
+                    word_idx = np.where(self.parent.model.vocabulary_ == word)
+                    prob_list.append(self.parent.parent.model.matrix_topics_words_[self.key-1][idx][0])
+                self.word_list = list(zip(word_list, prob_list))
             else:
-                topic_word_probs = self.parent.model.phi_wz.T[self.key-1]
-                V_z = np.argsort(self.parent.model.phi_wz.T[self.key-1])[:-(value + 1):-1]
-                word_list = list(zip(self.parent.vocab[V_z], topic_word_probs[V_z]))
-                self.word_list.extend(word_list)
+                word_df = btm.get_top_topic_words(self.parent.model, words_num=value, topics_idx=[self.key-1])
+                word_list = []
+                prob_list = []
+                for word in word_df.values.tolist():
+                    word_idx = np.where(self.parent.model.vocabulary_ == word[0])
+                    word_list.append(word[0])
+                    prob_list.append(self.parent.model.matrix_topics_words_[self.key-1][word_idx[0]][0])
+                self.word_list = list(zip(word_list, prob_list))
         self._word_num = value
         logger.info("Finished")
 
@@ -814,32 +819,35 @@ def BitermPoolFunction(tokensets, num_topics, num_iterations, workspace_path, fi
     if not os.path.exists(workspace_path+filedir):
         os.makedirs(workspace_path+filedir)
 
-    logger.info("Starting generation of biterm model")
-    vec = CountVectorizer()
     text_keys = []
     texts = []
     for key in tokensets:
         text_keys.append(key)
         text = ' '.join(tokensets[key])
         texts.append(text)
-    transformed_texts = vec.fit_transform(texts).toarray()
-    with bz2.BZ2File(workspace_path+filedir+'/transformed_texts.pk', 'wb') as outfile:
-        cPickle.dump(transformed_texts, outfile)
-    logger.info("Texts transformed")
 
-    vocab = np.array(vec.get_feature_names())
+    logger.info("Starting generation of biterm model")
+    X, vocab, vocab_dict = btm.get_words_freqs(texts)
+    
     with bz2.BZ2File(workspace_path+filedir+'/vocab.pk', 'wb') as outfile:
         cPickle.dump(vocab, outfile)
     logger.info("Vocab created")
 
-    logger.info("Starting Generation of BTM")
-    biterms = vec_to_biterms(transformed_texts)
+    tf = np.array(X.sum(axis=0)).ravel()
+    # Vectorizing documents
+    docs_vec = btm.get_vectorized_docs(texts, vocab)
+    docs_lens = list(map(len, docs_vec))
+    with bz2.BZ2File(workspace_path+filedir+'/transformed_texts.pk', 'wb') as outfile:
+        cPickle.dump(docs_vec, outfile)
+    logger.info("Texts transformed")
 
-    #TODO super slow to run and c version wont compile on windows
-    btm = oBTM(num_topics=num_topics, V=vocab)
-    topics = btm.fit_transform(biterms, iterations=num_iterations)
+    logger.info("Starting Generation of BTM")
+    biterms = btm.get_biterms(docs_vec)
+
+    model = btm.BTM(X, vocab, T=num_topics, W=vocab.size, M=20, alpha=50/8, beta=0.01)
+    topics = model.fit_transform(docs_vec, biterms, iterations=num_iterations, verbose=False)
     with bz2.BZ2File(workspace_path+filedir+'/btm.pk', 'wb') as outfile:
-        cPickle.dump(btm, outfile)
+        cPickle.dump(model, outfile)
     logger.info("Completed Generation of BTM")
 
     document_topic_prob = {}

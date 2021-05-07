@@ -78,6 +78,9 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         subreddit_sizer.Add(subreddit_label)
         subreddit_sizer.Add(self.subreddit_ctrl)
 
+        self.ethics_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION)
+        self.ethics_ctrl.SetToolTip(GUIText.ETHICS_CONFIRMATION_TOOLTIP)
+
         start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
         self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
                                                 style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
@@ -121,6 +124,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         retriever_sizer = wx.BoxSizer(wx.VERTICAL)
         retriever_sizer.Add(name_sizer)
         retriever_sizer.Add(subreddit_sizer)
+        retriever_sizer.Add(self.ethics_ctrl)
         retriever_sizer.Add(start_date_sizer)
         retriever_sizer.Add(end_date_sizer)
         retriever_sizer.Add(self.archived_radioctrl)
@@ -159,6 +163,12 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             wx.MessageBox(GUIText.REDDIT_SUBREDDIT_MISSING_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('No subreddit entered')
+            status_flag = False
+        ethics_flg = self.ethics_ctrl.IsChecked()
+        if not ethics_flg:
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
             status_flag = False
         start_date = str(self.start_date_ctrl.GetValue().Format("%Y-%m-%d"))
         end_date = str(self.end_date_ctrl.GetValue().Format("%Y-%m-%d"))
@@ -452,13 +462,6 @@ class DatasetDetailsDialog(wx.Dialog):
             else:
                 retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_ARCHIVED)
             self.sizer.Add(retrieveonline_label, 0, wx.ALL, 5)
-
-            #TODO
-            #if dataset.retrieval_details['pushshift_flg']:
-            #    updateonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_API)
-            #else:
-            #    updateonline_label = wx.StaticText(self, label=u'\u2610' + " " + GUIText.REDDIT_API)
-            #sizer.Add(updateonline_label, 0, wx.ALL, 5)
 
             document_num_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
             self.sizer.Add(document_num_label)

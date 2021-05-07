@@ -13,7 +13,8 @@ import numpy as np
 
 import wx
 import wx.aui
-import wx.lib.agw.flatnotebook as FNB
+#import wx.lib.agw.flatnotebook as FNB
+import External.wxPython.flatnotebook_fix as FNB
 import wx.lib.scrolledpanel
 from wx.lib.masked.numctrl import NumCtrl
 import wx.dataview as dv
@@ -33,9 +34,6 @@ class TokenFiltersNotebook(FNB.FlatNotebook):
 
         #create dictionary to hold instances of filter panels for each field avaliable
         self.filters = {}
-
-        #label_font = wx.Font(Constants.SUBMODULE_LABEL_SIZE, Constants.LABEL_FAMILY, Constants.LABEL_STYLE, Constants.LABEL_WEIGHT, underline=Constants.LABEL_UNDERLINE)
-        #self.SetNormalFont(label_font)
 
         self.menu = wx.Menu()
         self.menu_menuitem = None
@@ -399,7 +397,7 @@ class FilterPanel(wx.Panel):
     def OnTokenizationChoice(self, event):
         choice = self.rules_panel.tokenization_choice.GetSelection()
         if choice != self.field.tokenization_choice:
-            self.field.SetTokenizationChoice(choice)
+            self.field.tokenization_choice = choice
             self.DataRefreshStart()
 
 

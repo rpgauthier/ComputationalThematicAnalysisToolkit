@@ -3,8 +3,8 @@ import logging
 from datetime import datetime
 
 import wx
-#import wx.aui
-import wx.lib.agw.flatnotebook as FNB
+#import wx.lib.agw.flatnotebook as FNB
+import External.wxPython.flatnotebook_fix as FNB
 import wx.dataview as dv
 import wx.lib.scrolledpanel
 
@@ -644,13 +644,6 @@ class DatasetDetailsPanel(wx.Panel):
                 else:
                     retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_ARCHIVED)
                 self.sizer.Add(retrieveonline_label, 0, wx.ALL, 5)
-
-                #TODO
-                #if dataset.retrieval_details['pushshift_flg']:
-                #    updateonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_API)
-                #else:
-                #    updateonline_label = wx.StaticText(self, label=u'\u2610' + " " + GUIText.REDDIT_API)
-                #sizer.Add(updateonline_label, 0, wx.ALL, 5)
 
             document_num_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
             self.sizer.Add(document_num_label, 0, wx.ALL, 5)
