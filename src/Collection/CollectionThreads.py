@@ -35,13 +35,14 @@ class TokenizerThread(Thread):
 
 class RetrieveRedditDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, subreddit, start_date, end_date, pushshift_flg, redditapi_flg, dataset_type):
+    def __init__(self, notify_window, main_frame, dataset_name, subreddit, start_date, end_date, replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
         self.main_frame = main_frame
         self.dataset_name = dataset_name
         self.dataset_type = dataset_type
+        self.replace_archive_flg = replace_archive_flg
         self.pushshift_flg = pushshift_flg
         self.redditapi_flg = redditapi_flg
         self.subreddit = subreddit
@@ -60,12 +61,16 @@ class RetrieveRedditDatasetThread(Thread):
                 'subreddit': self.subreddit,
                 'start_date': self.start_date,
                 'end_date': self.end_date,
+                'replace_archive_flg': self.replace_archive_flg,
                 'pushshift_flg': self.pushshift_flg,
                 'redditapi_flg': self.redditapi_flg
                 }
         data = {}
         dataset = None
         error_msg = ""
+        if self.replace_archive_flg:
+            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_REMOVE_SUBREDDIT_ARCHIVE_MSG + self.subreddit))
+            rdr.DeleteFiles(self.subreddit)
         if self.dataset_type == "discussion":
             if self.pushshift_flg:
                 try:
