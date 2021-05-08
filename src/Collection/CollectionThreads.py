@@ -15,6 +15,7 @@ from Common.GUIText import Datasets as GUIText
 import Common.CustomEvents as CustomEvents
 import Common.Objects.Datasets as Datasets
 import Collection.RedditDataRetriever as rdr
+import Collection.TwitterDataRetriever as twr
 import Collection.DataTokenizer as DataTokenizer
 import Collection.DataMetadataCreator as DataMetadataCreator
 
@@ -336,16 +337,27 @@ class RetrieveTwitterDatasetThread(Thread):
         consumer_key = self.consumer_key
         consumer_secret = self.consumer_secret
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-        api = tweepy.API(auth)
 
         if self.dataset_type == "document":
+            # TODO: only update if called with twitter api flag? otherwise just import instead (see reddit)
+            if True: # twitter_api_flag
+                try:
+                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_TWITTER_TWEETS_MSG))
+                    self.UpdateDataFiles(auth, self.query, self.start_date, self.end_date, "TW_") #TODO: TW == twitter, maybe TD? Twitter Document?
+                except RuntimeError:
+                    status_flag = False
+                    error_msg = GUIText.RETRIEVAL_FAILED_ERROR
             if status_flag:
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BEGINNING_MSG))
+                # wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BEGINNING_MSG))
 
-                # TODO: get data from files?
-                # TODO: remove cap on tweets, this takes a long time without saving to files(?)
-                tweets = tweepy.Cursor(api.search, self.query).items(10)
+                # # TODO: get data from files?
+                # # TODO: remove cap on tweets, this takes a long time without saving to files(?)
+                # tweets = tweepy.Cursor(api.search, self.query).items(10)
 
+                # wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_TWITTER_MSG))
+
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_TWITTER_TWEET_MSG))
+                tweets = self.ImportDataFiles(self.query, self.start_date, self.end_date, "TW_")
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_TWITTER_MSG))
                 
                 tweets_data = {}
@@ -356,7 +368,7 @@ class RetrieveTwitterDatasetThread(Thread):
                     tweets_data[key]['data_type'] = "document"
                     tweets_data[key]['id'] = tweet.id
                     tweets_data[key]["url"] = "https://twitter.com/" + tweet.user.screen_name + "/status/" + tweet.id_str
-                    tweets_data[key]['created_utc'] = tweet.created_at # TODO: should these field names match
+                    tweets_data[key]['created_at'] = tweet.created_at # TODO: created_utc?
                     # TODO: is 'title' needed if tweets don't have titles?
                     if hasattr(tweet, 'title'):
                         tweets_data[key]['title'] = tweet.title
@@ -436,13 +448,12 @@ class RetrieveTwitterDatasetThread(Thread):
             dataset.merged_fields[merged_fields[key].key] = merged_fields[key]
         return dataset
 
-    #TODO: convert to twitter
-    def UpdateDataFiles(self, subreddit, start_date, end_date, prefix):
-        logger = logging.getLogger(__name__+".RedditRetrieverDialog.UpdateDataFiles["+subreddit+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
+    def UpdateDataFiles(self, auth, query, start_date, end_date, prefix):
+        logger = logging.getLogger(__name__+".TwitterRetrieverDialog.UpdateDataFiles["+query+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
         logger.info("Starting")
         #check which months of the range are already downloaded
         #data archives are by month so need which months have no data and which months are before months which have no data
-        dict_monthfiles = rdr.FilesAvaliable(subreddit, start_date, end_date, prefix)
+        dict_monthfiles = twr.FilesAvaliable(query, start_date, end_date, prefix)
         months_notfound = []
         months_tocheck = []
         errors = []
@@ -455,26 +466,25 @@ class RetrieveTwitterDatasetThread(Thread):
         for month in months_notfound:
             wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_ALL_MSG+str(month)))
             try:
-                rdr.RetrieveMonth(subreddit, month, prefix)
+                twr.RetrieveMonth(auth, query, month, prefix)
             except RuntimeError as error:
                 errors.append(error)
         #check the exiting months of data for any missing data
         for month in months_tocheck:
             wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_NEW_MSG+str(month)))
             try:
-                rdr.UpdateRetrievedMonth(subreddit, month, dict_monthfiles[month], prefix)
+                twr.UpdateRetrievedMonth(auth, query, month, dict_monthfiles[month], prefix)
             except RuntimeError as error:
                 errors.append(error)
         if len(errors) != 0:
             raise RuntimeError(str(len(errors)) + " Retrievals Failed")
         logger.info("Finished")
 
-    # TODO: convert to twitter
-    def ImportDataFiles(self, subreddit, start_date, end_date, prefix):
-        logger = logging.getLogger(__name__+".RedditRetrieverDialog.ImportDataFiles["+subreddit+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
+    def ImportDataFiles(self, query, start_date, end_date, prefix):
+        logger = logging.getLogger(__name__+".TwitterRetrieverDialog.ImportDataFiles["+query+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
         logger.info("Starting")
         #get names of files where data is to be loaded from
-        dict_monthfiles = rdr.FilesAvaliable(subreddit, start_date, end_date, prefix)
+        dict_monthfiles = twr.FilesAvaliable(query, start_date, end_date, prefix)
         files = []
         for filename in dict_monthfiles.values():
             if filename != "":
@@ -488,7 +498,8 @@ class RetrieveTwitterDatasetThread(Thread):
                     temp_data = json.load(infile)
                     temp_data.pop(0)
                     for entry in temp_data:
-                        if entry['created_utc'] >= calendar.timegm((datetime.strptime(start_date,
+                        # TODO: change to created_at to match twitter's field name? before was created_utc
+                        if entry['created_at'] >= calendar.timegm((datetime.strptime(start_date,
                                                                     "%Y-%m-%d")).timetuple()):
                             data.append(entry)
                 if len(files) > 2:
@@ -506,7 +517,7 @@ class RetrieveTwitterDatasetThread(Thread):
                     temp_data = json.load(infile)
                     temp_data.pop(0)
                     for entry in temp_data:
-                        if entry['created_utc'] < calendar.timegm((datetime.strptime(end_date,
+                        if entry['created_at'] < calendar.timegm((datetime.strptime(end_date,
                                                                    "%Y-%m-%d") + relativedelta(days=1)).timetuple()):
                             data.append(entry)
             else:
@@ -515,9 +526,10 @@ class RetrieveTwitterDatasetThread(Thread):
                     temp_data = json.load(infile)
                     temp_data.pop(0)
                     for entry in temp_data:
-                        if entry['created_utc'] >= calendar.timegm((datetime.strptime(start_date,
+                        # TODO: created_utc?
+                        if entry['created_at'] >= calendar.timegm((datetime.strptime(start_date,
                                                                     "%Y-%m-%d")).timetuple()):
-                            if entry['created_utc'] < calendar.timegm((datetime.strptime(end_date,
+                            if entry['created_at'] < calendar.timegm((datetime.strptime(end_date,
                                                                        "%Y-%m-%d") + relativedelta(days=1)).timetuple()):
                                 data.append(entry)
         logger.info("Finished")
