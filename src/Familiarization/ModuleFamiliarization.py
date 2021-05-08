@@ -242,7 +242,7 @@ class FamiliarizationNotebook(wx.aui.AuiNotebook):
                     new_sample_panel = SamplesGUIs.TopicSamplePanel(self, sample, main_frame.datasets[sample.dataset_key], size=self.GetSize())
                 if new_sample_panel is not None:
                     self.sample_panels[sample_key] = new_sample_panel
-                    if saved_data['notes_toggle_flag']:
+                    if saved_data['samples_toggle_flag']:
                         self.AddPage(new_sample_panel, str(sample_key))
                         new_sample_panel.menu_menuitem = self.menu.AppendSubMenu(new_sample_panel.menu, str(sample_key))
                     else:
