@@ -337,6 +337,7 @@ class RetrieveTwitterDatasetThread(Thread):
         consumer_key = self.consumer_key
         consumer_secret = self.consumer_secret
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+        api = tweepy.API(auth) # TODO: create auth object in dialog and just pass in auth object
 
         if self.dataset_type == "document":
             # TODO: only update if called with twitter api flag? otherwise just import instead (see reddit)
@@ -362,38 +363,38 @@ class RetrieveTwitterDatasetThread(Thread):
                 
                 tweets_data = {}
                 for tweet in tweets:
-                    key = ("Twitter", "document", tweet.id)
+                    key = ("Twitter", "document", tweet['id'])
                     tweets_data[key] = {}
                     tweets_data[key]['data_source'] = "Twitter"
                     tweets_data[key]['data_type'] = "document"
-                    tweets_data[key]['id'] = tweet.id
-                    tweets_data[key]["url"] = "https://twitter.com/" + tweet.user.screen_name + "/status/" + tweet.id_str
-                    tweets_data[key]['created_at'] = tweet.created_at # TODO: created_utc?
+                    tweets_data[key]['id'] = tweet['id']
+                    tweets_data[key]["url"] = "https://twitter.com/" + tweet['user']['screen_name'] + "/status/" + tweet['id_str']
+                    tweets_data[key]['created_utc'] = tweet['created_utc'] # TODO: created_utc? or created_at
                     # TODO: is 'title' needed if tweets don't have titles?
-                    if hasattr(tweet, 'title'):
-                        tweets_data[key]['title'] = tweet.title
+                    if 'title' in tweet:
+                        tweets_data[key]['title'] = tweet['title']
                     else:
                         tweets_data[key]['title'] = ""
-                    if hasattr(tweet, 'text'): 
-                        tweets_data[key]['text'] = [tweet.text]
+                    if 'text' in tweet:
+                        tweets_data[key]['text'] = [tweet['text']]
                     else:
                         tweets_data[key]['text'] = [""]
 
                     # tweet always has shortened 'text', but we should use 'full_text' if possible
                     status = None
                     try:
-                        status_attempt = api.get_status(tweet.id, tweet_mode="extended")
+                        status_attempt = api.get_status(tweet['id'], tweet_mode="extended")
                         status = status_attempt
                     except tweepy.error.TweepError: # Could not retrieve status for this tweet id, so use shortened 'text'(?) TODO
-                        tweets_data[key]['full_text'] = [tweet.text]
+                        tweets_data[key]['full_text'] = [tweet['text']]
                     if status is not None:
                         try: 
                             tweets_data[key]['full_text'] = [status.retweeted_status.full_text]
                         except AttributeError:  # Not a Retweet (no 'retweeted_status' field)
                             tweets_data[key]['full_text'] = [status.full_text]
                     
-                    for field, value in tweet.__dict__.items():
-                        tweets_data[key]["tweet."+field] = value
+                    for field in tweet:
+                        tweets_data[key]["tweet."+field] = tweet[field]
                 #save as a document dataset
                 data = tweets_data           
         
@@ -498,10 +499,9 @@ class RetrieveTwitterDatasetThread(Thread):
                     temp_data = json.load(infile)
                     temp_data.pop(0)
                     for entry in temp_data:
-                        # TODO: change to created_at to match twitter's field name? before was created_utc
-                        if entry['created_at'] >= calendar.timegm((datetime.strptime(start_date,
-                                                                    "%Y-%m-%d")).timetuple()):
-                            data.append(entry)
+                        # TODO: change to created_at to match twitter's field name? or no because it expects a created_utc field in files?
+                        if entry['created_utc'] >= calendar.timegm((datetime.strptime(start_date, "%Y-%m-%d")).timetuple()):
+                                data.append(entry)
                 if len(files) > 2:
                     #retrieve all data from middle files
                     for filename in files[1:(len(files)-2)]:
@@ -517,8 +517,8 @@ class RetrieveTwitterDatasetThread(Thread):
                     temp_data = json.load(infile)
                     temp_data.pop(0)
                     for entry in temp_data:
-                        if entry['created_at'] < calendar.timegm((datetime.strptime(end_date,
-                                                                   "%Y-%m-%d") + relativedelta(days=1)).timetuple()):
+                        # TODO: created_utc?
+                        if entry['created_utc'] < calendar.timegm((datetime.strptime(end_date, "%Y-%m-%d") + relativedelta(days=1)).timetuple()):
                             data.append(entry)
             else:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[0])))
@@ -527,10 +527,8 @@ class RetrieveTwitterDatasetThread(Thread):
                     temp_data.pop(0)
                     for entry in temp_data:
                         # TODO: created_utc?
-                        if entry['created_at'] >= calendar.timegm((datetime.strptime(start_date,
-                                                                    "%Y-%m-%d")).timetuple()):
-                            if entry['created_at'] < calendar.timegm((datetime.strptime(end_date,
-                                                                       "%Y-%m-%d") + relativedelta(days=1)).timetuple()):
+                        if entry['created_utc'] >= calendar.timegm((datetime.strptime(start_date, "%Y-%m-%d")).timetuple()):
+                            if (entry['created_utc'] < calendar.timegm((datetime.strptime(end_date,"%Y-%m-%d") + relativedelta(days=1)).timetuple())):
                                 data.append(entry)
         logger.info("Finished")
         return data

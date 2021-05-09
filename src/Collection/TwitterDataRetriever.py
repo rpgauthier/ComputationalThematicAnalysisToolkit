@@ -112,7 +112,7 @@ def UpdateRetrievedMonth(auth, query, month, file, prefix):
         data = json.load(infile)
         id_dict = data.pop(0)
     if len(data) > 0:
-        start_dt = data[len(data)-1]['created_at'] # TODO: created_utc?
+        start_dt = data[len(data)-1]['created_utc'] # TODO: created_utc?
         month_end = (datetime.datetime.strptime(month, "%Y-%m")
                      + relativedelta(months=1)).strftime(r"%Y-%m") + "-01"
         end_dt = calendar.timegm(datetime.datetime.strptime(month_end, "%Y-%m-%d").timetuple())
@@ -165,12 +165,23 @@ class TweepyRetriever():
         # TODO: v1.1 search only goes back 7 days back from the end_dt
         # need to loop end_dt until we reach start date + account for the few days before the start_dt included in the earliest 7-day interval
         # 450 requests/15 mins == 64 weeks of data/15 mins, not ideal?
-        print(str(end_dt))
-        tweets_data = tweepy.Cursor(api.search, query).items(20) # TODO: fix date format and include it, remove tweet cap
+        start = start_dt
+        end = end_dt
 
-        for tweet in tweets_data:
-            tweets.append(tweet._json)
-            print(tweet._json) #TODO: remove
+        while (start < end):
+            tweets_data = tweepy.Cursor(api.search, query, until=end).items()
+            for tweet in tweets_data:
+                tweet._json['created_utc'] = calendar.timegm(datetime.datetime.strptime(tweet._json['created_at'], "%a %b %d %H:%M:%S +0000 %Y").timetuple()) # TODO: is making a created_utc field like this ok
+                tweet._json['retrieved_on'] = calendar.timegm(datetime.datetime.strptime(tweet._json['created_at'], "%a %b %d %H:%M:%S +0000 %Y").timetuple()) # TODO: change to current time
+                print(tweet._json['retrieved_on']) # TODO remove
+                if (tweet._json['created_utc'] >= start and tweet._json['created_utc'] < end):
+                    tweets.append(tweet._json)
+                    print(tweet._json) #TODO: remove
+
+            # TODO: remove
+            print(datetime.datetime.utcfromtimestamp(start))
+            print(datetime.datetime.utcfromtimestamp(end))
+            end = calendar.timegm((datetime.datetime.utcfromtimestamp(end) - relativedelta(weeks=1)).timetuple())
 
         logger.info("Finished %s tweets have added to list", str(len(tweets)))
         return tweets
