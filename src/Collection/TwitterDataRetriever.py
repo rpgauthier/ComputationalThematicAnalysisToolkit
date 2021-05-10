@@ -141,7 +141,7 @@ def UpdateRetrievedMonth(auth, query, month, file, prefix):
                              str(month), str(entry['id']), str(id_dict[entry['id']]), str(entry['retrieved_on']))
                 if str(id_dict[entry['id']]) <= str(entry['retrieved_on']):
                     for existing_entry in data:
-                        if existing_entry['id'] == entry[id]:
+                        if existing_entry['id'] == entry['id']:
                             data.remove(existing_entry)
                             del id_dict[entry['id']]
                             id_dict[entry['id']] = entry['retrieved_on']
@@ -172,15 +172,14 @@ class TweepyRetriever():
             tweets_data = tweepy.Cursor(api.search, query, until=end).items()
             for tweet in tweets_data:
                 tweet._json['created_utc'] = calendar.timegm(datetime.datetime.strptime(tweet._json['created_at'], "%a %b %d %H:%M:%S +0000 %Y").timetuple()) # TODO: is making a created_utc field like this ok
-                tweet._json['retrieved_on'] = calendar.timegm(datetime.datetime.strptime(tweet._json['created_at'], "%a %b %d %H:%M:%S +0000 %Y").timetuple()) # TODO: change to current time
-                print(tweet._json['retrieved_on']) # TODO remove
+                tweet._json['retrieved_on'] = calendar.timegm(datetime.datetime.now().timetuple())
                 if (tweet._json['created_utc'] >= start and tweet._json['created_utc'] < end):
                     tweets.append(tweet._json)
-                    print(tweet._json) #TODO: remove
+                    #print(tweet._json) #TODO: remove
 
             # TODO: remove
-            print(datetime.datetime.utcfromtimestamp(start))
-            print(datetime.datetime.utcfromtimestamp(end))
+            #print(datetime.datetime.utcfromtimestamp(start))
+            #print(datetime.datetime.utcfromtimestamp(end))
             end = calendar.timegm((datetime.datetime.utcfromtimestamp(end) - relativedelta(weeks=1)).timetuple())
 
         logger.info("Finished %s tweets have added to list", str(len(tweets)))
