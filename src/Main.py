@@ -5,6 +5,7 @@ import bz2
 import os.path
 from threading import *
 from multiprocessing import cpu_count, get_context
+import psutil
 from shutil import copyfile
 from datetime import datetime
 
@@ -13,6 +14,7 @@ import faulthandler
 
 import wx
 import wx.lib.agw.labelbook as LB
+import External.wxPython.labelbook_fix as LB_fix
 import _pickle as cPickle
 
 import RootApp
@@ -39,6 +41,7 @@ class MainFrame(wx.Frame):
 
         self.pool = pool
         self.pool_num = self.pool._processes
+        self.threaded_inprogress_flag = False
         self.datasets = {}
         self.samples = {}
         self.codes = {}
@@ -57,21 +60,24 @@ class MainFrame(wx.Frame):
         self.notes_notebook = cn.NotesNotebook(self.notes_frame)
         #Project's General Notes panel
         self.notes_panel = cn.NotesPanel(self.notes_notebook, None)
-        self.notes_panel.Hide()
+        self.notes_notebook.AddPage(self.notes_panel, GUIText.GENERAL_LABEL)
 
         #notebook for managing layout and tabs of modules
-        self.main_notebook = LB.LabelBook(self, agwStyle=LB.INB_LEFT|LB.INB_SHOW_ONLY_TEXT|LB.INB_GRADIENT_BACKGROUND, size=self.GetSize())
+        self.main_notebook = LB_fix.LabelBook(self, agwStyle=LB.INB_LEFT|LB.INB_SHOW_ONLY_TEXT|LB.INB_GRADIENT_BACKGROUND, size=self.GetSize())
         #label_font = wx.Font(Constants.PHASE_LABEL_SIZE, Constants.LABEL_FAMILY, Constants.LABEL_STYLE, Constants.LABEL_WEIGHT, underline=Constants.LABEL_UNDERLINE)
         #self.main_notebook.SetSelectedFont(label_font)
         self.main_notebook.SetColour(LB.INB_TAB_AREA_BACKGROUND_COLOUR, self.GetBackgroundColour())
 
         #Modules
         self.collection_module = cm.CollectionPanel(self.main_notebook, size=self.GetSize())
-        self.collection_module.Hide()
+        self.main_notebook.InsertPage(0, self.collection_module, GUIText.COLLECTION_LABEL)
+        #self.collection_module.Hide()
         self.familiarization_module = fm.FamiliarizationNotebook(self.main_notebook, self.samples, size=self.GetSize())
-        self.familiarization_module.Hide()
+        self.main_notebook.InsertPage(1, self.familiarization_module, GUIText.FAMILIARIZATION_LABEL)
+        #self.familiarization_module.Hide()
         self.coding_module = cdm.CodingPanel(self.main_notebook, size=self.GetSize())
-        self.coding_module.Hide()
+        self.main_notebook.InsertPage(2, self.coding_module, GUIText.CODING_LABEL)
+        #self.coding_module.Hide()
 
         #Sizer for Frame
         self.panel_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -88,10 +94,10 @@ class MainFrame(wx.Frame):
         self.menu_bar = wx.MenuBar()
         file_menu = wx.Menu()
         #options
-        options_file_menuitem = file_menu.Append(wx.ID_ANY,
-                                                 "Options")
-        self.Bind(wx.EVT_MENU, self.OnOptions, options_file_menuitem)
-        file_menu.AppendSeparator()
+        #options_file_menuitem = file_menu.Append(wx.ID_ANY,
+        #                                         "GUI Inspecter")
+        #self.Bind(wx.EVT_MENU, self.OnOptions, options_file_menuitem)
+        #file_menu.AppendSeparator()
         new_file_menuitem = file_menu.Append(wx.ID_ANY,
                                              GUIText.NEW,
                                              GUIText.NEW_TOOLTIP)
@@ -119,40 +125,45 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnCloseStart, exit_file_menuitem)
         self.menu_bar.Append(file_menu, GUIText.FILE_MENU)
 
-        view_menu = wx.Menu()
-        self.toggle_collection_menuitem = view_menu.Append(wx.ID_ANY,
-                                                           GUIText.COLLECTION_LABEL,
+        self.view_menu = wx.Menu()
+        self.toggle_collection_menuitem = self.view_menu.Append(wx.ID_ANY,
                                                            GUIText.SHOW_HIDE+GUIText.COLLECTION_LABEL,
                                                            kind=wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.OnToggleCollection, self.toggle_collection_menuitem)
-        self.toggle_familiarization_menuitem = view_menu.Append(wx.ID_ANY,
-                                                                GUIText.FAMILIARIZATION_LABEL,
+        self.toggle_familiarization_menuitem = self.view_menu.Append(wx.ID_ANY,
                                                                 GUIText.SHOW_HIDE+GUIText.FAMILIARIZATION_LABEL,
                                                                 kind=wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.OnToggleFamiliarization, self.toggle_familiarization_menuitem)
-        self.toggle_coding_menuitem = view_menu.Append(wx.ID_ANY,
-                                                                GUIText.CODING_LABEL,
+        self.toggle_coding_menuitem = self.view_menu.Append(wx.ID_ANY,
                                                                 GUIText.SHOW_HIDE+GUIText.CODING_LABEL,
                                                                 kind=wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.OnToggleCoding, self.toggle_coding_menuitem)
-        view_menu.AppendSeparator()
-        self.toggle_notes_menuitem = view_menu.Append(wx.ID_ANY,
-                                                      GUIText.NOTES_LABEL,
+        
+        self.view_menu.AppendSeparator()
+        self.toggle_notes_menuitem = self.view_menu.Append(wx.ID_ANY,
                                                       GUIText.SHOW_HIDE + GUIText.NOTES_LABEL,
                                                       kind=wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.OnToggleNotes, self.toggle_notes_menuitem)
-        self.menu_bar.Append(view_menu, GUIText.VIEW_MENU)
+
+        self.view_menu.AppendSeparator()
+        self.view_menu.AppendSubMenu(self.collection_module.view_menu, GUIText.COLLECTION_LABEL)
+        #TODO need to move actions new submenu syste for Familiarization submodules
+        self.view_menu.AppendSubMenu(self.familiarization_module.view_menu, GUIText.FAMILIARIZATION_LABEL)
+        self.view_menu.AppendSubMenu(self.coding_module.view_menu, GUIText.CODING_LABEL)
+        
+        self.menu_bar.Append(self.view_menu, GUIText.VIEW_MENU)
+
         self.SetMenuBar(self.menu_bar)
 
         CustomEvents.EVT_PROGRESS(self, self.OnProgress)
 
         #setup default visable state
         self.toggle_collection_menuitem.Check(True)
-        self.OnToggleCollection(None)
+        #self.OnToggleCollection(None)
         self.toggle_familiarization_menuitem.Check(True)
-        self.OnToggleFamiliarization(None)
+        #self.OnToggleFamiliarization(None)
         self.toggle_coding_menuitem.Check(True)
-        self.OnToggleCoding(None)
+        #self.OnToggleCoding(None)
 
         self.Layout()
         self.Fit()
@@ -165,127 +176,97 @@ class MainFrame(wx.Frame):
         logger = logging.getLogger(__name__+".MainFrame.OnToggleCollection")
         logger.info("Starting")
         if self.toggle_collection_menuitem.IsChecked():
-            #index = self.main_notebook.GetPageIndex(self.collection_module)
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
                 if self.main_notebook.GetPage(idx) is self.collection_module:
                     index = idx
-            #if index is wx.NOT_FOUND:
             if index is None:
-                #self.main_notebook.AddPage(self.collection_module,
-                #                           GUIText.COLLECTION_LABEL)
                 self.main_notebook.InsertPage(0, self.collection_module,
                                               GUIText.COLLECTION_LABEL)
-            index = self.menu_bar.FindMenu(GUIText.COLLECTION_LABEL)
-            if index is wx.NOT_FOUND:
-                self.menu_bar.Append(self.collection_module.menu, GUIText.COLLECTION_LABEL)
+            #index = self.view_menu.FindItem(GUIText.COLLECTION_LABEL)
+            #if index is wx.NOT_FOUND:
+            #    self.view_menu.AppendSubMenu(self.collection_module.menu, GUIText.COLLECTION_LABEL)
         else:
-            #index = self.main_notebook.GetPageIndex(self.collection_module)
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
                 if self.main_notebook.GetPage(idx) is self.collection_module:
                     index = idx
-            #if index is not wx.NOT_FOUND:
             if index is not None:
                 self.main_notebook.RemovePage(index)
                 self.collection_module.Hide()
-            index = self.menu_bar.FindMenu(GUIText.COLLECTION_LABEL)
-            if index is not wx.NOT_FOUND:
-                self.menu_bar.Remove(index)
+            #index = self.view_menu.FindItem(GUIText.COLLECTION_LABEL)
+            #if index is not wx.NOT_FOUND:
+            #    self.view_menu.Remove(index)
         logger.info("Finished")
 
     def OnToggleFamiliarization(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnToggleFamiliarization")
         logger.info("Starting")
         if self.toggle_familiarization_menuitem.IsChecked():
-            #index = self.main_notebook.GetPageIndex(self.familiarization_module)
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
                 if self.main_notebook.GetPage(idx) is self.familiarization_module:
                     index = idx
-            #if index is wx.NOT_FOUND:
             if index is None:
-                #self.main_notebook.AddPage(self.familiarization_module,
-                #                           GUIText.FAMILIARIZATION_LABEL)
                 self.main_notebook.InsertPage(1, self.familiarization_module,
                                               GUIText.FAMILIARIZATION_LABEL)
-            index = self.menu_bar.FindMenu(GUIText.FAMILIARIZATION_LABEL)
-            if index is wx.NOT_FOUND:
-                self.menu_bar.Append(self.familiarization_module.menu, GUIText.FAMILIARIZATION_LABEL)
+            #index = self.menu_bar.FindMenu(GUIText.FAMILIARIZATION_LABEL)
+            #if index is wx.NOT_FOUND:
+            #    self.menu_bar.Append(self.familiarization_module.menu, GUIText.FAMILIARIZATION_LABEL)
         else:
-            #index = self.main_notebook.GetPageIndex(self.familiarization_module)
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
                 if self.main_notebook.GetPage(idx) is self.familiarization_module:
                     index = idx
-            #if index is not wx.NOT_FOUND:
             if index is not None:
                 self.main_notebook.RemovePage(index)
                 self.familiarization_module.Hide()
-            index = self.menu_bar.FindMenu(GUIText.FAMILIARIZATION_LABEL)
-            if index is not wx.NOT_FOUND:
-                self.menu_bar.Remove(index)
+            #index = self.menu_bar.FindMenu(GUIText.FAMILIARIZATION_LABEL)
+            #if index is not wx.NOT_FOUND:
+            #    self.menu_bar.Remove(index)
         logger.info("Finished")
     
     def OnToggleCoding(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnToggleCoding")
         logger.info("Starting")
         if self.toggle_coding_menuitem.IsChecked():
-            #index = self.main_notebook.GetPageIndex(self.coding_module)
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
                 if self.main_notebook.GetPage(idx) is self.coding_module:
                     index = idx
-            #if index is wx.NOT_FOUND:
             if index is None:
-                #self.main_notebook.AddPage(self.coding_module,
-                #                           GUIText.CODING_LABEL)
                 self.main_notebook.InsertPage(2, self.coding_module,
                                               GUIText.CODING_LABEL)
-            index = self.menu_bar.FindMenu(GUIText.CODING_LABEL)
-            if index is wx.NOT_FOUND:
-                self.menu_bar.Append(self.coding_module.menu, GUIText.CODING_LABEL)
+            #index = self.menu_bar.FindMenu(GUIText.CODING_LABEL)
+            #if index is wx.NOT_FOUND:
+            #    self.menu_bar.Append(self.coding_module.menu, GUIText.CODING_LABEL)
         else:
-            #index = self.main_notebook.GetPageIndex(self.coding_module)
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
                 if self.main_notebook.GetPage(idx) is self.coding_module:
                     index = idx
-            #if index is not wx.NOT_FOUND:
             if index is not None:
                 self.main_notebook.RemovePage(index)
                 self.coding_module.Hide()
-            index = self.menu_bar.FindMenu(GUIText.CODING_LABEL)
-            if index is not wx.NOT_FOUND:
-                self.menu_bar.Remove(index)
+            #index = self.menu_bar.FindMenu(GUIText.CODING_LABEL)
+            #if index is not wx.NOT_FOUND:
+            #    self.menu_bar.Remove(index)
         logger.info("Finished")
 
     def OnToggleNotes(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnToggleNotes")
         logger.info("Starting")
         if self.toggle_notes_menuitem.IsChecked():
-            index = self.notes_notebook.GetPageIndex(self.notes_panel)
-            if index is wx.NOT_FOUND:
-                self.notes_notebook.AddPage(self.notes_panel, GUIText.GENERAL_LABEL)
             self.notes_frame.Show()
         else:
-            index = self.notes_notebook.GetPageIndex(self.notes_panel)
-            if index is not wx.NOT_FOUND:
-                self.notes_notebook.RemovePage(index)
-                self.notes_panel.Hide()
-            if self.notes_notebook.GetPageCount() == 0:
-                self.notes_frame.Hide()
+            self.notes_frame.Hide()
         logger.info("Finished")
 
     def OnNotesClose(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnNotesClose")
         logger.info("Starting")
         self.notes_frame.Hide()
-        while self.notes_notebook.GetPageCount() > 0:
-            self.notes_notebook.RemovePage(0)
         self.toggle_notes_menuitem.Check(False)
-        self.familiarization_module.toggle_notes_menuitem.Check(False)
-        self.collection_module.toggle_notes_menuitem.Check(False)
         logger.info("Finished")
     
     def OnOptions(self, event):
@@ -636,9 +617,11 @@ def Main():
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-    pool_num = cpu_count()-3
-    if pool_num < 1:
+    cpus = psutil.cpu_count(logical=False)
+    if cpus is None or cpus < 2:
         pool_num = 1
+    else:
+        pool_num = cpus-1
     with get_context("spawn").Pool(processes=pool_num) as pool:
         #start up the GUI
         app = RootApp.RootApp()

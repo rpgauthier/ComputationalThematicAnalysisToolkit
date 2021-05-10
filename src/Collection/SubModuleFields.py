@@ -125,6 +125,11 @@ class FieldsNotebook(wx.aui.AuiNotebook):
                 DatasetAdder(dataset)
 
         main_frame = wx.GetApp().GetTopWindow()
+        if main_frame.threaded_inprogress_flag == True:
+            wx.MessageBox("A memory intensive operation is currently in progress."\
+                          "\n Please try current action again after this operation has completed",
+                          GUIText.WARNING, wx.OK | wx.ICON_WARNING)
+            return
         main_frame.CreateProgressDialog(GUIText.ADDING_FIELDS_BUSY_LABEL,
                                         warning=GUIText.SIZE_WARNING_MSG,
                                         freeze=True)
@@ -139,6 +144,7 @@ class FieldsNotebook(wx.aui.AuiNotebook):
             if isinstance(node, Datasets.GroupedDataset):
                 GroupedDatasetAdder(node)
         if len(tokenize_fields) > 0:
+            main_frame.threaded_inprogress_flag == True
             self.tokenization_thread = CollectionThreads.TokenizerThread(self, main_frame, tokenize_fields)
         else:
             main_frame.CloseProgressDialog(thaw=True)
@@ -154,7 +160,12 @@ class FieldsNotebook(wx.aui.AuiNotebook):
         nodes = []
         items = []
         merged_fields_list = []
-        main_frame = self.GetGrandParent().GetTopLevelParent()
+        main_frame = wx.getApp().GetTopWindow()
+        if main_frame.threaded_inprogress_flag == True:
+            wx.MessageBox("A memory intensive operation is currently in progress."\
+                          "\n Please try current action again after this operation has completed",
+                          GUIText.WARNING, wx.OK | wx.ICON_WARNING)
+            return
         main_frame.CreateProgressDialog(GUIText.MERGING_FIELDS_BUSY_LABEL,
                                         warning=GUIText.SIZE_WARNING_MSG,
                                         freeze=True)
@@ -216,6 +227,7 @@ class FieldsNotebook(wx.aui.AuiNotebook):
                         node.parent = new_merged_field
 
         if len(merged_fields_list) > 0:
+            main_frame.threaded_inprogress_flag == True
             self.tokenization_thread = CollectionThreads.TokenizerThread(self, main_frame, merged_fields_list)
         else:
             main_frame.CloseProgressDialog(thaw=True)
@@ -263,7 +275,12 @@ class FieldsNotebook(wx.aui.AuiNotebook):
             for dataset in grouped_dataset.datasets:
                 DatasetSplitter(dataset)
 
-        main_frame = self.GetGrandParent().GetTopLevelParent()
+        main_frame = wx.getApp().GetTopWindow()
+        if main_frame.threaded_inprogress_flag == True:
+            wx.MessageBox("A memory intensive operation is currently in progress."\
+                          "\n Please try current action again after this operation has completed",
+                          GUIText.WARNING, wx.OK | wx.ICON_WARNING)
+            return
         main_frame.CreateProgressDialog(GUIText.UNMERGING_FIELDS_BUSY_LABEL,
                                         warning=GUIText.SIZE_WARNING_MSG,
                                         freeze=True)
@@ -281,6 +298,7 @@ class FieldsNotebook(wx.aui.AuiNotebook):
                     GroupedDatasetSplitter(node)
         finally:
             if len(tokenize_fields) > 0:
+                main_frame.threaded_inprogress_flag == True
                 self.tokenization_thread = CollectionThreads.TokenizerThread(self, main_frame, tokenize_fields)
             else:
                 if performed_flag:
@@ -366,6 +384,7 @@ class FieldsNotebook(wx.aui.AuiNotebook):
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.DatasetsUpdated()
         main_frame.CloseProgressDialog(thaw=True)
+        main_frame.threaded_inprogress_flag == False
         self.GetTopLevelParent().Enable()
         self.GetTopLevelParent().SetFocus()
         logger.info("Finished")

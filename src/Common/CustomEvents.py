@@ -96,3 +96,15 @@ class CreateWordDataFrameResultEvent(wx.PyEvent):
         wx.PyEvent.__init__(self)
         self.SetEventType(CREATE_WORD_DATAFRAME_EVT_RESULT_ID)
         self.data = data
+
+MODELCREATED_EVT_RESULT_ID = wx.NewIdRef()
+def MODELCREATED_EVT_RESULT(win, func):
+    """Define Result Event."""
+    win.Connect(-1, -1, MODELCREATED_EVT_RESULT_ID, func)
+class ModelCreatedResultEvent(wx.PyEvent):
+    """Simple event to carry arbitrary result data."""
+    def __init__(self, data):
+        """Init Result Event."""
+        wx.PyEvent.__init__(self)
+        self.SetEventType(MODELCREATED_EVT_RESULT_ID)
+        self.data = data

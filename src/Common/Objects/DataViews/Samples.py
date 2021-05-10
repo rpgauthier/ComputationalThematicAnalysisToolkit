@@ -148,9 +148,30 @@ class PartsViewModel(dv.PyDataViewModel):
         self.dataset_data = dataset_data
         self.UseWeakRefs(True)
 
+        self.column_names = []
+    
+    def UpdateColumnNames(self):
+        self.column_names = [GUIText.ID, GUIText.NOTES]
+        if isinstance(self.dataset_data, Datasets.GroupedDataset):
+            for merged_field_key in self.dataset_data.merged_fields:
+                for field_key in self.dataset_data.merged_fields[merged_field_key].chosen_fields:
+                    self.column_names.append((merged_field_key, field_key))
+            for dataset_key in self.dataset_data.datasets:
+                for merged_field_key in self.dataset_data.datasets[dataset_key].merged_fields:
+                    for field_key in self.dataset_data.datasets[dataset_key].merged_fields[merged_field_key].chosen_fields:
+                        self.column_names.append((merged_field_key, field_key))
+                for field_key in self.dataset_data.datasets[dataset_key].chosen_fields:
+                    self.column_names.append(field_key)
+        elif isinstance(self.dataset_data, Datasets.Dataset):
+            for merged_field_key in self.dataset_data.merged_fields:
+                for field_key in self.dataset_data.merged_fields[merged_field_key].chosen_fields:
+                    self.column_names.append((merged_field_key, field_key))
+            for field_key in self.dataset_data.chosen_fields:
+                self.column_names.append(field_key)
+
     def GetColumnCount(self):
         '''Report how many columns this model provides data for.'''
-        return 3
+        return len(column_names)
 
     def GetChildren(self, parent, children):
         row_num = 0
@@ -162,10 +183,10 @@ class PartsViewModel(dv.PyDataViewModel):
                 node = self.sample_data[key]
                 children.append(self.ObjectToItem(node))
                 row_num += 1
-                if isinstance(node.parent, Samples.Part):
-                    if row_num >= node.parent.document_num:
-                        break
-            return row_num
+                #if isinstance(node.parent, Samples.Part):
+                #    if row_num >= node.parent.document_num:
+                #        break
+            return len(children)
         # Otherwise we'll fetch the python object associated with the parent
         # item and make DV items for each of it's child objects.
         node = self.ItemToObject(parent)
@@ -253,27 +274,34 @@ class PartsViewModel(dv.PyDataViewModel):
         node = self.ItemToObject(item)
         if isinstance(node, Samples.MergedPart):
             mapper = { 0 : str(node.name) +": "+str(node.label),
-                       1 : "",
-                       2 : ""
+                       1 : "\U0001F6C8" if node.notes != "" else "",
                        }
+            for i in range(2, len(self.column_names)):
+                mapper[i] = ""
             return mapper[col]
         elif isinstance(node, Samples.Part):
             mapper = { 0 : str(node.name) +": "+str(node.label),
-                       1 : "",
-                       2 : ""
+                       1 : "\U0001F6C8" if node.notes != "" else "",
                        }
+            for i in range(2, len(self.column_names)):
+                mapper[i] = ""
             return mapper[col]
         elif isinstance(node, Datasets.GroupedDocuments):
             mapper = { 0 : str(node.key),
-                       1 : str(node.notes),
-                       2 : ""
+                       1 : "\U0001F6C8" if node.notes != "" else "",
                        }
+            for i in range(2, len(self.column_names)):
+                mapper[i] = ""
             return mapper[col]
         elif isinstance(node, Datasets.Document):
             mapper = { 0 : str(node.url),
-                       1 : str(node.notes),
-                       2 : str({key: node.data_dict[key] for key in node.data_dict})
+                       1 : "\U0001F6C8" if node.notes != "" else "",
                        }
+            for i in range(2, len(self.column_names)):
+                if self.column_names[i] in node.data_dict:
+                    mapper[i] = str(node.data_dict[self.column_names[i]])
+                else:
+                    mapper[i] = ""
             return mapper[col]
         else:
             raise RuntimeError("unknown node type")
@@ -312,32 +340,47 @@ class PartsViewCtrl(dv.DataViewCtrl):
         self.AssociateModel(model)
         #model.DecRef()
 
-        editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
         text_renderer = dv.DataViewTextRenderer()
 
         column0 = dv.DataViewColumn(GUIText.ID, text_renderer, 0, align=wx.ALIGN_LEFT)
         self.AppendColumn(column0)
         column0.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
-        column1 = dv.DataViewColumn(GUIText.NOTES, editabletext_renderer, 1,
-                                    flags=dv.DATAVIEW_CELL_EDITABLE, align=wx.ALIGN_LEFT)
+        column1 = dv.DataViewColumn(GUIText.NOTES, text_renderer, 1, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
         column1.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
-        column2 = dv.DataViewColumn("Data", text_renderer, 2, align=wx.ALIGN_LEFT)
-        self.AppendColumn(column2)
-        column2.SetWidth(wx.COL_WIDTH_AUTOSIZE)
-
-        for column in self.Columns:
-            column.Sortable = True
-            column.Reorderable = True
-            column.Resizeable = True
-
+        self.UpdateColumns()
+        
         self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
         self.Bind(dv.EVT_DATAVIEW_ITEM_ACTIVATED, self.OnOpen)
         self.Bind(wx.EVT_MENU, self.OnCopyItems, id=wx.ID_COPY)
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
+
+    def UpdateColumns(self):
+        model = self.GetModel()
+        text_renderer = dv.DataViewTextRenderer()
+
+        #remove exisitng data columns
+        if len(model.column_names) > 2:
+            for i in reversed(range(2, len(model.column_names))):
+                self.DeleteColumn(self.GetColumn(i))
+
+        #add data columns
+        model.UpdateColumnNames()
+        for i in range(2, len(model.column_names)):
+            name = model.column_names[i][1][1]
+            data_column = dv.DataViewColumn(str(name), text_renderer, i, align=wx.ALIGN_LEFT)
+            self.AppendColumn(data_column)
+            data_column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+        
+        for column in self.Columns:
+            column.Sortable = True
+            column.Reorderable = True
+            column.Resizeable = True
+        
+        self.Refresh()
 
     def OnShowPopup(self, event):
         logger = logging.getLogger(__name__+".PartsViewCtrl.OnShowPopup")
@@ -385,7 +428,7 @@ class PartsViewCtrl(dv.DataViewCtrl):
 #     0. ID:   string
 #     1. Label: string
 #     2. Words: string
-class LDATopicViewModel(dv.PyDataViewModel):
+class TopicViewModel(dv.PyDataViewModel):
     def __init__(self, data):
         dv.PyDataViewModel.__init__(self)
         self.data = data
@@ -473,7 +516,7 @@ class LDATopicViewModel(dv.PyDataViewModel):
     def HasContainerColumns(self, item):
         return True
 
-class LDATopicViewCtrl(dv.DataViewCtrl):
+class TopicViewCtrl(dv.DataViewCtrl):
     '''For rendering lda topics'''
     def __init__(self, parent, model):
         logger = logging.getLogger(__name__+".LDATopicViewCtrl.__init__")

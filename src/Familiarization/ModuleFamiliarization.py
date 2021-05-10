@@ -13,6 +13,7 @@ import Common.Constants as Constants
 import Common.Notes as Notes
 import Common.Objects.Datasets as Datasets
 from Common.GUIText import Familiarization as GUIText
+import Common.Objects.GUIs.Datasets as DatasetsGUIs
 import Common.Objects.GUIs.Samples as SamplesGUIs
 import Familiarization.SubModuleTokenFilters as SubModuleTokenFilters
 import Familiarization.SubModuleSamples as SubModuleSamples
@@ -28,6 +29,8 @@ class FamiliarizationNotebook(wx.aui.AuiNotebook):
         self.sample_panels = {}
 
         #Submodules
+        self.inspect_submodule = DatasetsGUIs.DataNotebook(self, size=size)
+        self.inspect_submodule.Hide()
         self.filters_submodule = SubModuleTokenFilters.TokenFiltersNotebook(self, size=size)
         self.filters_submodule.Hide()
         self.sample_list_panel = SamplesGUIs.SampleListPanel(self, self.samples, size=size)
@@ -38,32 +41,34 @@ class FamiliarizationNotebook(wx.aui.AuiNotebook):
         #Notes panel for module
         main_frame = wx.GetApp().GetTopWindow()
         self.notes_panel = Notes.NotesPanel(main_frame.notes_notebook, self)
-        self.notes_panel.Hide()
+        main_frame.notes_notebook.AddPage(self.notes_panel, GUIText.FAMILIARIZATION_LABEL)
 
         #Menu for Module
         main_frame = wx.GetApp().GetTopWindow()
-        self.menu = wx.Menu()   
-        self.toggle_notes_menuitem = self.menu.Append(wx.ID_ANY,
-                                                      GUIText.FAMILIARIZATION_NOTES_LABEL,
-                                                      GUIText.SHOW_HIDE+GUIText.FAMILIARIZATION_NOTES_LABEL,
-                                                      kind=wx.ITEM_CHECK)
-        main_frame.Bind(wx.EVT_MENU, self.OnToggleNotes, self.toggle_notes_menuitem)
-        
-        self.menu.AppendSeparator()
-        view_menu = wx.Menu()
-        self.toggle_filters_menuitem = view_menu.Append(wx.ID_ANY,
+        self.view_menu = wx.Menu()   
+        self.toggle_inspect_menuitem = self.view_menu.Append(wx.ID_ANY,
+                                                        GUIText.INSPECT_LABEL,
+                                                        GUIText.SHOW_HIDE+GUIText.INSPECT_LABEL,
+                                                        kind=wx.ITEM_CHECK)
+        main_frame.Bind(wx.EVT_MENU, self.OnToggleInspect, self.toggle_inspect_menuitem)
+        self.toggle_filters_menuitem = self.view_menu.Append(wx.ID_ANY,
                                                               GUIText.FILTERS_LABEL,
                                                               GUIText.SHOW_HIDE+GUIText.FILTERS_LABEL,
                                                               kind=wx.ITEM_CHECK)
         main_frame.Bind(wx.EVT_MENU, self.OnToggleTokenFilters, self.toggle_filters_menuitem)
-        self.toggle_samples_menuitem = view_menu.Append(wx.ID_ANY,
+        self.toggle_samples_menuitem = self.view_menu.Append(wx.ID_ANY,
                                                        GUIText.SAMPLES_LABEL,
                                                        GUIText.SHOW_HIDE+GUIText.SAMPLES_LABEL,
                                                        kind=wx.ITEM_CHECK)
         main_frame.Bind(wx.EVT_MENU, self.OnToggleSamples, self.toggle_samples_menuitem)
-        self.menu.AppendSubMenu(view_menu, GUIText.VIEW_MENU)
 
+        #actions that can be run against module or submodules
+        #TODO need to put these somewhere or move to the GUI for the different modules
+        self.menu = wx.Menu()
+        
         #setup the default visable state
+        self.toggle_inspect_menuitem.Check(True)
+        self.OnToggleInspect(None)
         self.toggle_filters_menuitem.Check(True)
         self.OnToggleTokenFilters(None)
         self.toggle_samples_menuitem.Check(True)
@@ -84,6 +89,26 @@ class FamiliarizationNotebook(wx.aui.AuiNotebook):
             if index is not wx.NOT_FOUND:
                 self.SetPageText(index, value)
             self.sample_list_panel.OnSampleKeyChange(event)
+
+    def OnToggleInspect(self, event):
+        logger = logging.getLogger(__name__+".FamiliarizationNotebook.OnToggleInspect")
+        logger.info("Starting")
+        if self.toggle_inspect_menuitem.IsChecked():
+            index = self.GetPageIndex(self.inspect_submodule)
+            if index is wx.NOT_FOUND:
+                self.AddPage(self.inspect_submodule, GUIText.INSPECT_LABEL)
+                #if self.inspect_submodule.menu_menuitem is None:
+                #    self.inspect_submodule.menu_menuitem = self.menu.AppendSubMenu(self.inspect_submodule.menu, GUIText.FILTERS_LABEL)
+                #else:
+                #    self.menu.Append(self.inspect_submodule.menu_menuitem)
+        else:
+            index = self.GetPageIndex(self.inspect_submodule)
+            if index is not wx.NOT_FOUND:
+                self.RemovePage(index)
+                self.inspect_submodule.Hide()
+                #if self.inspect_submodule.menu_menuitem is not None:
+                #    self.menu.Remove(self.inspect_submodule.menu_menuitem)
+        logger.info("Finished")
 
     def OnToggleTokenFilters(self, event):
         logger = logging.getLogger(__name__+".FamiliarizationNotebook.OnToggleTokenFilters")
@@ -143,31 +168,12 @@ class FamiliarizationNotebook(wx.aui.AuiNotebook):
             
         logger.info("Finished")
 
-    def OnToggleNotes(self, event):
-        logger = logging.getLogger(__name__+".FamiliarizationNotebook.OnToggleNotes")
-        logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        if self.toggle_notes_menuitem.IsChecked():
-            index = main_frame.notes_notebook.GetPageIndex(self.notes_panel)
-            if index is wx.NOT_FOUND:
-                main_frame.notes_notebook.AddPage(self.notes_panel,
-                                                  GUIText.FAMILIARIZATION_LABEL)
-            main_frame.notes_frame.Show()
-        else:
-            self.notes_toggle_flag = False
-            index = main_frame.notes_notebook.GetPageIndex(self.notes_panel)
-            if index is not wx.NOT_FOUND:
-                main_frame.notes_notebook.RemovePage(index)
-                self.notes_panel.Hide()
-            if main_frame.notes_notebook.GetPageCount() == 0:
-                main_frame.notes_frame.Hide()
-        logger.info("Finished")
-
     def DatasetsUpdated(self):
         logger = logging.getLogger(__name__+".FamiliarizationNotebook.DatasetsUpdated")
         logger.info("Starting")
         #trigger refresh of submodules that depend on dataset
         self.Freeze()
+        self.inspect_submodule.DatasetsUpdated()
         self.filters_submodule.DatasetsUpdated()
         self.Thaw()
         logger.info("Finished")
@@ -216,10 +222,7 @@ class FamiliarizationNotebook(wx.aui.AuiNotebook):
             
         if 'notes' in saved_data:
             self.notes_panel.Load(saved_data['notes'])
-        if 'notes_toggle_flag' in saved_data:
-            self.toggle_notes_menuitem.Check(saved_data['notes_toggle_flag'])
-            self.OnToggleNotes(None)
-
+        
         if 'filters_submodule' in saved_data:
             self.filters_submodule.Load(saved_data['filters_submodule'])
         if 'filters_toggle_flag' in saved_data:
@@ -235,11 +238,13 @@ class FamiliarizationNotebook(wx.aui.AuiNotebook):
                     new_sample_panel = SamplesGUIs.RandomSamplePanel(self, sample, main_frame.datasets[sample.dataset_key], size=self.GetSize())
                 elif sample.sample_type == "LDA":
                     new_sample_panel = SamplesGUIs.TopicSamplePanel(self, sample, main_frame.datasets[sample.dataset_key], size=self.GetSize())
+                    new_sample_panel.Load({})
                 elif sample.sample_type == "Biterm":
                     new_sample_panel = SamplesGUIs.TopicSamplePanel(self, sample, main_frame.datasets[sample.dataset_key], size=self.GetSize())
+                    new_sample_panel.Load({})
                 if new_sample_panel is not None:
                     self.sample_panels[sample_key] = new_sample_panel
-                    if saved_data['notes_toggle_flag']:
+                    if saved_data['samples_toggle_flag']:
                         self.AddPage(new_sample_panel, str(sample_key))
                         new_sample_panel.menu_menuitem = self.menu.AppendSubMenu(new_sample_panel.menu, str(sample_key))
                     else:
@@ -264,6 +269,5 @@ class FamiliarizationNotebook(wx.aui.AuiNotebook):
         main_frame.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_CONFIG)
         saved_data['filters_toggle_flag'] = self.toggle_filters_menuitem.IsChecked()
         saved_data['samples_toggle_flag'] = self.toggle_samples_menuitem.IsChecked()
-        saved_data['notes_toggle_flag'] = self.toggle_notes_menuitem.IsChecked()
         logger.info("Finished")
         return saved_data

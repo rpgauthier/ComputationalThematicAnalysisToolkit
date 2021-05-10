@@ -4,6 +4,7 @@
 - python 3.9
 
 - pip install gensim
+- pip install bitermplus
 - pip install matplotlib
 - pip install nltk
 - pip install numpy

@@ -2,7 +2,8 @@ import logging
 import webbrowser
 
 import wx
-import wx.lib.agw.flatnotebook as FNB
+#import wx.lib.agw.flatnotebook as FNB
+import External.wxPython.flatnotebook_fix as FNB
 import wx.dataview as dv
 
 from Common import Constants
@@ -30,39 +31,15 @@ class CodingPanel(wx.Panel):
         #Module's notes
         main_frame = wx.GetApp().GetTopWindow()
         self.notes_panel = Notes.NotesPanel(main_frame.notes_notebook, self)
-        self.notes_panel.Hide()
+        main_frame.notes_notebook.AddPage(self.notes_panel, GUIText.CODING_LABEL)
     
         #Menu for Module
-        self.menu = wx.Menu()
-        self.toggle_notes_menuitem = self.menu.Append(wx.ID_ANY,
-                                                      GUIText.CODING_NOTES_LABEL,
-                                                      GUIText.SHOW_HIDE+GUIText.CODING_NOTES_LABEL,
-                                                      kind=wx.ITEM_CHECK)
-        main_frame.Bind(wx.EVT_MENU, self.OnToggleNotes, self.toggle_notes_menuitem)
-
+        self.view_menu = wx.Menu()
+        
         #self.menu.AppendSeparator()
         #view_menu = wx.Menu()
         #self.menu.AppendSubMenu(view_menu, GUIText.VIEW_MENU)
 
-        logger.info("Finished")
-
-    def OnToggleNotes(self, event):
-        logger = logging.getLogger(__name__+".CodingDatasetPanel.OnToggleNotes")
-        logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        if self.toggle_notes_menuitem.IsChecked():
-            index = main_frame.notes_notebook.GetPageIndex(self.notes_panel)
-            if index is wx.NOT_FOUND:
-                main_frame.notes_notebook.AddPage(self.notes_panel,
-                                                  GUIText.CODING_LABEL)
-            main_frame.notes_frame.Show()
-        else:
-            index = main_frame.notes_notebook.GetPageIndex(self.notes_panel)
-            if index is not wx.NOT_FOUND:
-                main_frame.notes_notebook.RemovePage(index)
-                self.notes_panel.Hide()
-            if main_frame.notes_notebook.GetPageCount() == 0:
-                main_frame.notes_frame.Hide()
         logger.info("Finished")
     
     def DatasetsUpdated(self):
@@ -112,9 +89,6 @@ class CodingPanel(wx.Panel):
         main_frame.PulseProgressDialog(GUIText.LOAD_BUSY_MSG_CONFIG)
         if 'notes' in saved_data:
             self.notes_panel.Load(saved_data['notes'])
-        if 'notes_toggle_flag' in saved_data:
-            self.toggle_notes_menuitem.Check(saved_data['notes_toggle_flag'])
-            self.OnToggleNotes(None)
         self.Thaw()
         logger.info("Finished")
 
@@ -128,7 +102,6 @@ class CodingPanel(wx.Panel):
         #trigger saves of submodules
         saved_data['notes'] = self.notes_panel.Save()
         #save configurations
-        saved_data['notes_toggle_flag'] = self.toggle_notes_menuitem.IsChecked()
         logger.info("Finished")
         return saved_data
 
@@ -167,7 +140,7 @@ class CodingDatasetPanel(wx.Panel):
             if isinstance(node, Datasets.Document):
                 self.Freeze()
                 if node.key not in self.document_windows:
-                    self.document_windows[node.key] = DatasetGUIs.DocumentPanel(self.splitter, node, size=(self.GetSize().GetWidth(), self.GetSize().GetHeight()/4*3))
+                    self.document_windows[node.key] = DatasetGUIs.DocumentPanel(self.splitter, node, size=(self.GetSize().GetWidth(), int(self.GetSize().GetHeight()/4*3)))
                 
                 bottom_window = self.splitter.GetWindow2()
                 bottom_window.Hide()

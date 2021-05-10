@@ -4,6 +4,13 @@ class Common:
     ERROR = "Error"
     INFORMATION = "Information"
 
+    ETHICS_CONFIRMATION = "We have considered the ethical implications\nof creating this dataset"
+    ETHICS_CONFIRMATION_TOOLTIP = "It is recommended that you consider guidelines from your research community, institution, and goverment."\
+                                  "\nYou also should consider the community and platform whose data you are collected by looking at terms of use, community rules, and any terms of use."\
+                                  "\nIf unsure it is recommended to either assume you do not have permission or contact liasons of different to discuss your project."
+    ETHICS_CONFIRMATION_MISSING_ERROR = "Before proceeding you need to take time to consider the ethical implications of creating this dataset.\n" + ETHICS_CONFIRMATION_TOOLTIP
+                                
+
     CONFIRM_REQUEST = "Please Confirm"
     INPUT_REQUEST = "Please provide Input"
 
@@ -449,7 +456,8 @@ class Familiarization(Main, Datasets):
                                      "\nPlease consider removing the group and preparing other datasets in previous module."
 
     DATASETS_LABEL = "Datasets"
-    FILTERS_LABEL = "Filters"
+    INSPECT_LABEL = "Inspect Data"
+    FILTERS_LABEL = "Filter Tokens"
     SAMPLES_LABEL = "Samples List"
 
     FILTERS_PREPARING_MSG = "Please wait while datasets are prepared for token filtering for field: "

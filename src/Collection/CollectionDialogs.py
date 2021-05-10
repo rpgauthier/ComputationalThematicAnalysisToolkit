@@ -79,6 +79,9 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         subreddit_sizer.Add(subreddit_label)
         subreddit_sizer.Add(self.subreddit_ctrl)
 
+        self.ethics_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION)
+        self.ethics_ctrl.SetToolTip(GUIText.ETHICS_CONFIRMATION_TOOLTIP)
+
         start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
         self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
                                                 style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
@@ -122,6 +125,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         retriever_sizer = wx.BoxSizer(wx.VERTICAL)
         retriever_sizer.Add(name_sizer)
         retriever_sizer.Add(subreddit_sizer)
+        retriever_sizer.Add(self.ethics_ctrl)
         retriever_sizer.Add(start_date_sizer)
         retriever_sizer.Add(end_date_sizer)
         retriever_sizer.Add(self.archived_radioctrl)
@@ -160,6 +164,12 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             wx.MessageBox(GUIText.REDDIT_SUBREDDIT_MISSING_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('No subreddit entered')
+            status_flag = False
+        ethics_flg = self.ethics_ctrl.IsChecked()
+        if not ethics_flg:
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
             status_flag = False
         start_date = str(self.start_date_ctrl.GetValue().Format("%Y-%m-%d"))
         end_date = str(self.end_date_ctrl.GetValue().Format("%Y-%m-%d"))
@@ -613,13 +623,6 @@ class DatasetDetailsDialog(wx.Dialog):
                 retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_ARCHIVED)
             self.sizer.Add(retrieveonline_label, 0, wx.ALL, 5)
 
-            #TODO
-            #if dataset.retrieval_details['pushshift_flg']:
-            #    updateonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_API)
-            #else:
-            #    updateonline_label = wx.StaticText(self, label=u'\u2610' + " " + GUIText.REDDIT_API)
-            #sizer.Add(updateonline_label, 0, wx.ALL, 5)
-
             document_num_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
             self.sizer.Add(document_num_label)
 
@@ -675,6 +678,12 @@ class DatasetDetailsDialog(wx.Dialog):
         logger = logging.getLogger(__name__+".DatasetDetailsDialog.OnChangeDatasetKey")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
+        if main_frame.threaded_inprogress_flag == True:
+            wx.MessageBox("A memory intensive operation is currently in progress."\
+                          "\n Please try current action again after this operation has completed",
+                          GUIText.WARNING, wx.OK | wx.ICON_WARNING)
+            return
+
         main_frame.CreateProgressDialog(GUIText.CHANGING_NAME_BUSY_LABEL,
                                         freeze=True)
         updated_flag = False
@@ -684,6 +693,7 @@ class DatasetDetailsDialog(wx.Dialog):
             node = self.dataset
             if isinstance(node, Datasets.Dataset) or isinstance(node, Datasets.GroupedDataset):
                 new_name = self.name_ctrl.GetValue()
+                
                 if node.name != new_name:
                     old_key = node.key
                     if isinstance(node, Datasets.GroupedDataset):
@@ -722,6 +732,7 @@ class DatasetDetailsDialog(wx.Dialog):
                 if node.language != Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]:
                     main_frame.PulseProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_PREPARING_MSG)
                     node.language = Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]
+                    main_frame.threaded_inprogress_flag = True
                     self.tokenization_thread = CollectionThreads.TokenizerThread(self, main_frame, [node])
                     tokenizing_flag = True
         finally:
@@ -739,6 +750,7 @@ class DatasetDetailsDialog(wx.Dialog):
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.DatasetsUpdated()
         main_frame.CloseProgressDialog(thaw=True)
+        main_frame.threaded_inprogress_flag = False
         self.Close()
         logger.info("Finished")
     

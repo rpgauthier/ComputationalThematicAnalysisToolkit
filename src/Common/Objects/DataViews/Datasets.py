@@ -1,3 +1,5 @@
+import logging
+
 import wx
 import wx.dataview as dv
 
@@ -511,7 +513,7 @@ class FieldsViewCtrl(dv.DataViewCtrl):
         wx.TheClipboard.Close()
 
 
-# This model acts as a bridge between the DocumentViewCtrl and the datasets to
+# This model acts as a bridge between the DocumentViewCtrl and a dataset's documents to
 # organizes it hierarchically.
 # This model provides these data columns:
 #     0. ID:   string
@@ -556,8 +558,9 @@ class DocumentViewModel(dv.PyDataViewModel):
         # item, so we'll use the genre objects as its children and they will
         # end up being the collection of visible roots in our tree.
         if not parent:
-            children.append(self.ObjectToItem(self.dataset_data))
+            self.GetChildren(self.ObjectToItem(self.dataset_data), children)
             return len(children)
+                
         # Otherwise we'll fetch the python object associated with the parent
         # item and make DV items for each of it's child objects.
         node = self.ItemToObject(parent)
@@ -630,18 +633,25 @@ class DocumentViewModel(dv.PyDataViewModel):
         if isinstance(node, Datasets.GroupedDataset):
             return dv.NullDataViewItem
         elif isinstance(node, Datasets.Dataset):
-            if isinstance(node.parent, Datasets.GroupedDataset):
-                return self.ObjectToItem(node.parent)
+            return dv.NullDataViewItem
+        elif isinstance(node, Datasets.GroupedDocuments):
+            if isinstance(node.parent, Datasets.Dataset):
+                if isinstance(node.parent.parent, Datasets.GroupedDataset):
+                    return self.ObjectToItem(node.parent)
+                else:
+                    return dv.NullDataViewItem
             else:
                 return dv.NullDataViewItem
-        elif isinstance(node, Datasets.GroupedDocuments):
-            return self.ObjectToItem(node.parent)
         elif isinstance(node, Datasets.Document):
-            if isinstance(node.parent.parent, Datasets.GroupedDataset):
-                for key in node.parent.parent.grouped_documents:
-                    if node.key in node.parent.parent.grouped_documents[key].documents:
-                        return self.ObjectToItem(node.parent.parent.grouped_documents[key])
-            return self.ObjectToItem(node.parent)
+            if isinstance(node.parent, Datasets.GroupedDocuments):
+                return self.ObjectToItem(node.parent)
+            elif isinstance(node.parent, Datasets.Dataset):
+                if isinstance(node.parent.parent, Datasets.GroupedDataset):
+                    for key in node.parent.parent.grouped_documents:
+                        if node.key in node.parent.parent.grouped_documents[key].documents:
+                            return self.ObjectToItem(node.parent.parent.grouped_documents[key])
+                else:
+                    return dv.NullDataViewItem
 
     def GetValue(self, item, col):
         ''''Fetch the data object for this item's column.'''
@@ -714,20 +724,20 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         self.AssociateModel(model)
         #model.DecRef()
 
-        editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
         text_renderer = dv.DataViewTextRenderer()
 
         column0 = dv.DataViewColumn(GUIText.ID, text_renderer, 0, align=wx.ALIGN_LEFT)
         self.AppendColumn(column0)
         column0.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
-        column1 = dv.DataViewColumn(GUIText.NOTES, editabletext_renderer, 1, align=wx.ALIGN_LEFT)
+        column1 = dv.DataViewColumn(GUIText.NOTES, text_renderer, 1, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
         column1.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
         self.UpdateColumns()
 
         self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
+        self.Bind(dv.EVT_DATAVIEW_ITEM_ACTIVATED, self.OnOpen)
         self.Bind(wx.EVT_MENU, self.OnCopyItems, id=wx.ID_COPY)
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
@@ -744,7 +754,7 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         #add data columns
         model.UpdateColumnNames()
         for i in range(2, len(model.column_names)):
-            name = model.column_names[i]
+            name = model.column_names[i][1][1]
             data_column = dv.DataViewColumn(str(name), text_renderer, i, align=wx.ALIGN_LEFT)
             self.AppendColumn(data_column)
             data_column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
@@ -756,14 +766,32 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         
         self.Refresh()
 
-
     def OnShowPopup(self, event):
+        logger = logging.getLogger(__name__+".DocumentViewCtrl.OnShowPopup")
+        logger.info("Starting")
         menu = wx.Menu()
         menu.Append(1, GUIText.COPY)
         menu.Bind(wx.EVT_MENU, self.OnCopyItems)
         self.PopupMenu(menu)
+        logger.info("Finished")
+
+    def OnOpen(self, event):
+        logger = logging.getLogger(__name__+".DocumentViewCtrl.OnOpen")
+        logger.info("Starting")
+        item = event.GetItem()
+        node = self.GetModel().ItemToObject(item)
+
+        if isinstance(node, Datasets.Document):
+            if event.GetColumn() == 0:
+                logger.info("Call to access url[%s]", node.url)
+                webbrowser.open_new_tab(node.url)
+            else:
+                DatasetsGUIs.DocumentDialog(self, node).Show()
+        logger.info("Finished")
 
     def OnCopyItems(self, event):
+        logger = logging.getLogger(__name__+".DocumentViewCtrl.OnCopyItems")
+        logger.info("Starting")
         selected_items = []
         model = self.GetModel()
         for item in self.GetSelections():
@@ -778,6 +806,7 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         wx.TheClipboard.Open()
         wx.TheClipboard.SetData(clipdata)
         wx.TheClipboard.Close()
+        logger.info("Finished")
 
 
 # This model acts as a bridge between the DocumentConnectionsViewCtrl and the documents.

@@ -363,9 +363,7 @@ class Field(GenericObject):
         return self._tokenization_choice
     @tokenization_choice.setter
     def tokenization_choice(self, value):
-        self.tokenization_choice = value
-        for field in self.chosen_fields:
-            self.chosen_fields[field].tokenization_choice = value
+        self._tokenization_choice = value
         self.last_changed_dt = datetime.now()
 
     @property

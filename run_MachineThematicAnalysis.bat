@@ -1,3 +1,3 @@
-cd Code
+cd src
 python Main.py
 pause

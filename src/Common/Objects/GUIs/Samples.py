@@ -10,6 +10,7 @@ import wx.aui
 import wx.dataview as dv
 
 from Common import Constants
+import Common.CustomEvents as CustomEvents
 from Common.GUIText import Samples as GUIText
 import Common.Objects.Samples as Samples
 import Common.Objects.DataViews.Samples as SamplesDataViews
@@ -103,7 +104,13 @@ class SampleListPanel(wx.Panel):
                                         warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
                                         freeze=False)
         main_frame.PulseProgressDialog(GUIText.GENERATING_DEFAULT_MSG)
-        if model_type == "Random":
+        if main_frame.threaded_inprogress_flag == True:
+            wx.MessageBox("A memory intensive operation is currently in progress."\
+                          "\n Please try current action again after this operation has completed",
+                          GUIText.WARNING, wx.OK | wx.ICON_WARNING)
+            main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
+            self.Thaw()
+        elif model_type == "Random":
             with RandomModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
                     model_parameters = create_dialog.model_parameters
@@ -127,6 +134,7 @@ class SampleListPanel(wx.Panel):
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
                 self.Thaw()
         elif model_type == "LDA":
+            main_frame.threaded_inprogress_flag = True
             with LDAModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
                     model_parameters = create_dialog.model_parameters
@@ -144,18 +152,19 @@ class SampleListPanel(wx.Panel):
                     main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG2)
                     model_parameters['workspace_path'] = main_frame.workspace_path
                     new_sample = Samples.LDASample(name, dataset_key, model_parameters)
-                    new_sample.GenerateStart(main_frame.pool)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG3)
                     new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
                     self.samples[new_sample.key] = new_sample
                     parent_notebook.sample_panels[new_sample.key] = new_sample_panel
                     parent_notebook.AddPage(new_sample_panel, new_sample.key, select=True)
                     new_sample_panel.menu_menuitem = parent_notebook.menu.AppendSubMenu(new_sample_panel.menu, new_sample.key)
-                    self.samples_model.ItemAdded(dv.NullDataViewItem, self.samples_model.ObjectToItem(self.samples[new_sample.key])) 
+                    self.samples_model.ItemAdded(dv.NullDataViewItem, self.samples_model.ObjectToItem(self.samples[new_sample.key]))
+                    new_sample.GenerateStart(new_sample_panel)
+                    main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG3)
                     main_frame.CloseProgressDialog(message=GUIText.GENERATED_LDA_COMPLETED_PART1,
                                                    thaw=False)
                 else:
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
+                    main_frame.threaded_inprogress_flag = False
                 self.Thaw()
         elif model_type == "Biterm":
             with BitermModelCreateDialog(self) as create_dialog:
@@ -175,14 +184,14 @@ class SampleListPanel(wx.Panel):
                     main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG2)
                     model_parameters['workspace_path'] = main_frame.workspace_path
                     new_sample = Samples.BitermSample(name, dataset_key, model_parameters)
-                    new_sample.GenerateStart(main_frame.pool)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG3)
                     new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
                     self.samples[new_sample.key] = new_sample
                     parent_notebook.sample_panels[new_sample.key] = new_sample_panel
                     parent_notebook.AddPage(new_sample_panel, new_sample.key, select=True)
                     new_sample_panel.menu_menuitem = parent_notebook.menu.AppendSubMenu(new_sample_panel.menu, new_sample.key)
                     self.samples_model.ItemAdded(dv.NullDataViewItem, self.samples_model.ObjectToItem(self.samples[new_sample.key])) 
+                    new_sample.GenerateStart(new_sample_panel)
+                    main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG3)
                     main_frame.CloseProgressDialog(message=GUIText.GENERATED_BITERM_COMPLETED_PART1,
                                                    thaw=False)
                 else:
@@ -637,50 +646,45 @@ class TopicSamplePanel(AbstractSamplePanel):
         self.parts_panel = PartPanel(self.horizontal_splitter, self.sample, self.dataset, self.sample.parts_dict)
 
         self.horizontal_splitter.SplitHorizontally(self.topiclist_panel, self.parts_panel)
-        self.horizontal_splitter.SetSashPosition(int(self.GetSize().GetHeight()/2))
+        self.horizontal_splitter.SetSashPosition(int(self.GetSize().GetHeight()/4))
         self.vertical_splitter.SplitVertically(self.horizontal_splitter, self.visualization_panel)
-        self.vertical_splitter.SetSashPosition(int(self.GetSize().GetWidth()/3))
+        self.vertical_splitter.SetSashPosition(int(self.GetSize().GetWidth()/3.5))
         
         self.vertical_splitter.Hide()
 
         #actions for different gui element's triggers
-        self.check_timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.OnCheck)
-        if self.sample.generated_flag:
-            self.DisplayModel()
-        else:
-            self.check_timer.Start(10000)
+        CustomEvents.MODELCREATED_EVT_RESULT(self, self.OnFinish)
+        #self.check_timer = wx.Timer(self)
+        #self.Bind(wx.EVT_TIMER, self.OnCheck)
+        #if self.sample.generated_flag:
+        #    self.DisplayModel()
+        #else:
+        #    self.check_timer.Start(10000)
+
         self.Layout()
 
         logger.info("Finished")
-
-    def OnCheck(self, event):
-        logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].OnCheck")
+    
+    def OnFinish(self, event):
+        logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].OnFinish")
         logger.info("Starting")
-        if not self.sample.generated_flag:
-            main_frame = wx.GetApp().GetTopWindow()
-            if self.sample.res == None:
-                self.sample.GenerateStart(main_frame.pool)
-            if self.sample.res.ready():
-                self.check_timer.Stop()
-                self.Freeze()
-                main_frame = wx.GetApp().GetTopWindow()
-                main_frame.CreateProgressDialog(GUIText.GENERATED_DEFAULT_LABEL,
-                                                warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
-                                                freeze=False)
-                try:
-                    main_frame.PulseProgressDialog(GUIText.GENERATED_LDA_SUBLABEL+str(self.sample.key))
-                    dataset = None
-                    if self.sample.dataset_key in main_frame.datasets:
-                        dataset = main_frame.datasets[self.sample.dataset_key]
-                    self.sample.GenerateFinish(dataset)
-                    self.DisplayModel()
-                    main_frame.DocumentsUpdated()
-                finally:
-                    main_frame.CloseProgressDialog(thaw=False)
-                    self.Thaw()
-        else:
-            self.check_timer.Stop()
+        self.Freeze()
+        main_frame = wx.GetApp().GetTopWindow()
+        main_frame.CreateProgressDialog(GUIText.GENERATED_DEFAULT_LABEL,
+                                        warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
+                                        freeze=False)
+        try:
+            main_frame.PulseProgressDialog(GUIText.GENERATED_LDA_SUBLABEL+str(self.sample.key))
+            dataset = None
+            if self.sample.dataset_key in main_frame.datasets:
+                dataset = main_frame.datasets[self.sample.dataset_key]
+            self.sample.GenerateFinish(event.data, dataset)
+            self.DisplayModel()
+            main_frame.DocumentsUpdated()
+        finally:
+            main_frame.threaded_inprogress_flag = False
+            main_frame.CloseProgressDialog(thaw=False)
+            self.Thaw()
         logger.info("Finished")
     
     def OnChangeTopicWordNum(self, event):
@@ -700,7 +704,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         old_mergedparts = []
         for item in selections:
             node = self.topiclist_panel.topic_list_model.ItemToObject(item)
-            if isinstance(node, Samples.LDATopicPart):
+            if isinstance(node, Samples.TopicPart):
                 nodes.append(node)
                 if isinstance(node.parent, Samples.TopicMergedPart):
                     if node.parent not in old_mergedparts:
@@ -731,14 +735,14 @@ class TopicSamplePanel(AbstractSamplePanel):
                 self.sample.document_topic_prob[row][key] = doc_topic_prob
             if len(old_mergedparts) > 0:
                 for node in old_mergedparts:
-                    for row_num in range(len(self.sample.document_topic_prob)):
+                    for document_key in self.sample.document_topic_prob:
                         to_remove_entry = None
-                        for entry in self.sample.document_topic_prob[row_num]:
-                            if entry[0] == node.key:
-                                    to_remove_entry = entry
-                                    break
+                        for entry in self.sample.document_topic_prob[document_key]:
+                            if entry_key == node.key:
+                                to_remove_entry = entry_key
+                                break
                         if to_remove_entry != None:
-                            self.sample.document_topic_prob[row_num].remove(to_remove_entry)
+                            del self.sample.document_topic_prob[document_key][to_remove_entry]
                     if len(node.parts_dict) == 0:
                         node.DestroyObject()
                     else:
@@ -764,7 +768,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         old_mergedparts = []
         for item in selections:
             node = self.topiclist_panel.topic_list_model.ItemToObject(item)
-            if isinstance(node, Samples.LDATopicPart):
+            if isinstance(node, Samples.TopicPart):
                 if isinstance(node.parent, Samples.TopicMergedPart):
                     nodes.append(node)
                     if node.parent not in old_mergedparts:
@@ -783,14 +787,14 @@ class TopicSamplePanel(AbstractSamplePanel):
                 new_parent.parts_dict[node.key] = node
             if len(old_mergedparts) > 0:
                 for node in old_mergedparts:
-                    for row_num in range(len(self.sample.document_topic_prob)):
+                    for document_key in self.sample.document_topic_prob:
                         to_remove_entry = None
-                        for entry in self.sample.document_topic_prob[row_num]:
-                            if entry[0] == node.key:
-                                    to_remove_entry = entry
-                                    break
+                        for entry_key in self.sample.document_topic_prob[document_key]:
+                            if entry_key == node.key:
+                                to_remove_entry = entry_key
+                                break
                         if to_remove_entry != None:
-                            self.sample.document_topic_prob[row_num].remove(to_remove_entry)
+                            del self.sample.document_topic_prob[document_key][to_remove_entry]
                     if len(node.parts_dict) == 0:
                         node.DestroyObject()
                     else:
@@ -909,6 +913,11 @@ class TopicSamplePanel(AbstractSamplePanel):
     def Load(self, saved_data):
         logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].Load")
         logger.info("Starting")
+        if self.sample.generated_flag == False:
+            main_frame.threaded_inprogress_flag = True
+            self.sample.GenerateStart(self)
+        else:
+            self.DisplayModel()
         logger.info("Finished")
 
     def Save(self):
@@ -1033,9 +1042,8 @@ class TopicListPanel(wx.Panel):
 
         topic_list_sizer.Add(topic_list_label_sizer, 0, wx.ALL, 5)
         
-        
-        self.topic_list_model = SamplesDataViews.LDATopicViewModel(sample.parts_dict.values())
-        self.topic_list_ctrl = SamplesDataViews.LDATopicViewCtrl(self, self.topic_list_model)
+        self.topic_list_model = SamplesDataViews.TopicViewModel(sample.parts_dict.values())
+        self.topic_list_ctrl = SamplesDataViews.TopicViewCtrl(self, self.topic_list_model)
         topic_list_sizer.Add(self.topic_list_ctrl, 1, wx.EXPAND)
 
         self.SetSizer(topic_list_sizer)
@@ -1147,8 +1155,8 @@ class LDAModelCreateDialog(wx.Dialog):
             self.model_parameters['dataset_key'] = self.usable_datasets[dataset_id]
             self.model_parameters['num_topics'] = self.num_topics_ctrl.GetValue()
             self.model_parameters['num_passes'] = self.num_passes_ctrl.GetValue()
-            self.model_parameters['alpha'] = 'auto'
-            self.model_parameters['eta'] = 'auto'
+            self.model_parameters['alpha'] = None
+            self.model_parameters['eta'] = None
         logger.info("Finished")
         if status_flag:
             self.EndModal(wx.ID_OK)
@@ -1171,13 +1179,13 @@ class LDAModelDetailsDialog(wx.Dialog):
         name_sizer.Add(self.name_ctrl)
         sizer.Add(name_sizer)
 
-        dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+ self.sample.dataset_key)
+        dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+ str(self.sample.dataset_key))
         sizer.Add(dataset_label)
 
-        num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+" "+self.sample.num_topics)
+        num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+" "+str(self.sample.num_topics))
         sizer.Add(num_topics_label)
 
-        num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+self.sample.num_passes)
+        num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+str(self.sample.num_passes))
         sizer.Add(num_passes_label)
 
         used_documents_label = wx.StaticText(self, label="Number of documents used during modelling: "+str(len(self.sample.tokensets)))
