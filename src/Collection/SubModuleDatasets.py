@@ -3,7 +3,6 @@ import logging
 from datetime import datetime
 
 import wx
-#import wx.lib.agw.flatnotebook as FNB
 import External.wxPython.flatnotebook_fix as FNB
 import wx.dataview as dv
 import wx.lib.scrolledpanel
@@ -67,18 +66,18 @@ class DatasetsPanel(wx.Panel):
         self.datasets_ctrl.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
         datasetslist_sizer.Add(self.datasets_ctrl, 1, wx.EXPAND, 5)
         self.datasetslist_panel.SetSizer(datasetslist_sizer)
+        self.datasetslist_panel.Hide()
 
-        #TODO move off to flat notebook with mutliple datasets for multiple dataset but no list scenario
         self.datasetdetails_panel = DatasetDetailsPanel(self.splitter, None)
 
         self.datasetsdata_notebook = DatasetsGUIs.DataNotebook(self.splitter)
         self.datasetsdata_notebook.Bind(wx.aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.OnChangeDatasetDataTab)
 
         self.splitter.SetMinimumPaneSize(20)
-        self.splitter.SplitHorizontally(self.datasetslist_panel, self.datasetsdata_notebook)
-        self.splitter.SetSashPosition(int(self.GetSize().GetHeight()/4))
-        self.datasetslist_panel.Hide()
-
+        self.splitter.SplitHorizontally(self.datasetdetails_panel, self.datasetsdata_notebook)
+        sash_height = int(self.datasetdetails_panel.GetBestSize().GetHeight()) + 5
+        self.splitter.SetSashPosition(sash_height)
+        
         sizer.Add(self.splitter, proportion=1, flag=wx.EXPAND, border=5)
 
         self.SetSizer(sizer)
@@ -384,6 +383,7 @@ class DatasetsPanel(wx.Panel):
         self.datasets_model.Cleared()
         self.datasetsdata_notebook.DatasetsUpdated()
         self.OnChangeDatasetDataTab(None)
+
         logger.info("Finished")
     
     def DocumentsUpdated(self):
@@ -406,6 +406,7 @@ class DatasetsPanel(wx.Panel):
         logger.info("Finished")
         return saved_data
 
+#TODO move creation toolbar up to Datasets Panel and the details over to Common.GUIs.Datasets broken up by type
 class DatasetDetailsPanel(wx.Panel):
     def __init__(self, parent, dataset, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".DatasetDetailsPanel.__init__")
@@ -515,12 +516,18 @@ class DatasetDetailsPanel(wx.Panel):
         logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnChangeDatasetLanguage")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
+        if main_frame.threaded_inprogress_flag == True:
+            wx.MessageBox("A memory intensive operation is currently in progress."\
+                          "\n Please try current action again after this operation has completed",
+                          GUIText.WARNING, wx.OK | wx.ICON_WARNING)
+            return
         node = self.dataset
         language_index = self.language_ctrl.GetSelection()
         if node.language != Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]:
             main_frame.CreateProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_LABEL, freeze=True)
             main_frame.PulseProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_PREPARING_MSG)
             node.language = Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]
+            main_frame.threaded_inprogress_flag = True
             self.tokenization_thread = CollectionThreads.TokenizerThread(self, main_frame, [node])
         logger.info("Finished")
     
@@ -531,6 +538,7 @@ class DatasetDetailsPanel(wx.Panel):
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.DatasetsUpdated()
         main_frame.CloseProgressDialog(thaw=True)
+        main_frame.threaded_inprogress_flag = False
         logger.info("Finished")
 
     def ChangeDataset(self, dataset):
@@ -558,6 +566,9 @@ class DatasetDetailsPanel(wx.Panel):
             toolbar.Realize()
             self.sizer.Add(toolbar, proportion=0, flag=wx.ALL, border=5)
 
+            details_sizer = wx.GridSizer(2, gap=wx.Size(0,0))
+            self.sizer.Add(details_sizer)
+
             name_label = wx.StaticText(self, label=GUIText.NAME + ":")
             self.name_ctrl = wx.TextCtrl(self, value=self.dataset.name, style=wx.TE_PROCESS_ENTER)
             self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
@@ -565,11 +576,11 @@ class DatasetDetailsPanel(wx.Panel):
             name_sizer = wx.BoxSizer(wx.HORIZONTAL)
             name_sizer.Add(name_label)
             name_sizer.Add(self.name_ctrl)
-            self.sizer.Add(name_sizer)
+            details_sizer.Add(name_sizer)
 
             created_date_label = wx.StaticText(self, label=GUIText.CREATED_ON + ": "
                                                +self.dataset.created_dt.strftime("%Y-%m-%d, %H:%M:%S"))
-            self.sizer.Add(created_date_label)
+            details_sizer.Add(created_date_label)
 
             selected_lang = Constants.AVALIABLE_DATASET_LANGUAGES1.index(dataset.language)
             language_label = wx.StaticText(self, label=GUIText.LANGUAGE + ": ")
@@ -578,16 +589,24 @@ class DatasetDetailsPanel(wx.Panel):
             language_sizer = wx.BoxSizer(wx.HORIZONTAL)
             language_sizer.Add(language_label)
             language_sizer.Add(self.language_ctrl)
-            self.sizer.Add(language_sizer, 0, wx.ALL, 5)
+            details_sizer.Add(language_sizer, 0, wx.ALL, 5)
             self.language_ctrl.Bind(wx.EVT_CHOICE, self.OnChangeDatasetLanguage)
 
         elif isinstance(dataset, Datasets.Dataset):
-            toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-            remove_tool = toolbar.AddTool(wx.ID_ANY, label=GUIText.DELETE, bitmap=wx.Bitmap(1, 1),
-                                        shortHelp=GUIText.DATASETS_DELETE_TOOLTIP)
-            toolbar.Bind(wx.EVT_MENU, self.OnDeleteDataset, remove_tool)
-            toolbar.Realize()
-            self.sizer.Add(toolbar, proportion=0, flag=wx.ALL, border=5)
+            #removign toolbar for now as delete is covered by new in the start menu 
+            #and during single dataset operations if a delete is applied all data is lost anyways
+            #toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
+            #remove_tool = toolbar.AddTool(wx.ID_ANY, label=GUIText.DELETE, bitmap=wx.Bitmap(1, 1),
+            #                            shortHelp=GUIText.DATASETS_DELETE_TOOLTIP)
+            #toolbar.Bind(wx.EVT_MENU, self.OnDeleteDataset, remove_tool)
+            #toolbar.Realize()
+            #self.sizer.Add(toolbar, proportion=0, flag=wx.ALL, border=5)
+
+            #details_sizer = wx.GridSizer(2, gap=wx.Size(0,0))
+            details_sizer1 = wx.BoxSizer(wx.HORIZONTAL)
+            details_sizer2 = wx.BoxSizer(wx.HORIZONTAL)
+            self.sizer.Add(details_sizer1)
+            self.sizer.Add(details_sizer2)
 
             name_sizer = wx.BoxSizer(wx.HORIZONTAL)
             name_label = wx.StaticText(self, label=GUIText.NAME + ":")
@@ -596,11 +615,8 @@ class DatasetDetailsPanel(wx.Panel):
             self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
             self.name_ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnChangeDatasetKey)
             name_sizer.Add(self.name_ctrl)
-            self.sizer.Add(name_sizer, 0, wx.ALL, 5)
-
-            retrieved_date_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": "
-                                                +dataset.created_dt.strftime("%Y-%m-%d, %H:%M:%S"))
-            self.sizer.Add(retrieved_date_label, 0, wx.ALL, 5)
+            details_sizer1.Add(name_sizer, 0, wx.ALL, 5)
+            details_sizer1.AddSpacer(10)
 
             if dataset.parent is None:
                 selected_lang = Constants.AVALIABLE_DATASET_LANGUAGES1.index(dataset.language)
@@ -610,25 +626,35 @@ class DatasetDetailsPanel(wx.Panel):
                 language_sizer = wx.BoxSizer(wx.HORIZONTAL)
                 language_sizer.Add(language_label)
                 language_sizer.Add(self.language_ctrl)
-                self.sizer.Add(language_sizer, 0, wx.ALL, 5)
+                details_sizer1.Add(language_sizer, 0, wx.ALL, 5)
+                details_sizer1.AddSpacer(10)
                 self.language_ctrl.Bind(wx.EVT_CHOICE, self.OnChangeDatasetLanguage)
             else:
                 selected_lang = Constants.AVALIABLE_DATASET_LANGUAGES1.index(dataset.language)
                 language_label = wx.StaticText(self, label=GUIText.LANGUAGE + ": " + Constants.AVALIABLE_DATASET_LANGUAGES2[selected_lang])
-                self.sizer.Add(language_label, 0, wx.ALL, 5)
+                details_sizer1.Add(language_label, 0, wx.ALL, 5)
+                details_sizer1.AddSpacer(10)
+
+            retrieved_date_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": "
+                                                +dataset.created_dt.strftime("%Y-%m-%d, %H:%M:%S"))
+            details_sizer2.Add(retrieved_date_label, 0, wx.ALL, 5)
+            details_sizer2.AddSpacer(10)
 
             if dataset.dataset_source == 'Reddit':
                 subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT + ": "
                                                 +dataset.retrieval_details['subreddit'])
-                self.sizer.Add(subreddit_label, 0, wx.ALL, 5)
+                details_sizer2.Insert(0, subreddit_label, 0, wx.ALL, 5)
+                details_sizer2.InsertSpacer(1, 10)
                 
                 start_date_label = wx.StaticText(self, label=GUIText.START_DATE + ": "
                                                 +dataset.retrieval_details['start_date'])
-                self.sizer.Add(start_date_label, 0, wx.ALL, 5)
+                details_sizer2.Add(start_date_label, 0, wx.ALL, 5)
+                details_sizer2.AddSpacer(10)
 
                 end_date_label = wx.StaticText(self, label=GUIText.END_DATE + ": "
                                             +dataset.retrieval_details['end_date'])
-                self.sizer.Add(end_date_label, 0, wx.ALL, 5)
+                details_sizer2.Add(end_date_label, 0, wx.ALL, 5)
+                details_sizer2.AddSpacer(10)
 
                 if dataset.retrieval_details['pushshift_flg']:
                     if dataset.retrieval_details['replace_archive_flg']:
@@ -643,10 +669,11 @@ class DatasetDetailsPanel(wx.Panel):
                             retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_UPDATE_PUSHSHIFT)
                 else:
                     retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_ARCHIVED)
-                self.sizer.Add(retrieveonline_label, 0, wx.ALL, 5)
+                details_sizer2.Add(retrieveonline_label, 0, wx.ALL, 5)
+                details_sizer2.AddSpacer(10)
 
             document_num_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
-            self.sizer.Add(document_num_label, 0, wx.ALL, 5)
+            details_sizer2.Add(document_num_label, 0, wx.ALL, 5)
 
         #TODO other dataset sources
         self.Layout()

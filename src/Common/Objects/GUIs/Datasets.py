@@ -135,7 +135,8 @@ class DataGridTable(wx.grid.GridTableBase):
         if self.col_names[col][0] == "":
             name = str(self.col_names[col][1])
         else:
-            name = str(self.col_names[col][0])+"("+str(self.col_names[col][1])+")"
+            name = self.col_names[col][1][1]
+        #    name = str(self.col_names[col][0])+"("+str(self.col_names[col][1])+")"
         return name
     
     def GetColTupleValue(self, col):

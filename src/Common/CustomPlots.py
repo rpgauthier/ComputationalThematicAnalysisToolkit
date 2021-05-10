@@ -282,7 +282,7 @@ class ChordPlotPanel(wx.Panel):
         self.td_dist = None
         self.outer_circle = None
 
-        self.figure = mpl.figure.Figure(tight_layout=True)
+        self.figure = mpl.figure.Figure()
         axis = self.figure.add_subplot(111, frameon=False)
         #self.figure.add_axes([0,0,1,1])
         self.canvas = FigureCanvas(self, -1, self.figure)
@@ -335,12 +335,13 @@ class ChordPlotPanel(wx.Panel):
         axis = self.figure.add_subplot(111)
         chord_diagram(self.td_dist, outer_circle=self.outer_circle, names=self.part_names, chordwidth=0.1,
                       sort="size", rotate_names=True, ax=axis, name_images=parent_wordcloudimages)
-        
+        self.canvas.draw()
+
+        axis.set_xlim([1.2, -1.2])
+        axis.set_ylim([1.2, -1.2])
+        axis.figure.canvas.draw_idle()
         #bugged in that all mouse wheel scrolls count as down on windows
         #simp_zoom.zoom_factory(axis, base_scale=1.5)
-
-        self.canvas.draw()
-        
         
         logger.info("Finished")
 

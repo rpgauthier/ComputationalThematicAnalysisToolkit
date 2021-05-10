@@ -510,13 +510,13 @@ def chord_diagram(mat, outer_circle=None, names=None, order=None, width=0.1, pad
                     rotate = -90
 
                 if 90 < angle < 270:
-                    pp["ha"] = "right"
-                else:
                     pp["ha"] = "left"
+                else:
+                    pp["ha"] = "right"
             elif r:
-                pp["va"] = "top"
-            else:
                 pp["va"] = "bottom"
+            else:
+                pp["va"] = "top"
 
             outer_names[i] = ax.text(pos[0], pos[1], name, rotation=pos[2] + rotate, **pp)
 

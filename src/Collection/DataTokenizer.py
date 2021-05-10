@@ -17,6 +17,7 @@ def TokenizeDatasetObjects(dataset_objects, notify_window, main_frame):
     logger.info("Starting")
     fields = {}
     results = {}
+    main_frame = main_frame
 
     def FindDatasetIdFields(dataset):
         if dataset.grouping_field is not None:

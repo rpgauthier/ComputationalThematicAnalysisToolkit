@@ -238,8 +238,10 @@ class FamiliarizationNotebook(wx.aui.AuiNotebook):
                     new_sample_panel = SamplesGUIs.RandomSamplePanel(self, sample, main_frame.datasets[sample.dataset_key], size=self.GetSize())
                 elif sample.sample_type == "LDA":
                     new_sample_panel = SamplesGUIs.TopicSamplePanel(self, sample, main_frame.datasets[sample.dataset_key], size=self.GetSize())
+                    new_sample_panel.Load({})
                 elif sample.sample_type == "Biterm":
                     new_sample_panel = SamplesGUIs.TopicSamplePanel(self, sample, main_frame.datasets[sample.dataset_key], size=self.GetSize())
+                    new_sample_panel.Load({})
                 if new_sample_panel is not None:
                     self.sample_panels[sample_key] = new_sample_panel
                     if saved_data['samples_toggle_flag']:

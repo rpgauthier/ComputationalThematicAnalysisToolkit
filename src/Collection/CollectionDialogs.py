@@ -518,6 +518,12 @@ class DatasetDetailsDialog(wx.Dialog):
         logger = logging.getLogger(__name__+".DatasetDetailsDialog.OnChangeDatasetKey")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
+        if main_frame.threaded_inprogress_flag == True:
+            wx.MessageBox("A memory intensive operation is currently in progress."\
+                          "\n Please try current action again after this operation has completed",
+                          GUIText.WARNING, wx.OK | wx.ICON_WARNING)
+            return
+
         main_frame.CreateProgressDialog(GUIText.CHANGING_NAME_BUSY_LABEL,
                                         freeze=True)
         updated_flag = False
@@ -527,6 +533,7 @@ class DatasetDetailsDialog(wx.Dialog):
             node = self.dataset
             if isinstance(node, Datasets.Dataset) or isinstance(node, Datasets.GroupedDataset):
                 new_name = self.name_ctrl.GetValue()
+                
                 if node.name != new_name:
                     old_key = node.key
                     if isinstance(node, Datasets.GroupedDataset):
@@ -565,6 +572,7 @@ class DatasetDetailsDialog(wx.Dialog):
                 if node.language != Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]:
                     main_frame.PulseProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_PREPARING_MSG)
                     node.language = Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]
+                    main_frame.threaded_inprogress_flag = True
                     self.tokenization_thread = CollectionThreads.TokenizerThread(self, main_frame, [node])
                     tokenizing_flag = True
         finally:
@@ -582,6 +590,7 @@ class DatasetDetailsDialog(wx.Dialog):
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.DatasetsUpdated()
         main_frame.CloseProgressDialog(thaw=True)
+        main_frame.threaded_inprogress_flag = False
         self.Close()
         logger.info("Finished")
     

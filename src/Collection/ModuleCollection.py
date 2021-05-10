@@ -67,9 +67,13 @@ class CollectionPanel(wx.Panel):
         if self.toggle_datasets_menuitem.IsChecked():
             self.datasets_submodule.datasetslist_panel.Show()
             self.datasets_submodule.splitter.ReplaceWindow(old_window, self.datasets_submodule.datasetslist_panel)
+            sash_height = int(self.GetSize().GetHeight()/6)
+            self.datasets_submodule.splitter.SetSashPosition(sash_height)
         else:
             self.datasets_submodule.datasetdetails_panel.Show()
             self.datasets_submodule.splitter.ReplaceWindow(old_window, self.datasets_submodule.datasetdetails_panel)
+            sash_height = int(self.datasets_submodule.datasetdetails_panel.GetBestSize().GetHeight()) + 5
+            self.datasets_submodule.splitter.SetSashPosition(sash_height)
         self.Layout()
         logger.info("Finished")
     
@@ -79,7 +83,12 @@ class CollectionPanel(wx.Panel):
         if self.toggle_datasetsdata_menuitem.IsChecked():
             self.datasets_submodule.datasetsdata_notebook.Show()
             self.datasets_submodule.splitter.SplitHorizontally(self.datasets_submodule.splitter.GetWindow1(), self.datasets_submodule.datasetsdata_notebook)
-            self.datasets_submodule.splitter.SetSashPosition(int(self.GetSize().GetHeight()/4))
+            
+            if self.toggle_datasets_menuitem.IsChecked():
+                sash_height = int(self.GetSize().GetHeight()/6)
+            else:
+                sash_height = int(self.datasets_submodule.datasetdetails_panel.GetBestSize().GetHeight()) + 5
+            self.datasets_submodule.splitter.SetSashPosition(sash_height)
         else:
             self.datasets_submodule.datasetsdata_notebook.Hide()
             self.datasets_submodule.splitter.Unsplit(self.datasets_submodule.datasetsdata_notebook)

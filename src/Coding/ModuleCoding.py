@@ -140,7 +140,7 @@ class CodingDatasetPanel(wx.Panel):
             if isinstance(node, Datasets.Document):
                 self.Freeze()
                 if node.key not in self.document_windows:
-                    self.document_windows[node.key] = DatasetGUIs.DocumentPanel(self.splitter, node, size=(self.GetSize().GetWidth(), self.GetSize().GetHeight()/4*3))
+                    self.document_windows[node.key] = DatasetGUIs.DocumentPanel(self.splitter, node, size=(self.GetSize().GetWidth(), int(self.GetSize().GetHeight()/4*3)))
                 
                 bottom_window = self.splitter.GetWindow2()
                 bottom_window.Hide()

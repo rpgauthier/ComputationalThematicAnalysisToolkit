@@ -2,9 +2,11 @@ import logging
 import random
 import os
 import bz2
+import _pickle as cPickle
 from datetime import datetime
 from shutil import copytree
 from collections import OrderedDict
+from multiprocessing import cpu_count
 
 #LDA libraries
 import gensim
@@ -12,10 +14,10 @@ import gensim
 import numpy as np
 import bitermplus as btm
 import pandas as pd
-import _pickle as cPickle
 
 import Common.Objects.Datasets as Datasets
 from Common.Objects.Generic import GenericObject
+import Common.Objects.Threads.Samples as SamplesThreads
 
 class Sample(GenericObject):
     '''Instances of Sample objects'''
@@ -225,6 +227,14 @@ class TopicSample(Sample):
     def topic_documents_prob(self, value):
         self._topic_documents_prob = value
         self.last_changed_dt = datetime.now()
+    
+    @property
+    def workspace_path(self):
+        return self._workspace_path
+    @workspace_path.setter
+    def workspace_path(self, value):
+        self._workspace_path = value
+        self.last_changed_dt = datetime.now()
 
     @property
     def num_topics(self):
@@ -233,6 +243,10 @@ class TopicSample(Sample):
     @property
     def tokensets(self):
         return self._tokensets
+    
+    @property
+    def filedir(self):
+        return self._filedir
 
     def ApplyDocumentCutoff(self):
         logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].ApplyDocumentCutoff")
@@ -294,16 +308,17 @@ class LDASample(TopicSample):
         self._alpha = model_parameters['alpha']
         self._eta = model_parameters['eta']
 
-        #these need to be removed before pickling during saving due to threading and use of pool
+        #these need to be removed before pickling during saving due to threading and use of multiple processes
         #see __getstate__ for removal and Load and Reload for readdition
-        self.res = None
+        self.training_thread = None
         self.dictionary = None
         self.corpus = None
         logger.info("Finished")
 
     def __getstate__(self):
         state = dict(self.__dict__)
-        state['res'] = None
+        #state['res'] = None
+        state['training_thread'] = None
         state['dictionary'] = None
         state['corpus'] = None
         state['model'] = None
@@ -323,29 +338,32 @@ class LDASample(TopicSample):
     def eta(self):
         return self._eta
 
-    def GenerateStart(self, pool):
+    def GenerateStart(self, notify_window):
         logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].GenerateStart")
         logger.info("Starting")
         self.start_dt = datetime.now()
-        self.res = pool.apply_async(LDAPoolFunction, (self.tokensets,
-                                                      self.num_topics,
-                                                      self.num_passes,
-                                                      self.alpha,
-                                                      self.eta,
-                                                      self._workspace_path,
-                                                      self._filedir))
+        self.training_thread = SamplesThreads.LDATrainingThread(notify_window,
+                                                                self.key,
+                                                                self.tokensets,
+                                                                self.num_topics,
+                                                                self._num_passes,
+                                                                self.alpha,
+                                                                self.eta,
+                                                                self.workspace_path,
+                                                                self.filedir)
         logger.info("Finished")
-
-    def GenerateFinish(self, dataset):
+    
+    def GenerateFinish(self, result, dataset):
         logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].GenerateFinish")
         logger.info("Starting")
         self.generated_flag = True
-        self.dictionary = gensim.corpora.Dictionary.load(self._workspace_path+self._filedir+'/ldadictionary.dict')
-        self.corpus = gensim.corpora.MmCorpus(self._workspace_path+self._filedir+'/ldacorpus.mm')
-        self.model = gensim.models.ldamodel.LdaModel.load(self._workspace_path+self._filedir+'/ldamodel.lda')
-        topic_document_prob, document_topic_prob = self.res.get()
-        self.topic_documents_prob = topic_document_prob
-        self.document_topic_prob = document_topic_prob
+        self.training_thread = None
+        self.dictionary = gensim.corpora.Dictionary.load(self.workspace_path+self._filedir+'/ldadictionary.dict')
+        self.corpus = gensim.corpora.MmCorpus(self.workspace_path+self._filedir+'/ldacorpus.mm')
+        self.model = gensim.models.ldamodel.LdaModel.load(self.workspace_path+self._filedir+'/ldamodel.lda')
+
+        self.topic_documents_prob = result['topic_document_prob']
+        self.document_topic_prob = result['document_topic_prob']
 
         for topic_num in self.topic_documents_prob:
             self.parts_dict[topic_num] = LDATopicPart(self, topic_num, dataset)
@@ -356,6 +374,7 @@ class LDASample(TopicSample):
         
         self.end_dt = datetime.now()
         logger.info("Finished")
+
 
     def Load(self, workspace_path):
         logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].Load")
@@ -376,16 +395,16 @@ class BitermSample(TopicSample):
         #fixed properties that may be externally accessed but do not change after being initialized
         self._num_iterations = model_parameters['num_iterations']
 
-        #these need to be removed before pickling during saving due to threading and use of pool
+        #these need to be removed before pickling during saving due to threading and use of multiple processes
         #see __getstate__ for removal and Load and Reload for readdition
-        self.res = None
+        self.training_thread = None
         self.transformed_texts = None
         self.vocab = None
         logger.info("Finished")
 
     def __getstate__(self):
         state = dict(self.__dict__)
-        state['res'] = None
+        state['training_thread'] = None
         state['transformed_texts'] = None
         state['vocab'] = None
         state['model'] = None
@@ -396,32 +415,34 @@ class BitermSample(TopicSample):
     @property
     def num_iterations(self):
         return self._num_iterations
-
-    def GenerateStart(self, pool):
+    
+    def GenerateStart(self, notify_window):
         logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].GenerateStart")
         logger.info("Starting")
         self.start_dt = datetime.now()
-        self.res = pool.apply_async(BitermPoolFunction, (self.tokensets,
-                                                         self.num_topics,
-                                                         self.num_iterations,
-                                                         self._workspace_path,
-                                                         self._filedir))
+        self.training_thread = SamplesThreads.BitermTrainingThread(notify_window,
+                                                                self.key,
+                                                                self.tokensets,
+                                                                self.num_topics,
+                                                                self.num_iterations,
+                                                                self.workspace_path,
+                                                                self.filedir)
         logger.info("Finished")
-
-    def GenerateFinish(self, dataset):
+    
+    def GenerateFinish(self, result, dataset):
         logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].GenerateFinish")
         logger.info("Starting")
         self.generated_flag = True
-        with bz2.BZ2File(self._workspace_path+self._filedir+'/transformed_texts.pk', 'rb') as infile:
+        self.training_thread = None
+        with bz2.BZ2File(self.workspace_path+self.filedir+'/transformed_texts.pk', 'rb') as infile:
             self.transformed_texts = cPickle.load(infile)
-        with bz2.BZ2File(self._workspace_path+self._filedir+'/vocab.pk', 'rb') as infile:
+        with bz2.BZ2File(self.workspace_path+self.filedir+'/vocab.pk', 'rb') as infile:
             self.vocab = cPickle.load(infile)
-        with bz2.BZ2File(self._workspace_path+self._filedir+'/btm.pk', 'rb') as infile:
+        with bz2.BZ2File(self.workspace_path+self.filedir+'/btm.pk', 'rb') as infile:
             self.model = cPickle.load(infile)
-        
-        topic_document_prob, document_topic_prob = self.res.get()
-        self.topic_documents_prob = topic_document_prob
-        self.document_topic_prob = document_topic_prob
+
+        self.topic_documents_prob = result['topic_document_prob']
+        self.document_topic_prob = result['document_topic_prob']
 
         for topic_num in self.topic_documents_prob:
             self.parts_dict[topic_num] = BitermTopicPart(self, topic_num, dataset)
@@ -756,117 +777,3 @@ class CustomPart(Part):
         self.documents.remove(key)
         self.document_num =- 1
         self.last_changed_dt = datetime.now()
-
-#training code to be run asyncronously
-def LDAPoolFunction(tokensets, num_topics, num_passes, alpha, eta, workspace_path, filedir):
-    '''Generates an LDA model'''
-    logger = logging.getLogger(__name__+"LDAPoolFunction["+str(num_topics)+", "+str(num_passes)+", "+str(alpha)+", "+str(eta)+", "+str(filedir)+"].__init__")
-    logger.info("Starting")
-    logger.info("Starting generation of model")
-    tokensets_keys = list(tokensets.keys())
-    tokensets_values = list(tokensets.values())
-    dictionary = gensim.corpora.Dictionary(tokensets_values)
-    dictionary.compactify()
-    if not os.path.exists(workspace_path+"/LDA"):
-        os.makedirs(workspace_path+"/LDA")
-    if not os.path.exists(workspace_path+filedir):
-        os.makedirs(workspace_path+filedir)
-    dictionary.save(workspace_path+filedir+'/ldadictionary.dict')
-    logger.info("Dictionary created")
-    raw_corpus = [dictionary.doc2bow(tokenset) for tokenset in tokensets_values]
-    gensim.corpora.MmCorpus.serialize(workspace_path+filedir+'/ldacorpus.mm', raw_corpus)
-    corpus = gensim.corpora.MmCorpus(workspace_path+filedir+'/ldacorpus.mm')
-    logger.info("Corpus created")
-    model = gensim.models.ldamodel.LdaModel(corpus=corpus,
-                                            id2word=dictionary,
-                                            num_topics=num_topics,
-                                            passes=num_passes,
-                                            alpha='auto',
-                                            eta='auto')
-    model.save(workspace_path+filedir+'/ldamodel.lda', 'wb')
-    logger.info("Completed generation of model")
-    # Init output
-    # capture all document topic probabilities both by document and by topic
-    document_topic_prob = {}
-    topic_document_prob_df = pd.DataFrame()
-    model_document_topics = model.get_document_topics(corpus, minimum_probability=0.0, minimum_phi_value=0)
-    for doc_num in range(len(corpus)):
-        doc_row = model_document_topics[doc_num]
-        doc_topic_prob_row = {}
-        for i, prob in doc_row:
-            doc_topic_prob_row[i+1] = prob
-            topic_document_prob_df = topic_document_prob_df.append(pd.Series([tokensets_keys[doc_num],
-                                                                              int(i+1),
-                                                                              round(prob, 4)]),
-                                                                   ignore_index=True)
-        document_topic_prob[tokensets_keys[doc_num]] = doc_topic_prob_row
-    topic_document_prob_df.columns = ['tokenset_key', 'topic_id', 'prob']
-    topic_document_prob = {}
-    for i in range(num_topics):
-        tmp_df = topic_document_prob_df.loc[topic_document_prob_df['topic_id'] == i+1].sort_values(by='prob', ascending=False)[['tokenset_key', 'prob']]
-        topic_document_prob[i+1] = list(tmp_df.to_records(index=False))  
-
-    logger.info("Finished")
-    return topic_document_prob, document_topic_prob
-
-def BitermPoolFunction(tokensets, num_topics, num_iterations, workspace_path, filedir):
-    '''Generates an Biterm model'''
-    logger = logging.getLogger(__name__+"BitermPoolFunction["+str(num_topics)+", "+str(num_iterations)+", "+str(filedir)+"].__init__")
-    logger.info("Starting")
-    
-    if not os.path.exists(workspace_path+"/Biterm"):
-        os.makedirs(workspace_path+"/Biterm")
-    if not os.path.exists(workspace_path+filedir):
-        os.makedirs(workspace_path+filedir)
-
-    text_keys = []
-    texts = []
-    for key in tokensets:
-        text_keys.append(key)
-        text = ' '.join(tokensets[key])
-        texts.append(text)
-
-    logger.info("Starting generation of biterm model")
-    X, vocab, vocab_dict = btm.get_words_freqs(texts)
-    
-    with bz2.BZ2File(workspace_path+filedir+'/vocab.pk', 'wb') as outfile:
-        cPickle.dump(vocab, outfile)
-    logger.info("Vocab created")
-
-    tf = np.array(X.sum(axis=0)).ravel()
-    # Vectorizing documents
-    docs_vec = btm.get_vectorized_docs(texts, vocab)
-    docs_lens = list(map(len, docs_vec))
-    with bz2.BZ2File(workspace_path+filedir+'/transformed_texts.pk', 'wb') as outfile:
-        cPickle.dump(docs_vec, outfile)
-    logger.info("Texts transformed")
-
-    logger.info("Starting Generation of BTM")
-    biterms = btm.get_biterms(docs_vec)
-
-    model = btm.BTM(X, vocab, T=num_topics, W=vocab.size, M=20, alpha=50/8, beta=0.01)
-    topics = model.fit_transform(docs_vec, biterms, iterations=num_iterations, verbose=False)
-    with bz2.BZ2File(workspace_path+filedir+'/btm.pk', 'wb') as outfile:
-        cPickle.dump(model, outfile)
-    logger.info("Completed Generation of BTM")
-
-    document_topic_prob = {}
-    topic_document_prob_df = pd.DataFrame()
-    for doc_num in range(len(topics)):
-        doc_row = topics[doc_num]
-        doc_topic_prob_row = {}
-        for topic_num in range(len(doc_row)):
-            doc_topic_prob_row[topic_num+1] = doc_row[topic_num]
-            topic_document_prob_df = topic_document_prob_df.append(pd.Series([text_keys[doc_num],
-                                                                              int(topic_num+1),
-                                                                              round(doc_row[topic_num], 4)]),
-                                                                   ignore_index=True)
-        document_topic_prob[text_keys[doc_num]] = doc_topic_prob_row
-    topic_document_prob_df.columns = ['tokenset_key', 'topic_id', 'prob']
-    topic_document_prob = {}
-    for i in range(num_topics):
-        tmp_df = topic_document_prob_df.loc[topic_document_prob_df['topic_id'] == i+1].sort_values(by='prob', ascending=False)[['tokenset_key', 'prob']]
-        topic_document_prob[i+1] = list(tmp_df.to_records(index=False))
-
-    logger.info("Finished")
-    return topic_document_prob, document_topic_prob

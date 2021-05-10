@@ -5,6 +5,7 @@ import bz2
 import os.path
 from threading import *
 from multiprocessing import cpu_count, get_context
+import psutil
 from shutil import copyfile
 from datetime import datetime
 
@@ -40,6 +41,7 @@ class MainFrame(wx.Frame):
 
         self.pool = pool
         self.pool_num = self.pool._processes
+        self.threaded_inprogress_flag = False
         self.datasets = {}
         self.samples = {}
         self.codes = {}
@@ -615,10 +617,11 @@ def Main():
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-    #TODO change threading to a module liek pebble to allow termination of processes in case a model that is inprogress is deleted
-    pool_num = cpu_count()-3
-    if pool_num < 1:
+    cpus = psutil.cpu_count(logical=False)
+    if cpus is None or cpus < 2:
         pool_num = 1
+    else:
+        pool_num = cpus-1
     with get_context("spawn").Pool(processes=pool_num) as pool:
         #start up the GUI
         app = RootApp.RootApp()
