@@ -2,20 +2,17 @@ import logging
 import random
 import os
 import bz2
-import _pickle as cPickle
+import pickle
 from datetime import datetime
 from shutil import copytree
 from collections import OrderedDict
-from multiprocessing import cpu_count
 
-#LDA libraries
-import gensim
-#biterm libraries
-import numpy as np
-import bitermplus as btm
+#ML Libraries
 import pandas as pd
+import numpy as np
+import gensim
+import bitermplus as btm
 
-import Common.Objects.Datasets as Datasets
 from Common.Objects.Generic import GenericObject
 import Common.Objects.Threads.Samples as SamplesThreads
 
@@ -357,6 +354,7 @@ class LDASample(TopicSample):
         logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].GenerateFinish")
         logger.info("Starting")
         self.generated_flag = True
+        self.training_thread.join()
         self.training_thread = None
         self.dictionary = gensim.corpora.Dictionary.load(self.workspace_path+self._filedir+'/ldadictionary.dict')
         self.corpus = gensim.corpora.MmCorpus(self.workspace_path+self._filedir+'/ldacorpus.mm')
@@ -433,13 +431,14 @@ class BitermSample(TopicSample):
         logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].GenerateFinish")
         logger.info("Starting")
         self.generated_flag = True
+        self.training_thread.join()
         self.training_thread = None
         with bz2.BZ2File(self.workspace_path+self.filedir+'/transformed_texts.pk', 'rb') as infile:
-            self.transformed_texts = cPickle.load(infile)
+            self.transformed_texts = pickle.load(infile)
         with bz2.BZ2File(self.workspace_path+self.filedir+'/vocab.pk', 'rb') as infile:
-            self.vocab = cPickle.load(infile)
+            self.vocab = pickle.load(infile)
         with bz2.BZ2File(self.workspace_path+self.filedir+'/btm.pk', 'rb') as infile:
-            self.model = cPickle.load(infile)
+            self.model = pickle.load(infile)
 
         self.topic_documents_prob = result['topic_document_prob']
         self.document_topic_prob = result['document_topic_prob']
@@ -460,11 +459,11 @@ class BitermSample(TopicSample):
         self._workspace_path = workspace_path
         if self.generated_flag:
             with bz2.BZ2File(self._workspace_path+self.filedir+'/transformed_texts.pk', 'rb') as infile:
-                self.transformed_texts = cPickle.load(infile)
+                self.transformed_texts = pickle.load(infile)
             with bz2.BZ2File(self._workspace_path+self.filedir+'/vocab.pk', 'rb') as infile:
-                self.vocab = cPickle.load(infile)
+                self.vocab = pickle.load(infile)
             with bz2.BZ2File(self._workspace_path+self.filedir+'/btm.pk', 'rb') as infile:
-                self.model = cPickle.load(infile)
+                self.model = pickle.load(infile)
         logger.info("Finished")
 
 class MergedPart(GenericObject):
@@ -716,7 +715,7 @@ class BitermTopicPart(TopicPart):
                 prob_list = []
                 for word in word_list:
                     word_idx = np.where(self.parent.model.vocabulary_ == word)
-                    prob_list.append(self.parent.parent.model.matrix_topics_words_[self.key-1][idx][0])
+                    prob_list.append(self.parent.parent.model.matrix_topics_words_[self.key-1][word_idx][0])
                 self.word_list = list(zip(word_list, prob_list))
             else:
                 word_df = btm.get_top_topic_words(self.parent.model, words_num=value, topics_idx=[self.key-1])

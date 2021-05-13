@@ -14,6 +14,38 @@ class LabelBook(LB.LabelBook):
         """ Creates the image container (LabelContainer) class for :class:`FlatImageBook`. """
         return LabelContainer(self, wx.ID_ANY, agwStyle=self.GetAGWWindowStyleFlag())
     
+    def ResizeTabArea(self):
+        """ Resizes the tab area if the control has the ``INB_FIT_LABELTEXT`` style set. """
+
+        agwStyle = self.GetAGWWindowStyleFlag()
+
+        if agwStyle & LB.INB_FIT_LABELTEXT == 0:
+            return
+
+        if agwStyle & LB.INB_LEFT or agwStyle & LB.INB_RIGHT:
+            dc = wx.MemoryDC()
+            dc.SelectObject(wx.Bitmap(1, 1))
+            font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+            font.SetPointSize(int(font.GetPointSize()*self._fontSizeMultiple))
+            if self.GetFontBold() or agwStyle & LB.INB_BOLD_TAB_SELECTION:
+                font.SetWeight(wx.FONTWEIGHT_BOLD)
+            dc.SetFont(font)
+            maxW = 0
+
+            for page in range(self.GetPageCount()):
+                caption = self._pages.GetPageText(page)
+                w, h = dc.GetTextExtent(caption)
+                maxW = max(maxW, w)
+
+            maxW += 24 #TODO this is 6*4 6 is nPadding from drawlabel
+
+            if not agwStyle & LB.INB_SHOW_ONLY_TEXT:
+                maxW += self._pages._nImgSize * 2
+
+            maxW = max(maxW, 100)
+            self._pages.SetSizeHints(maxW, -1)
+            self._pages._nTabAreaWidth = maxW
+    
 class LabelContainer(LB.LabelContainer):
     def OnPaint(self, event):
         """

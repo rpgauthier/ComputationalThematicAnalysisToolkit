@@ -3,7 +3,7 @@ from threading import Thread
 import os
 import psutil
 import bz2
-import _pickle as cPickle
+import pickle
 
 import pandas as pd
 import wx
@@ -20,6 +20,7 @@ class LDATrainingThread(Thread):
     def __init__(self, notify_window, key, tokensets, num_topics, num_passes, alpha, eta, workspace_path, filedir):
         """Init Worker Thread Class."""
         Thread.__init__(self)
+        self.daemon = True
         self._notify_window = notify_window
         self.key = key
         self.tokensets = tokensets
@@ -103,10 +104,11 @@ class LDATrainingThread(Thread):
         wx.PostEvent(self._notify_window, CustomEvents.ModelCreatedResultEvent(result))
 
 class BitermTrainingThread(Thread):
-    """LDATrainingThread Class."""
+    """BitermTrainingThread Class."""
     def __init__(self, notify_window, key, tokensets, num_topics, num_iterations, workspace_path, filedir):
         """Init Worker Thread Class."""
         Thread.__init__(self)
+        self.daemon = True
         self._notify_window = notify_window
         self.key = key
         self.tokensets = tokensets
@@ -122,7 +124,7 @@ class BitermTrainingThread(Thread):
         logger.info("Starting")
         
         if not os.path.exists(self.workspace_path+"/Biterm"):
-            os.makedirs(workspace_path+"/Biterm")
+            os.makedirs(self.workspace_path+"/Biterm")
         path = self.workspace_path+self.filedir
         if not os.path.exists(path):
             os.makedirs(path)
@@ -138,7 +140,7 @@ class BitermTrainingThread(Thread):
         X, vocab, vocab_dict = btm.get_words_freqs(texts)
         
         with bz2.BZ2File(path+'/vocab.pk', 'wb') as outfile:
-            cPickle.dump(vocab, outfile)
+            pickle.dump(vocab, outfile)
         logger.info("Vocab created")
 
         tf = np.array(X.sum(axis=0)).ravel()
@@ -146,7 +148,7 @@ class BitermTrainingThread(Thread):
         docs_vec = btm.get_vectorized_docs(texts, vocab)
         docs_lens = list(map(len, docs_vec))
         with bz2.BZ2File(path+'/transformed_texts.pk', 'wb') as outfile:
-            cPickle.dump(docs_vec, outfile)
+            pickle.dump(docs_vec, outfile)
         logger.info("Texts transformed")
 
         logger.info("Starting Generation of BTM")
@@ -155,7 +157,7 @@ class BitermTrainingThread(Thread):
         model = btm.BTM(X, vocab, T=self.num_topics, W=vocab.size, M=20, alpha=50/8, beta=0.01)
         topics = model.fit_transform(docs_vec, biterms, iterations=self.num_iterations, verbose=False)
         with bz2.BZ2File(path+'/btm.pk', 'wb') as outfile:
-            cPickle.dump(model, outfile)
+            pickle.dump(model, outfile)
         logger.info("Completed Generation of BTM")
 
         document_topic_prob = {}

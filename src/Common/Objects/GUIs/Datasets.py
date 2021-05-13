@@ -1,21 +1,17 @@
 import logging
-from datetime import datetime
 
-import pandas as pd
-import webbrowser
 
 import wx
-import wx.aui
 #import wx.lib.agw.flatnotebook as FNB
 import External.wxPython.flatnotebook_fix as FNB
 import wx.grid
-import wx.dataview as dv
-import wx.lib.agw.infobar as infobar
 
-from Common import Constants
 from Common.GUIText import Datasets as GUIText
+import Common.Constants as Constants
+import Common.CustomEvents as CustomEvents
 import Common.Notes as Notes
 import Common.Objects.Datasets as Datasets
+import Common.Objects.Threads.Datasets as DatasetsThreads
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
 import Common.Objects.DataViews.Codes as CodesDataViews
 
@@ -23,7 +19,7 @@ class DataNotebook(FNB.FlatNotebook):
     def __init__(self, parent, grouped_dataset=None, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".DatasetDataNotebook.__init__")
         logger.info("Starting")
-        FNB.FlatNotebook.__init__(self, parent, agwStyle=FNB.FNB_DEFAULT_STYLE|FNB.FNB_NO_X_BUTTON|FNB.FNB_HIDE_ON_SINGLE_TAB, size=size)
+        FNB.FlatNotebook.__init__(self, parent, agwStyle=Constants.FNB_STYLE, size=size)
         self.dataset = grouped_dataset
 
         #create dictionary to hold instances of dataset data panels for each field avaliable
@@ -42,7 +38,7 @@ class DataNotebook(FNB.FlatNotebook):
         for key in dataset_data_tab_keys:
             index = self.GetPageIndex(self.dataset_data_tabs[key])
             if index is not wx.NOT_FOUND:
-                self.RemovePage(index)
+                self.DeletePage(index)
             del self.dataset_data_tabs[key]
         if self.dataset != None:
             current_parent = self.dataset
@@ -55,7 +51,7 @@ class DataNotebook(FNB.FlatNotebook):
             else:
                 if isinstance(current_parent.datasets[key], Datasets.Dataset):
                     if len(current_parent.datasets[key].data) > 0:
-                        self.dataset_data_tabs[key] = DataGrid(self, current_parent.datasets[key], self.GetSize())
+                        self.dataset_data_tabs[key] = DatasetsDataViews.DatasetsDataGrid(self, current_parent.datasets[key], self.GetSize())
                         self.AddPage(self.dataset_data_tabs[key], str(key))
                 elif isinstance(current_parent.datasets[key], Datasets.GroupedDataset):
                     self.dataset_data_tabs[key] = DataNotebook(self, grouped_dataset=current_parent.datasets[key], size=self.GetSize())
@@ -93,219 +89,328 @@ class DataNotebook(FNB.FlatNotebook):
         saved_data['datasets'] = {}
         saved_data["groups"] = {}
         for key in self.dataset_data_tabs:
-            if isinstance(self.dataset_data_tabs[key], DataGrid):
+            if isinstance(self.dataset_data_tabs[key], DatasetsDataViews.DatasetsDataGrid):
                 saved_data["datasets"][key] = {} 
             if isinstance(self.dataset_data_tabs[key], DataNotebook):
                 saved_data["groups"][key] = self.dataset_data_tabs[key].Save()
         logger.info("Finished")
         return saved_data
 
-#TODO replace dataviewctrl with dynamic columns
-#to make only one needed for each entry in main_frame.datasets regardless of which type of dataset is used
-class DataGridTable(wx.grid.GridTableBase):
-    def __init__(self, dataset):
-        wx.grid.GridTableBase.__init__(self)
-        self.dataset = dataset
-        self.data_df = pd.DataFrame(dataset.data.values())
-        self._rows = len(self.data_df)
-        self.col_names = []
-        self.GetColNames()
-        self._cols = len(self.col_names)
-        self.data_df['Created UTC'] = pd.to_datetime(self.data_df['created_utc'], unit='s')
-
-    def GetColNames(self):
-        self.col_names = []
-        self.col_names.append(("", "url"))
-        self.col_names.append(("", 'Created UTC'))
-        if self.dataset.grouping_field is not None:
-            self.col_names.append(("Grouping Field", self.dataset.grouping_field.key))
-        self.col_names.extend([("", field_name) for field_name in self.dataset.chosen_fields])
-        for merged_field_key in self.dataset.merged_fields:
-            self.col_names.extend([(merged_field_key, field_key) for field_key in self.dataset.merged_fields[merged_field_key].chosen_fields])
-        if self.dataset.parent is not None:
-            for merged_field_key in self.dataset.parent.merged_fields:
-                merged_field = self.dataset.parent.merged_fields[merged_field_key]
-                for field_key in merged_field.chosen_fields:
-                    field = merged_field.chosen_fields[field_key]
-                    if field.dataset is self.dataset:
-                        self.col_names.append((merged_field.key, field_key))
-
-    def GetColLabelValue(self, col):
-        name = ""
-        if self.col_names[col][0] == "":
-            name = str(self.col_names[col][1])
-        else:
-            name = self.col_names[col][1][1]
-        #    name = str(self.col_names[col][0])+"("+str(self.col_names[col][1])+")"
-        return name
-    
-    def GetColTupleValue(self, col):
-        if self.col_names[col][0] == "":
-            return self.col_names[col][1]
-        else:
-            if isinstance(self.col_names[col][1], tuple):
-                return self.col_names[col][1][1]
-            else:
-                return self.col_names[col][1]
-
-    def GetNumberRows(self):
-        """Return the number of rows in the grid"""
-        return len(self.data_df)
-
-    def GetNumberCols(self):
-        """Return the number of columns in the grid"""
-        return len(self.col_names)
-
-    def GetTypeName(self, row, col):
-        """Return the name of the data type of the value in the cell"""
-        return wx.grid.GRID_VALUE_TEXT
-
-    def GetValue(self, row, col):
-        """Return the value of a cell"""
-        col_name = self.col_names[col][1]
-        if isinstance(col_name, tuple):
-            col_name = col_name[1]
-        df_row = self.data_df.iloc[row]
-        return str(df_row[col_name])
-
-    def SetValue(self, row, col, value):
-        """Set the value of a cell"""
-        pass
-
-    def ResetView(self, grid):
-        self.GetColNames()
-        grid.BeginBatch()
-        for current, new, delmsg, addmsg in [
-            (self._rows, self.GetNumberRows(), wx.grid.GRIDTABLE_NOTIFY_ROWS_DELETED,
-            wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED),
-            (self._cols, self.GetNumberCols(), wx.grid.GRIDTABLE_NOTIFY_COLS_DELETED,
-            wx.grid.GRIDTABLE_NOTIFY_COLS_APPENDED),
-            ]:
-            if new < current:
-                msg = wx.grid.GridTableMessage(self, delmsg, new, current-new)
-                grid.ProcessTableMessage(msg)
-            elif new > current:
-                msg = wx.grid.GridTableMessage(self, addmsg, new-current)
-                grid.ProcessTableMessage(msg)
-        self.UpdateValues(grid)
-        grid.EndBatch()
-        self._rows = self.GetNumberRows()
-        self._cols = self.GetNumberCols()
-        # XXX
-        # Okay, this is really stupid, we need to "jiggle" the size
-        # to get the scrollbars to recalibrate when the underlying
-        # grid changes.
-        h,w = grid.GetSize()
-        grid.SetSize((h+1, w))
-        grid.SetSize((h, w))
-        grid.ForceRefresh()
-        self.UpdateValues(grid)
-    
-    def UpdateValues(self, grid):
-        """Update all displayed values without changing the grid size"""
-        msg = wx.grid.GridTableMessage(self, wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES)
-        grid.ProcessTableMessage(msg)
-
-class DataGrid(wx.grid.Grid):
-    def __init__(self, parent, dataset, size=wx.DefaultSize):
-        logger = logging.getLogger(__name__+".DatasetDataGrid.__init__")
+class DatasetDetailsDialog(wx.Dialog):
+    def __init__(self, parent, dataset):
+        logger = logging.getLogger(__name__+".DatasetDetailsDialog.__init__")
         logger.info("Starting")
-        wx.grid.Grid.__init__(self, parent, size=size)
+        wx.Dialog.__init__(self, parent, title="", style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
+
         self.dataset = dataset
-        self.gridtable = DataGridTable(dataset)
-        self.SetTable(self.gridtable, takeOwnership=True)
-        self.EnableEditing(False)
-        self.UseNativeColHeader(True)
-        self.HideRowLabels()
-        self.AutoSize()
-        self.Bind(wx.grid.EVT_GRID_COL_SORT, self.OnSort)
-        self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.OnOpen)
+        self.tokenization_thread = None
+
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+
+        if isinstance(dataset, Datasets.GroupedDataset):
+            self.SetTitle(GUIText.GROUPED_DATASET_LABEL)
+
+            name_label = wx.StaticText(self, label=GUIText.NAME + ":")
+            self.name_ctrl = wx.TextCtrl(self, value=self.dataset.name, style=wx.TE_PROCESS_ENTER)
+            self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
+            self.name_ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnChangeDatasetKey)
+            name_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            name_sizer.Add(name_label)
+            name_sizer.Add(self.name_ctrl)
+            self.sizer.Add(name_sizer, 0, wx.ALL, 5)
+
+            created_date_label = wx.StaticText(self, label=GUIText.CREATED_ON + ": "
+                                               +self.dataset.created_dt.strftime("%Y-%m-%d, %H:%M:%S"))
+            self.sizer.Add(created_date_label, 0, wx.ALL, 5)
+
+            selected_lang = Constants.AVALIABLE_DATASET_LANGUAGES1.index(dataset.language)
+            language_label = wx.StaticText(self, label=GUIText.LANGUAGE + ": ")
+            self.language_ctrl = wx.Choice(self, choices=Constants.AVALIABLE_DATASET_LANGUAGES2)
+            self.language_ctrl.Select(selected_lang)
+            language_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            language_sizer.Add(language_label)
+            language_sizer.Add(self.language_ctrl)
+            self.sizer.Add(language_sizer, 0, wx.ALL, 5)
+
+        elif isinstance(dataset, Datasets.Dataset):
+            if dataset.dataset_source == "Reddit":
+                self.SetTitle(GUIText.RETRIEVED_REDDIT_LABEL)
+            elif dataset.dataset_source == "CSV":
+                self.SetTitle(GUIText.RETRIEVED_CSV_LABEL)
+            dataset_panel = DatasetPanel(self, dataset)
+            self.sizer.Add(dataset_panel)
+
+        self.SetSizer(self.sizer)
+        
+        self.Layout()
+        self.Fit()
+
+        CustomEvents.EVT_PROGRESS(self, self.OnProgress)
+        CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnTokenizerEnd)
+        logger.info("Finished")
+    
+    def OnChangeDatasetKey(self, event):
+        logger = logging.getLogger(__name__+".DatasetDetailsDialog.OnChangeDatasetKey")
+        logger.info("Starting")
+        main_frame = wx.GetApp().GetTopWindow()
+        if main_frame.multiprocessing_inprogress_flag:
+            wx.MessageBox(GUIText.MULTIPROCESSING_WARNING_MSG,
+                          GUIText.WARNING, wx.OK | wx.ICON_WARNING)
+            return
+
+        main_frame.CreateProgressDialog(GUIText.CHANGING_NAME_BUSY_LABEL,
+                                        freeze=True)
+        updated_flag = False
+        tokenizing_flag = False
+        try:
+            main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_PREPARING_MSG)
+            node = self.dataset
+            if isinstance(node, Datasets.Dataset) or isinstance(node, Datasets.GroupedDataset):
+                new_name = self.name_ctrl.GetValue()
+                
+                if node.name != new_name:
+                    old_key = node.key
+                    if isinstance(node, Datasets.GroupedDataset):
+                        new_key = (new_name, 'group')
+                    elif isinstance(node, Datasets.Dataset):
+                        new_key = (new_name, node.dataset_source, node.dataset_type,)
+                    if new_key in main_frame.datasets:
+                        wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
+                                        GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                        logger.error("Duplicate name[%s] entered by user", str(new_key))
+                    else:
+                        continue_flag = True
+                        for key in main_frame.datasets:
+                            if isinstance(main_frame.datasets[key], Datasets.GroupedDataset):
+                                if new_key in main_frame.datasets[key].datasets:
+                                    continue_flag = False
+                                    wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
+                                        GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                                    logger.error("Duplicate name[%s] entered by user", str(new_key))
+                                    break
+                        if continue_flag:
+                            main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_MSG1+str(node.key)\
+                                                  +GUIText.CHANGING_NAME_BUSY_MSG2+str(new_key))
+
+                            node.key = new_key
+                            node.name = new_name
+                            if old_key in main_frame.datasets:
+                                main_frame.datasets[new_key] = main_frame.datasets[old_key]
+                                del main_frame.datasets[old_key]
+                            elif node.parent is not None:
+                                node.parent.datasets[new_key] = node
+                                del node.parent.datasets[old_key]
+                            main_frame.DatasetKeyChange(old_key, new_key)
+                            updated_flag = True
+                language_index = self.language_ctrl.GetSelection()
+                if node.language != Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]:
+                    main_frame.PulseProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_PREPARING_MSG)
+                    node.language = Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]
+                    main_frame.multiprocessing_inprogress_flag = True
+                    self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, [node])
+                    tokenizing_flag = True
+        finally:
+            if not tokenizing_flag:
+                if updated_flag:
+                    main_frame.DatasetsUpdated()
+                main_frame.CloseProgressDialog(thaw=True)
+                self.Close()
+        logger.info("Finished")
+    
+    def OnProgress(self, event):
+        main_frame = wx.GetApp().GetTopWindow()
+        main_frame.PulseProgressDialog(event.data)
+
+    def OnTokenizerEnd(self, event):
+        logger = logging.getLogger(__name__+".DatasetDetailsDialog.OnTokenizerEnd")
+        logger.info("Starting")
+        self.tokenization_thread.join()
+        self.tokenization_thread = None
+        main_frame = wx.GetApp().GetTopWindow()
+        main_frame.DatasetsUpdated()
+        main_frame.CloseProgressDialog(thaw=True)
+        main_frame.multiprocessing_inprogress_flag = False
+        self.Close()
         logger.info("Finished")
 
-    def OnSort(self, event):
-        logger = logging.getLogger(__name__+".DatasetDataGrid.OnSort")
-        logger.info("Starting")
-        col = event.GetCol()
-        col_name = self.gridtable.GetColTupleValue(event.GetCol())
-        if col == self.GetSortingColumn():
-            if self.IsSortOrderAscending():
-                #self.SetSortingColumn(col)
-                self.gridtable.data_df.sort_values(by=[col_name], inplace=True)
-            else:
-                #self.SetSortingColumn(col, ascending=False)
-                self.gridtable.data_df.sort_values(by=[col_name], ascending=False, inplace=True)
+class DatasetPanel(wx.Panel):
+    def __init__(self, parent, dataset, header=False, size=wx.DefaultSize):
+        wx.Panel.__init__(self, parent, size=size)
+
+        self.dataset = dataset
+
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+
+        if header:
+            details_sizer1 = wx.BoxSizer(wx.HORIZONTAL)
+            details_sizer2 = wx.BoxSizer(wx.HORIZONTAL)
         else:
-            self.SetSortingColumn(col)
-            self.gridtable.data_df.sort_values(by=[col_name], inplace=True)
-        logger.info("Finish")
-            
-    def OnOpen(self, event):
-        logger = logging.getLogger(__name__+".DatasetDataGrid.OnOpen")
-        logger.info("Starting")
-        col = event.GetCol()
-        row = event.GetRow()
-        col_name = self.GetColLabelValue(col)
-        if col_name == "url":
-            url = self.gridtable.GetValue(row, col)
-            webbrowser.open_new_tab(url)
+            details_sizer1 = wx.BoxSizer(wx.VERTICAL)
+            details_sizer2 = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.Add(details_sizer1, 0, wx.ALL, 5)
+        self.sizer.Add(details_sizer2, 0, wx.ALL, 5)
+
+        main_frame = wx.GetApp().GetTopWindow()
+        if main_frame.multipledatasets_mode:
+            name_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            name_label = wx.StaticText(self, label=GUIText.NAME + ":")
+            name_sizer.Add(name_label)
+            self.name_ctrl = wx.TextCtrl(
+                self, value=dataset.name, style=wx.TE_PROCESS_ENTER)
+            self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
+            self.name_ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnChangeDatasetKey)
+            name_sizer.Add(self.name_ctrl)
+            details_sizer1.Add(name_sizer, 0, wx.ALL, 5)
+            details_sizer1.AddSpacer(10)
+
+        if dataset.parent is None:
+            selected_lang = Constants.AVALIABLE_DATASET_LANGUAGES1.index(
+                dataset.language)
+            language_label = wx.StaticText(
+                self, label=GUIText.LANGUAGE + ": ")
+            self.language_ctrl = wx.Choice(
+                self, choices=Constants.AVALIABLE_DATASET_LANGUAGES2)
+            self.language_ctrl.Select(selected_lang)
+            language_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            language_sizer.Add(language_label)
+            language_sizer.Add(self.language_ctrl)
+            details_sizer1.Add(language_sizer, 0, wx.ALL, 5)
+            details_sizer1.AddSpacer(10)
+            self.language_ctrl.Bind(wx.EVT_CHOICE, self.OnChangeDatasetLanguage)
         else:
-            #frame = wx.Dialog(self, title=col_name, size=(400, 400), style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
-            #frame_sizer = wx.BoxSizer()
-            #panel = wx.ScrolledWindow(frame)
-            #panel_sizer = wx.BoxSizer()
+            selected_lang = Constants.AVALIABLE_DATASET_LANGUAGES1.index(
+                dataset.language)
+            language_label = wx.StaticText(
+                self, label=GUIText.LANGUAGE + ": " + Constants.AVALIABLE_DATASET_LANGUAGES2[selected_lang])
+            details_sizer1.Add(language_label, 0, wx.ALL, 5)
+            details_sizer1.AddSpacer(10)
 
-            row_data = self.gridtable.data_df.iloc[row]
-            key = (row_data['data_source'], row_data['data_type'], row_data['id'])
-            
-            document = self.dataset.SetupDocument(key)
-            main_frame = wx.GetApp().GetTopWindow()
-            DocumentDialog(main_frame, document).Show()
-        logger.info("Finish")
+        type_label = wx.StaticText(self, label=GUIText.TYPE + ": "
+                                            + dataset.dataset_type)
+        details_sizer2.Insert(0, type_label, 0, wx.ALL, 5)
+        details_sizer2.InsertSpacer(1, 10)
 
-    def AutoSize(self):
-        if self.GetNumberRows() > 0:
-            max_size = self.GetSize().GetWidth()*0.98
-            dc = wx.ScreenDC()
-            font = self.GetLabelFont()
-            dc.SetFont(font)
-            
-            url = self.gridtable.GetValue(0, 0)
-            url_size = dc.GetTextExtent(url).GetWidth()
-            url_label_size = dc.GetTextExtent("URL").GetWidth()
-            self.SetColSize(0, max(url_size, url_label_size))
-            max_size = max_size - max(url_size, url_label_size)
-
-            date = self.gridtable.GetValue(0, 1)
-            date_size = dc.GetTextExtent(date).GetWidth()
-            date_label_size = dc.GetTextExtent("Created UTC").GetWidth()
-            self.SetColSize(1, max(date_size, date_label_size))
-            max_size = max_size - max(date_size, date_label_size)
-
-            if self.dataset.grouping_field is not None:
-                field = self.gridtable.GetValue(0, 2)
-                field_size = dc.GetTextExtent(field).GetWidth()
-                field_label_size = dc.GetTextExtent(str(("Grouping Field", self.dataset.grouping_field.key))).GetWidth()
-                self.SetColSize(1, max(field_size, field_label_size))
-                max_size = max_size - max(field_size, field_label_size)
-                first_data_col = 3
+        if dataset.dataset_source == 'Reddit':
+            subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT + ": "
+                                            + dataset.retrieval_details['subreddit'])
+            if main_frame.multipledatasets_mode:
+                details_sizer2.Insert(0, subreddit_label, 0, wx.ALL, 5)
+                details_sizer2.InsertSpacer(1, 10)
             else:
-                first_data_col = 2
-            
-            col_num = self.gridtable.GetNumberCols()
-            if col_num > first_data_col:
-                split_size = max_size / (col_num-first_data_col)
-                for col in range(first_data_col, col_num):
-                    self.SetColSize(col, int(split_size))
+                details_sizer1.Insert(0, subreddit_label, 0, wx.ALL, 5)
+                details_sizer1.InsertSpacer(1, 10)
 
-    def Update(self):
-        logger = logging.getLogger(__name__+".DatasetDataGrid.Update")
+            if dataset.retrieval_details['pushshift_flg']:
+                if dataset.retrieval_details['replace_archive_flg']:
+                    if dataset.retrieval_details['redditapi_flg']:
+                        retrieveonline_label = wx.StaticText(
+                            self, label=GUIText.SOURCE+": "+GUIText.REDDIT_FULL_REDDITAPI)
+                    else:
+                        retrieveonline_label = wx.StaticText(
+                            self, label=GUIText.SOURCE+": "+GUIText.REDDIT_FULL_PUSHSHIFT)
+                else:
+                    if dataset.retrieval_details['redditapi_flg']:
+                        retrieveonline_label = wx.StaticText(
+                            self, label=GUIText.SOURCE+": "+GUIText.REDDIT_UPDATE_REDDITAPI)
+                    else:
+                        retrieveonline_label = wx.StaticText(
+                            self, label=GUIText.SOURCE+": "+GUIText.REDDIT_UPDATE_PUSHSHIFT)
+            else:
+                retrieveonline_label = wx.StaticText(
+                    self, label=GUIText.SOURCE+": "+GUIText.REDDIT_ARCHIVED)
+            details_sizer2.Add(retrieveonline_label, 0, wx.ALL, 5)
+            details_sizer2.AddSpacer(10)
+
+            start_date_label = wx.StaticText(self, label=GUIText.START_DATE + ": "
+                                             + dataset.retrieval_details['start_date'])
+            details_sizer2.Add(start_date_label, 0, wx.ALL, 5)
+            details_sizer2.AddSpacer(10)
+
+            end_date_label = wx.StaticText(self, label=GUIText.END_DATE + ": "
+                                           + dataset.retrieval_details['end_date'])
+            details_sizer2.Add(end_date_label, 0, wx.ALL, 5)
+            details_sizer2.AddSpacer(10)
+
+        #TODO add metadata details
+        #elif dataset.dataset_source == 'CSV':
+
+        retrieved_date_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": "
+                                             + dataset.created_dt.strftime("%Y-%m-%d, %H:%M:%S"))
+        details_sizer2.Add(retrieved_date_label, 0, wx.ALL, 5)
+        details_sizer2.AddSpacer(10)
+        document_num_label = wx.StaticText(
+            self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
+        details_sizer2.Add(document_num_label, 0, wx.ALL, 5)
+
+        self.SetSizer(self.sizer)
+        self.Layout()
+
+    def OnChangeDatasetKey(self, event):
+        logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnChangeDatasetKey")
         logger.info("Starting")
-        self.gridtable.ResetView(self)
-        self.AutoSize()
-        for i in range(0, len(self.gridtable.col_names)):
-            self.SetColLabelValue(i, self.gridtable.GetColLabelValue(i))
-        self.ForceRefresh()
-        logger.info("Finish")
+        main_frame = wx.GetApp().GetTopWindow()
+        main_frame.CreateProgressDialog(GUIText.CHANGING_NAME_BUSY_LABEL,
+                                        freeze=True)
+        try:
+            main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_PREPARING_MSG)
+            node = self.dataset
+            if isinstance(node, Datasets.Dataset) or isinstance(node, Datasets.GroupedDataset):
+                new_name = self.name_ctrl.GetValue()
+                if node.name != new_name:
+                    old_key = node.key
+                    if isinstance(node, Datasets.GroupedDataset):
+                        new_key = (new_name, 'group')
+                    elif isinstance(node, Datasets.Dataset):
+                        new_key = (new_name, node.dataset_source, node.dataset_type,)
+                    if new_key in main_frame.datasets:
+                        wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
+                                        GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                        logger.error("Duplicate name[%s] entered by user", str(new_key))
+                    else:
+                        continue_flag = True
+                        for key in main_frame.datasets:
+                            if isinstance(main_frame.datasets[key], Datasets.GroupedDataset):
+                                if new_key in main_frame.datasets[key].datasets:
+                                    continue_flag = False
+                                    wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
+                                        GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                                    logger.error("Duplicate name[%s] entered by user", str(new_key))
+                                    break
+                        if continue_flag:
+                            main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_MSG1+str(node.key)\
+                                                  +GUIText.CHANGING_NAME_BUSY_MSG2+str(new_key))
+
+                            node.key = new_key
+                            node.name = new_name
+                            if old_key in main_frame.datasets:
+                                main_frame.datasets[new_key] = main_frame.datasets[old_key]
+                                del main_frame.datasets[old_key]
+                            elif node.parent is not None:
+                                node.parent.datasets[new_key] = node
+                                del node.parent.datasets[old_key]
+                            main_frame.DatasetKeyChange(old_key, new_key)
+                            main_frame.DatasetsUpdated()
+        finally:
+            main_frame.CloseProgressDialog(thaw=True)
+        logger.info("Finished")
+    
+    def OnChangeDatasetLanguage(self, event):
+        logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnChangeDatasetLanguage")
+        logger.info("Starting")
+        main_frame = wx.GetApp().GetTopWindow()
+        if main_frame.multiprocessing_inprogress_flag:
+            wx.MessageBox(GUIText.MULTIPROCESSING_WARNING_MSG,
+                          GUIText.WARNING, wx.OK | wx.ICON_WARNING)
+            return
+        node = self.dataset
+        language_index = self.language_ctrl.GetSelection()
+        if node.language != Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]:
+            main_frame.CreateProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_LABEL, freeze=True)
+            main_frame.PulseProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_PREPARING_MSG)
+            node.language = Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]
+            main_frame.multiprocessing_inprogress_flag = True
+            self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, [node])
+        logger.info("Finished")
 
 class DocumentDialog(wx.Dialog):
     def __init__(self, parent, node, size=wx.DefaultSize):

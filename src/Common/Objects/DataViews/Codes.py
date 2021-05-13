@@ -9,7 +9,6 @@ import Common.Objects.GUIs.Codes as CodesGUIs
 import Common.Objects.Datasets as Datasets
 import Common.Objects.GUIs.Datasets as DatasetsGUIs
 import Common.Objects.Samples as Samples
-import Common.Objects.GUIs.Samples as SamplesGUIs
 
 # This model acts as a bridge between the CodesViewCtrl and all codes in the project.
 # This model provides these data columns:
@@ -179,12 +178,12 @@ class CodesViewCtrl(dv.DataViewCtrl):
         model.DecRef()
 
         text_renderer = dv.DataViewTextRenderer()
-        int_renderer = dv.DataViewTextRenderer(varianttype="long")
-    
         column0 = dv.DataViewColumn("Code", text_renderer, 0, align=wx.ALIGN_LEFT)
         self.AppendColumn(column0)
+        text_renderer = dv.DataViewTextRenderer()
         column1 = dv.DataViewColumn(GUIText.NOTES, text_renderer, 1, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
+        int_renderer = dv.DataViewTextRenderer(varianttype="long")
         column2 = dv.DataViewColumn("References", int_renderer, 2, align=wx.ALIGN_LEFT)
         self.AppendColumn(column2)
 
@@ -346,13 +345,14 @@ class CodeConnectionsViewCtrl(dv.DataViewCtrl):
 
         self.AssociateModel(model)
         model.DecRef()
-
-        text_renderer = dv.DataViewTextRenderer()
     
+        text_renderer = dv.DataViewTextRenderer()
         column0 = dv.DataViewColumn("Type", text_renderer, 0, align=wx.ALIGN_LEFT)
         self.AppendColumn(column0)
+        text_renderer = dv.DataViewTextRenderer()
         column1 = dv.DataViewColumn(GUIText.NAME, text_renderer, 1, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
+        text_renderer = dv.DataViewTextRenderer()
         column2 = dv.DataViewColumn(GUIText.NOTES, text_renderer, 2, align=wx.ALIGN_LEFT)
         self.AppendColumn(column2)
 

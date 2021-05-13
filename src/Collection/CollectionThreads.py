@@ -9,34 +9,19 @@ from threading import Thread
 
 import wx
 
-from Common import Constants as Constants
 from Common.GUIText import Datasets as GUIText
+import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
 import Common.Objects.Datasets as Datasets
+import Common.Objects.Utilities.Datasets as DatasetsUtilities
 import Collection.RedditDataRetriever as rdr
-import Collection.DataTokenizer as DataTokenizer
-import Collection.DataMetadataCreator as DataMetadataCreator
-
-class TokenizerThread(Thread):
-    """Tokenize Datasets Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_objects):
-        """Init Worker Thread Class."""
-        Thread.__init__(self)
-        self._notify_window = notify_window
-        self.main_frame = main_frame
-        self.dataset_objects = dataset_objects
-        self.start()
-    
-    def run(self):
-        DataTokenizer.TokenizeDatasetObjects(self.dataset_objects, self._notify_window, self.main_frame)
-        result = {}
-        wx.PostEvent(self._notify_window, CustomEvents.TokenizerResultEvent(result))
 
 class RetrieveRedditDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
     def __init__(self, notify_window, main_frame, dataset_name, subreddit, start_date, end_date, replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type):
         """Init Worker Thread Class."""
         Thread.__init__(self)
+        self.daemon = True
         self._notify_window = notify_window
         self.main_frame = main_frame
         self.dataset_name = dataset_name
@@ -165,8 +150,8 @@ class RetrieveRedditDatasetThread(Thread):
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 dataset = self.CreateDataset(dataset_key, retrieval_details, data)
-                DataMetadataCreator.CreateMetadata(dataset)
-                DataTokenizer.TokenizeDatasetObjects([dataset], self._notify_window, self.main_frame)
+                DatasetsUtilities.CreateDatasetObjectsMetadata(dataset)
+                DatasetsUtilities.TokenizeDatasetObjects([dataset], self._notify_window, self.main_frame)
             else:
                 status_flag = False
                 error_msg = GUIText.NO_DATA_AVALIABLE_ERROR
@@ -302,6 +287,7 @@ class RetrieveCSVDatasetThread(Thread):
     def __init__(self, notify_window, main_frame, dataset_name, dataset_field, dataset_type, id_field, avaliable_fields, included_fields, filename):
         """Init Worker Thread Class."""
         Thread.__init__(self)
+        self.daemon = True
         self._notify_window = notify_window
         self.main_frame = main_frame
         self.dataset_name = dataset_name
@@ -356,8 +342,8 @@ class RetrieveCSVDatasetThread(Thread):
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 dataset = self.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields, self.included_fields)
-                DataMetadataCreator.CreateMetadata(dataset)
-                DataTokenizer.TokenizeDatasetObjects([dataset], self._notify_window, self.main_frame)
+                DatasetsUtilities.CreateDatasetObjectsMetadata(dataset)
+                DatasetsUtilities.TokenizeDatasetObjects([dataset], self._notify_window, self.main_frame)
             else:
                 status_flag = False
                 error_msg = GUIText.NO_DATA_AVALIABLE_ERROR
@@ -390,8 +376,8 @@ class RetrieveCSVDatasetThread(Thread):
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 for new_dataset_key in data:
                     datasets[new_dataset_key] = self.CreateDataset(new_dataset_key, retrieval_details, data[new_dataset_key], self.avaliable_fields, self.included_fields)
-                    DataMetadataCreator.CreateMetadata(datasets[new_dataset_key])
-                    DataTokenizer.TokenizeDatasetObjects([datasets[new_dataset_key]], self._notify_window, self.main_frame)
+                    DatasetsUtilities.CreateDatasetObjectsMetadata(datasets[new_dataset_key])
+                    DatasetsUtilities.TokenizeDatasetObjects([datasets[new_dataset_key]], self._notify_window, self.main_frame)
             else:
                 status_flag = False
                 error_msg = GUIText.NO_DATA_AVALIABLE_ERROR

@@ -9,17 +9,13 @@ mpl.use('WXAgg')
 import networkx as nx
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as NavigationToolbar
-#import pyLDAvis.gensim
+import pyLDAvis
 from External.mpl_chord_diagram import chord_diagram
-from External.matplotlib_zoom import simp_zoom
+#from External.matplotlib_zoom import simp_zoom
 import pandas as pd
-
-import math
 
 import wx
 import wx.html2
-
-import Common.Objects.Samples as Samples
 
 class NetworkPlotPlanel(wx.Panel):
     '''Panel for a TreemapPlot'''
@@ -234,7 +230,7 @@ class WordCloudPlotPlanel(wx.Panel):
         self.canvas.draw()
         logger.info("Finished")
 
-'''
+
 class pyLDAvisPanel(wx.Panel):
     def __init__(self, parent):
         logger = logging.getLogger(__name__+".pyLDAvisPanel.__init__")
@@ -267,7 +263,7 @@ class pyLDAvisPanel(wx.Panel):
             self.browser.SetPage("", "")
 
         logger.info("Finished")
-'''
+
 class ChordPlotPanel(wx.Panel):
     '''Panel for a TreemapPlot'''
     def __init__(self, parent):

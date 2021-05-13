@@ -1,7 +1,6 @@
 '''Token Filtering Sub Module'''
 import logging
 import json
-import math
 from datetime import datetime
 
 import jsonpickle
@@ -9,10 +8,8 @@ import nltk
 import spacy
 import spacy.lang.en.stop_words
 import pandas as pd
-import numpy as np
 
 import wx
-import wx.aui
 #import wx.lib.agw.flatnotebook as FNB
 import External.wxPython.flatnotebook_fix as FNB
 import wx.lib.scrolledpanel
@@ -20,7 +17,7 @@ from wx.lib.masked.numctrl import NumCtrl
 import wx.dataview as dv
 
 import Common.Constants as Constants
-import Common.Objects.GUIs.Tokens as TokenGUIs
+import Common.Objects.DataViews.Tokens as TokenDataViews
 import Common.Objects.Datasets as Datasets
 import Common.CustomEvents as CustomEvents
 from Common.GUIText import Familiarization as GUIText
@@ -30,7 +27,7 @@ class TokenFiltersNotebook(FNB.FlatNotebook):
     def __init__(self, parent, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".TokenFiltersNotebook.__init__")
         logger.info("Starting")
-        FNB.FlatNotebook.__init__(self, parent, agwStyle=FNB.FNB_DEFAULT_STYLE|FNB.FNB_NO_X_BUTTON|FNB.FNB_HIDE_ON_SINGLE_TAB, size=size)
+        FNB.FlatNotebook.__init__(self, parent, agwStyle=Constants.FNB_STYLE, size=size)
 
         #create dictionary to hold instances of filter panels for each field avaliable
         self.filters = {}
@@ -423,6 +420,7 @@ class FilterPanel(wx.Panel):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].DataRefreshEnd")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
+        self.thread.join()
         self.thread = None
         self.words_df = event.data['words_df']
         self.rules_panel.DisplayFilterRules(self.field.filter_rules)
@@ -449,8 +447,8 @@ class FilterPanel(wx.Panel):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].UpdateWordListsStart")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
+        self.thread.join()
         self.thread = None
-
         self.included_words_panel.UpdateWords(event.data['included_words_df'])
         self.removed_words_panel.UpdateWords(event.data['removed_words_df'])
         self.field.included_tokenset_df = event.data['included_words_df']
@@ -477,10 +475,10 @@ class FilterPanel(wx.Panel):
         if 'removed_search_pos' in saved_data:
             self.removed_words_panel.pos_searchctrl.SetValue(saved_data['removed_search_pos'])
         
-        if saved_data['included_search_word'] != '' or saved_data['included_search_pos'] != '':
-            self.included_words_panel.OnSearch(None)
-        if saved_data['removed_search_word'] != '' or saved_data['removed_search_pos'] != '':
-            self.removed_words_panel.OnSearch(None)
+        #if saved_data['included_search_word'] != '' or saved_data['included_search_pos'] != '':
+        #    self.included_words_panel.OnSearch(None)
+        #if saved_data['removed_search_word'] != '' or saved_data['removed_search_pos'] != '':
+        #    self.removed_words_panel.OnSearch(None)
         logger.info("Finished")
 
     def Save(self):
@@ -542,7 +540,7 @@ class WordsPanel(wx.Panel):
         self.toolbar.Realize()
         sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
         #create the list to be shown
-        self.words_list = TokenGUIs.TokenGrid(self, self.words_df)
+        self.words_list = TokenDataViews.TokenGrid(self, self.words_df)
         sizer.Add(self.words_list, proportion=1, flag=wx.EXPAND, border=5)
 
         border = wx.BoxSizer()
@@ -737,18 +735,19 @@ class FilterRuleDataViewListCtrl(dv.DataViewListCtrl):
         logger.info("Starting")
         dv.DataViewListCtrl.__init__(self, parent, style=dv.DV_ROW_LINES|dv.DV_MULTIPLE)
 
-        text_render = dv.DataViewTextRenderer()
         int_render = dv.DataViewTextRenderer(varianttype="long")
-
         column0 = dv.DataViewColumn(GUIText.FILTERS_RULES_STEP, int_render, 0,
                                     flags=wx.COL_SORTABLE|wx.COL_RESIZABLE, align=wx.ALIGN_RIGHT)
         self.AppendColumn(column0)
+        text_render = dv.DataViewTextRenderer()
         column1 = dv.DataViewColumn(GUIText.FILTERS_WORDS, text_render, 1,
                                     flags=wx.COL_SORTABLE|wx.COL_RESIZABLE, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
+        text_render = dv.DataViewTextRenderer()
         column2 = dv.DataViewColumn(GUIText.FILTERS_POS, text_render, 2,
                                     flags=wx.COL_SORTABLE|wx.COL_RESIZABLE, align=wx.ALIGN_LEFT)
         self.AppendColumn(column2)
+        text_render = dv.DataViewTextRenderer()
         column3 = dv.DataViewColumn(GUIText.FILTERS_RULES_ACTION, text_render, 3,
                                     flags=wx.COL_SORTABLE|wx.COL_RESIZABLE, align=wx.ALIGN_LEFT)
         self.AppendColumn(column3)

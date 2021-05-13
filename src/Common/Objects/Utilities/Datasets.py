@@ -2,7 +2,6 @@ import logging
 
 import spacy
 import nltk
-import numpy as np
 from math import log
 
 import wx
@@ -10,7 +9,6 @@ import wx
 import Common.CustomEvents as CustomEvents
 import Common.Objects.Datasets as Datasets
 from Common.GUIText import Datasets as GUIText
-
 
 def TokenizeDatasetObjects(dataset_objects, notify_window, main_frame):
     logger = logging.getLogger(__name__+".TokenizeDatasetObjects")
@@ -193,7 +191,6 @@ def TokenizeDatasetObjects(dataset_objects, notify_window, main_frame):
 def TokenizationWorker(data_list, field, label, language):
     logger = logging.getLogger(__name__+".TokenizationWorker["+str(field)+"]["+str(label)+"]")
     logger.info("Starting")
-    
 
     spacy.prefer_gpu()
     if language == 'fre-trf':
@@ -231,10 +228,10 @@ def TokenizationWorker(data_list, field, label, language):
                     stem = token.text.strip()
                     lemma = token.lemma_.strip()
                     tmp_tokenset.append((rawtext,
-                                         stem,
-                                         lemma,
-                                         token.pos_,
-                                         token.is_stop))
+                                        stem,
+                                        lemma,
+                                        token.pos_,
+                                        token.is_stop))
                     if rawtext in rawtext_tf:
                         rawtext_tf[rawtext] = rawtext_tf[rawtext] + 1
                     else:
@@ -253,10 +250,10 @@ def TokenizationWorker(data_list, field, label, language):
                     stem = nltk.stem.PorterStemmer().stem(token.text).strip()
                     lemma = token.lemma_.strip()
                     tmp_tokenset.append((rawtext,
-                                         stem,
-                                         lemma,
-                                         token.pos_,
-                                         token.is_stop))
+                                        stem,
+                                        lemma,
+                                        token.pos_,
+                                        token.is_stop))
                     if rawtext in rawtext_tf:
                         rawtext_tf[rawtext] = rawtext_tf[rawtext] + 1
                     else:
@@ -273,8 +270,8 @@ def TokenizationWorker(data_list, field, label, language):
         tokenset = []
         for tmp_token in tmp_tokenset:
             tokenset.append((tmp_token[0], tmp_token[1], tmp_token[2],
-                             tmp_token[3], tmp_token[4],
-                             rawtext_tf[tmp_token[0]], stem_tf[tmp_token[1]], lemma_tf[tmp_token[2]]))
+                            tmp_token[3], tmp_token[4],
+                            rawtext_tf[tmp_token[0]], stem_tf[tmp_token[1]], lemma_tf[tmp_token[2]]))
         tokensets[key] = tokenset        
 
         for rawtext in rawtext_tf:
@@ -295,3 +292,38 @@ def TokenizationWorker(data_list, field, label, language):
 
     logger.info("Finished")
     return tokensets, rawtext_tokens_df, stem_tokens_df, lemma_tokens_df, 
+
+def CreateDatasetObjectsMetadata(dataset):
+    def DatasetMetadata(dataset):
+        id_keys = ["data_source", "data_type", "id"]
+        metadata = {}
+        for data_row in dataset.data.values():
+            data_id = []
+            for key in id_keys:
+                data_id.append(data_row[key])
+            metadata[tuple(data_id)] = {}
+            if dataset.grouping_field is not None:
+                grouping_key = data_row[dataset.grouping_field.key]
+                metadata[tuple(data_id)]["grouping_key"] = grouping_key
+            url = data_row["url"]
+            metadata[tuple(data_id)]['dataset'] = dataset.key
+            metadata[tuple(data_id)]["url"] = url
+        dataset.metadata = metadata
+
+    def GroupedDatasetMetadata(grouped_dataset):
+        metadata = {}
+        for dataset in grouped_dataset.datasets:
+            DatasetMetadata(grouped_dataset.datasets[dataset])
+            for data_id in grouped_dataset.datasets[dataset].metadata:
+                grouping_key = grouped_dataset.datasets[dataset].metadata[data_id]["grouping_key"]
+                if grouping_key not in metadata:
+                    metadata[grouping_key] = {}
+                    metadata[grouping_key]['submetadata'] = {}
+                submetadata = grouped_dataset.datasets[dataset].metadata[data_id]
+                metadata[grouping_key]['submetadata'][data_id] = submetadata
+        grouped_dataset.metadata = metadata
+
+    if isinstance(dataset, Datasets.Dataset):
+        DatasetMetadata(dataset)
+    elif isinstance(dataset, Datasets.GroupedDataset):
+        GroupedDatasetMetadata(dataset)
