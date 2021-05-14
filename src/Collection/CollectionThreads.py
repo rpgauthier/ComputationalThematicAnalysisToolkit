@@ -1,4 +1,3 @@
-
 import logging
 import json
 import csv
@@ -17,8 +16,6 @@ import Common.Objects.Datasets as Datasets
 import Common.Objects.Utilities.Datasets as DatasetsUtilities
 import Collection.RedditDataRetriever as rdr
 import Collection.TwitterDataRetriever as twr
-import Collection.DataTokenizer as DataTokenizer
-import Collection.DataMetadataCreator as DataMetadataCreator
 
 class RetrieveRedditDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
@@ -389,8 +386,8 @@ class RetrieveTwitterDatasetThread(Thread):
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 dataset = self.CreateDataset(dataset_key, retrieval_details, data)
-                DataMetadataCreator.CreateMetadata(dataset)
-                DataTokenizer.TokenizeDatasetObjects([dataset], self._notify_window, self.main_frame)
+                DatasetsUtilities.CreateDatasetObjectsMetadata(dataset)
+                DatasetsUtilities.TokenizeDatasetObjects([dataset], self._notify_window, self.main_frame)
             else:
                 status_flag = False
                 error_msg = GUIText.NO_DATA_AVALIABLE_ERROR

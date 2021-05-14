@@ -39,11 +39,11 @@ class DatasetsListPanel(wx.Panel):
                                               bitmap=wx.Bitmap(1, 1),
                                               shortHelp=GUIText.DATASETS_RETRIEVE_CSV_TOOLTIP)
         create_toolbar.Bind(wx.EVT_MENU, self.OnAddCSVDataset, add_csv_tool)
-        add_twitter_tool = toolbar.AddTool(wx.ID_ANY,
+        add_twitter_tool = create_toolbar.AddTool(wx.ID_ANY,
                                     label=GUIText.DATASETS_RETRIEVE_TWITTER,
                                     bitmap=wx.Bitmap(1, 1),
                                     shortHelp=GUIText.DATASETS_RETRIEVE_TWITTER_TOOLTIP)
-        toolbar.Bind(wx.EVT_MENU, self.OnAddTwitterDataset, add_twitter_tool)
+        create_toolbar.Bind(wx.EVT_MENU, self.OnAddTwitterDataset, add_twitter_tool)
         create_toolbar.Realize()
         create_sizer.Add(create_toolbar)
         toolbar_sizer.Add(create_sizer, 0, wx.ALL, 5)
