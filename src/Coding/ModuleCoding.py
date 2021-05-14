@@ -1,5 +1,4 @@
 import logging
-import webbrowser
 
 import wx
 #import wx.lib.agw.flatnotebook as FNB
@@ -10,23 +9,17 @@ from Common import Constants
 from Common import Notes
 from Common.GUIText import Coding as GUIText
 import Common.Objects.Datasets as Datasets
-import Common.Objects.DataViews.Datasets as DatasetsDataViews
 import Common.Objects.GUIs.Datasets as DatasetGUIs
 
-class CodingPanel(wx.Panel):
+class CodingNotebook(FNB.FlatNotebook):
     '''Manages the Coding Module'''
     def __init__(self, parent, size=wx.DefaultSize):
-        logger = logging.getLogger(__name__+".CodingPanel.__init__")
+        logger = logging.getLogger(__name__+".CodingNotebook.__init__")
         logger.info("Starting")
-        wx.Panel.__init__(self, parent, size=size)
+        FNB.FlatNotebook.__init__(self, parent, agwStyle=Constants.FNB_STYLE, size=size)
 
         self.name = "coding_module"
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-
         self.coding_datasets_panels = {}
-
-        self.datasets_notebook = FNB.FlatNotebook(self, agwStyle=FNB.FNB_DEFAULT_STYLE|FNB.FNB_NO_X_BUTTON|FNB.FNB_HIDE_ON_SINGLE_TAB, size=size)
-        self.sizer.Add(self.datasets_notebook)
 
         #Module's notes
         main_frame = wx.GetApp().GetTopWindow()
@@ -55,9 +48,8 @@ class CodingPanel(wx.Panel):
         main_frame = wx.GetApp().GetTopWindow()
         for dataset_key in list(self.coding_datasets_panels.keys()):
             if dataset_key not in main_frame.datasets:
-                idx = self.datasets_notebook.GetPageIndex(self.coding_datasets_panels[dataset_key])
-                self.datasets_notebook.RemovePage(idx)
-                self.coding_datasets_panels[dataset_key].Hide()
+                idx = self.GetPageIndex(self.coding_datasets_panels[dataset_key])
+                self.DeletePage(idx)
                 del self.coding_datasets_panels[dataset_key]
 
         # add any new datasets and update any existing datasets
@@ -65,8 +57,8 @@ class CodingPanel(wx.Panel):
             if dataset_key in self.coding_datasets_panels:
                 self.coding_datasets_panels[dataset_key].DatasetsUpdated()
             else:
-                self.coding_datasets_panels[dataset_key] = CodingDatasetPanel(self.datasets_notebook, dataset_key, size=self.GetSize())
-                self.datasets_notebook.AddPage(self.coding_datasets_panels[dataset_key], str(dataset_key))
+                self.coding_datasets_panels[dataset_key] = CodingDatasetPanel(self, dataset_key, size=self.GetSize())
+                self.AddPage(self.coding_datasets_panels[dataset_key], str(dataset_key))
                 
         self.Thaw()
         logger.info("Finished")

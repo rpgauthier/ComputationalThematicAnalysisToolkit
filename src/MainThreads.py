@@ -2,20 +2,14 @@ import logging
 import bz2
 import os.path
 from threading import Thread
-from multiprocessing import cpu_count, get_context
 from shutil import copyfile
-from datetime import datetime
-
-import faulthandler
-
 
 import wx
-import wx.aui
-import _pickle as cPickle
+import pickle
 
 import Common.CustomEvents as CustomEvents
 from Common.GUIText import Main as GUIText
-from Common.Objects import Datasets, Samples
+import Common.Objects.Datasets as Datasets
 
 # Thread class that executes processing
 class LoadThread(Thread):
@@ -36,9 +30,10 @@ class LoadThread(Thread):
         try:
             wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_CONFIG))
             with bz2.BZ2File(self.workspace_path+"/config.mta", 'rb') as infile:
-                result['config'] = cPickle.load(infile)
+                result['config'] = pickle.load(infile)
+
+            result['datasets'] = {}
             if "datasets" in result['config']:
-                result['datasets'] = {}
                 for key in result['config']['datasets']:
                     wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_DATASET+str(key)))
                     dataset_filename = ""
@@ -47,7 +42,7 @@ class LoadThread(Thread):
                     dataset_filename = dataset_filename + "datasets.mta"
                     if os.path.isfile(self.workspace_path+"/"+dataset_filename):
                         with bz2.BZ2File(self.workspace_path+"/"+dataset_filename, 'rb') as infile:
-                            result['datasets'][key] = cPickle.load(infile)
+                            result['datasets'][key] = pickle.load(infile)
 
             result['samples'] = {}
             if 'samples' in result['config']:
@@ -56,9 +51,14 @@ class LoadThread(Thread):
                     sample_filename = str(key)+"_sample.mta"
                     if os.path.isfile(self.workspace_path+"/"+sample_filename):
                         with bz2.BZ2File(self.workspace_path+"/"+sample_filename, 'rb') as infile:
-                            result['samples'][key] = cPickle.load(infile)
+                            result['samples'][key] = pickle.load(infile)
                             result['samples'][key].Load(self.workspace_path)
-                    
+
+            result['codes'] = {}
+            if "codes" in result['config']:
+                with bz2.BZ2File(self.workspace_path+"/codes.mta", 'rb') as infile:
+                    result['codes'] = pickle.load(infile)
+
         except (TypeError, FileNotFoundError):
             wx.LogError(GUIText.LOAD_FAILURE + self.workspace_path)
             logger.exception("Failed to load workspace[%s]", self.workspace_path)
@@ -69,7 +69,7 @@ class LoadThread(Thread):
 # Thread class that executes processing
 class SaveThread(Thread):
     """Load Thread Class."""
-    def __init__(self, notify_window, workspace_path, config_data, datasets, samples, last_load_dt):
+    def __init__(self, notify_window, workspace_path, config_data, datasets, samples, codes, last_load_dt):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
@@ -77,6 +77,7 @@ class SaveThread(Thread):
         self.config_data = config_data
         self.datasets = datasets
         self.samples = samples
+        self.codes = codes
         self.last_load_dt = last_load_dt
         # This starts the thread running on creation, but you could
         # also make the GUI thread responsible for calling this
@@ -91,7 +92,7 @@ class SaveThread(Thread):
                 copyfile(self.workspace_path+"/config.mta",
                 self.workspace_path+"/config.mta_bk")
             with bz2.BZ2File(self.workspace_path+"/config.mta", 'wb') as outfile:
-                cPickle.dump(self.config_data, outfile)
+                pickle.dump(self.config_data, outfile)
 
             for key in self.datasets:
                 if self.datasets[key].last_changed_dt > self.last_load_dt:
@@ -104,7 +105,7 @@ class SaveThread(Thread):
                         copyfile(self.workspace_path+"/"+dataset_filename,
                                  self.workspace_path+"/"+dataset_filename+"_bk")
                     with bz2.BZ2File(self.workspace_path+"/"+dataset_filename, 'wb') as outfile:
-                        cPickle.dump(self.datasets[key], outfile)
+                        pickle.dump(self.datasets[key], outfile)
                 
             for key in self.samples:
                 if self.samples[key].last_changed_dt > self.last_load_dt:
@@ -114,9 +115,15 @@ class SaveThread(Thread):
                         copyfile(self.workspace_path+"/"+sample_filename,
                                  self.workspace_path+"/"+sample_filename+"_bk")
                     with bz2.BZ2File(self.workspace_path+"/"+sample_filename, 'wb') as outfile:
-                        cPickle.dump(self.samples[key], outfile)
+                        pickle.dump(self.samples[key], outfile)
                     #trigger save of each sample incase samples or thier components have components that can not be saved by pickling
-                    self.samples[key].Save(self.workspace_path) 
+                    self.samples[key].Save(self.workspace_path)
+
+            if os.path.isfile(self.workspace_path+"/codes.mta"):
+                copyfile(self.workspace_path+"/codes.mta",
+                self.workspace_path+"/codes.mta_bk")
+            with bz2.BZ2File(self.workspace_path+"/codes.mta", 'wb') as outfile:
+                pickle.dump(self.codes, outfile)
 
         except (TypeError, FileNotFoundError):
             wx.LogError(GUIText.LOAD_FAILURE + self.workspace_path)

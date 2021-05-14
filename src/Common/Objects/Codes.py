@@ -6,7 +6,6 @@ import Common.Objects.Datasets as Datasets
 import Common.Objects.Samples as Samples
 
 class Code(GenericObject):
-
     def __init__(self, key):
         logger = logging.getLogger(__name__+".Code["+str(key)+"].__init__")
         logger.info("Starting")

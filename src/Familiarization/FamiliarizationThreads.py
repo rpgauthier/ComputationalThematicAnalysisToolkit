@@ -11,7 +11,7 @@ class CreateWordDataFrameThread(Thread):
     def __init__(self, notify_window, tokenset, word_idx):
         """Init Worker Thread Class."""
         Thread.__init__(self)
-        #move to thread
+        self.daemon = True
         self._notify_window = notify_window
         self.tokenset = tokenset
         self.word_idx = word_idx
@@ -71,7 +71,7 @@ class ApplyFilterRulesThread(Thread):
     def __init__(self, notify_window, word_idx, words_df, filter_rules):
         """Init Worker Thread Class."""
         Thread.__init__(self)
-        #move to thread
+        self.daemon = True
         self._notify_window = notify_window
         self.word_idx = word_idx
         self.words_df = words_df

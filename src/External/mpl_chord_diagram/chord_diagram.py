@@ -524,9 +524,9 @@ def chord_diagram(mat, outer_circle=None, names=None, order=None, width=0.1, pad
                 mean = (arc[i][0] + arc[i][1]) /2
                 mean *= np.pi/180.
                 if pos[0] < 0:
-                    x = pos[0] + abs(pos[0])*0.5-1
+                    x = pos[0] + abs(pos[0])*0.5-1.25
                 else:
-                    x = pos[0] + 1-pos[0]*0.5
+                    x = pos[0] + 1.25-pos[0]*0.5
                 y = pos[1]
                 outer_images[i] = ax.add_artist( #ax can be added image as artist.
                                                 AnnotationBbox(

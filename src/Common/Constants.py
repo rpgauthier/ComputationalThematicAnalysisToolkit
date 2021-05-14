@@ -1,9 +1,14 @@
 '''Constants for MachineThematicAnalysis Toolkit'''
 import wx
+#import wx.lib.agw.flatnotebook as FNB
+import External.wxPython.flatnotebook_fix as FNB
 import wx.aui as aui
 
+
 #Variables to configure GUI
-NOTEBOOK_MOVEABLE = aui.AUI_NB_TOP | aui.AUI_NB_TAB_SPLIT | \
+FNB_STYLE = FNB.FNB_DEFAULT_STYLE|FNB.FNB_HIDE_ON_SINGLE_TAB|FNB.FNB_NO_X_BUTTON
+NOTEBOOK_MOVEABLE = aui.AUI_NB_TOP | aui.AUI_NB_TAB_MOVE | aui.AUI_NB_SCROLL_BUTTONS
+NOTEBOOK_SPLITABLE = aui.AUI_NB_TOP | aui.AUI_NB_TAB_SPLIT | \
                     aui.AUI_NB_TAB_MOVE | aui.AUI_NB_SCROLL_BUTTONS
 NOTEBOOK_FIXED = aui.AUI_NB_TOP | aui.AUI_NB_TAB_MOVE | \
                  aui.AUI_NB_SCROLL_BUTTONS

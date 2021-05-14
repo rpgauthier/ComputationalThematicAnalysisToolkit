@@ -2,14 +2,7 @@ class Common:
     #Common text used everywhere
     WARNING = "Warning"
     ERROR = "Error"
-    INFORMATION = "Information"
-
-    ETHICS_CONFIRMATION = "We have considered the ethical implications\nof creating this dataset"
-    ETHICS_CONFIRMATION_TOOLTIP = "It is recommended that you consider guidelines from your research community, institution, and goverment."\
-                                  "\nYou also should consider the community and platform whose data you are collected by looking at terms of use, community rules, and any terms of use."\
-                                  "\nIf unsure it is recommended to either assume you do not have permission or contact liasons of different to discuss your project."
-    ETHICS_CONFIRMATION_MISSING_ERROR = "Before proceeding you need to take time to consider the ethical implications of creating this dataset.\n" + ETHICS_CONFIRMATION_TOOLTIP
-                                
+    INFORMATION = "Information"                           
 
     CONFIRM_REQUEST = "Please Confirm"
     INPUT_REQUEST = "Please provide Input"
@@ -25,6 +18,7 @@ class Common:
     READD = "Readd"
 
     CREATE = "Create"
+    MODIFY = "Modify"
     DELETE = "Delete"
     ACTIONS = "Actions"
     VIEW = "View"
@@ -61,13 +55,15 @@ class Common:
     WEBSITE = "Website"
     NOTES = "Notes"
 
-    BUSY_MSG_DEFAULT = "\n\n\n\n\n\n"
-    
     SIZE_WARNING_MSG = "WARNING: may take some time for large datasets"
 
+    MULTIPROCESSING_WARNING_MSG = "A cpu intensive operation is currently in progress."\
+                                  "\n Please try current action again after this operation has completed"
+    MULTIPROCESSING_CLOSING_MSG = "A cpu intensive operation is currently in progress."\
+                                  "\n Are you sure you want to exit the application?"
+    
     CONSUMER_KEY = "Consumer Key"
     CONSUMER_SECRET = "Consumer Secret"
-    
 
 class Main(Common):
     APP_NAME = "Machine Guided Thematic Analysis Toolkit"
@@ -103,7 +99,7 @@ class Main(Common):
     SHUTDOWN_BUSY_LABEL = "Shutting Down Application"
     SHUTDOWN_BUSY_POOL = "Shutting down Process Pool"
     SHUTDOWN_BUSY_FAMILIARIZATION = "Shutting down Familiarization Module"
-    SHUTDOWN_BUSY_COLLECTION = "Shutting down Collection Module"
+    SHUTDOWN_BUSY_COLLECTION = "Shutting down Data Collection Module"
     
     NAME_MISSING_ERROR = "You must enter a Name."
     NAME_DUPLICATE_ERROR = "Same name already exists."\
@@ -132,11 +128,13 @@ class Main(Common):
     EXIT = "Exit"
     EXIT_TOOLTIP = "Exit Application"
 
-    #Module Labels
+    #Module/Notes Labels
     GENERAL_LABEL = "General"
-    COLLECTION_LABEL = "Collection"
-    FAMILIARIZATION_LABEL = "Familiarization"
+    COLLECTION_LABEL = "Data Collection"
+    FAMILIARIZATION_LABEL = "Data Cleaning & Filtering"
+    SAMPLING_LABEL = "Sampling & Modelling"
     CODING_LABEL = "Coding"
+    OPTIONS_LABEL = "Options"
     NOTES_LABEL = "Notes"
 
 class Datasets(Common):
@@ -220,6 +218,14 @@ class Datasets(Common):
     TOKENIZING_BUSY_COMPLETED_FIELD_MSG2 = " of "
     TOKENIZING_BUSY_COMPLETED_FIELD_MSG3 = " for field: "
 
+    CHANGING_NAME_BUSY_LABEL = "Changing Name"
+    CHANGING_NAME_BUSY_PREPARING_MSG = "Preparing to Update Dataset Name\n"
+    CHANGING_NAME_BUSY_MSG1 = "Changing From: "
+    CHANGING_NAME_BUSY_MSG2 = " To: "
+
+    CHANGING_LANGUAGE_BUSY_LABEL = "Changing Language"
+    CHANGING_LANGUAGE_BUSY_PREPARING_MSG = "Preparing to Update Dataset Language\n"
+
 
     REFRESHING_DATASETS_BUSY_MSG = "Refreshing Data for Dataset: "
 
@@ -281,6 +287,7 @@ class Samples(Main):
     SAMPLE_NAME = "Name"
     DATASET_NAME = "Dataset"
     SAMPLE_TYPE = "Type"
+    GENERATE_TIME = "Time to Generate"
     LDA_TOPICS = "Topics"
     TOPIC = "Topic"
     CREATE_RANDOM = "Create " + RANDOM_LABEL
@@ -289,8 +296,10 @@ class Samples(Main):
     CREATE_LDA_TOOLTIP = "Create a new Latent Dirchlet Allocation Topic Model of a dataset"
     CREATE_BITERM = "Create " + BITERM_LABEL
     CREATE_BITERM_TOOLTIP = "Create a new Biterm Topic Model of a dataset"
-    DELETE_TOOLTIP = "Remove selected models from workspace"
-    DELETE_CONFIRMATION_WARNING = "\nWARNING this action cannot be undone."
+    DELETE_TOOLTIP = "Remove selected sample from workspace"
+    DELETE_CONFIRMATION_WARNING = "Are you sure you want to delete this sample?"\
+                                  "\nWARNING this action cannot be undone."
+
 
     #random model panel
 
@@ -312,12 +321,13 @@ class Samples(Main):
     CHECK_STATUS_TOOLTIP = "Check if Model is Ready"
 
     NAME_TOOLTIP = "Name must be unique, lowercase, and have no spaces."
-    NUMBER_OF_TOPICS_CHOICE = "Choose Number of Topics:"
+    NUMBER_OF_TOPICS_CHOICE = "Choose Number of Topics: "
     NUMBER_OF_TOPICS_TOOLTIP = "Modelling more topics takes longer but may help identify less common topics"
-    NUMBER_OF_TOPICS = "Number of Topics:"
-    NUMBER_OF_PASSES_CHOICE = "Choose Number of Passes:"
+    NUMBER_OF_TOPICS = "Number of Topics: "
+    NUMBER_OF_PASSES_CHOICE = "Choose Number of Passes: "
     NUMBER_OF_PASSES_TOOLTIP = "More passes causes modelling to take longer but may help produce more cohesive topics"
-    NUMBER_OF_PASSES = "Number of Passes:"
+    NUMBER_OF_PASSES = "Number of Passes: "
+    NUMBER_OF_DOCUMENTS = "Number of Documents: "
     DATASET = Datasets.DATASET
     DATASET_MISSING_ERROR = "Dataset was not chosen." \
                             "\nPlease choose a dataset for the model."
@@ -354,11 +364,17 @@ class Samples(Main):
     REVIEW_TYPE = "Type"
     SAMPLE_NUM = "# of Samples"
 
-    DELETE_TOOLTIP = "Delete review from workspace."
-    DELETE_CONFIRMATION_WARNING = "\nWARNING this action cannot be undone."
-
 class Collection(Main, Datasets):
-    COLLECTION_NOTES_LABEL = "Collection Notes"
+    ETHICS_CONFIRMATION = "We have considered "
+    ETHICS_CONFIRMATION_MISSING_ERROR = "Before proceeding we need to take time to consider "
+    ETHICS_COMMUNITY1 = "the online community's guidlines, rules, and terms of use."
+    ETHICS_COMMUNITY2 = "the impact of our project on the online community."
+    ETHICS_RESEARCH = "the research community's ethical guidlines and rules on online public data collection."
+    ETHICS_INSTITUTION = "our institution's ethical guidlines and rules on online public data collection."
+    ETHICS_REDDIT = "Reddit's rules and terms of use for collecting data."
+    ETHICS_REDDIT_URL = "https://www.redditinc.com/policies/"
+    ETHICS_REDDITAPI_URL = "https://www.reddit.com/wiki/api-terms"
+    ETHICS_PUSHSHIFT = "that this toolkit uses the Pushshift.io api to collect Reddit Data."
 
     DATASETSLIST_LABEL = "Datasets List"
     DATASETS_RETRIEVE_LABEL = "Retrieve"
@@ -390,14 +406,6 @@ class Collection(Main, Datasets):
     FIELDS_EXISTS_ERROR = "Chosen Fields already has field: "
     FIELDS_MERGE_ERROR = "Can only merge fields and selected fields must be from the same dataset or datasets that are grouped together."
     FIELDS_REMOVE_DATASET_WARNING = "Are you sure you want to remove all chosen fields and under Dataset: "
-
-    CHANGING_NAME_BUSY_LABEL = "Changing Name"
-    CHANGING_NAME_BUSY_PREPARING_MSG = "Preparing to Update Dataset Name\n"
-    CHANGING_NAME_BUSY_MSG1 = "Changing From: "
-    CHANGING_NAME_BUSY_MSG2 = " To: "
-
-    CHANGING_LANGUAGE_BUSY_LABEL = "Changing Language"
-    CHANGING_LANGUAGE_BUSY_PREPARING_MSG = "Preparing to Update Dataset Language\n"
 
     GROUPING_BUSY_LABEL = "Grouping Datasets"
     GROUPING_BUSY_PREPARING_MSG = "Preparing to Group Selected Datasets"
@@ -436,10 +444,10 @@ class Collection(Main, Datasets):
     UNMERGING_FIELDS_BUSY_MSG1 = "Unmerging Selection: "
     UNMERGING_FIELDS_BUSY_MSG2 = " from Merged Field: "
 
-    UPDATING_DATASET_BUSY_MSG = "Updating Collection's Dataset Panel"
+    UPDATING_DATASET_BUSY_MSG = "Updating Data Collection's Dataset Panel"
 
-    LOAD_BUSY_MSG_CONFIG = "Loading Collection Configurations"
-    SAVE_BUSY_MSG_CONFIG ="Saving Collection Configurations"
+    LOAD_BUSY_MSG_CONFIG = "Loading Data Collection Configurations"
+    SAVE_BUSY_MSG_CONFIG ="Saving Data Collection Configurations"
 
 #relies on Datasets, Main, and Common being impoted by models
 class Familiarization(Main, Datasets):

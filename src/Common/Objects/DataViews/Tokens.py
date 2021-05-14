@@ -1,10 +1,6 @@
 import logging
 
-import pandas as pd
-import webbrowser
-
 import wx
-import wx.aui
 import wx.grid
 
 from Common.GUIText import Familiarization as GUIText
@@ -17,9 +13,7 @@ class TokenGridTable(wx.grid.GridTableBase):
         self.col_names = [GUIText.FILTERS_WORDS,
                           GUIText.FILTERS_POS,
                           GUIText.FILTERS_NUM_WORDS,
-                          #GUIText.FILTERS_PER_WORDS,
                           GUIText.FILTERS_NUM_DOCS,
-                          #GUIText.FILTERS_PER_DOCS,
                           GUIText.FILTERS_SPACY_AUTO_STOPWORDS,
                           GUIText.FILTERS_TFIDF]
         self._cols = len(self.col_names)

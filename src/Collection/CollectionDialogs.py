@@ -1,23 +1,16 @@
 import logging
-import json
 import csv
 import os.path
-import calendar
 import tweepy
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
 
 import wx
+import wx.adv
 import wx.grid
 import wx.dataview as dv
 
-from Common import Constants as Constants
 from Common.GUIText import Collection as GUIText
-import Common.Objects.Datasets as Datasets
 import Common.CustomEvents as CustomEvents
 import Collection.CollectionThreads as CollectionThreads
-import Collection.SubModuleDatasets as SubModuleDatasets
-import Collection.DataTokenizer as DataTokenizer
 
 class AbstractRetrieverDialog(wx.Dialog):
     def OnRetrieveEnd(self, event):
@@ -64,13 +57,15 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=GUIText.RETRIEVE_REDDIT_LABEL)
         self.retrieval_thread = None
-
-        name_label = wx.StaticText(self, label=GUIText.NAME + ": ")
-        self.name_ctrl = wx.TextCtrl(self)
-        self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label)
-        name_sizer.Add(self.name_ctrl)
+        
+        main_frame = wx.GetApp().GetTopWindow()
+        if main_frame.multipledatasets_mode:
+            name_label = wx.StaticText(self, label=GUIText.NAME + ": ")
+            self.name_ctrl = wx.TextCtrl(self)
+            self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
+            name_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            name_sizer.Add(name_label)
+            name_sizer.Add(self.name_ctrl)
 
         subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT+": ")
         self.subreddit_ctrl = wx.TextCtrl(self)
@@ -79,26 +74,35 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         subreddit_sizer.Add(subreddit_label)
         subreddit_sizer.Add(self.subreddit_ctrl)
 
-        self.ethics_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION)
-        self.ethics_ctrl.SetToolTip(GUIText.ETHICS_CONFIRMATION_TOOLTIP)
+        self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1)
+        self.ethics_community2_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY2)
+        self.ethics_research_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_RESEARCH)
+        self.ethics_institution_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_INSTITUTION)
+        self.ethics_reddit_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_REDDIT)
+        ethics_reddit_url = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.ETHICS_REDDIT_URL)
+        ethics_redditapi_url = wx.adv.HyperlinkCtrl(self, label="2", url=GUIText.ETHICS_REDDITAPI_URL)
+        self.ethics_pushshift_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_PUSHSHIFT)
+        ethics_sizer = wx.BoxSizer(wx.VERTICAL)
+        ethics_sizer.Add(self.ethics_community1_ctrl)
+        ethics_sizer.Add(self.ethics_community2_ctrl)
+        ethics_sizer.Add(self.ethics_research_ctrl)
+        ethics_sizer.Add(self.ethics_institution_ctrl)
+        ethics_reddit_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        ethics_reddit_sizer.Add(self.ethics_reddit_ctrl)
+        ethics_reddit_sizer.Add(ethics_reddit_url)
+        ethics_reddit_sizer.AddSpacer(5)
+        ethics_reddit_sizer.Add(ethics_redditapi_url)
+        ethics_sizer.Add(ethics_reddit_sizer)
+        ethics_sizer.Add(self.ethics_pushshift_ctrl)
 
-        start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
-        self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
-                                                style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
-        self.start_date_ctrl.SetToolTip(GUIText.START_DATE_TOOLTIP)
-        start_date_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        start_date_sizer.Add(start_date_label)
-        start_date_sizer.Add(self.start_date_ctrl)
+        #choose type of dataset to retrieve
+        dataset_type_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        dataset_type_label = wx.StaticText(self, label=GUIText.TYPE+": ")
+        self.dataset_type_choice = wx.Choice(self, choices=[GUIText.REDDIT_DISCUSSIONS, GUIText.REDDIT_SUBMISSIONS, GUIText.REDDIT_COMMENTS])
+        dataset_type_sizer.Add(dataset_type_label)
+        dataset_type_sizer.Add(self.dataset_type_choice)
 
-        end_date_label = wx.StaticText(self, label=GUIText.END_DATE+": ")
-        self.end_date_ctrl = wx.adv.DatePickerCtrl(self, name="endDate",
-                                              style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
-        self.end_date_ctrl.SetToolTip(GUIText.END_DATE_TOOLTIP)
-        end_date_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        end_date_sizer.Add(end_date_label)
-        end_date_sizer.Add(self.end_date_ctrl)
-
-        #control where data is retrieved from
+        #control the subsource of where data is retrieved from
         self.archived_radioctrl = wx.RadioButton(self, label=GUIText.REDDIT_ARCHIVED, style=wx.RB_GROUP)
         self.archived_radioctrl.SetToolTip(GUIText.REDDIT_ARCHIVED_TOOLTIP)
         self.archived_radioctrl.SetValue(True)
@@ -111,9 +115,29 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         #self.update_redditapi_radioctrl.SetToolTipString(GUIText.REDDIT_UPDATE_REDDITAPI_TOOLTIP)
         #self.full_redditapi_radioctrl = wx.RadioButton(self, label=GUIText.REDDIT_API)
         #self.full_redditapi_radioctrl.SetToolTipString(GUIText.REDDIT_FULL_REDDITAPI_TOOLTIP)
+        source_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.SOURCE+": ")
+        source_sizer.Add(self.archived_radioctrl)
+        source_sizer.Add(self.update_pushshift_radioctrl)
+        source_sizer.Add(self.full_pushshift_radioctrl)
+        #source_sizer.Add(self.update_redditapi_radioctrl)
+        #source_sizer.Add(self.full_redditapi_radioctrl)
 
-        #choose type of dataset to retrieve
-        self.dataset_type_choice = wx.Choice(self, choices=[GUIText.REDDIT_DISCUSSIONS, GUIText.REDDIT_SUBMISSIONS, GUIText.REDDIT_COMMENTS])
+        start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
+        self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
+                                                style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
+        self.start_date_ctrl.SetToolTip(GUIText.START_DATE_TOOLTIP)
+        end_date_label = wx.StaticText(self, label=GUIText.END_DATE+": ")
+        self.end_date_ctrl = wx.adv.DatePickerCtrl(self, name="endDate",
+                                              style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
+        self.end_date_ctrl.SetToolTip(GUIText.END_DATE_TOOLTIP)
+        date_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        date_sizer.Add(start_date_label)
+        date_sizer.Add(self.start_date_ctrl)
+        date_sizer.AddSpacer(10)
+        date_sizer.Add(end_date_label)
+        date_sizer.Add(self.end_date_ctrl)
+
+        
 
         #Retriever button to collect the requested data
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -123,18 +147,14 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         button_sizer.Add(cancel_button)
 
         retriever_sizer = wx.BoxSizer(wx.VERTICAL)
-        retriever_sizer.Add(name_sizer)
-        retriever_sizer.Add(subreddit_sizer)
-        retriever_sizer.Add(self.ethics_ctrl)
-        retriever_sizer.Add(start_date_sizer)
-        retriever_sizer.Add(end_date_sizer)
-        retriever_sizer.Add(self.archived_radioctrl)
-        retriever_sizer.Add(self.update_pushshift_radioctrl)
-        retriever_sizer.Add(self.full_pushshift_radioctrl)
-        #retriever_sizer.Add(self.update_redditapi_radioctrl)
-        #retriever_sizer.Add(self.full_redditapi_radioctrl)
-        retriever_sizer.Add(self.dataset_type_choice)
-        retriever_sizer.Add(button_sizer)
+        if main_frame.multipledatasets_mode:
+            retriever_sizer.Add(name_sizer, 0, wx.ALL, 5)
+        retriever_sizer.Add(subreddit_sizer, 0, wx.ALL, 5)
+        retriever_sizer.Add(ethics_sizer, 0, wx.ALL, 5)
+        retriever_sizer.Add(dataset_type_sizer, 0, wx.ALL, 5)
+        retriever_sizer.Add(source_sizer, 0, wx.ALL, 5)
+        retriever_sizer.Add(date_sizer, 0, wx.ALL, 5)
+        retriever_sizer.Add(button_sizer, 0, wx.ALL, 5)
 
         self.SetSizer(retriever_sizer)
         self.Layout()
@@ -152,25 +172,52 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         status_flag = True
         main_frame = wx.GetApp().GetTopWindow()
-        
-        name = self.name_ctrl.GetValue()
-        if name == "":
-            wx.MessageBox(GUIText.NAME_MISSING_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('No name entered')
-            status_flag = False
+        if main_frame.multipledatasets_mode:
+            name = self.name_ctrl.GetValue()
+            if name == "":
+                wx.MessageBox(GUIText.NAME_MISSING_ERROR,
+                            GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                logger.warning('No name entered')
+                status_flag = False
+        else:
+            name = self.subreddit_ctrl.GetValue() 
         subreddit = self.subreddit_ctrl.GetValue()
         if subreddit == "":
             wx.MessageBox(GUIText.REDDIT_SUBREDDIT_MISSING_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('No subreddit entered')
             status_flag = False
-        ethics_flg = self.ethics_ctrl.IsChecked()
-        if not ethics_flg:
-            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR,
+        if not self.ethics_community1_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY1,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('Ethics not checked')
             status_flag = False
+        if not self.ethics_community2_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY2,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
+        if not self.ethics_research_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_RESEARCH,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
+        if not self.ethics_institution_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_INSTITUTION,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
+        if not self.ethics_reddit_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_REDDIT,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
+        if not self.ethics_pushshift_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_PUSHSHIFT,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
+        
         start_date = str(self.start_date_ctrl.GetValue().Format("%Y-%m-%d"))
         end_date = str(self.end_date_ctrl.GetValue().Format("%Y-%m-%d"))
         if start_date > end_date:
@@ -433,12 +480,12 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         button_sizer.Add(cancel_button)
 
         retriever_sizer = wx.BoxSizer(wx.VERTICAL)
-        retriever_sizer.Add(name_sizer)
-        retriever_sizer.Add(filename_sizer)
-        retriever_sizer.Add(dataset_field_sizer)
-        retriever_sizer.Add(id_field_sizer)
-        retriever_sizer.Add(included_fields_sizer)
-        retriever_sizer.Add(button_sizer)
+        retriever_sizer.Add(name_sizer, 0, wx.ALL, 5)
+        retriever_sizer.Add(filename_sizer, 0, wx.ALL, 5)
+        retriever_sizer.Add(dataset_field_sizer, 0, wx.ALL, 5)
+        retriever_sizer.Add(id_field_sizer, 0, wx.ALL, 5)
+        retriever_sizer.Add(included_fields_sizer, 0, wx.ALL, 5)
+        retriever_sizer.Add(button_sizer, 0, wx.ALL, 5)
 
         self.SetSizer(retriever_sizer)
         self.Layout()
@@ -534,230 +581,6 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.retrieval_thread = CollectionThreads.RetrieveCSVDatasetThread(self, main_frame, name, dataset_field, dataset_type, id_field, self.avaliable_fields, included_fields, filename)
         logger.info("Finished")
 
-class DatasetDetailsDialog(wx.Dialog):
-    def __init__(self, parent, dataset):
-        logger = logging.getLogger(__name__+".DatasetDetailsDialog.__init__")
-        logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=GUIText.GROUPED_DATASET_LABEL, style=wx.CAPTION|wx.RESIZE_BORDER)
-
-        self.dataset = dataset
-        self.tokenization_thread = None
-
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-
-        if isinstance(dataset, Datasets.GroupedDataset):
-            name_label = wx.StaticText(self, label=GUIText.NAME + ":")
-            self.name_ctrl = wx.TextCtrl(self, value=self.dataset.name, style=wx.TE_PROCESS_ENTER)
-            self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-            self.name_ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnChangeDatasetKey)
-            name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            name_sizer.Add(name_label)
-            name_sizer.Add(self.name_ctrl)
-            self.sizer.Add(name_sizer)
-
-            created_date_label = wx.StaticText(self, label=GUIText.CREATED_ON + ": "
-                                               +self.dataset.created_dt.strftime("%Y-%m-%d, %H:%M:%S"))
-            self.sizer.Add(created_date_label)
-
-            selected_lang = Constants.AVALIABLE_DATASET_LANGUAGES1.index(dataset.language)
-            language_label = wx.StaticText(self, label=GUIText.LANGUAGE + ": ")
-            self.language_ctrl = wx.Choice(self, choices=Constants.AVALIABLE_DATASET_LANGUAGES2)
-            self.language_ctrl.Select(selected_lang)
-            language_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            language_sizer.Add(language_label)
-            language_sizer.Add(self.language_ctrl)
-            self.sizer.Add(language_sizer, 0, wx.ALL, 5)
-
-        elif isinstance(dataset, Datasets.Dataset) and dataset.dataset_source == 'Reddit':
-            name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            name_label = wx.StaticText(self, label=GUIText.NAME + ":")
-            name_sizer.Add(name_label)
-            self.name_ctrl = wx.TextCtrl(self, value=dataset.name, style=wx.TE_PROCESS_ENTER)
-            self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-            self.name_ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnChangeDatasetKey)
-            name_sizer.Add(self.name_ctrl)
-            self.sizer.Add(name_sizer, 0, wx.ALL, 5)
-
-            retrieved_date_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": "
-                                                +dataset.created_dt.strftime("%Y-%m-%d, %H:%M:%S"))
-            self.sizer.Add(retrieved_date_label, 0, wx.ALL, 5)
-
-            if dataset.parent is None:
-                selected_lang = Constants.AVALIABLE_DATASET_LANGUAGES1.index(dataset.language)
-                language_label = wx.StaticText(self, label=GUIText.LANGUAGE + ": ")
-                self.language_ctrl = wx.Choice(self, choices=Constants.AVALIABLE_DATASET_LANGUAGES2)
-                self.language_ctrl.Select(selected_lang)
-                language_sizer = wx.BoxSizer(wx.HORIZONTAL)
-                language_sizer.Add(language_label)
-                language_sizer.Add(self.language_ctrl)
-                self.sizer.Add(language_sizer, 0, wx.ALL, 5)
-            else:
-                selected_lang = Constants.AVALIABLE_DATASET_LANGUAGES1.index(dataset.language)
-                language_label = wx.StaticText(self, label=GUIText.LANGUAGE + ": " + Constants.AVALIABLE_DATASET_LANGUAGES2[selected_lang])
-                self.sizer.Add(language_label, 0, wx.ALL, 5)
-
-            subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT + ": "
-                                            +dataset.retrieval_details['subreddit'])
-            self.sizer.Add(subreddit_label, 0, wx.ALL, 5)
-
-            start_date_label = wx.StaticText(self, label=GUIText.START_DATE + ": "
-                                            +dataset.retrieval_details['start_date'])
-            self.sizer.Add(start_date_label, 0, wx.ALL, 5)
-
-            end_date_label = wx.StaticText(self, label=GUIText.END_DATE + ": "
-                                        +dataset.retrieval_details['end_date'])
-            self.sizer.Add(end_date_label, 0, wx.ALL, 5)
-
-            if dataset.retrieval_details['pushshift_flg']:
-                if dataset.retrieval_details['replace_archive_flg']:
-                    if dataset.retrieval_details['redditapi_flg']:
-                        retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_FULL_REDDITAPI)
-                    else:
-                        retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_FULL_PUSHSHIFT)
-                else:
-                    if dataset.retrieval_details['redditapi_flg']:
-                        retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_UPDATE_REDDITAPI)
-                    else:
-                        retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_UPDATE_PUSHSHIFT)
-            else:
-                retrieveonline_label = wx.StaticText(self, label=u'\u2611' + " " + GUIText.REDDIT_ARCHIVED)
-            self.sizer.Add(retrieveonline_label, 0, wx.ALL, 5)
-
-            document_num_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
-            self.sizer.Add(document_num_label)
-
-        elif isinstance(dataset, Datasets.Dataset) and dataset.dataset_source == 'CSV':
-            name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            name_label = wx.StaticText(self, label=GUIText.NAME + ":")
-            name_sizer.Add(name_label)
-            self.name_ctrl = wx.TextCtrl(self, value=dataset.name, style=wx.TE_PROCESS_ENTER)
-            self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-            self.name_ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnChangeDatasetKey)
-            name_sizer.Add(self.name_ctrl)
-            self.sizer.Add(name_sizer, 0, wx.ALL, 5)
-
-            retrieved_date_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": "
-                                                +dataset.created_dt.strftime("%Y-%m-%d, %H:%M:%S"))
-            self.sizer.Add(retrieved_date_label, 0, wx.ALL, 5)
-
-            if dataset.parent is None:
-                selected_lang = Constants.AVALIABLE_DATASET_LANGUAGES1.index(dataset.language)
-                language_label = wx.StaticText(self, label=GUIText.LANGUAGE + ": ")
-                self.language_ctrl = wx.Choice(self, choices=Constants.AVALIABLE_DATASET_LANGUAGES2)
-                self.language_ctrl.Select(selected_lang)
-                language_sizer = wx.BoxSizer(wx.HORIZONTAL)
-                language_sizer.Add(language_label)
-                language_sizer.Add(self.language_ctrl)
-                self.sizer.Add(language_sizer, 0, wx.ALL, 5)
-            else:
-                selected_lang = Constants.AVALIABLE_DATASET_LANGUAGES1.index(dataset.language)
-                language_label = wx.StaticText(self, label=GUIText.LANGUAGE + ": " + Constants.AVALIABLE_DATASET_LANGUAGES2[selected_lang])
-                self.sizer.Add(language_label, 0, wx.ALL, 5)
-
-            document_num_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
-            self.sizer.Add(document_num_label)
-
-        #Close button to collect the requested data
-        ok_button = wx.Button(self, id=wx.ID_OK, label=GUIText.OK)
-        cancel_button = wx.Button(self, id=wx.ID_CANCEL, label=GUIText.CANCEL)
-        ok_button.Bind(wx.EVT_BUTTON, self.OnChangeDatasetKey)
-        controls_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        controls_sizer.Add(ok_button)
-        controls_sizer.Add(cancel_button)
-        self.sizer.Add(controls_sizer)
-
-        self.SetSizer(self.sizer)
-        self.Layout()
-
-        CustomEvents.EVT_PROGRESS(self, self.OnProgress)
-        CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnTokenizerEnd)
-
-        logger.info("Finished")
-    
-    def OnChangeDatasetKey(self, event):
-        logger = logging.getLogger(__name__+".DatasetDetailsDialog.OnChangeDatasetKey")
-        logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        if main_frame.threaded_inprogress_flag == True:
-            wx.MessageBox("A memory intensive operation is currently in progress."\
-                          "\n Please try current action again after this operation has completed",
-                          GUIText.WARNING, wx.OK | wx.ICON_WARNING)
-            return
-
-        main_frame.CreateProgressDialog(GUIText.CHANGING_NAME_BUSY_LABEL,
-                                        freeze=True)
-        updated_flag = False
-        tokenizing_flag = False
-        try:
-            main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_PREPARING_MSG)
-            node = self.dataset
-            if isinstance(node, Datasets.Dataset) or isinstance(node, Datasets.GroupedDataset):
-                new_name = self.name_ctrl.GetValue()
-                
-                if node.name != new_name:
-                    old_key = node.key
-                    if isinstance(node, Datasets.GroupedDataset):
-                        new_key = (new_name, 'group')
-                    elif isinstance(node, Datasets.Dataset):
-                        new_key = (new_name, node.dataset_source, node.dataset_type,)
-                    if new_key in main_frame.datasets:
-                        wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
-                                        GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-                        logger.error("Duplicate name[%s] entered by user", str(new_key))
-                    else:
-                        continue_flag = True
-                        for key in main_frame.datasets:
-                            if isinstance(main_frame.datasets[key], Datasets.GroupedDataset):
-                                if new_key in main_frame.datasets[key].datasets:
-                                    continue_flag = False
-                                    wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
-                                        GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-                                    logger.error("Duplicate name[%s] entered by user", str(new_key))
-                                    break
-                        if continue_flag:
-                            main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_MSG1+str(node.key)\
-                                                  +GUIText.CHANGING_NAME_BUSY_MSG2+str(new_key))
-
-                            node.key = new_key
-                            node.name = new_name
-                            if old_key in main_frame.datasets:
-                                main_frame.datasets[new_key] = main_frame.datasets[old_key]
-                                del main_frame.datasets[old_key]
-                            elif node.parent is not None:
-                                node.parent.datasets[new_key] = node
-                                del node.parent.datasets[old_key]
-                            main_frame.DatasetKeyChange(old_key, new_key)
-                            updated_flag = True
-                language_index = self.language_ctrl.GetSelection()
-                if node.language != Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]:
-                    main_frame.PulseProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_PREPARING_MSG)
-                    node.language = Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]
-                    main_frame.threaded_inprogress_flag = True
-                    self.tokenization_thread = CollectionThreads.TokenizerThread(self, main_frame, [node])
-                    tokenizing_flag = True
-        finally:
-            if not tokenizing_flag:
-                if updated_flag:
-                    main_frame.DatasetsUpdated()
-                main_frame.CloseProgressDialog(thaw=True)
-                self.Close()
-        logger.info("Finished")
-
-    def OnTokenizerEnd(self, event):
-        logger = logging.getLogger(__name__+".DatasetDetailsDialog.OnTokenizerEnd")
-        logger.info("Starting")
-        self.tokenization_thread = None
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.DatasetsUpdated()
-        main_frame.CloseProgressDialog(thaw=True)
-        main_frame.threaded_inprogress_flag = False
-        self.Close()
-        logger.info("Finished")
-    
-    def OnProgress(self, event):
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(event.data)
-
 class GroupingFieldDialog(wx.Dialog):
     '''dialog for choosing field to group on'''
     def __init__(self, parent, node):
@@ -805,6 +628,9 @@ class GroupingFieldDialog(wx.Dialog):
         self.SetSizer(vt_sizer)
 
         ok_btn.Bind(wx.EVT_BUTTON, self.OnOk)
+        
+        self.Layout()
+        self.Fit()
         logger.info("Finished")
 
     def OnOk(self, event):

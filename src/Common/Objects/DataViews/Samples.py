@@ -10,6 +10,7 @@ import Common.Objects.GUIs.Datasets as DatasetsGUIs
 import Common.Objects.Samples as Samples
 import Common.Objects.GUIs.Datasets as SamplesGUIs
 
+#TODO remove as no longer used
 # This model acts as a bridge between the SamplesViewCtrl and the Samples to
 # This model provides these data columns:
 #     0. Sample Name:   string
@@ -80,27 +81,30 @@ class SamplesViewModel(dv.PyDataViewModel):
             node.key = value.replace(" ", "_")
         return True
 
+#TODO remove as no longer used
 #This view enables displaying samples
 class SamplesViewCtrl(dv.DataViewCtrl):
     def __init__(self, parent, model):
         dv.DataViewCtrl.__init__(self, parent, style=dv.DV_MULTIPLE|dv.DV_ROW_LINES)
 
         self.AssociateModel(model)
-        #model.DecRef()
+        model.DecRef()
 
         editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
-        text_renderer = dv.DataViewTextRenderer()
-
         column0 = dv.DataViewColumn(GUIText.SAMPLE_NAME, editabletext_renderer, 0,
                                     flags=dv.DATAVIEW_CELL_EDITABLE, align=wx.ALIGN_LEFT)
         self.AppendColumn(column0)
+        text_renderer = dv.DataViewTextRenderer()
         column1 = dv.DataViewColumn(GUIText.DATASET_NAME, text_renderer, 1, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
+        text_renderer = dv.DataViewTextRenderer()
         column2 = dv.DataViewColumn(GUIText.SAMPLE_TYPE, text_renderer, 2, align=wx.ALIGN_LEFT)
         self.AppendColumn(column2)
+        text_renderer = dv.DataViewTextRenderer()
         column3 = dv.DataViewColumn(GUIText.CREATED_ON, text_renderer, 3, align=wx.ALIGN_LEFT)
         self.AppendColumn(column3)
-        column4 = dv.DataViewColumn("Time to Generate", text_renderer, 4, align=wx.ALIGN_LEFT)
+        text_renderer = dv.DataViewTextRenderer()
+        column4 = dv.DataViewColumn(GUIText.GENERATE_TIME, text_renderer, 4, align=wx.ALIGN_LEFT)
         self.AppendColumn(column4)
 
         for column in self.Columns:
@@ -171,7 +175,7 @@ class PartsViewModel(dv.PyDataViewModel):
 
     def GetColumnCount(self):
         '''Report how many columns this model provides data for.'''
-        return len(column_names)
+        return len(self.column_names)
 
     def GetChildren(self, parent, children):
         row_num = 0
@@ -299,7 +303,17 @@ class PartsViewModel(dv.PyDataViewModel):
                        }
             for i in range(2, len(self.column_names)):
                 if self.column_names[i] in node.data_dict:
-                    mapper[i] = str(node.data_dict[self.column_names[i]])
+                    data = node.data_dict[self.column_names[i]]
+                    if isinstance(data, list):
+                        first_entry = ""
+                        for entry in data:
+                            if entry != "":
+                                first_entry = ' '.join(entry.split())
+                                break
+                        if len(data) > 1:
+                            first_entry = str(first_entry) + " ..."
+                        data = first_entry
+                    mapper[i] = str(data)
                 else:
                     mapper[i] = ""
             return mapper[col]
@@ -338,14 +352,15 @@ class PartsViewCtrl(dv.DataViewCtrl):
         dv.DataViewCtrl.__init__(self, parent, style=dv.DV_MULTIPLE|dv.DV_ROW_LINES|dv.DV_VARIABLE_LINE_HEIGHT)
 
         self.AssociateModel(model)
-        #model.DecRef()
+        model.DecRef()
 
+        
         text_renderer = dv.DataViewTextRenderer()
-
         column0 = dv.DataViewColumn(GUIText.ID, text_renderer, 0, align=wx.ALIGN_LEFT)
         self.AppendColumn(column0)
         column0.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
+        text_renderer = dv.DataViewTextRenderer()
         column1 = dv.DataViewColumn(GUIText.NOTES, text_renderer, 1, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
         column1.SetWidth(wx.COL_WIDTH_AUTOSIZE)
@@ -360,8 +375,6 @@ class PartsViewCtrl(dv.DataViewCtrl):
 
     def UpdateColumns(self):
         model = self.GetModel()
-        text_renderer = dv.DataViewTextRenderer()
-
         #remove exisitng data columns
         if len(model.column_names) > 2:
             for i in reversed(range(2, len(model.column_names))):
@@ -371,6 +384,7 @@ class PartsViewCtrl(dv.DataViewCtrl):
         model.UpdateColumnNames()
         for i in range(2, len(model.column_names)):
             name = model.column_names[i][1][1]
+            text_renderer = dv.DataViewTextRenderer()
             data_column = dv.DataViewColumn(str(name), text_renderer, i, align=wx.ALIGN_LEFT)
             self.AppendColumn(data_column)
             data_column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
@@ -486,15 +500,17 @@ class TopicViewModel(dv.PyDataViewModel):
         ''''Fetch the data object for this item's column.'''
         node = self.ItemToObject(item)
         if isinstance(node, Samples.TopicMergedPart):
+            words = [word[0] for word in node.GetTopicKeywordsList()]
             mapper = { 0 : str(node.key),
                        1 : str(node.label),
-                       2 : str([word[0] for word in node.GetTopicKeywordsList()])
+                       2 : str(', '.join(words))
                        }
             return mapper[col]
         elif isinstance(node, Samples.TopicPart):
+            words = [word[0] for word in node.GetTopicKeywordsList()]
             mapper = { 0 : str(node.key),
                        1 : str(node.label),
-                       2 : str([word[0] for word in node.GetTopicKeywordsList()])
+                       2 : str(', '.join(words))
                        }
             return mapper[col]
         elif isinstance(node, Samples.TopicUnknownPart):
@@ -524,19 +540,20 @@ class TopicViewCtrl(dv.DataViewCtrl):
         dv.DataViewCtrl.__init__(self, parent, style=dv.DV_MULTIPLE|dv.DV_ROW_LINES)
 
         self.AssociateModel(model)
-        #model.DecRef()
+        model.DecRef()
 
-        text_render = dv.DataViewTextRenderer()
         #int_render = dv.DataViewTextRenderer(varianttype="long")
-        editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
-
+        
+        text_render = dv.DataViewTextRenderer()
         column0 = dv.DataViewColumn(GUIText.TOPIC_NUM, text_render, 0,
                                     align=wx.ALIGN_RIGHT)
         self.AppendColumn(column0)
+        editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
         column1 = dv.DataViewColumn(GUIText.LABELS, editabletext_renderer, 1,
                                     flags=dv.DATAVIEW_CELL_EDITABLE,
                                     align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
+        text_render = dv.DataViewTextRenderer()
         column2 = dv.DataViewColumn(GUIText.WORDS, text_render, 2,
                                     align=wx.ALIGN_LEFT)
         self.AppendColumn(column2)
@@ -576,7 +593,6 @@ class TopicViewCtrl(dv.DataViewCtrl):
             labels = model.GetValue(item, 1)
             words = model.GetValue(item, 2)
             selected_items.append('\t'.join([str(topic_num), labels, words]).strip())
-
         clipdata = wx.TextDataObject()
         clipdata.SetText("\n".join(selected_items))
         wx.TheClipboard.Open()

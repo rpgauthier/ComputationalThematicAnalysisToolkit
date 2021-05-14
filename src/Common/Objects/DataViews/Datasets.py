@@ -1,10 +1,15 @@
 import logging
+import webbrowser
+
+import pandas as pd
 
 import wx
 import wx.dataview as dv
 
 from Common.GUIText import Datasets as GUIText
 import Common.Objects.Datasets as Datasets
+import Common.Objects.GUIs.Datasets as DatasetsGUIs
+import Common.Objects.Samples as Samples
 
 # This model acts as a bridge between the DatasetsViewCtrl and the dataset to
 # organizes it hierarchically as a collection of Datasets and GroupedDatasets.
@@ -162,20 +167,22 @@ class DatasetsViewCtrl(dv.DataViewCtrl):
         #model.DecRef()
 
         editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
-        text_renderer = dv.DataViewTextRenderer()
-        int_renderer = dv.DataViewTextRenderer(varianttype="long")
-
         column0 = dv.DataViewColumn(GUIText.NAME, editabletext_renderer, 0,
                                flags=dv.DATAVIEW_CELL_EDITABLE, align=wx.ALIGN_LEFT)
         self.AppendColumn(column0)
+        text_renderer = dv.DataViewTextRenderer()
         column1 = dv.DataViewColumn(GUIText.SOURCE, text_renderer, 1, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
+        text_renderer = dv.DataViewTextRenderer()
         column2 = dv.DataViewColumn(GUIText.TYPE, text_renderer, 2, align=wx.ALIGN_LEFT)
         self.AppendColumn(column2)
+        text_renderer = dv.DataViewTextRenderer()
         column3 = dv.DataViewColumn(GUIText.GROUPING_FIELD, text_renderer, 3, align=wx.ALIGN_LEFT)
         self.AppendColumn(column3)
+        int_renderer = dv.DataViewTextRenderer(varianttype="long")
         column4 = dv.DataViewColumn(GUIText.DOCUMENT_NUM, int_renderer, 4, align=wx.ALIGN_LEFT)
         self.AppendColumn(column4)
+        text_renderer = dv.DataViewTextRenderer()
         column5 = dv.DataViewColumn(GUIText.RETRIEVED_ON, text_renderer, 5, align=wx.ALIGN_LEFT)
         self.AppendColumn(column5)
 
@@ -211,6 +218,217 @@ class DatasetsViewCtrl(dv.DataViewCtrl):
         wx.TheClipboard.SetData(clipdata)
         wx.TheClipboard.Close()
 
+#TODO replace with a dataviewctrl with dynamic columns
+#to make only one needed for each entry in main_frame.datasets regardless of which type of dataset is used
+class DatasetsDataGridTable(wx.grid.GridTableBase):
+    def __init__(self, dataset):
+        wx.grid.GridTableBase.__init__(self)
+        self.dataset = dataset
+        self.data_df = pd.DataFrame(dataset.data.values())
+        self._rows = len(self.data_df)
+        self.col_names = []
+        self.GetColNames()
+        self._cols = len(self.col_names)
+        self.data_df['Created UTC'] = pd.to_datetime(self.data_df['created_utc'], unit='s')
+
+    def GetColNames(self):
+        self.col_names = []
+        self.col_names.append(("", "url"))
+        self.col_names.append(("", 'Created UTC'))
+        if self.dataset.grouping_field is not None:
+            self.col_names.append(("Grouping Field", self.dataset.grouping_field.key))
+        self.col_names.extend([("", field_name) for field_name in self.dataset.chosen_fields])
+        for merged_field_key in self.dataset.merged_fields:
+            self.col_names.extend([(merged_field_key, field_key) for field_key in self.dataset.merged_fields[merged_field_key].chosen_fields])
+        if self.dataset.parent is not None:
+            for merged_field_key in self.dataset.parent.merged_fields:
+                merged_field = self.dataset.parent.merged_fields[merged_field_key]
+                for field_key in merged_field.chosen_fields:
+                    field = merged_field.chosen_fields[field_key]
+                    if field.dataset is self.dataset:
+                        self.col_names.append((merged_field.key, field_key))
+
+    def GetColLabelValue(self, col):
+        name = ""
+        if self.col_names[col][0] == "":
+            name = str(self.col_names[col][1])
+        else:
+            name = self.col_names[col][1][1]
+        #    name = str(self.col_names[col][0])+"("+str(self.col_names[col][1])+")"
+        return name
+    
+    def GetColTupleValue(self, col):
+        if self.col_names[col][0] == "":
+            return self.col_names[col][1]
+        else:
+            if isinstance(self.col_names[col][1], tuple):
+                return self.col_names[col][1][1]
+            else:
+                return self.col_names[col][1]
+
+    def GetNumberRows(self):
+        """Return the number of rows in the grid"""
+        return len(self.data_df)
+
+    def GetNumberCols(self):
+        """Return the number of columns in the grid"""
+        return len(self.col_names)
+
+    def GetTypeName(self, row, col):
+        """Return the name of the data type of the value in the cell"""
+        return wx.grid.GRID_VALUE_TEXT
+
+    def GetValue(self, row, col):
+        """Return the value of a cell"""
+        col_name = self.col_names[col][1]
+        if isinstance(col_name, tuple):
+            col_name = col_name[1]
+        df_row = self.data_df.iloc[row]
+        data = df_row[col_name]
+        if isinstance(data, list):
+            first_entry = ""
+            for entry in data:
+                if entry != "":
+                    first_entry = ' '.join(entry.split())
+                    break
+            if len(data) > 1:
+                first_entry = str(first_entry) + " ..."
+            data = first_entry
+        return str(data)
+
+    def SetValue(self, row, col, value):
+        """Set the value of a cell"""
+        pass
+
+    def ResetView(self, grid):
+        self.GetColNames()
+        grid.BeginBatch()
+        for current, new, delmsg, addmsg in [
+            (self._rows, self.GetNumberRows(), wx.grid.GRIDTABLE_NOTIFY_ROWS_DELETED,
+            wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED),
+            (self._cols, self.GetNumberCols(), wx.grid.GRIDTABLE_NOTIFY_COLS_DELETED,
+            wx.grid.GRIDTABLE_NOTIFY_COLS_APPENDED),
+            ]:
+            if new < current:
+                msg = wx.grid.GridTableMessage(self, delmsg, new, current-new)
+                grid.ProcessTableMessage(msg)
+            elif new > current:
+                msg = wx.grid.GridTableMessage(self, addmsg, new-current)
+                grid.ProcessTableMessage(msg)
+        self.UpdateValues(grid)
+        grid.EndBatch()
+        self._rows = self.GetNumberRows()
+        self._cols = self.GetNumberCols()
+        # XXX
+        # Okay, this is really stupid, we need to "jiggle" the size
+        # to get the scrollbars to recalibrate when the underlying
+        # grid changes.
+        h,w = grid.GetSize()
+        grid.SetSize((h+1, w))
+        grid.SetSize((h, w))
+        grid.ForceRefresh()
+        self.UpdateValues(grid)
+    
+    def UpdateValues(self, grid):
+        """Update all displayed values without changing the grid size"""
+        msg = wx.grid.GridTableMessage(self, wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES)
+        grid.ProcessTableMessage(msg)
+
+class DatasetsDataGrid(wx.grid.Grid):
+    def __init__(self, parent, dataset, size=wx.DefaultSize):
+        logger = logging.getLogger(__name__+".DatasetsDataGrid.__init__")
+        logger.info("Starting")
+        wx.grid.Grid.__init__(self, parent, size=size)
+        self.dataset = dataset
+        self.gridtable = DatasetsDataGridTable(dataset)
+        self.SetTable(self.gridtable, takeOwnership=True)
+        self.EnableEditing(False)
+        self.UseNativeColHeader(True)
+        self.HideRowLabels()
+        self.AutoSize()
+        self.Bind(wx.grid.EVT_GRID_COL_SORT, self.OnSort)
+        self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.OnOpen)
+        logger.info("Finished")
+
+    def OnSort(self, event):
+        logger = logging.getLogger(__name__+".DatasetsDataGrid.OnSort")
+        logger.info("Starting")
+        col = event.GetCol()
+        col_name = self.gridtable.GetColTupleValue(event.GetCol())
+        if col == self.GetSortingColumn():
+            if self.IsSortOrderAscending():
+                #self.SetSortingColumn(col)
+                self.gridtable.data_df.sort_values(by=[col_name], inplace=True)
+            else:
+                #self.SetSortingColumn(col, ascending=False)
+                self.gridtable.data_df.sort_values(by=[col_name], ascending=False, inplace=True)
+        else:
+            self.SetSortingColumn(col)
+            self.gridtable.data_df.sort_values(by=[col_name], inplace=True)
+        logger.info("Finish")
+            
+    def OnOpen(self, event):
+        logger = logging.getLogger(__name__+".DatasetsDataGrid.OnOpen")
+        logger.info("Starting")
+        col = event.GetCol()
+        row = event.GetRow()
+        col_name = self.GetColLabelValue(col)
+        if col_name == "url":
+            url = self.gridtable.GetValue(row, col)
+            webbrowser.open_new_tab(url)
+        else:
+            row_data = self.gridtable.data_df.iloc[row]
+            key = (row_data['data_source'], row_data['data_type'], row_data['id'])
+            
+            document = self.dataset.SetupDocument(key)
+            main_frame = wx.GetApp().GetTopWindow()
+            DatasetsGUIs.DocumentDialog(main_frame, document).Show()
+        logger.info("Finish")
+
+    def AutoSize(self):
+        if self.GetNumberRows() > 0:
+            max_size = self.GetSize().GetWidth()*0.98
+            dc = wx.ScreenDC()
+            font = self.GetLabelFont()
+            dc.SetFont(font)
+            
+            url = self.gridtable.GetValue(0, 0)
+            url_size = dc.GetTextExtent(url).GetWidth()
+            url_label_size = dc.GetTextExtent("URL").GetWidth()
+            self.SetColSize(0, max(url_size, url_label_size))
+            max_size = max_size - max(url_size, url_label_size)
+
+            date = self.gridtable.GetValue(0, 1)
+            date_size = dc.GetTextExtent(date).GetWidth()
+            date_label_size = dc.GetTextExtent("Created UTC").GetWidth()
+            self.SetColSize(1, max(date_size, date_label_size))
+            max_size = max_size - max(date_size, date_label_size)
+
+            if self.dataset.grouping_field is not None:
+                field = self.gridtable.GetValue(0, 2)
+                field_size = dc.GetTextExtent(field).GetWidth()
+                field_label_size = dc.GetTextExtent(str(("Grouping Field", self.dataset.grouping_field.key))).GetWidth()
+                self.SetColSize(1, max(field_size, field_label_size))
+                max_size = max_size - max(field_size, field_label_size)
+                first_data_col = 3
+            else:
+                first_data_col = 2
+            
+            col_num = self.gridtable.GetNumberCols()
+            if col_num > first_data_col:
+                split_size = max_size / (col_num-first_data_col)
+                for col in range(first_data_col, col_num):
+                    self.SetColSize(col, int(split_size))
+
+    def Update(self):
+        logger = logging.getLogger(__name__+".DatasetsDataGrid.Update")
+        logger.info("Starting")
+        self.gridtable.ResetView(self)
+        self.AutoSize()
+        for i in range(0, len(self.gridtable.col_names)):
+            self.SetColLabelValue(i, self.gridtable.GetColLabelValue(i))
+        self.ForceRefresh()
+        logger.info("Finish")
 
 # This model acts as a bridge between the FieldViewCtrl and the dataset and
 # organizes it hierarchically using GroupedDataset, Dataset, Field objects.
@@ -471,18 +689,20 @@ class FieldsViewCtrl(dv.DataViewCtrl):
         self.AssociateModel(model)
         #model.DecRef()
 
-        text_renderer = dv.DataViewTextRenderer()
-        editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
-                
+        editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)        
         column0 = dv.DataViewColumn(GUIText.NAME, editabletext_renderer, 0,
                                     flags=dv.DATAVIEW_CELL_EDITABLE, align=wx.ALIGN_LEFT)
         self.AppendColumn(column0)
+        text_renderer = dv.DataViewTextRenderer()
         column1 = dv.DataViewColumn(GUIText.SOURCE, text_renderer, 1, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
+        text_renderer = dv.DataViewTextRenderer()
         column2 = dv.DataViewColumn(GUIText.TYPE, text_renderer, 2, align=wx.ALIGN_LEFT)
         self.AppendColumn(column2)
+        text_renderer = dv.DataViewTextRenderer()
         column3 = dv.DataViewColumn(GUIText.FIELD, text_renderer, 3, align=wx.ALIGN_LEFT)
         self.AppendColumn(column3)
+        text_renderer = dv.DataViewTextRenderer()
         column4 = dv.DataViewColumn(GUIText.DESCRIPTION, text_renderer, 4, align=wx.ALIGN_LEFT)
         self.AppendColumn(column4)
 
@@ -551,7 +771,7 @@ class DocumentViewModel(dv.PyDataViewModel):
 
     def GetColumnCount(self):
         '''Report how many columns this model provides data for.'''
-        return len(column_names)
+        return len(self.column_names)
 
     def GetChildren(self, parent, children):
         # If the parent item is invalid then it represents the hidden root
@@ -683,7 +903,17 @@ class DocumentViewModel(dv.PyDataViewModel):
                        }
             for i in range(2, len(self.column_names)):
                 if self.column_names[i] in node.data_dict:
-                    mapper[i] = str(node.data_dict[self.column_names[i]])
+                    data = node.data_dict[self.column_names[i]]
+                    if isinstance(data, list):
+                        first_entry = ""
+                        for entry in data:
+                            if entry != "":
+                                first_entry = ' '.join(entry.split())
+                                break
+                        if len(data) > 1:
+                            first_entry = str(first_entry) + " ..."
+                        data = first_entry
+                    mapper[i] = str(data)
                 else:
                     mapper[i] = ""
             return mapper[col]
@@ -725,11 +955,11 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         #model.DecRef()
 
         text_renderer = dv.DataViewTextRenderer()
-
         column0 = dv.DataViewColumn(GUIText.ID, text_renderer, 0, align=wx.ALIGN_LEFT)
         self.AppendColumn(column0)
         column0.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
+        text_renderer = dv.DataViewTextRenderer()
         column1 = dv.DataViewColumn(GUIText.NOTES, text_renderer, 1, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
         column1.SetWidth(wx.COL_WIDTH_AUTOSIZE)
@@ -744,7 +974,6 @@ class DocumentViewCtrl(dv.DataViewCtrl):
 
     def UpdateColumns(self):
         model = self.GetModel()
-        text_renderer = dv.DataViewTextRenderer()
 
         #remove exisitng data columns
         if len(model.column_names) > 2:
@@ -755,6 +984,7 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         model.UpdateColumnNames()
         for i in range(2, len(model.column_names)):
             name = model.column_names[i][1][1]
+            text_renderer = dv.DataViewTextRenderer()
             data_column = dv.DataViewColumn(str(name), text_renderer, i, align=wx.ALIGN_LEFT)
             self.AppendColumn(data_column)
             data_column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
@@ -798,8 +1028,9 @@ class DocumentViewCtrl(dv.DataViewCtrl):
             document_id = model.GetValue(item, 0)
             notes = model.GetValue(item, 1)
             fields = ""
-            for i in range(0, len(data_columns)):
-                fields = fields + model.GetValue(item, 2+i)+"\t"
+            if len(model.column_names) > 2:
+                for i in range(2, len(model.column_names)):
+                    fields = fields + model.GetValue(item, 2+i)+"\t"
             selected_items.append('\t'.join([document_id, notes, fields]).strip())
         clipdata = wx.TextDataObject()
         clipdata.SetText("\n".join(selected_items))
@@ -909,11 +1140,12 @@ class DocumentConnectionsViewCtrl(dv.DataViewCtrl):
         model.DecRef()
 
         text_renderer = dv.DataViewTextRenderer()
-    
         column0 = dv.DataViewColumn("Type", text_renderer, 0, align=wx.ALIGN_LEFT)
         self.AppendColumn(column0)
+        text_renderer = dv.DataViewTextRenderer()
         column1 = dv.DataViewColumn(GUIText.NAME, text_renderer, 1, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
+        text_renderer = dv.DataViewTextRenderer()
         column2 = dv.DataViewColumn(GUIText.NOTES, text_renderer, 2, align=wx.ALIGN_LEFT)
         self.AppendColumn(column2)
 
