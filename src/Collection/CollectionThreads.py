@@ -286,14 +286,14 @@ class RetrieveRedditDatasetThread(Thread):
 # TODO: convert to twitter
 class RetrieveTwitterDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, consumer_key, consumer_secret, query, start_date, end_date, dataset_type):
+    def __init__(self, notify_window, main_frame, dataset_name, keys, query, start_date, end_date, dataset_type):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
         self.main_frame = main_frame
         self.dataset_name = dataset_name
-        self.consumer_key = consumer_key
-        self.consumer_secret = consumer_secret
+        self.consumer_key = keys['consumer_key']
+        self.consumer_secret = keys['consumer_secret']
         self.query = query
         self.start_date = start_date
         self.end_date = end_date

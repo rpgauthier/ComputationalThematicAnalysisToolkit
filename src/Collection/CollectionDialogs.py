@@ -2,6 +2,7 @@ import logging
 import csv
 import os.path
 import tweepy
+import json
 
 import wx
 import wx.adv
@@ -275,6 +276,12 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=GUIText.RETRIEVE_TWITTER_LABEL)
         self.retrieval_thread = None
+        self.keys_filename = "../keys.json"
+        self.keys = {}
+        # get saved keys, if any
+        if os.path.isfile(self.keys_filename):
+            with open(self.keys_filename, mode='r') as infile:
+                self.keys = json.load(infile)
 
         name_label = wx.StaticText(self, label=GUIText.NAME+": ")
         self.name_ctrl = wx.TextCtrl(self)
@@ -285,6 +292,8 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         consumer_key_label = wx.StaticText(self, label=GUIText.CONSUMER_KEY + ": ")
         self.consumer_key_ctrl = wx.TextCtrl(self)
+        if 'consumer_key' in self.keys:
+            self.consumer_key_ctrl.SetValue(self.keys['consumer_key'])
         self.consumer_key_ctrl.SetToolTip(GUIText.CONSUMER_KEY_TOOLTIP)
         consumer_key_sizer = wx.BoxSizer(wx.HORIZONTAL)
         consumer_key_sizer.Add(consumer_key_label)
@@ -292,6 +301,8 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
     
         consumer_secret_label = wx.StaticText(self, label=GUIText.CONSUMER_SECRET + ": ")
         self.consumer_secret_ctrl = wx.TextCtrl(self)
+        if 'consumer_secret' in self.keys:
+            self.consumer_secret_ctrl.SetValue(self.keys['consumer_secret'])
         self.consumer_secret_ctrl.SetToolTip(GUIText.CONSUMER_SECRET_TOOLTIP)
         consumer_secret_sizer = wx.BoxSizer(wx.HORIZONTAL)
         consumer_secret_sizer.Add(consumer_secret_label)
@@ -352,6 +363,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         status_flag = True
         main_frame = wx.GetApp().GetTopWindow()
+        keys = {}
         
         name = self.name_ctrl.GetValue()
         if name == "":
@@ -359,20 +371,20 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('No name entered')
             status_flag = False
-        consumer_key = self.consumer_key_ctrl.GetValue()
-        if consumer_key == "":
+        keys['consumer_key'] = self.consumer_key_ctrl.GetValue()
+        if keys['consumer_key'] == "":
             wx.MessageBox(GUIText.CONSUMER_KEY_MISSING_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('No consumer key entered')
             status_flag = False
-        consumer_secret = self.consumer_secret_ctrl.GetValue()
-        if consumer_secret == "":
+        keys['consumer_secret'] = self.consumer_secret_ctrl.GetValue()
+        if keys['consumer_secret'] == "":
             wx.MessageBox(GUIText.CONSUMER_SECRET_MISSING_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('No consumer secret entered')
             status_flag = False
 
-        auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+        auth = tweepy.OAuthHandler(keys['consumer_key'], keys['consumer_secret'])
         api = tweepy.API(auth)
         valid_credentials = False
         try:
@@ -419,13 +431,17 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             status_flag = False
 
         if status_flag:
+            # save keys
+            with open(self.keys_filename, mode='w') as outfile:
+                json.dump(keys, outfile)
+
             main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+name,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
             self.Disable()
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
-            self.retrieval_thread = CollectionThreads.RetrieveTwitterDatasetThread(self, main_frame, name, consumer_key, consumer_secret, query, start_date, end_date, dataset_type)
+            self.retrieval_thread = CollectionThreads.RetrieveTwitterDatasetThread(self, main_frame, name, keys, query, start_date, end_date, dataset_type)
         logger.info("Finished")
 
 class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):

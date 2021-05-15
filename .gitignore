@@ -3,3 +3,4 @@ Logs/
 Workspaces/
 .vscode/
 **/__pycache__
+keys.json
