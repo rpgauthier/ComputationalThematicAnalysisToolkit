@@ -308,12 +308,38 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         consumer_secret_sizer.Add(consumer_secret_label)
         consumer_secret_sizer.Add(self.consumer_secret_ctrl)
 
-        query_label = wx.StaticText(self, label=GUIText.TWITTER_QUERY+": ")
+        # search by query
+        self.query_radioctrl = wx.RadioButton(self, label=GUIText.TWITTER_QUERY+": ", style=wx.RB_GROUP)
+        self.query_radioctrl.SetToolTip(GUIText.TWITTER_QUERY_RADIOBUTTON_TOOLTIP)
+        self.query_radioctrl.SetValue(True)
+
         self.query_ctrl = wx.TextCtrl(self)
+        self.query_ctrl.SetHint(GUIText.TWITTER_QUERY_PLACEHOLDER)
         self.query_ctrl.SetToolTip(GUIText.TWITTER_QUERY_TOOLTIP)
+
         query_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        query_sizer.Add(query_label)
+        query_sizer.Add(self.query_radioctrl)
         query_sizer.Add(self.query_ctrl)
+
+        # search by tweet attributes
+        self.attributes_radioctrl = wx.RadioButton(self, label=GUIText.TWITTER_TWEET_ATTRIBUTES+": ")
+        self.attributes_radioctrl.SetToolTip(GUIText.TWITTER_TWEET_ATTRIBUTES_RADIOBUTTON_TOOLTIP)
+
+        self.keywords_checkboxctrl = wx.CheckBox(self, label=GUIText.TWITTER_KEYWORDS+": ")
+
+        attributes_checkboxes_sizer = wx.BoxSizer(wx.VERTICAL)
+        attributes_checkboxes_sizer.Add(self.keywords_checkboxctrl)
+
+        attributes_sizer = wx.BoxSizer(wx.VERTICAL)
+        attributes_sizer.Add(self.attributes_radioctrl)
+        attributes_sizer.Add(attributes_checkboxes_sizer)
+
+        # add elements to 'search by' box
+        search_by_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.SEARCH_BY+": ")
+        search_by_sizer.Add(query_sizer)
+        search_by_sizer.Add(attributes_sizer)
+
+
 
         start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
         self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
@@ -342,7 +368,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         retriever_sizer.Add(name_sizer)
         retriever_sizer.Add(consumer_key_sizer)
         retriever_sizer.Add(consumer_secret_sizer)
-        retriever_sizer.Add(query_sizer)
+        retriever_sizer.Add(search_by_sizer)
         retriever_sizer.Add(start_date_sizer)
         retriever_sizer.Add(end_date_sizer)
         retriever_sizer.Add(button_sizer)

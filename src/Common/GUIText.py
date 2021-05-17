@@ -238,6 +238,7 @@ class Datasets(Common):
     RETRIEVED_ON = "Retrieved On"
     PREPARED_ON = "Prepared On"
     LANGUAGE = "Language"
+    SEARCH_BY = "Search by"
 
     #Retrieval specific fields
     START_DATE = "Start Date"
@@ -259,9 +260,13 @@ class Datasets(Common):
 
     TWITTER_LABEL = "Twitter"
     TWITTER_QUERY = "Query"
-    # TODO: make this more intuitive?
-    TWITTER_QUERY_TOOLTIP = "Query must follow these guidelines: https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
+    TWITTER_QUERY_TOOLTIP = "Query must follow these rules: https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
+    TWITTER_QUERY_RADIOBUTTON_TOOLTIP = "Use a Twitter query to create the dataset, using these rules: https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
     TWITTER_QUERY_MISSING_ERROR = "You must enter a query."
+    TWITTER_QUERY_PLACEHOLDER = "life OR technology from:google"
+    TWITTER_TWEET_ATTRIBUTES = "Tweet attributes"
+    TWITTER_TWEET_ATTRIBUTES_RADIOBUTTON_TOOLTIP = "Use specific tweet attributes to create the dataset."
+    TWITTER_KEYWORDS = "Keywords"
 
     CSV_LABEL = "CSV"
     CSV_DATASETFIELD = "Dataset Field"
