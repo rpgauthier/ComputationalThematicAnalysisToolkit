@@ -288,7 +288,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
         name_sizer = wx.BoxSizer(wx.HORIZONTAL)
         name_sizer.Add(name_label)
-        name_sizer.Add(self.name_ctrl)
+        name_sizer.Add(self.name_ctrl, wx.EXPAND)
 
         consumer_key_label = wx.StaticText(self, label=GUIText.CONSUMER_KEY + ": ")
         self.consumer_key_ctrl = wx.TextCtrl(self)
@@ -297,7 +297,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.consumer_key_ctrl.SetToolTip(GUIText.CONSUMER_KEY_TOOLTIP)
         consumer_key_sizer = wx.BoxSizer(wx.HORIZONTAL)
         consumer_key_sizer.Add(consumer_key_label)
-        consumer_key_sizer.Add(self.consumer_key_ctrl)
+        consumer_key_sizer.Add(self.consumer_key_ctrl, wx.EXPAND)
     
         consumer_secret_label = wx.StaticText(self, label=GUIText.CONSUMER_SECRET + ": ")
         self.consumer_secret_ctrl = wx.TextCtrl(self)
@@ -306,7 +306,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.consumer_secret_ctrl.SetToolTip(GUIText.CONSUMER_SECRET_TOOLTIP)
         consumer_secret_sizer = wx.BoxSizer(wx.HORIZONTAL)
         consumer_secret_sizer.Add(consumer_secret_label)
-        consumer_secret_sizer.Add(self.consumer_secret_ctrl)
+        consumer_secret_sizer.Add(self.consumer_secret_ctrl, wx.EXPAND)
 
         # search by query
         self.query_radioctrl = wx.RadioButton(self, label=GUIText.TWITTER_QUERY+": ", style=wx.RB_GROUP)
@@ -319,27 +319,49 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         query_sizer = wx.BoxSizer(wx.HORIZONTAL)
         query_sizer.Add(self.query_radioctrl)
-        query_sizer.Add(self.query_ctrl)
+        query_sizer.Add(self.query_ctrl, wx.EXPAND)
 
         # search by tweet attributes
         self.attributes_radioctrl = wx.RadioButton(self, label=GUIText.TWITTER_TWEET_ATTRIBUTES+": ")
         self.attributes_radioctrl.SetToolTip(GUIText.TWITTER_TWEET_ATTRIBUTES_RADIOBUTTON_TOOLTIP)
 
-        self.keywords_checkboxctrl = wx.CheckBox(self, label=GUIText.TWITTER_KEYWORDS+": ")
+        self.keywords_checkbox_ctrl = wx.CheckBox(self, label=GUIText.KEYWORDS+": ")
+        self.keywords_ctrl = wx.TextCtrl(self)
+        self.keywords_ctrl.SetHint(GUIText.TWITTER_KEYWORDS_PLACEHOLDER)
+        keywords_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        keywords_sizer.AddSpacer(20)
+        keywords_sizer.Add(self.keywords_checkbox_ctrl)
+        keywords_sizer.Add(self.keywords_ctrl, wx.EXPAND)
 
-        attributes_checkboxes_sizer = wx.BoxSizer(wx.VERTICAL)
-        attributes_checkboxes_sizer.Add(self.keywords_checkboxctrl)
+        self.hashtags_checkbox_ctrl = wx.CheckBox(self, label=GUIText.HASHTAGS+": ")
+        self.hashtags_ctrl = wx.TextCtrl(self)
+        self.hashtags_ctrl.SetHint(GUIText.TWITTER_HASHTAGS_PLACEHOLDER)
+        hashtags_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        hashtags_sizer.AddSpacer(20)
+        hashtags_sizer.Add(self.hashtags_checkbox_ctrl)
+        hashtags_sizer.Add(self.hashtags_ctrl, wx.EXPAND)
 
+        self.account_checkbox_ctrl = wx.CheckBox(self, label=GUIText.TWITTER_LABEL+" "+GUIText.HASHTAGS+": ")
+        self.account_ctrl = wx.TextCtrl(self)
+        self.account_ctrl.SetHint(GUIText.TWITTER_ACCOUNT_PLACEHOLDER)
+        account_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        account_sizer.AddSpacer(20)
+        account_sizer.Add(self.account_checkbox_ctrl)
+        account_sizer.Add(self.account_ctrl, wx.EXPAND)
+
+        attributes_options_sizer = wx.BoxSizer(wx.VERTICAL)
+        attributes_options_sizer.Add(keywords_sizer, 0, wx.EXPAND)
+        attributes_options_sizer.Add(hashtags_sizer, 0, wx.EXPAND)
+        attributes_options_sizer.Add(account_sizer, 0, wx.EXPAND)
+        
         attributes_sizer = wx.BoxSizer(wx.VERTICAL)
         attributes_sizer.Add(self.attributes_radioctrl)
-        attributes_sizer.Add(attributes_checkboxes_sizer)
+        attributes_sizer.Add(attributes_options_sizer, 0, wx.EXPAND)
 
         # add elements to 'search by' box
         search_by_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.SEARCH_BY+": ")
-        search_by_sizer.Add(query_sizer)
-        search_by_sizer.Add(attributes_sizer)
-
-
+        search_by_sizer.Add(query_sizer, 0, wx.EXPAND)
+        search_by_sizer.Add(attributes_sizer, 0, wx.EXPAND)
 
         start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
         self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
@@ -365,13 +387,14 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         button_sizer.Add(cancel_button)
 
         retriever_sizer = wx.BoxSizer(wx.VERTICAL)
-        retriever_sizer.Add(name_sizer)
-        retriever_sizer.Add(consumer_key_sizer)
-        retriever_sizer.Add(consumer_secret_sizer)
-        retriever_sizer.Add(search_by_sizer)
-        retriever_sizer.Add(start_date_sizer)
-        retriever_sizer.Add(end_date_sizer)
-        retriever_sizer.Add(button_sizer)
+        retriever_sizer.SetMinSize(350, -1)
+        retriever_sizer.Add(name_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        retriever_sizer.Add(consumer_key_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        retriever_sizer.Add(consumer_secret_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        retriever_sizer.Add(search_by_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        retriever_sizer.Add(start_date_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        retriever_sizer.Add(end_date_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        retriever_sizer.Add(button_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         self.SetSizer(retriever_sizer)
         self.Layout()

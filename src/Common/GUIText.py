@@ -239,6 +239,9 @@ class Datasets(Common):
     PREPARED_ON = "Prepared On"
     LANGUAGE = "Language"
     SEARCH_BY = "Search by"
+    KEYWORDS = "Keywords"
+    HASHTAGS = "Hashtags"
+    ACCOUNT = "Account"
 
     #Retrieval specific fields
     START_DATE = "Start Date"
@@ -263,10 +266,12 @@ class Datasets(Common):
     TWITTER_QUERY_TOOLTIP = "Query must follow these rules: https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
     TWITTER_QUERY_RADIOBUTTON_TOOLTIP = "Use a Twitter query to create the dataset, using these rules: https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
     TWITTER_QUERY_MISSING_ERROR = "You must enter a query."
-    TWITTER_QUERY_PLACEHOLDER = "life OR technology from:google"
+    TWITTER_QUERY_PLACEHOLDER = "ex. life OR technology from:google"
     TWITTER_TWEET_ATTRIBUTES = "Tweet attributes"
     TWITTER_TWEET_ATTRIBUTES_RADIOBUTTON_TOOLTIP = "Use specific tweet attributes to create the dataset."
-    TWITTER_KEYWORDS = "Keywords"
+    TWITTER_KEYWORDS_PLACEHOLDER = "ex. COVID vaccine, health, safety"
+    TWITTER_HASHTAGS_PLACEHOLDER = "ex. #toronto, #raptors"
+    TWITTER_ACCOUNT_PLACEHOLDER = "ex. JustinTrudeau"
 
     CSV_LABEL = "CSV"
     CSV_DATASETFIELD = "Dataset Field"
