@@ -241,7 +241,7 @@ class Datasets(Common):
     SEARCH_BY = "Search by"
     KEYWORDS = "Keywords"
     HASHTAGS = "Hashtags"
-    ACCOUNTS = "Accounts"
+    ACCOUNT = "Account"
 
     #Retrieval specific fields
     START_DATE = "Start Date"
@@ -267,7 +267,7 @@ class Datasets(Common):
     TWITTER_QUERY_RADIOBUTTON_TOOLTIP = "Use a Twitter query to create the dataset, using these rules: https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
     TWITTER_QUERY_MISSING_ERROR = "You must enter a query."
     TWITTER_QUERY_PLACEHOLDER = "ex. life OR technology from:google"
-    TWITTER_TWEET_ATTRIBUTES = "Tweet attributes"
+    TWITTER_TWEET_ATTRIBUTES = "Tweet Attributes"
     TWITTER_TWEET_ATTRIBUTES_RADIOBUTTON_TOOLTIP = "Use specific tweet attributes to create the dataset."
     TWITTER_KEYWORDS_PLACEHOLDER = "ex. COVID vaccine, health, safety"
     TWITTER_HASHTAGS_PLACEHOLDER = "ex. #toronto, #raptors"
