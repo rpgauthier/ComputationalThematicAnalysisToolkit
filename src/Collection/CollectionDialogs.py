@@ -313,12 +313,19 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.query_radioctrl.SetToolTip(GUIText.TWITTER_QUERY_RADIOBUTTON_TOOLTIP)
         self.query_radioctrl.SetValue(True)
 
+        self.query_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="[⬈]", url=GUIText.TWITTER_QUERY_HYPERLINK)
+        self.query_hyperlink_ctrl.SetNormalColour(wx.Colour(255, 255, 255))
+        self.query_hyperlink_ctrl.SetHoverColour(wx.Colour(255/2, 255/2, 255/2))
+        self.query_hyperlink_ctrl.SetVisitedColour(wx.Colour(255, 255, 255))
+
         self.query_ctrl = wx.TextCtrl(self)
         self.query_ctrl.SetHint(GUIText.TWITTER_QUERY_PLACEHOLDER)
         self.query_ctrl.SetToolTip(GUIText.TWITTER_QUERY_TOOLTIP)
 
         query_sizer = wx.BoxSizer(wx.HORIZONTAL)
         query_sizer.Add(self.query_radioctrl)
+        query_sizer.Add(self.query_hyperlink_ctrl)
+        query_sizer.AddSpacer(10)
         query_sizer.Add(self.query_ctrl, wx.EXPAND)
 
         # search by tweet attributes

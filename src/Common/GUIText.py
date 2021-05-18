@@ -263,8 +263,9 @@ class Datasets(Common):
 
     TWITTER_LABEL = "Twitter"
     TWITTER_QUERY = "Query"
-    TWITTER_QUERY_TOOLTIP = "Query must follow these rules: https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
-    TWITTER_QUERY_RADIOBUTTON_TOOLTIP = "Use a Twitter query to create the dataset, using these rules: https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
+    TWITTER_QUERY_HYPERLINK = "https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
+    TWITTER_QUERY_TOOLTIP = "Query must follow these rules: " + TWITTER_QUERY_HYPERLINK
+    TWITTER_QUERY_RADIOBUTTON_TOOLTIP = "Use a Twitter query to create the dataset, using these rules: " + TWITTER_QUERY_HYPERLINK
     TWITTER_QUERY_MISSING_ERROR = "You must enter a query."
     TWITTER_QUERY_PLACEHOLDER = "ex. life OR technology from:google"
     TWITTER_TWEET_ATTRIBUTES = "Tweet Attributes"
