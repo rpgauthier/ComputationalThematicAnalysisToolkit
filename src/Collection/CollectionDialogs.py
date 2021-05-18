@@ -341,7 +341,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         hashtags_sizer.Add(self.hashtags_checkbox_ctrl)
         hashtags_sizer.Add(self.hashtags_ctrl, wx.EXPAND)
 
-        self.account_checkbox_ctrl = wx.CheckBox(self, label=GUIText.TWITTER_LABEL+" "+GUIText.HASHTAGS+": ")
+        self.account_checkbox_ctrl = wx.CheckBox(self, label=GUIText.TWITTER_LABEL+" "+GUIText.ACCOUNTS+": ")
         self.account_ctrl = wx.TextCtrl(self)
         self.account_ctrl.SetHint(GUIText.TWITTER_ACCOUNT_PLACEHOLDER)
         account_sizer = wx.BoxSizer(wx.HORIZONTAL)

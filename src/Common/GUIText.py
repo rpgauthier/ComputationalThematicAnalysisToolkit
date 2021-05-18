@@ -241,7 +241,7 @@ class Datasets(Common):
     SEARCH_BY = "Search by"
     KEYWORDS = "Keywords"
     HASHTAGS = "Hashtags"
-    ACCOUNT = "Account"
+    ACCOUNTS = "Accounts"
 
     #Retrieval specific fields
     START_DATE = "Start Date"
