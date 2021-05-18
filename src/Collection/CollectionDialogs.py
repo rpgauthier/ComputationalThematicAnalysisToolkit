@@ -315,7 +315,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         self.query_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="[⬈]", url=GUIText.TWITTER_QUERY_HYPERLINK)
         self.query_hyperlink_ctrl.SetNormalColour(wx.Colour(255, 255, 255))
-        self.query_hyperlink_ctrl.SetHoverColour(wx.Colour(255/2, 255/2, 255/2))
+        self.query_hyperlink_ctrl.SetHoverColour(wx.Colour(127, 127, 127))
         self.query_hyperlink_ctrl.SetVisitedColour(wx.Colour(255, 255, 255))
 
         self.query_ctrl = wx.TextCtrl(self)
