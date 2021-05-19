@@ -124,11 +124,11 @@ class MainFrame(wx.Frame):
                                                            kind=wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.OnToggleCollection, self.toggle_collection_menuitem)
         self.toggle_familiarization_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                                GUIText.SHOW_HIDE+GUIText.FAMILIARIZATION_LABEL,
+                                                                GUIText.SHOW_HIDE+GUIText.FAMILIARIZATION_MENU_LABEL,
                                                                 kind=wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.OnToggleFamiliarization, self.toggle_familiarization_menuitem)
         self.toggle_sampling_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                                GUIText.SHOW_HIDE+GUIText.SAMPLING_LABEL,
+                                                                GUIText.SHOW_HIDE+GUIText.SAMPLING_MENU_LABEL,
                                                                 kind=wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.OnToggleSampling, self.toggle_sampling_menuitem)
         self.toggle_coding_menuitem = self.view_menu.Append(wx.ID_ANY,
@@ -145,9 +145,9 @@ class MainFrame(wx.Frame):
         self.view_menu.AppendSeparator()
         self.view_menu.AppendSubMenu(self.collection_module.view_menu, GUIText.COLLECTION_LABEL)
         #TODO need to move actions new submenu syste for Familiarization submodules
-        self.view_menu.AppendSubMenu(self.familiarization_module.view_menu, GUIText.FAMILIARIZATION_LABEL)
+        self.view_menu.AppendSubMenu(self.familiarization_module.view_menu, GUIText.FAMILIARIZATION_MENU_LABEL)
         #TODO need to move actions new submenu syste for Sampling submodules
-        #self.view_menu.AppendSubMenu(self.sampling_module.view_menu, GUIText.FAMILIARIZATION_LABEL)
+        self.view_menu.AppendSubMenu(self.sampling_module.view_menu, GUIText.SAMPLING_MENU_LABEL)
         self.view_menu.AppendSubMenu(self.coding_module.view_menu, GUIText.CODING_LABEL)
         
         self.menu_bar.Append(self.view_menu, GUIText.VIEW_MENU)

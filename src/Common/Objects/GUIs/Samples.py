@@ -701,7 +701,7 @@ class RandomSamplePanel(AbstractSamplePanel):
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(sample.dataset_key))
             details_sizer.Add(dataset_label, 0, wx.ALL, 5)
             details_sizer.AddSpacer(10)
-        created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+str(sample.start_dt))
+        created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.start_dt.strftime("%Y-%m-%d %H:%M:%S"))
         details_sizer.Add(created_dt_label, 0, wx.ALL, 5)
         sizer.Add(details_sizer, 0, wx.ALL, 5)
 
@@ -743,13 +743,14 @@ class RandomModelCreateDialog(wx.Dialog):
 
         main_frame = wx.GetApp().GetTopWindow()
         self.usable_datasets = list(main_frame.datasets.keys())
-        dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
         usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
-        self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
-        dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        dataset_sizer.Add(dataset_label)
-        dataset_sizer.Add(self.dataset_ctrl)
-        sizer.Add(dataset_sizer)
+        if len(self.usable_datasets) > 1: 
+            dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
+            self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
+            dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            dataset_sizer.Add(dataset_label)
+            dataset_sizer.Add(self.dataset_ctrl)
+            sizer.Add(dataset_sizer)
 
         ok_button = wx.Button(self, id=wx.ID_OK, label=GUIText.OK, )
         ok_button.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
@@ -786,11 +787,19 @@ class RandomModelCreateDialog(wx.Dialog):
             logger.warning('name field is empty')
             status_flag = False
 
-        dataset_id = self.dataset_ctrl.GetSelection()
-        if dataset_id is wx.NOT_FOUND:
-            wx.MessageBox(GUIText.DATASET_MISSING_ERROR,
+        if len(self.usable_datasets) > 1: 
+            dataset_id = self.dataset_ctrl.GetSelection()
+            if dataset_id is wx.NOT_FOUND:
+                wx.MessageBox(GUIText.DATASET_MISSING_ERROR,
+                            GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                logger.warning('dataset was not chosen')
+                status_flag = False
+        elif len(self.usable_datasets) == 1:
+            dataset_id = 0
+        else:
+            wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('dataset was not chosen')
+            logger.warning('no dataset avaliable')
             status_flag = False
 
         if status_flag:
@@ -852,7 +861,7 @@ class TopicSamplePanel(AbstractSamplePanel):
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(sample.dataset_key))
             details1_sizer.Add(dataset_label, 0, wx.ALL, 5)
             details1_sizer.AddSpacer(10)
-        created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+str(sample.start_dt))
+        created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.start_dt.strftime("%Y-%m-%d %H:%M:%S"))
         details1_sizer.Add(created_dt_label, 0, wx.ALL, 5)
         self.sizer.Add(details1_sizer, 0, wx.ALL, 5)
 
@@ -1341,10 +1350,8 @@ class LDAModelCreateDialog(wx.Dialog):
         name_sizer.Add(self.name_ctrl)
         sizer.Add(name_sizer)
 
-        dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
         #need to only show tokensets that have fields containing data
         self.usable_datasets = []
-        
         main_frame = wx.GetApp().GetTopWindow()
         for dataset in main_frame.datasets.values():
             if isinstance(dataset, Datasets.Dataset):
@@ -1358,12 +1365,14 @@ class LDAModelCreateDialog(wx.Dialog):
                         if len(sub_dataset.chosen_fields) > 0 or len(sub_dataset.merged_fields) > 0:
                             self.usable_datasets.append(dataset.key)
                             break
-        usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
-        self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
-        dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        dataset_sizer.Add(dataset_label)
-        dataset_sizer.Add(self.dataset_ctrl)
-        sizer.Add(dataset_sizer)
+        if len(self.usable_datasets) > 1: 
+            dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
+            usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
+            self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
+            dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            dataset_sizer.Add(dataset_label)
+            dataset_sizer.Add(self.dataset_ctrl)
+            sizer.Add(dataset_sizer)
 
         num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS_CHOICE)
         self.num_topics_ctrl = wx.SpinCtrl(self, min=1, max=10000, initial=10)
@@ -1420,11 +1429,19 @@ class LDAModelCreateDialog(wx.Dialog):
             logger.warning('name field is empty')
             status_flag = False
 
-        dataset_id = self.dataset_ctrl.GetSelection()
-        if dataset_id is wx.NOT_FOUND:
-            wx.MessageBox(GUIText.DATASET_MISSING_ERROR,
+        if len(self.usable_datasets) > 1:
+            dataset_id = self.dataset_ctrl.GetSelection()
+            if dataset_id is wx.NOT_FOUND:
+                wx.MessageBox(GUIText.DATASET_MISSING_ERROR,
+                            GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                logger.warning('dataset was not chosen')
+                status_flag = False
+        elif len(self.usable_datasets) == 1:
+            dataset_id = 0
+        else:
+            wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('dataset was not chosen')
+            logger.warning('no dataset avaliable')
             status_flag = False
 
         if status_flag:
@@ -1501,7 +1518,6 @@ class BitermModelCreateDialog(wx.Dialog):
         name_sizer.Add(self.name_ctrl)
         sizer.Add(name_sizer)
 
-        dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
         #need to only show tokensets that have fields containing data
         self.usable_datasets = []
         
@@ -1518,12 +1534,14 @@ class BitermModelCreateDialog(wx.Dialog):
                         if len(sub_dataset.chosen_fields) > 0 or len(sub_dataset.merged_fields) > 0:
                             self.usable_datasets.append(dataset.key)
                             break
-        usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
-        self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
-        dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        dataset_sizer.Add(dataset_label)
-        dataset_sizer.Add(self.dataset_ctrl)
-        sizer.Add(dataset_sizer)
+        if len(self.usable_datasets) > 1: 
+            dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
+            usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
+            self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
+            dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            dataset_sizer.Add(dataset_label)
+            dataset_sizer.Add(self.dataset_ctrl)
+            sizer.Add(dataset_sizer)
 
         num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS_CHOICE)
         self.num_topics_ctrl = wx.SpinCtrl(self, min=1, max=10000, initial=10)
@@ -1580,11 +1598,19 @@ class BitermModelCreateDialog(wx.Dialog):
             logger.warning('name field is empty')
             status_flag = False
 
-        dataset_id = self.dataset_ctrl.GetSelection()
-        if dataset_id is wx.NOT_FOUND:
-            wx.MessageBox(GUIText.DATASET_MISSING_ERROR,
+        if len(self.usable_datasets) > 1:
+            dataset_id = self.dataset_ctrl.GetSelection()
+            if dataset_id is wx.NOT_FOUND:
+                wx.MessageBox(GUIText.DATASET_MISSING_ERROR,
+                            GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                logger.warning('dataset was not chosen')
+                status_flag = False
+        elif len(self.usable_datasets) == 1:
+            dataset_id = 0
+        else:
+            wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('dataset was not chosen')
+            logger.warning('no dataset avaliable')
             status_flag = False
 
         if status_flag:

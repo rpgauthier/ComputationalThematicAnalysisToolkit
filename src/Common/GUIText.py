@@ -64,7 +64,7 @@ class Common:
     
 
 class Main(Common):
-    APP_NAME = "Machine Guided Thematic Analysis Toolkit"
+    APP_NAME = "Computational Thematic Analysis Toolkit"
 
     NEW_WARNING = "Are you sure you wnat to proceed with creating a new workspace?"\
                   "\nAny recent changes will be lost."
@@ -125,7 +125,9 @@ class Main(Common):
     GENERAL_LABEL = "General"
     COLLECTION_LABEL = "Data Collection"
     FAMILIARIZATION_LABEL = "Data Cleaning & Filtering"
+    FAMILIARIZATION_MENU_LABEL = "Data Cleaning && Filtering"
     SAMPLING_LABEL = "Sampling & Modelling"
+    SAMPLING_MENU_LABEL = "Sampling && Modelling"
     CODING_LABEL = "Coding"
     OPTIONS_LABEL = "Options"
     NOTES_LABEL = "Notes"
@@ -311,6 +313,9 @@ class Samples(Main):
     DATASET = Datasets.DATASET
     DATASET_MISSING_ERROR = "Dataset was not chosen." \
                             "\nPlease choose a dataset for the model."
+    DATASET_NOTAVALIABLE_ERROR = "No Data is avaliable." \
+                            "\nPlease load data into the project before trying to create a model."
+    
 
     GENERATE_WARNING = "\nWARNING: Do not shut down program or else model will not be created."
     GENERATE_NOTSAVED_WARNING = "Workspace has not yet been saved."\
