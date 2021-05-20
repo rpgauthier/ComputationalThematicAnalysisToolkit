@@ -226,38 +226,38 @@ class NoteToolBar(wx.ToolBar):
         self.AddTool(wx.ID_REDO, GUIText.REDO, wx.ArtProvider.GetBitmap(wx.ART_REDO, wx.ART_TOOLBAR),
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.REDO, "")
         self.AddSeparator()
-        bmp = wx.Bitmap("src/Images/bold.bmp", wx.BITMAP_TYPE_ANY)
+        bmp = wx.Bitmap("Images/bold.bmp", wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
         bold_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
         self.AddTool(wx.ID_BOLD, GUIText.BOLD, bold_bmp,
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.BOLD, "")
-        bmp = wx.Bitmap("src/Images/italic.bmp", wx.BITMAP_TYPE_ANY)
+        bmp = wx.Bitmap("Images/italic.bmp", wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
         italic_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
         self.AddTool(wx.ID_ITALIC, GUIText.ITALIC, italic_bmp,
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.ITALIC, "")
-        bmp = wx.Bitmap("src/Images/underline.bmp", wx.BITMAP_TYPE_ANY)
+        bmp = wx.Bitmap("Images/underline.bmp", wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
         underline_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
         self.AddTool(wx.ID_UNDERLINE, GUIText.UNDERLINE, underline_bmp,
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.UNDERLINE, "")
-        bmp = wx.Bitmap("src/Images/strikethrough.bmp", wx.BITMAP_TYPE_ANY)
+        bmp = wx.Bitmap("Images/strikethrough.bmp", wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
         strikethrough_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
         self.AddTool(wx.ID_STRIKETHROUGH, GUIText.STRIKETHROUGH, strikethrough_bmp,
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.STRIKETHROUGH, "")
-        bmp = wx.Bitmap("src/Images/font.bmp", wx.BITMAP_TYPE_ANY)
+        bmp = wx.Bitmap("Images/font.bmp", wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
         font_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
         self.AddTool(wx.ID_SELECT_FONT, GUIText.FONT, font_bmp,
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.FONT, "")
 
-        bmp = wx.Bitmap("src/Images/increasefontsize.bmp", wx.BITMAP_TYPE_ANY)
+        bmp = wx.Bitmap("Images/increasefontsize.bmp", wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
         increasefontsize_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
         self.increasefontsize_tool = self.AddTool(wx.ID_ZOOM_OUT, "Increase Font Size", increasefontsize_bmp,
                                                   wx.NullBitmap, wx.ITEM_NORMAL, "Increase Font Size", "")
-        bmp = wx.Bitmap("src/Images/decreasefontsize.bmp", wx.BITMAP_TYPE_ANY)
+        bmp = wx.Bitmap("Images/decreasefontsize.bmp", wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
         decreasefontsize_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
         self.decreasefontsize_tool = self.AddTool(wx.ID_ZOOM_IN, "Decrease Font Size", decreasefontsize_bmp,
