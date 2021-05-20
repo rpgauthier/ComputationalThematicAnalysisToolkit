@@ -322,11 +322,14 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.query_ctrl.SetHint(GUIText.TWITTER_QUERY_PLACEHOLDER)
         self.query_ctrl.SetToolTip(GUIText.TWITTER_QUERY_TOOLTIP)
 
+        query_items_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        query_items_sizer.Add(self.query_hyperlink_ctrl)
+        query_items_sizer.AddSpacer(10)
+        query_items_sizer.Add(self.query_ctrl, wx.EXPAND)
+
         query_sizer = wx.BoxSizer(wx.HORIZONTAL)
         query_sizer.Add(self.query_radioctrl)
-        query_sizer.Add(self.query_hyperlink_ctrl)
-        query_sizer.AddSpacer(10)
-        query_sizer.Add(self.query_ctrl, wx.EXPAND)
+        query_sizer.Add(query_items_sizer)
 
         # search by tweet attributes
         self.attributes_radioctrl = wx.RadioButton(self, label=GUIText.TWITTER_TWEET_ATTRIBUTES+": ")
@@ -365,7 +368,11 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         attributes_sizer.Add(self.attributes_radioctrl)
         attributes_sizer.Add(attributes_options_sizer, 0, wx.EXPAND)
 
-        # add elements to 'search by' box
+        # enable only the selected 'search by' option
+        self.DisableSizer(query_items_sizer)
+        self.DisableSizer(attributes_options_sizer)
+
+        # add 'search by' options to a box
         search_by_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.SEARCH_BY+": ")
         search_by_sizer.Add(query_sizer, 0, wx.EXPAND)
         search_by_sizer.Add(attributes_sizer, 0, wx.EXPAND)
@@ -412,6 +419,23 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         CustomEvents.RETRIEVE_EVT_RESULT(self, self.OnRetrieveEnd)
 
         logger.info("Finished")
+    
+    def DisableSizer(self, parent_sizer):
+        for child_sizer in parent_sizer.GetChildren():
+            elem = child_sizer.GetWindow()
+            if not elem:
+                try:
+                    # elem is a sizer
+                    sizer = child_sizer.GetSizer()
+                    self.DisableSizer(sizer)
+                except:
+                    # elem is something else, not a widget
+                    pass
+            else:
+                # elem is a widget
+                # disable all widgets except hyperlinks
+                if not isinstance(elem, wx.adv.HyperlinkCtrl):
+                    elem.Disable()
 
     def OnRetrieveStart(self, event):
         logger = logging.getLogger(__name__+".TwitterRetrieverDialog.OnRetrieveStart")
