@@ -52,6 +52,56 @@ class AbstractRetrieverDialog(wx.Dialog):
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.PulseProgressDialog(event.data)
 
+    # given a sizer, disables all child elements
+    def DisableSizer(self, parent_sizer):
+        for child_sizer in parent_sizer.GetChildren():
+            elem = child_sizer.GetWindow()
+            if not elem:
+                try:
+                    # elem is a sizer
+                    sizer = child_sizer.GetSizer()
+                    self.DisableSizer(sizer)
+                except:
+                    # elem is something else, not a widget
+                    pass
+            else:
+                # elem is a widget
+                # disable all widgets
+                if isinstance(elem, wx.adv.HyperlinkCtrl):
+                    elem.SetNormalColour(wx.Colour(127, 127, 127))
+                elem.Disable()
+
+    # given a sizer, enables all child elements
+    def EnableSizer(self, parent_sizer):
+        for child_sizer in parent_sizer.GetChildren():
+            elem = child_sizer.GetWindow()
+            if not elem:
+                try:
+                    # elem is a sizer
+                    sizer = child_sizer.GetSizer()
+                    self.EnableSizer(sizer)
+                except:
+                    # elem is something else, not a widget
+                    pass
+            else:
+                # elem is a widget
+                # enable all widgets
+                if isinstance(elem, wx.adv.HyperlinkCtrl):
+                    elem.SetNormalColour(wx.Colour(wx.BLUE))
+                elem.Enable()
+
+    # given a sizer containing a list of option sizers
+    # enables option corresponding to selected radiobutton,
+    # and disables the rest of the options            
+    def EnableOnlySelected(self, options_list_sizer):
+        for option in options_list_sizer.GetChildren(): 
+            option_sizer = option.GetSizer() # should have 2 elements: a radiobutton and its corresponding sizer
+            sizer = option_sizer.GetChildren()[1].GetSizer()
+            if option_sizer.GetChildren()[0].GetWindow().GetValue() == True: # radiobutton for this option is selected
+                self.EnableSizer(sizer)
+            else:
+                self.DisableSizer(sizer)
+
 class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
     def __init__(self, parent):
         logger = logging.getLogger(__name__+".RedditRetrieverDialog.__init__")
@@ -313,10 +363,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.query_radioctrl.SetToolTip(GUIText.TWITTER_QUERY_RADIOBUTTON_TOOLTIP)
         self.query_radioctrl.SetValue(True)
 
-        self.query_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="[⬈]", url=GUIText.TWITTER_QUERY_HYPERLINK)
-        self.query_hyperlink_ctrl.SetNormalColour(wx.Colour(255, 255, 255))
-        self.query_hyperlink_ctrl.SetHoverColour(wx.Colour(127, 127, 127))
-        self.query_hyperlink_ctrl.SetVisitedColour(wx.Colour(255, 255, 255))
+        self.query_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.TWITTER_QUERY_HYPERLINK)
 
         self.query_ctrl = wx.TextCtrl(self)
         self.query_ctrl.SetHint(GUIText.TWITTER_QUERY_PLACEHOLDER)
@@ -329,7 +376,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         query_sizer = wx.BoxSizer(wx.HORIZONTAL)
         query_sizer.Add(self.query_radioctrl)
-        query_sizer.Add(query_items_sizer)
+        query_sizer.Add(query_items_sizer, wx.EXPAND)
 
         # search by tweet attributes
         self.attributes_radioctrl = wx.RadioButton(self, label=GUIText.TWITTER_TWEET_ATTRIBUTES+": ")
@@ -368,14 +415,15 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         attributes_sizer.Add(self.attributes_radioctrl)
         attributes_sizer.Add(attributes_options_sizer, 0, wx.EXPAND)
 
-        # enable only the selected 'search by' option
-        self.DisableSizer(query_items_sizer)
-        self.DisableSizer(attributes_options_sizer)
-
-        # add 'search by' options to a box
+        # add 'search by' options to box
         search_by_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.SEARCH_BY+": ")
         search_by_sizer.Add(query_sizer, 0, wx.EXPAND)
         search_by_sizer.Add(attributes_sizer, 0, wx.EXPAND)
+
+        # enable only the selected 'search by' option
+        self.EnableOnlySelected(search_by_sizer)
+        self.query_radioctrl.Bind(wx.EVT_RADIOBUTTON, lambda event: self.EnableOnlySelected(search_by_sizer))
+        self.attributes_radioctrl.Bind(wx.EVT_RADIOBUTTON, lambda event: self.EnableOnlySelected(search_by_sizer))
 
         start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
         self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
@@ -419,23 +467,6 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         CustomEvents.RETRIEVE_EVT_RESULT(self, self.OnRetrieveEnd)
 
         logger.info("Finished")
-    
-    def DisableSizer(self, parent_sizer):
-        for child_sizer in parent_sizer.GetChildren():
-            elem = child_sizer.GetWindow()
-            if not elem:
-                try:
-                    # elem is a sizer
-                    sizer = child_sizer.GetSizer()
-                    self.DisableSizer(sizer)
-                except:
-                    # elem is something else, not a widget
-                    pass
-            else:
-                # elem is a widget
-                # disable all widgets except hyperlinks
-                if not isinstance(elem, wx.adv.HyperlinkCtrl):
-                    elem.Disable()
 
     def OnRetrieveStart(self, event):
         logger = logging.getLogger(__name__+".TwitterRetrieverDialog.OnRetrieveStart")
