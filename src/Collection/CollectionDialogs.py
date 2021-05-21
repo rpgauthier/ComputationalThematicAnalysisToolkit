@@ -89,18 +89,30 @@ class AbstractRetrieverDialog(wx.Dialog):
                 if isinstance(elem, wx.adv.HyperlinkCtrl):
                     elem.SetNormalColour(wx.Colour(wx.BLUE))
                 elem.Enable()
+    
+    # given an options_list_sizer, where each immediate child is an option sizer,
+    # and each option sizer contains a radio button and a corresponding sizer,
+    # returns an array of tuples (radio button + corresponding sizer)
+    def GetOptionsInRadioGroup(self, options_list_sizer):
+        options = []
+        for option in options_list_sizer.GetChildren(): 
+            tuple = []
+            option_sizer = option.GetSizer() # should have 2 elements: a radiobutton and its corresponding sizer
+            tuple.append(option_sizer.GetChildren()[0].GetWindow())
+            tuple.append(option_sizer.GetChildren()[1].GetSizer())
+            options.append(tuple)
+        return options
 
     # given a sizer containing a list of option sizers
     # enables option corresponding to selected radiobutton,
     # and disables the rest of the options            
     def EnableOnlySelected(self, options_list_sizer):
-        for option in options_list_sizer.GetChildren(): 
-            option_sizer = option.GetSizer() # should have 2 elements: a radiobutton and its corresponding sizer
-            sizer = option_sizer.GetChildren()[1].GetSizer()
-            if option_sizer.GetChildren()[0].GetWindow().GetValue() == True: # radiobutton for this option is selected
-                self.EnableSizer(sizer)
+        options = self.GetOptionsInRadioGroup(options_list_sizer)
+        for option in options:
+            if option[0].GetValue():
+                self.EnableSizer(option[1])
             else:
-                self.DisableSizer(sizer)
+                self.DisableSizer(option[1])
 
 class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
     def __init__(self, parent):
@@ -359,7 +371,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         consumer_secret_sizer.Add(self.consumer_secret_ctrl, wx.EXPAND)
 
         # search by query
-        self.query_radioctrl = wx.RadioButton(self, label=GUIText.TWITTER_QUERY+": ", style=wx.RB_GROUP)
+        self.query_radioctrl = wx.RadioButton(self, label=GUIText.QUERY+": ", style=wx.RB_GROUP)
         self.query_radioctrl.SetToolTip(GUIText.TWITTER_QUERY_RADIOBUTTON_TOOLTIP)
         self.query_radioctrl.SetValue(True)
 
@@ -416,14 +428,16 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         attributes_sizer.Add(attributes_options_sizer, 0, wx.EXPAND)
 
         # add 'search by' options to box
-        search_by_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.SEARCH_BY+": ")
-        search_by_sizer.Add(query_sizer, 0, wx.EXPAND)
-        search_by_sizer.Add(attributes_sizer, 0, wx.EXPAND)
+        self.search_by_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.SEARCH_BY+": ")
+        self.search_by_sizer.Add(query_sizer, 0, wx.EXPAND)
+        self.search_by_sizer.Add(attributes_sizer, 0, wx.EXPAND)
 
         # enable only the selected 'search by' option
-        self.EnableOnlySelected(search_by_sizer)
-        self.query_radioctrl.Bind(wx.EVT_RADIOBUTTON, lambda event: self.EnableOnlySelected(search_by_sizer))
-        self.attributes_radioctrl.Bind(wx.EVT_RADIOBUTTON, lambda event: self.EnableOnlySelected(search_by_sizer))
+        self.EnableOnlySelected(self.search_by_sizer)
+        for search_by_option in self.search_by_sizer:
+            option_sizer = search_by_option.GetSizer()
+            # bind to each radiobutton
+            option_sizer.GetChildren()[0].GetWindow().Bind(wx.EVT_RADIOBUTTON, lambda event: self.EnableOnlySelected(self.search_by_sizer))
 
         start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
         self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
@@ -453,7 +467,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         retriever_sizer.Add(name_sizer, 0, wx.EXPAND | wx.ALL, 5)
         retriever_sizer.Add(consumer_key_sizer, 0, wx.EXPAND | wx.ALL, 5)
         retriever_sizer.Add(consumer_secret_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        retriever_sizer.Add(search_by_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        retriever_sizer.Add(self.search_by_sizer, 0, wx.EXPAND | wx.ALL, 5)
         retriever_sizer.Add(start_date_sizer, 0, wx.EXPAND | wx.ALL, 5)
         retriever_sizer.Add(end_date_sizer, 0, wx.EXPAND | wx.ALL, 5)
         retriever_sizer.Add(button_sizer, 0, wx.EXPAND | wx.ALL, 5)
@@ -514,7 +528,48 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
                 # logger.warning('User credentials do not allow access to this resource.')
                 # status_flag = False         
 
-        query = self.query_ctrl.GetValue()
+        search_by_options = self.GetOptionsInRadioGroup(self.search_by_sizer)
+        selected_option = None
+        for option in search_by_options:
+            if option[0].GetValue():
+                selected_option = option
+                break
+        
+        # generate query
+        query = ""
+        if selected_option[0].GetLabel() == GUIText.QUERY+": ":
+            query = self.query_ctrl.GetValue()
+        elif selected_option[0].GetLabel() == GUIText.TWITTER_TWEET_ATTRIBUTES+": ":
+            query_items = [] # individual sub-queries, which are joined by intersection (AND) to form the overall query
+            attributes_list_sizer = selected_option[1]
+            for attribute_sizer in attributes_list_sizer.GetChildren():
+                sizer = attribute_sizer.GetSizer()
+                checkbox = sizer.GetChildren()[1].GetWindow()
+                text_field = sizer.GetChildren()[2].GetWindow()
+                if checkbox.GetValue() and text_field.GetValue() != "":
+                    text = text_field.GetValue()
+                    if checkbox.GetLabel() == GUIText.KEYWORDS+": ":
+                        keywords = text.split(",")
+                        for phrase in keywords:
+                            phrase = phrase.strip()
+                            if " " in phrase: # multi-word keyword
+                                phrase = "\""+phrase+"\""
+                            query_items.append(phrase)
+                    elif checkbox.GetLabel() == GUIText.HASHTAGS+": ":
+                        hashtags = text.split(",")
+                        for i in range(len(hashtags)):
+                            hashtags[i] = hashtags[i].strip()
+                            if hashtags[i][0] != "#": # hashtags must start with '#' symbol
+                                hashtags[i] = "#"+hashtags[i]
+                            query_items.append(hashtags[i])
+                    elif checkbox.GetLabel() == GUIText.TWITTER_LABEL+" "+GUIText.ACCOUNT+": ":
+                        query_items.append("from:"+text_field.GetValue())
+            for i in range(len(query_items)):
+                query += query_items[i]
+                if i < len(query_items)-1:
+                    query += " "
+        logger.info("Query: "+query)
+
         if query == "":
             wx.MessageBox(GUIText.TWITTER_QUERY_MISSING_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)

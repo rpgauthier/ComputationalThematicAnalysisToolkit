@@ -238,6 +238,7 @@ class Datasets(Common):
     RETRIEVED_ON = "Retrieved On"
     PREPARED_ON = "Prepared On"
     LANGUAGE = "Language"
+    QUERY = "Query"
     SEARCH_BY = "Search by"
     KEYWORDS = "Keywords"
     HASHTAGS = "Hashtags"
@@ -262,7 +263,6 @@ class Datasets(Common):
     REDDIT_FULL_REDDITAPI = "Full retrieved from Pushshift.io and updated using Reddit API"
 
     TWITTER_LABEL = "Twitter"
-    TWITTER_QUERY = "Query"
     TWITTER_QUERY_HYPERLINK = "https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
     TWITTER_QUERY_TOOLTIP = "Query must follow these rules: " + TWITTER_QUERY_HYPERLINK
     TWITTER_QUERY_RADIOBUTTON_TOOLTIP = "Use a Twitter query to create the dataset, using these rules: " + TWITTER_QUERY_HYPERLINK
