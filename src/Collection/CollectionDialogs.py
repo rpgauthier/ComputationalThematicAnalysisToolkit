@@ -1,6 +1,7 @@
 import logging
 import csv
 import os.path
+import pytz
 
 import wx
 import wx.adv
@@ -291,12 +292,14 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         filename_sizer.Add(self.filename_ctrl)
         self.filename_ctrl.Bind(wx.EVT_FILEPICKER_CHANGED, self.OnFilenameChosen)
 
-        dataset_field_label = wx.StaticText(self, label=GUIText.CSV_DATASETFIELD+": ")
-        self.dataset_field_ctrl = wx.Choice(self, choices=[])
-        self.dataset_field_ctrl.SetToolTip(GUIText.CSV_DATASETFIELD_TOOLTIP)
-        dataset_field_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        dataset_field_sizer.Add(dataset_field_label)
-        dataset_field_sizer.Add(self.dataset_field_ctrl)
+        main_frame = wx.GetApp().GetTopWindow()
+        if main_frame.multipledatasets_mode:
+            dataset_field_label = wx.StaticText(self, label=GUIText.CSV_DATASETFIELD+": ")
+            self.dataset_field_ctrl = wx.Choice(self, choices=[])
+            self.dataset_field_ctrl.SetToolTip(GUIText.CSV_DATASETFIELD_TOOLTIP)
+            dataset_field_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            dataset_field_sizer.Add(dataset_field_label)
+            dataset_field_sizer.Add(self.dataset_field_ctrl)
         
         id_field_label = wx.StaticText(self, label=GUIText.CSV_IDFIELD+": ")
         self.id_field_ctrl = wx.Choice(self, choices=[GUIText.CSV_IDFIELD_DEFAULT])
@@ -304,6 +307,22 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         id_field_sizer = wx.BoxSizer(wx.HORIZONTAL)
         id_field_sizer.Add(id_field_label)
         id_field_sizer.Add(self.id_field_ctrl)
+
+        url_field_label = wx.StaticText(self, label=GUIText.CSV_URLFIELD+": ")
+        self.url_field_ctrl = wx.Choice(self, choices=[""])
+        self.url_field_ctrl.SetToolTip(GUIText.CSV_URLFIELD_TOOLTIP)
+        url_field_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        url_field_sizer.Add(url_field_label)
+        url_field_sizer.Add(self.url_field_ctrl)
+
+        datetime_field_label = wx.StaticText(self, label=GUIText.CSV_DATETIMEFIELD+": ")
+        self.datetime_field_ctrl = wx.Choice(self, choices=[""])
+        self.datetime_field_ctrl.SetToolTip(GUIText.CSV_DATETIMEFIELD_TOOLTIP)
+        self.datetime_tz_ctrl = wx.Choice(self, choices=pytz.all_timezones)
+        datetime_field_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        datetime_field_sizer.Add(datetime_field_label)
+        datetime_field_sizer.Add(self.datetime_field_ctrl)
+        datetime_field_sizer.Add(self.datetime_tz_ctrl)
 
         included_fields_label = wx.StaticText(self, label=GUIText.CSV_INCLUDEDFIELDS+": ")
         self.included_fields_ctrl = wx.ListBox(self, style=wx.LB_MULTIPLE)
@@ -322,8 +341,11 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         retriever_sizer = wx.BoxSizer(wx.VERTICAL)
         retriever_sizer.Add(name_sizer, 0, wx.ALL, 5)
         retriever_sizer.Add(filename_sizer, 0, wx.ALL, 5)
-        retriever_sizer.Add(dataset_field_sizer, 0, wx.ALL, 5)
+        if main_frame.multipledatasets_mode:
+            retriever_sizer.Add(dataset_field_sizer, 0, wx.ALL, 5)
         retriever_sizer.Add(id_field_sizer, 0, wx.ALL, 5)
+        retriever_sizer.Add(url_field_sizer, 0, wx.ALL, 5)
+        retriever_sizer.Add(datetime_field_sizer, 0, wx.ALL, 5)
         retriever_sizer.Add(included_fields_sizer, 0, wx.ALL, 5)
         retriever_sizer.Add(button_sizer, 0, wx.ALL, 5)
 
@@ -346,15 +368,24 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             with open(filename, mode='r') as infile:
                 reader = csv.reader(infile)
                 header_row = next(reader)
-                self.dataset_field_ctrl.Clear()
                 self.id_field_ctrl.Clear()
+                self.id_field_ctrl.Append(GUIText.CSV_IDFIELD_DEFAULT)
+                self.url_field_ctrl.Clear()
+                self.url_field_ctrl.Append("")
+                self.datetime_field_ctrl.Clear()
+                self.datetime_field_ctrl.Append("")
                 self.included_fields_ctrl.Clear()
                 self.avaliable_fields.clear()
-                self.dataset_field_ctrl.Append("")
-                self.id_field_ctrl.Append(GUIText.CSV_IDFIELD_DEFAULT)
+                main_frame = wx.GetApp().GetTopWindow()
+                if main_frame.multipledatasets_mode:
+                    self.dataset_field_ctrl.Clear()
+                    self.dataset_field_ctrl.Append("")
                 for column_name in header_row:
-                    self.dataset_field_ctrl.Append(column_name)
+                    if main_frame.multipledatasets_mode:
+                        self.dataset_field_ctrl.Append(column_name)
                     self.id_field_ctrl.Append(column_name)
+                    self.url_field_ctrl.Append(column_name)
+                    self.datetime_field_ctrl.Append(column_name)
                     self.included_fields_ctrl.Append("csv."+column_name)
                     self.avaliable_fields["csv."+column_name] = {"desc":"CSV Field", "type":"string"}
                 self.Layout()
@@ -382,8 +413,6 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             logger.warning('No filename entered')
             status_flag = False
         
-        dataset_field = self.dataset_field_ctrl.GetStringSelection()
-
         id_field = self.id_field_ctrl.GetStringSelection()
         if id_field == "":
             wx.MessageBox(GUIText.CSV_IDFIELD_MISSING_ERROR,
@@ -391,14 +420,27 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             logger.warning('No id field chosen')
             status_flag = False
         
+        datetime_field = self.datetime_field_ctrl.GetStringSelection()
+        datetime_tz = self.datetime_tz_ctrl.GetStringSelection()
+        if datetime_field == '':
+            if datetime_tz not in pytz.all_timezones:
+                wx.MessageBox(GUIText.CSV_DATETIMETZ_MISSING_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                logger.warning('No datetime tz chosen')
+                status_flag = False
+
+        url_field = self.datetime_field_ctrl.GetStringSelection()
+        
         included_fields = {}
         for index in self.included_fields_ctrl.GetSelections():
             field_name = self.included_fields_ctrl.GetString(index)
             included_fields[field_name] = self.avaliable_fields[field_name]
-        
-        
+
         dataset_source = "CSV"
-        dataset_field = self.dataset_field_ctrl.GetStringSelection()
+        if main_frame.multipledatasets_mode:
+            dataset_field = self.dataset_field_ctrl.GetStringSelection()
+        else:
+            dataset_field = ""
         dataset_type = ""
         if dataset_field == "":
             dataset_type = "document"
@@ -418,7 +460,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.Disable()
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
-            self.retrieval_thread = CollectionThreads.RetrieveCSVDatasetThread(self, main_frame, name, dataset_field, dataset_type, id_field, self.avaliable_fields, included_fields, filename)
+            self.retrieval_thread = CollectionThreads.RetrieveCSVDatasetThread(self, main_frame, name, dataset_field, dataset_type, id_field, url_field, datetime_field, datetime_tz, self.avaliable_fields, included_fields, filename)
         logger.info("Finished")
 
 class GroupingFieldDialog(wx.Dialog):
@@ -433,14 +475,18 @@ class GroupingFieldDialog(wx.Dialog):
             def __init__(self, parent):
                 logger = logging.getLogger(__name__+".GroupingFieldDialog.FieldTreeListCtrl.__init__")
                 logger.info("Starting")
-                dv.TreeListCtrl.__init__(self, parent, style=dv.TL_MULTIPLE)
+                dv.TreeListCtrl.__init__(self, parent, style=dv.TL_MULTIPLE, size=wx.Size(400,400))
                 self.AppendColumn('Source', align=wx.ALIGN_LEFT, flags=wx.COL_SORTABLE|wx.COL_RESIZABLE)
                 self.AppendColumn('Type', align=wx.ALIGN_LEFT, flags=wx.COL_SORTABLE|wx.COL_RESIZABLE)
                 self.AppendColumn('Field', align=wx.ALIGN_LEFT, flags=wx.COL_SORTABLE|wx.COL_RESIZABLE)
                 self.AppendColumn('Example', align=wx.ALIGN_LEFT, flags=wx.COL_SORTABLE|wx.COL_RESIZABLE)
                 logger.info("Finished")
 
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
         self.node = node
+
+        fields_sizer = wx.BoxSizer()
 
         self.fields_listctrl = FieldTreeListCtrl(self)
         self.fields_listctrl.SetWindowStyle(dv.TL_SINGLE)
@@ -452,22 +498,20 @@ class GroupingFieldDialog(wx.Dialog):
             self.fields_listctrl.SetItemText(item, 2, str(field.key))
             self.fields_listctrl.SetItemText(item, 3, str(field.desc))
 
+        fields_sizer.Add(self.fields_listctrl, 0, wx.EXPAND|wx.ALL, 5)
+
+        sizer.Add(fields_sizer, 0, wx.EXPAND|wx.ALL, 5)
+
+        ctrl_sizer = wx.BoxSizer()
+        sizer.Add(ctrl_sizer, 0, wx.ALL, 5)
+
         ok_btn = wx.Button(self, wx.ID_OK, label=GUIText.OK)
-        skip_btn = wx.Button(self, wx.ID_CANCEL, label=GUIText.SKIP)
-
-        hz_sizer1 = wx.BoxSizer(wx.HORIZONTAL)
-        hz_sizer1.Add(self.fields_listctrl, 1, wx.EXPAND)
-
-        hz_sizer2 = wx.BoxSizer(wx.HORIZONTAL)
-        hz_sizer2.Add(ok_btn)
-        hz_sizer2.Add(skip_btn)
-
-        vt_sizer = wx.BoxSizer(wx.VERTICAL)
-        vt_sizer.Add(hz_sizer1, 1, wx.ALL|wx.EXPAND)
-        vt_sizer.Add(hz_sizer2)
-        self.SetSizer(vt_sizer)
-
         ok_btn.Bind(wx.EVT_BUTTON, self.OnOk)
+        ctrl_sizer.Add(ok_btn, 0, wx.ALL, 5)
+        skip_btn = wx.Button(self, wx.ID_CANCEL, label=GUIText.SKIP)
+        ctrl_sizer.Add(skip_btn, 0, wx.ALL, 5)
+
+        self.SetSizer(sizer)
         
         self.Layout()
         self.Fit()

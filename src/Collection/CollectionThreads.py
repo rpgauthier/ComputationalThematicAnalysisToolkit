@@ -3,8 +3,11 @@ import logging
 import json
 import csv
 import calendar
-from datetime import datetime
+from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
+import dateparser
+import time
+import pytz
 from threading import Thread
 
 import wx
@@ -284,7 +287,7 @@ class RetrieveRedditDatasetThread(Thread):
 
 class RetrieveCSVDatasetThread(Thread):
     """Retrieve CSV Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, dataset_field, dataset_type, id_field, avaliable_fields, included_fields, filename):
+    def __init__(self, notify_window, main_frame, dataset_name, dataset_field, dataset_type, id_field, url_field, datetime_field, datetime_tz, avaliable_fields, included_fields, filename):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self.daemon = True
@@ -294,6 +297,9 @@ class RetrieveCSVDatasetThread(Thread):
         self.dataset_field = dataset_field
         self.dataset_type = dataset_type
         self.id_field = id_field
+        self.url_field = url_field
+        self.datetime_field = datetime_field
+        self.datetime_tz = datetime_tz
         self.avaliable_fields = avaliable_fields
         self.included_fields = included_fields
         self.filename = filename
@@ -320,16 +326,37 @@ class RetrieveCSVDatasetThread(Thread):
 
         if self.dataset_field == "":
             dataset_key = (self.dataset_name, "CSV", self.dataset_type)
+            row_num = 1
             for row in file_data:
-                document_id = row[self.id_field]
+                if self.id_field in row:
+                    document_id = row[self.id_field]
+                else:
+                    document_id = row_num
                 key = ("CSV", "document", document_id)
                 if key not in data:
                     data[key] = {}
                     data[key]['data_source'] = 'CSV'
                     data[key]['data_type'] = 'document'
                     data[key]['id'] = document_id
-                    data[key]['url'] = ""
-                    data[key]['created_utc'] = 0
+                    if self.url_field == "":
+                        data[key]['url'] = ""
+                    else:
+                        data[key]['url'] = row[self.url_field]
+                    if self.datetime_field == "":
+                        data[key]['created_utc'] = 0
+                    else:
+                        datetime_value = row[self.datetime_field]
+                        if datetime_value != '':
+                            datetime_obj = dateparser.parse(datetime_value, settings={'TIMEZONE': self.datetime_tz})
+                            if datetime_obj != None:
+                                datetime_obj = datetime_obj.astimezone(timezone.utc)
+                                datetime_utc = datetime_obj.replace(tzinfo=timezone.utc).timestamp()
+                                data[key]['created_utc'] = datetime_utc
+                            else:
+                                data[key]['created_utc'] = 0
+                        else:
+                            data[key]['created_utc'] = 0
+
                     for field in row:
                         data[key]["csv."+field] = [row[field]]
                 else:
@@ -338,10 +365,12 @@ class RetrieveCSVDatasetThread(Thread):
                             data[key]["csv."+field].append(row[field])
                         else:
                             data[key]["csv."+field] = [row[field]]
+                row_num = row_num + 1
             #save as a document dataset
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 dataset = self.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields, self.included_fields)
+                #if self.id_field:
                 DatasetsUtilities.CreateDatasetObjectsMetadata(dataset)
                 DatasetsUtilities.TokenizeDatasetObjects([dataset], self._notify_window, self.main_frame)
             else:
@@ -349,12 +378,16 @@ class RetrieveCSVDatasetThread(Thread):
                 error_msg = GUIText.NO_DATA_AVALIABLE_ERROR
         else:
             new_dataset_key = []
+            row_num = 1 
             for row in file_data:
                 new_dataset_key = (self.dataset_name, "CSV", row[self.dataset_field])
                 if new_dataset_key not in data:
                     data[new_dataset_key] = {}
 
-                document_id = row[self.id_field]
+                if self.id_field in row:
+                    document_id = row[self.id_field]
+                else:
+                    document_id = row_num
                 key = ("CSV", row[self.dataset_field], document_id)
                 if key not in data[new_dataset_key]:
                     data[new_dataset_key][key] = {}
@@ -371,6 +404,7 @@ class RetrieveCSVDatasetThread(Thread):
                             data[new_dataset_key][key]["csv."+field].append(row[field])
                         else:
                             data[new_dataset_key][key]["csv."+field] = [row[field]]
+                row_num = row_num + 1
             #save as a document dataset
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))

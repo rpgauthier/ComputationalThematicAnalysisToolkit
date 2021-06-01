@@ -1,5 +1,6 @@
 Data/
 Logs/
-Workspaces/
+Current_Workspace/
+Saved_Workspaces/
 .vscode/
 **/__pycache__

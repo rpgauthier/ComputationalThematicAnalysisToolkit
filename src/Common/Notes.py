@@ -30,13 +30,14 @@ class NotesNotebook(wx.aui.AuiNotebook):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         #dump notes into easy to access text outside of toolkit
-        with open(main_frame.workspace_path + "/Notes.txt", 'w') as text_file:
-            for page_index in range(self.GetPageCount()):
-                text_file.write(self.GetPageText(page_index)+"\n")
-                text_file.write(self.GetPage(page_index).rich_text_ctrl.GetValue())
-                text_file.write("\n\n")
+        notes_text = ""
+        for page_index in range(self.GetPageCount()):
+            notes_text+=self.GetPageText(page_index)
+            notes_text+="\n"
+            notes_text+=self.GetPage(page_index).rich_text_ctrl.GetValue()
+            notes_text+="\n\n"
         logger.info("Finished")
-        return {}
+        return notes_text
 
 class NotesPanel(wx.Panel):
     '''Creates a Note Panel created based on code from https://play.pixelblaster.ro/blog/2008/10/08/richtext-control-with-wxpython-saving-loading-and-converting-from-internal-xml-to-html/'''

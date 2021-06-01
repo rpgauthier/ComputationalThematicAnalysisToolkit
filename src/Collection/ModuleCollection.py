@@ -130,13 +130,14 @@ class CollectionPanel(wx.Panel):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         old_window = self.splitter.GetWindow1()
-        old_window.Hide()
         if main_frame.multipledatasets_mode and old_window != self.datasetslist_panel:
+            old_window.Hide()
             self.datasetslist_panel.Show()
             self.splitter.ReplaceWindow(old_window, self.datasetslist_panel)
             sash_height = int(self.GetSize().GetHeight()/6)
             self.splitter.SetSashPosition(sash_height)
         elif old_window != self.datasetdetails_panel:
+            old_window.Hide()
             self.datasetdetails_panel.Show()
             self.splitter.ReplaceWindow(old_window, self.datasetdetails_panel)
             sash_height = int(self.datasetdetails_panel.GetBestSize().GetHeight()) + 5

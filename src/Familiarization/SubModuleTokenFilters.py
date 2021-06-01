@@ -667,13 +667,35 @@ class RulesPanel(wx.Panel):
         label_font = wx.Font(Constants.LABEL_SIZE, Constants.LABEL_FAMILY, Constants.LABEL_STYLE, Constants.LABEL_WEIGHT, underline=Constants.LABEL_UNDERLINE)
         label_box.SetFont(label_font)
         
+        if hasattr(self.parent_frame.field, "tokenization_package_versions"):
+            package_list = self.parent_frame.field.tokenization_package_versions
+            tokenizer_package = package_list[0]
+        else:
+            package_list = Constants.TOKENIZER_APPROACH_LISTS[self.parent_frame.field.parent.language]
+            tokenizer_package = "spacy"
+        package_list[0] = GUIText.FILTERS_RAWTOKENS
+        package_list[1] = GUIText.FILTERS_STEMMER + package_list[1]
+        package_list[2] = GUIText.FILTERS_LEMMATIZER + package_list[2]
+        
         sizer = wx.StaticBoxSizer(label_box, wx.VERTICAL)
-        self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
-        self.tokenization_choice = wx.Choice(self.toolbar, choices=Constants.TOKENIZER_APPROACH_LISTS[self.parent_frame.field.parent.language])
+
+        tokenization_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(tokenization_sizer)
+        tokenization_package_label1 = wx.StaticText(self, label=GUIText.FILTERS_TOKENIZER)
+        tokenization_package_label1.SetFont(wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
+        tokenization_sizer.Add(tokenization_package_label1, proportion=0, flag=wx.ALL, border=5)
+        tokenization_package_label2 = wx.StaticText(self, label=tokenizer_package)
+        tokenization_sizer.Add(tokenization_package_label2, proportion=0, flag=wx.ALL, border=5)
+        tokenization_choice_label = wx.StaticText(self, label=GUIText.FILTERS_METHOD)
+        tokenization_choice_label.SetFont(wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
+        tokenization_sizer.Add(tokenization_choice_label, proportion=0, flag=wx.ALL, border=5)
+        self.tokenization_choice = wx.Choice(self, choices=package_list)
         self.tokenization_choice.SetSelection(self.parent_frame.field.tokenization_choice)
         self.tokenization_choice.Bind(wx.EVT_CHOICE, self.parent_frame.OnTokenizationChoice)
         self.tokenization_choice.SetSelection(0)
-        self.toolbar.AddControl(self.tokenization_choice, "Tokenization Method:")
+        tokenization_sizer.Add(self.tokenization_choice, proportion=0, flag=wx.ALL, border=5)
+        
+        self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
         remove_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.REMOVE,
                                            bitmap=wx.Bitmap(1, 1),
                                            shortHelp=GUIText.FILTERS_RULE_REMOVE_TOOLTIP)
@@ -699,10 +721,9 @@ class RulesPanel(wx.Panel):
                                                 bitmap=wx.Bitmap(1, 1),
                                                 shortHelp=GUIText.FILTERS_CREATE_TFIDF_RULE_TOOLTIP)
         self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnCreateTfidfFilter, tfidffilter_tool)
-
-        
         self.toolbar.Realize()
         sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
+
         self.rules_list = FilterRuleDataViewListCtrl(self)
         sizer.Add(self.rules_list, proportion=1, flag=wx.EXPAND, border=5)
 

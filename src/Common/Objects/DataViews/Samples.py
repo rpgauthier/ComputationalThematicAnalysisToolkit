@@ -154,6 +154,7 @@ class PartsViewModel(dv.PyDataViewModel):
 
         self.column_names = []
     
+    #TODO handle merged fields differently
     def UpdateColumnNames(self):
         self.column_names = [GUIText.ID, GUIText.NOTES]
         if isinstance(self.dataset_data, Datasets.GroupedDataset):
@@ -200,7 +201,13 @@ class PartsViewModel(dv.PyDataViewModel):
         elif isinstance(node, Samples.Part):
             for document_key in node.documents:
                 if isinstance(self.dataset_data, Datasets.GroupedDataset):
-                    children.append(self.ObjectToItem(self.dataset_data.grouped_documents[document_key]))
+                    group_children = []
+                    group_item = self.ObjectToItem(self.dataset_data.grouped_documents[document_key])
+                    self.GetChildren(group_item, group_children)
+                    if len(group_children) == 1:
+                        children.append(group_children[0])
+                    else:
+                        children.append(group_item)
                 elif isinstance(self.dataset_data, Datasets.Dataset):
                     children.append(self.ObjectToItem(self.dataset_data.documents[document_key]))
                 row_num += 1
@@ -270,9 +277,13 @@ class PartsViewModel(dv.PyDataViewModel):
             if isinstance(self.dataset_data, Datasets.GroupedDataset):
                 for key in self.dataset_data.grouped_documents:
                     if key in possible_grouped_documents:
-                        if node.key in self.dataset_data.grouped_documents[key].documents:
-                            return self.ObjectToItem(self.dataset_data.grouped_documents[key])
+                        if len(self.dataset_data.grouped_documents[key].documents) == 1:
+                            return self.GetParent(self.ObjectToItem(self.dataset_data.grouped_documents[key]))
+                        else:
+                            if node.key in self.dataset_data.grouped_documents[key].documents:
+                                return self.ObjectToItem(self.dataset_data.grouped_documents[key])
 
+    #TODO handle merged fields differently
     def GetValue(self, item, col):
         ''''Fetch the data object for this item's column.'''
         node = self.ItemToObject(item)
@@ -298,7 +309,7 @@ class PartsViewModel(dv.PyDataViewModel):
                 mapper[i] = ""
             return mapper[col]
         elif isinstance(node, Datasets.Document):
-            mapper = { 0 : str(node.url),
+            mapper = { 0 : str(node.url) if node.url != '' else str(node.key),
                        1 : "\U0001F6C8" if node.notes != "" else "",
                        }
             for i in range(2, len(self.column_names)):
@@ -383,7 +394,10 @@ class PartsViewCtrl(dv.DataViewCtrl):
         #add data columns
         model.UpdateColumnNames()
         for i in range(2, len(model.column_names)):
-            name = model.column_names[i][1][1]
+            if isinstance(model.column_names[i], str):
+                name = model.column_names[i]
+            else:
+                name = model.column_names[i][1][1]
             text_renderer = dv.DataViewTextRenderer()
             data_column = dv.DataViewColumn(str(name), text_renderer, i, align=wx.ALIGN_LEFT)
             self.AppendColumn(data_column)

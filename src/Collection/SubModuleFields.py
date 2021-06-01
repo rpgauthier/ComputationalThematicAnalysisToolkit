@@ -159,7 +159,7 @@ class FieldsNotebook(wx.aui.AuiNotebook):
         nodes = []
         items = []
         merged_fields_list = []
-        main_frame = wx.getApp().GetTopWindow()
+        main_frame = wx.GetApp().GetTopWindow()
         if main_frame.multiprocessing_inprogress_flag:
             wx.MessageBox(GUIText.MULTIPROCESSING_WARNING_MSG,
                           GUIText.WARNING, wx.OK | wx.ICON_WARNING)

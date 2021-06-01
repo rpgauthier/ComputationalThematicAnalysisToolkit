@@ -152,6 +152,7 @@ def TokenizeDatasetObjects(dataset_objects, notify_window, main_frame):
                     else:
                         lemma_df[lemma] = new_lemma_df[lemma]
                 completed += 1
+                package_versions = res.get()[4]
                 tmp_tokensets.update(new_tokensets)
                 logger.info("%s %s", str(key), len(tmp_tokensets))
                 wx.PostEvent(notify_window, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
@@ -186,35 +187,52 @@ def TokenizeDatasetObjects(dataset_objects, notify_window, main_frame):
                 tokensets[toksenset_key] = tokenset
 
             fields[key].tokenset = tokensets
+            fields[key].tokenization_package_versions = package_versions
     logger.info("Finished")
 
 def TokenizationWorker(data_list, field, label, language):
     logger = logging.getLogger(__name__+".TokenizationWorker["+str(field)+"]["+str(label)+"]")
     logger.info("Starting")
 
+    package_versions = []
+
     spacy.prefer_gpu()
     if language == 'fre-trf':
         # tried to updated to use more accurate model
         # but not able to install on python 3.9 on Feb 23 2021
         nlp = spacy.load("fr_dep_news_trf")
+        stemmer = nltk.stem.snowball.FrenchStemmer()
+        package_versions.append(spacy.__name__+" "+spacy.__version__+" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
+        package_versions.append(nltk.__name__ +" "+nltk.__version__+" snowball.FrenchStemmer")
+        package_versions.append(spacy.__name__ +" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
     elif language == 'fre-sm':
-        # tried to updated to use more accurate model
-        # but not able to install on python 3.9 on Feb 23 2021
+        #less accurate but faster model
         nlp = spacy.load('fr_core_news_sm')
-        #nlp = spacy.load("fr_dep_news_trf")
+        stemmer = nltk.stem.snowball.FrenchStemmer()
+        package_versions.append(spacy.__name__+" "+spacy.__version__+" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
+        package_versions.append(nltk.__name__ +" "+nltk.__version__+" snowball.FrenchStemmer")
+        package_versions.append(spacy.__name__ +" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
     elif language == 'eng-trf':
         #more accurate but slower model
         nlp = spacy.load("en_core_web_trf")
+        stemmer = nltk.stem.snowball.EnglishStemmer()
+        package_versions.append(spacy.__name__+" "+spacy.__version__+" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
+        package_versions.append(nltk.__name__ +" "+nltk.__version__+" snowball.EnglishStemmer")
+        package_versions.append(spacy.__name__ +" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
     elif language == 'eng-sm':
         #less accurate but faster model
         nlp = spacy.load('en_core_web_sm')
+        stemmer = nltk.stem.snowball.EnglishStemmer()
+        package_versions.append(spacy.__name__+" "+spacy.__version__+" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
+        package_versions.append(nltk.__name__ +" "+nltk.__version__+" snowball.EnglishStemmer")
+        package_versions.append(spacy.__name__ +" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
     
     tokensets = {}
     #document frequency
     rawtext_tokens_df = {}
     stem_tokens_df = {}
     lemma_tokens_df = {}
-
+    
     for key, data in data_list:
         tmp_tokenset = []
         rawtext_tf = {}
@@ -223,49 +241,26 @@ def TokenizationWorker(data_list, field, label, language):
         for tmp_tokens in nlp.pipe(data):
             for token in tmp_tokens:
                 #order must align to Common.Constants.tokenization.tokenset_indexes
-                if language == 'fre-trf' or language == 'fre-sm':
-                    rawtext = token.text.strip()
-                    stem = token.text.strip()
-                    lemma = token.lemma_.strip()
-                    tmp_tokenset.append((rawtext,
-                                        stem,
-                                        lemma,
-                                        token.pos_,
-                                        token.is_stop))
-                    if rawtext in rawtext_tf:
-                        rawtext_tf[rawtext] = rawtext_tf[rawtext] + 1
-                    else:
-                        rawtext_tf[rawtext] = 1
-                    if stem in stem_tf:
-                        stem_tf[stem] = stem_tf[stem] + 1
-                    else:
-                        stem_tf[stem] = 1
-                    if lemma in lemma_tf:
-                        lemma_tf[lemma] = lemma_tf[lemma] + 1
-                    else:
-                        lemma_tf[lemma] = 1
-
-                elif language == 'eng-trf' or language == 'eng-sm':
-                    rawtext = token.text.strip()
-                    stem = nltk.stem.PorterStemmer().stem(token.text).strip()
-                    lemma = token.lemma_.strip()
-                    tmp_tokenset.append((rawtext,
-                                        stem,
-                                        lemma,
-                                        token.pos_,
-                                        token.is_stop))
-                    if rawtext in rawtext_tf:
-                        rawtext_tf[rawtext] = rawtext_tf[rawtext] + 1
-                    else:
-                        rawtext_tf[rawtext] = 1
-                    if stem in stem_tf:
-                        stem_tf[stem] = stem_tf[stem] + 1
-                    else:
-                        stem_tf[stem] = 1
-                    if lemma in lemma_tf:
-                        lemma_tf[lemma] = lemma_tf[lemma] + 1
-                    else:
-                        lemma_tf[lemma] = 1
+                rawtext = token.text.strip()
+                stem = stemmer.stem(token.text).strip()
+                lemma = token.lemma_.strip()
+                tmp_tokenset.append((rawtext,
+                                     stem,
+                                     lemma,
+                                     token.pos_,
+                                     token.is_stop))
+                if rawtext in rawtext_tf:
+                    rawtext_tf[rawtext] = rawtext_tf[rawtext] + 1
+                else:
+                    rawtext_tf[rawtext] = 1
+                if stem in stem_tf:
+                    stem_tf[stem] = stem_tf[stem] + 1
+                else:
+                    stem_tf[stem] = 1
+                if lemma in lemma_tf:
+                    lemma_tf[lemma] = lemma_tf[lemma] + 1
+                else:
+                    lemma_tf[lemma] = 1
 
         tokenset = []
         for tmp_token in tmp_tokenset:
@@ -291,7 +286,7 @@ def TokenizationWorker(data_list, field, label, language):
                 lemma_tokens_df[lemma] = 1
 
     logger.info("Finished")
-    return tokensets, rawtext_tokens_df, stem_tokens_df, lemma_tokens_df, 
+    return tokensets, rawtext_tokens_df, stem_tokens_df, lemma_tokens_df, package_versions
 
 def CreateDatasetObjectsMetadata(dataset):
     def DatasetMetadata(dataset):
@@ -315,7 +310,7 @@ def CreateDatasetObjectsMetadata(dataset):
         for dataset in grouped_dataset.datasets:
             DatasetMetadata(grouped_dataset.datasets[dataset])
             for data_id in grouped_dataset.datasets[dataset].metadata:
-                grouping_key = grouped_dataset.datasets[dataset].metadata[data_id]["grouping_key"]
+                grouping_key = str(grouped_dataset.datasets[dataset].metadata[data_id]["grouping_key"])
                 if grouping_key not in metadata:
                     metadata[grouping_key] = {}
                     metadata[grouping_key]['submetadata'] = {}

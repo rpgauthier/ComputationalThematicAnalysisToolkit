@@ -21,6 +21,8 @@ LABEL_STYLE = wx.NORMAL
 LABEL_WEIGHT = wx.NORMAL
 LABEL_UNDERLINE = True
 
+CURRENT_WORKSPACE = '../Current_Workspace'
+
 #Menu Options
 # removed to use built in id generator wx.ID_ANY
 

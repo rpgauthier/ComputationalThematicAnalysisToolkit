@@ -94,16 +94,11 @@ class SampleCreatePanel(wx.Panel):
                     metadataset = dataset.metadata
                     model_parameters['metadataset'] = copy.deepcopy(metadataset)
                     model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
-                    while main_frame.workspace_path == '':
-                        wx.MessageBox(GUIText.GENERATE_NOTSAVED_WARNING,
-                                      GUIText.WARNING, wx.OK | wx.ICON_WARNING)
-                        main_frame.OnSaveStart(None)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG2)
-                    model_parameters['workspace_path'] = main_frame.workspace_path
                     new_sample = Samples.LDASample(name, dataset_key, model_parameters)
                     new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
                     main_frame.samples[new_sample.key] = new_sample
-                    new_sample.GenerateStart(new_sample_panel)
+                    new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG3)
                     parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
                     parent_notebook.sample_panels[new_sample.key] = new_sample_panel
@@ -124,16 +119,11 @@ class SampleCreatePanel(wx.Panel):
                     metadataset = dataset.metadata
                     model_parameters['metadataset'] = copy.deepcopy(metadataset)
                     model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
-                    while main_frame.workspace_path == '':
-                        wx.MessageBox(GUIText.GENERATE_NOTSAVED_WARNING,
-                                      GUIText.WARNING, wx.OK | wx.ICON_WARNING)
-                        main_frame.OnSaveStart(None)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG2)
-                    model_parameters['workspace_path'] = main_frame.workspace_path
                     new_sample = Samples.BitermSample(name, dataset_key, model_parameters)
                     new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
                     main_frame.samples[new_sample.key] = new_sample
-                    new_sample.GenerateStart(new_sample_panel)
+                    new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG3)
                     parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
                     parent_notebook.sample_panels[new_sample.key] = new_sample_panel
@@ -352,12 +342,7 @@ class SampleListPanel(wx.Panel):
                     metadataset = dataset.metadata
                     model_parameters['metadataset'] = copy.deepcopy(metadataset)
                     model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
-                    while main_frame.workspace_path == '':
-                        wx.MessageBox(GUIText.GENERATE_NOTSAVED_WARNING,
-                                      GUIText.WARNING, wx.OK | wx.ICON_WARNING)
-                        main_frame.OnSaveStart(None)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG2)
-                    model_parameters['workspace_path'] = main_frame.workspace_path
                     new_sample = Samples.LDASample(name, dataset_key, model_parameters)
                     new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
                     self.samples[new_sample.key] = new_sample
@@ -384,12 +369,7 @@ class SampleListPanel(wx.Panel):
                     metadataset = dataset.metadata
                     model_parameters['metadataset'] = copy.deepcopy(metadataset)
                     model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
-                    while main_frame.workspace_path == '':
-                        wx.MessageBox(GUIText.GENERATE_NOTSAVED_WARNING,
-                                      GUIText.WARNING, wx.OK | wx.ICON_WARNING)
-                        main_frame.OnSaveStart(None)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG2)
-                    model_parameters['workspace_path'] = main_frame.workspace_path
                     new_sample = Samples.BitermSample(name, dataset_key, model_parameters)
                     new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
                     self.samples[new_sample.key] = new_sample
@@ -861,7 +841,7 @@ class TopicSamplePanel(AbstractSamplePanel):
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(sample.dataset_key))
             details1_sizer.Add(dataset_label, 0, wx.ALL, 5)
             details1_sizer.AddSpacer(10)
-        created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.start_dt.strftime("%Y-%m-%d %H:%M:%S"))
+        created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.created_dt.strftime("%Y-%m-%d %H:%M:%S"))
         details1_sizer.Add(created_dt_label, 0, wx.ALL, 5)
         self.sizer.Add(details1_sizer, 0, wx.ALL, 5)
 
@@ -906,7 +886,7 @@ class TopicSamplePanel(AbstractSamplePanel):
             dataset = None
             if self.sample.dataset_key in main_frame.datasets:
                 dataset = main_frame.datasets[self.sample.dataset_key]
-            self.sample.GenerateFinish(event.data, dataset)
+            self.sample.GenerateFinish(event.data, dataset, main_frame.current_workspace.name)
             self.DisplayModel()
             main_frame.DocumentsUpdated()
         finally:
@@ -1249,7 +1229,6 @@ class TopicVisualizationsNotebook(wx.aui.AuiNotebook):
         logger.info("Finished")
 
     def Refresh(self, selected_parts):
-        #self.pyLDAvis_panel.Render(self.sample.workspace_path+self.sample.filedir, self.sample.dictionary, self.sample.corpus, self.sample.model)
         self.DrawLDAPlots(selected_parts)
 
 class TopicListPanel(wx.Panel):
@@ -1551,13 +1530,13 @@ class BitermModelCreateDialog(wx.Dialog):
         num_topics_sizer.Add(self.num_topics_ctrl)
         sizer.Add(num_topics_sizer)
 
-        num_iterations_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES_CHOICE)
-        self.num_iterations_ctrl = wx.SpinCtrl(self, min=1, max=1000, initial=100)
-        self.num_iterations_ctrl.SetToolTip(GUIText.NUMBER_OF_PASSES_TOOLTIP)
-        num_iterations_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        num_iterations_sizer.Add(num_iterations_label)
-        num_iterations_sizer.Add(self.num_iterations_ctrl)
-        sizer.Add(num_iterations_sizer)
+        num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES_CHOICE)
+        self.num_passes_ctrl = wx.SpinCtrl(self, min=1, max=1000, initial=100)
+        self.num_passes_ctrl.SetToolTip(GUIText.NUMBER_OF_PASSES_TOOLTIP)
+        num_passes_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        num_passes_sizer.Add(num_passes_label)
+        num_passes_sizer.Add(self.num_passes_ctrl)
+        sizer.Add(num_passes_sizer)
 
         #fields to choose specific fields for model
         #--- not part of mvp so default is to use all fields
@@ -1617,7 +1596,7 @@ class BitermModelCreateDialog(wx.Dialog):
             self.model_parameters['name'] = model_name
             self.model_parameters['dataset_key'] = self.usable_datasets[dataset_id]
             self.model_parameters['num_topics'] = self.num_topics_ctrl.GetValue()
-            self.model_parameters['num_iterations'] = self.num_iterations_ctrl.GetValue()
+            self.model_parameters['num_passes'] = self.num_passes_ctrl.GetValue()
         logger.info("Finished")
         if status_flag:
             self.EndModal(wx.ID_OK)
@@ -1646,8 +1625,8 @@ class BitermModelDetailsDialog(wx.Dialog):
         num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+" "+str(self.sample.num_topics))
         sizer.Add(num_topics_label)
 
-        num_iterations_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+str(self.sample.num_iterations))
-        sizer.Add(num_iterations_label)
+        num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+str(self.sample.num_passes))
+        sizer.Add(num_passes_label)
 
         used_documents_label = wx.StaticText(self, label="Number of documents used during modelling: "+str(len(self.sample.tokensets)))
         sizer.Add(used_documents_label)
