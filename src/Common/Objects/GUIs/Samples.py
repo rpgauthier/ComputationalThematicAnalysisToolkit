@@ -5,7 +5,9 @@ from datetime import datetime
 import pandas as pd
 
 import wx
+import wx.adv
 import wx.aui
+from wx.core import VERTICAL
 import wx.dataview as dv
 
 from Common.GUIText import Samples as GUIText
@@ -23,23 +25,50 @@ class SampleCreatePanel(wx.Panel):
         wx.Panel.__init__(self, parent, size=size)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
+        generic_sizer = wx.StaticBoxSizer(orient=wx.VERTICAL, parent=self, label="Generic Sampling")
+        sizer.Add(generic_sizer, 0, wx.ALL, 5)
+        create_random_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        generic_sizer.Add(create_random_sizer)
+        create_random_button = wx.Button(self, label=GUIText.RANDOM_LABEL)
+        create_random_button.SetToolTip(GUIText.CREATE_RANDOM_TOOLTIP)
+        self.Bind(wx.EVT_BUTTON, lambda event: self.OnCreateSample(event, 'Random'), create_random_button)
+        create_random_sizer.Add(create_random_button, 0, wx.ALL, 5)
+        create_random_description = wx.StaticText(self, label="This sampling approach depends on the the assumption that codes are uniformly distributed across the data."\
+                                                           "\nHowever, assuming codes follow a uniform distribution may restrict visability of interesting infrequent codes in the data.")
+        create_random_sizer.Add(create_random_description, 0, wx.ALL, 5)
+        create_random_link = wx.adv.HyperlinkCtrl(self, label="1", url="https://academic.oup.com/fampra/article/13/6/522/496701")
+        create_random_sizer.Add(create_random_link, 0, wx.ALL, 5)
 
-        create_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, self, label=GUIText.CREATE)
-        create_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-        create_random_tool = create_toolbar.AddTool(wx.ID_ANY, label=GUIText.RANDOM_LABEL, bitmap=wx.Bitmap(1, 1),
-                                                  shortHelp=GUIText.CREATE_RANDOM_TOOLTIP)
-        create_toolbar.Bind(wx.EVT_MENU, lambda event: self.OnCreateSample(event, 'Random'), create_random_tool)
-
-        create_lda_tool = create_toolbar.AddTool(wx.ID_ANY, label=GUIText.LDA_LABEL, bitmap=wx.Bitmap(1, 1),
-                                           shortHelp=GUIText.CREATE_LDA_TOOLTIP)
-        create_toolbar.Bind(wx.EVT_MENU, lambda event: self.OnCreateSample(event, 'LDA'), create_lda_tool)
-
-        create_biterm_tool = create_toolbar.AddTool(wx.ID_ANY, label=GUIText.BITERM_LABEL, bitmap=wx.Bitmap(1, 1),
-                                           shortHelp=GUIText.CREATE_BITERM_TOOLTIP)
-        create_toolbar.Bind(wx.EVT_MENU, lambda event: self.OnCreateSample(event, 'Biterm'), create_biterm_tool)
-        create_toolbar.Realize()
-        create_sizer.Add(create_toolbar)
-        sizer.Add(create_sizer, 0, wx.ALL, 5)
+        topicmodelling_sizer = wx.StaticBoxSizer(orient=wx.VERTICAL, parent=self, label="Topic Model Sampling")
+        sizer.Add(topicmodelling_sizer, 0, wx.ALL, 5)
+        description_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        topicmodelling_sizer.Add(description_sizer, 0, wx.ALL, 5)
+        topicmodelling_description = wx.StaticText(self, label="Topic model sampling attempts to generate samples in the form of groups of documents that are likely to contain similar topics."\
+                                                               "\nThese groups can contain interesting phenomena that can be used to explore the data, develop codes, and review themes."
+                                                               "\nHowever, generated topic model samples should to be treated as windows that look at potentially interesting parts of the data rather than as a generalizable representation of the data.")
+        description_sizer.Add(topicmodelling_description, 0, wx.ALL, 5)
+        topicmodelling_link = wx.adv.HyperlinkCtrl(self, label="", url="")#TODO choose approriate reference/s
+        description_sizer.Add(topicmodelling_link, 0, wx.ALL, 5)
+        create_lda_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        topicmodelling_sizer.Add(create_lda_sizer)
+        create_lda_button = wx.Button(self, label=GUIText.LDA_LABEL)
+        create_lda_button.SetToolTip(GUIText.CREATE_LDA_TOOLTIP)
+        self.Bind(wx.EVT_BUTTON, lambda event: self.OnCreateSample(event, 'LDA'), create_lda_button)
+        create_lda_sizer.Add(create_lda_button, 0, wx.ALL, 5)
+        create_lda_description = wx.StaticText(self, label="This topic model is suited to identifying topics in long texts, such as discussions, where multiple topics can co-occur")
+        create_lda_sizer.Add(create_lda_description, 0, wx.ALL, 5)
+        create_lda_link = wx.adv.HyperlinkCtrl(self, label="2", url="https://dl.acm.org/doi/10.5555/944919.944937")
+        create_lda_sizer.Add(create_lda_link, 0, wx.ALL, 5)
+        create_biterm_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        topicmodelling_sizer.Add(create_biterm_sizer)
+        create_biterm_button = wx.Button(self, label=GUIText.BITERM_LABEL)
+        create_biterm_button.SetToolTip(GUIText.CREATE_BITERM_TOOLTIP)
+        self.Bind(wx.EVT_BUTTON, lambda event: self.OnCreateSample(event, 'Biterm'), create_biterm_button)
+        create_biterm_sizer.Add(create_biterm_button, 0, wx.ALL, 5)
+        create_biterm_description = wx.StaticText(self, label="This topic model is suited to identifying topics in short texts, such as tweets and instant messages")
+        create_biterm_sizer.Add(create_biterm_description, 0, wx.ALL, 5)
+        create_biterm_link = wx.adv.HyperlinkCtrl(self, label="3", url="https://dl.acm.org/doi/10.1145/2488388.2488514")
+        create_biterm_sizer.Add(create_biterm_link, 0, wx.ALL, 5)
 
         self.SetSizer(sizer)
         self.Layout()

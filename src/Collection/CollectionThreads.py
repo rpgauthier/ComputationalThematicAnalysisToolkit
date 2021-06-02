@@ -6,8 +6,6 @@ import calendar
 from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
 import dateparser
-import time
-import pytz
 from threading import Thread
 
 import wx
