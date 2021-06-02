@@ -2,6 +2,8 @@
 import logging
 from logging.handlers import RotatingFileHandler
 import os.path
+import shutil
+import tempfile
 from threading import *
 from multiprocessing import get_context
 import psutil
@@ -12,6 +14,7 @@ import wx.lib.agw.labelbook as LB
 import External.wxPython.labelbook_fix as LB_fix
 
 import RootApp
+import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
 from Common.GUIText import Main as GUIText
 import Common.Notes as cn
@@ -20,6 +23,8 @@ import Familiarization.ModuleFamiliarization as fm
 import Sampling.ModuleSampling as sm
 import Coding.ModuleCoding as cdm
 import MainThreads
+
+import wx.lib.mixins.inspection as wit
 
 class MainFrame(wx.Frame):
     '''the Main GUI'''
@@ -40,7 +45,12 @@ class MainFrame(wx.Frame):
         self.datasets = {}
         self.samples = {}
         self.codes = {}
-        self.workspace_path = ''
+        self.save_path = ''
+        #TODO change to allow resuming previous workspace instead of purging
+        if not os.path.exists(Constants.CURRENT_WORKSPACE):
+            os.mkdir(Constants.CURRENT_WORKSPACE)
+        self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
+        
         self.last_load_dt = datetime.now()
         self.load_thread = None
         self.progress_dialog = None
@@ -101,6 +111,10 @@ class MainFrame(wx.Frame):
                                               GUIText.LOAD,
                                               GUIText.LOAD_TOOLTIP)
         self.Bind(wx.EVT_MENU, self.OnLoadStart, load_file_menuitem)
+        oldload_file_menuitem = file_menu.Append(wx.ID_ANY,
+                                                 "Old Load",
+                                                 "use to convert existing save folders to new single file format")
+        self.Bind(wx.EVT_MENU, self.OnOldLoadStart, oldload_file_menuitem)
         CustomEvents.LOAD_EVT_RESULT(self, self.OnLoadEnd)
         save_file_menuitem = file_menu.Append(wx.ID_SAVE,
                                               GUIText.SAVE,
@@ -120,34 +134,34 @@ class MainFrame(wx.Frame):
 
         self.view_menu = wx.Menu()
         self.toggle_collection_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                           GUIText.SHOW_HIDE+GUIText.COLLECTION_LABEL,
-                                                           kind=wx.ITEM_CHECK)
+                                                                GUIText.SHOW_HIDE+GUIText.COLLECTION_LABEL,
+                                                                kind=wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.OnToggleCollection, self.toggle_collection_menuitem)
         self.toggle_familiarization_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                                GUIText.SHOW_HIDE+GUIText.FAMILIARIZATION_LABEL,
-                                                                kind=wx.ITEM_CHECK)
+                                                                     GUIText.SHOW_HIDE+GUIText.FAMILIARIZATION_MENU_LABEL,
+                                                                     kind=wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.OnToggleFamiliarization, self.toggle_familiarization_menuitem)
         self.toggle_sampling_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                                GUIText.SHOW_HIDE+GUIText.SAMPLING_LABEL,
-                                                                kind=wx.ITEM_CHECK)
+                                                              GUIText.SHOW_HIDE+GUIText.SAMPLING_MENU_LABEL,
+                                                              kind=wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.OnToggleSampling, self.toggle_sampling_menuitem)
         self.toggle_coding_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                                GUIText.SHOW_HIDE+GUIText.CODING_LABEL,
-                                                                kind=wx.ITEM_CHECK)
+                                                            GUIText.SHOW_HIDE+GUIText.CODING_LABEL,
+                                                            kind=wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.OnToggleCoding, self.toggle_coding_menuitem)
         
         self.view_menu.AppendSeparator()
         self.toggle_notes_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                      GUIText.SHOW_HIDE + GUIText.NOTES_LABEL,
-                                                      kind=wx.ITEM_CHECK)
+                                                           GUIText.SHOW_HIDE + GUIText.NOTES_LABEL,
+                                                           kind=wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.OnToggleNotes, self.toggle_notes_menuitem)
 
         self.view_menu.AppendSeparator()
         self.view_menu.AppendSubMenu(self.collection_module.view_menu, GUIText.COLLECTION_LABEL)
         #TODO need to move actions new submenu syste for Familiarization submodules
-        self.view_menu.AppendSubMenu(self.familiarization_module.view_menu, GUIText.FAMILIARIZATION_LABEL)
+        self.view_menu.AppendSubMenu(self.familiarization_module.view_menu, GUIText.FAMILIARIZATION_MENU_LABEL)
         #TODO need to move actions new submenu syste for Sampling submodules
-        #self.view_menu.AppendSubMenu(self.sampling_module.view_menu, GUIText.FAMILIARIZATION_LABEL)
+        self.view_menu.AppendSubMenu(self.sampling_module.view_menu, GUIText.SAMPLING_MENU_LABEL)
         self.view_menu.AppendSubMenu(self.coding_module.view_menu, GUIText.CODING_LABEL)
         
         self.menu_bar.Append(self.view_menu, GUIText.VIEW_MENU)
@@ -321,6 +335,12 @@ class MainFrame(wx.Frame):
             self.samples.clear()
             #Do not need to destroy as codes do not have nested reference loops
             self.codes.clear()
+            self.save_path = ''
+            self.current_workspace.cleanup()
+            self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
+        
+            self.last_load_dt = datetime.now()
+            
             self.DatasetsUpdated()
             self.SamplesUpdated()
             self.DocumentsUpdated()
@@ -335,6 +355,31 @@ class MainFrame(wx.Frame):
 
             self.CloseProgressDialog(thaw=True)
         logger.info("Finished")
+    
+    def OnOldLoadStart(self, event):
+        #start up load thread that performs all backend load operations that take a long time
+        '''Menu Function for loading data'''
+        logger = logging.getLogger(__name__+".MainFrame.OnLoadStart")
+        logger.info("Starting")
+        if wx.MessageBox(GUIText.LOAD_WARNING,
+                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
+            logger.info("Finished")
+            return
+        #ask the user what workspace to open
+        base_path = os.path.dirname(__file__)
+        dir_name = os.path.abspath(os.path.join(base_path, '..', 'Saved_Workspaces'))
+        with wx.DirDialog(self,
+                          message=GUIText.LOAD_REQUEST,
+                          defaultPath=dir_name,
+                          style=wx.DD_DEFAULT_STYLE|wx.DD_DIR_MUST_EXIST) as dir_dialog:
+            if dir_dialog.ShowModal() == wx.ID_OK:
+                self.save_path = dir_dialog.GetPath()
+                self.CreateProgressDialog(title=GUIText.LOAD_BUSY_LABEL,
+                                          warning=GUIText.SIZE_WARNING_MSG,
+                                          freeze=True)
+                self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG)
+                self.load_thread = MainThreads.OldLoadThread(self, self.save_path)
+        logger.info("Finished")
 
     def OnLoadStart(self, event):
         #start up load thread that performs all backend load operations that take a long time
@@ -347,20 +392,24 @@ class MainFrame(wx.Frame):
             return
         #ask the user what workspace to open
         base_path = os.path.dirname(__file__)
-        dir_name = os.path.abspath(os.path.join(base_path, '..', 'Workspaces'))
-        with wx.DirDialog(self,
+        dir_name = os.path.abspath(os.path.join(base_path, '..', 'Saved_Workspaces'))
+        with wx.FileDialog(self,
                           message=GUIText.LOAD_REQUEST,
-                          defaultPath=dir_name,
-                          style=wx.DD_DEFAULT_STYLE|wx.DD_DIR_MUST_EXIST) as dir_dialog:
+                          defaultDir=dir_name,
+                          style=wx.DD_DEFAULT_STYLE|wx.FD_FILE_MUST_EXIST|wx.FD_OPEN,
+                          wildcard="*.mta") as dir_dialog:
             if dir_dialog.ShowModal() == wx.ID_OK:
-                self.workspace_path = dir_dialog.GetPath()
+                self.save_path = dir_dialog.GetPath()
+                self.current_workspace.cleanup()
+                self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
+
                 self.CreateProgressDialog(title=GUIText.LOAD_BUSY_LABEL,
                                           warning=GUIText.SIZE_WARNING_MSG,
                                           freeze=True)
                 self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG)
-                self.load_thread = MainThreads.LoadThread(self, self.workspace_path)
+                self.load_thread = MainThreads.LoadThread(self, self.save_path, self.current_workspace.name)
         logger.info("Finished")
-
+    
     def OnLoadEnd(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnLoadEnd")
         logger.info("Starting")
@@ -418,11 +467,39 @@ class MainFrame(wx.Frame):
         self.CloseProgressDialog(thaw=True)
         logger.info("Finished")
 
+    def OnSaveAs(self, event):
+        '''Menu Function for creating new save of data'''
+        logger = logging.getLogger(__name__+".MainFrame.OnSaveAs")
+        logger.info("Starting")
+        base_path = os.path.dirname(__file__)
+        dir_name = os.path.abspath(os.path.join(base_path, '..', 'Saved_Workspaces'))
+
+        with wx.FileDialog(self,
+                          message=GUIText.SAVE_AS_REQUEST,
+                          defaultDir=dir_name,
+                          style=wx.DD_DEFAULT_STYLE|wx.FD_SAVE,
+                          wildcard="*.mta") as file_dialog:
+            if file_dialog.ShowModal() == wx.ID_OK:
+                self.save_path = file_dialog.GetPath()
+                try:
+                    self.last_load_dt = datetime(1990, 1, 1)
+                    
+                    self.OnSaveStart(event)
+                except IOError:
+                    wx.LogError(GUIText.SAVE_AS_FAILURE + self.save_path)
+                    logger.error("Failed to save in chosen directory[%s]", self.save_path)
+            else:
+                if self.closing:
+                    self.closing = False
+                    self.CloseProgressDialog(thaw=True, message="Canceled")
+
+        logger.info("Finished")
+
     def OnSaveStart(self, event):
         '''Menu Function for updating save of data'''
         logger = logging.getLogger(__name__+".MainFrame.OnSave")
         logger.info("Starting")
-        if self.workspace_path == '':
+        if self.save_path == '':
             self.OnSaveAs(event)
         else:
             self.CreateProgressDialog(title=GUIText.SAVE_BUSY_LABEL,
@@ -431,7 +508,7 @@ class MainFrame(wx.Frame):
             self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG)
             
             self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_NOTES)
-            self.notes_notebook.Save()
+            notes_text = self.notes_notebook.Save()
 
             self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_CONFIG)
             config_data = {}
@@ -449,7 +526,7 @@ class MainFrame(wx.Frame):
             config_data['sampling_module'] = self.sampling_module.Save()
             config_data['coding_module'] = self.coding_module.Save()
 
-            self.save_thread = MainThreads.SaveThread(self, self.workspace_path, config_data, self.datasets, self.samples, self.codes, self.last_load_dt)
+            self.save_thread = MainThreads.SaveThread(self, self.save_path, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, notes_text, self.last_load_dt)
 
     def OnSaveEnd(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnSaveEnd")
@@ -462,29 +539,6 @@ class MainFrame(wx.Frame):
 
         if self.closing:
             self.OnCloseEnd(event)
-
-    def OnSaveAs(self, event):
-        '''Menu Function for creating new save of data'''
-        logger = logging.getLogger(__name__+".MainFrame.OnSaveAs")
-        logger.info("Starting")
-        base_path = os.path.dirname(__file__)
-        dir_name = os.path.abspath(os.path.join(base_path, '..', 'Workspaces'))
-        with wx.DirDialog(self, message=GUIText.SAVE_AS_REQUEST,
-                          defaultPath=dir_name) as dir_dialog:
-            if dir_dialog.ShowModal() == wx.ID_OK:
-                self.workspace_path = dir_dialog.GetPath()
-                try:
-                    self.last_load_dt = datetime(1990, 1, 1)
-                    self.OnSaveStart(event)
-                except IOError:
-                    wx.LogError(GUIText.SAVE_AS_FAILURE + self.workspace_path)
-                    logger.error("Failed to save in chosen directory[%s]", self.workspace_path)
-            else:
-                if self.closing:
-                    self.closing = False
-                    self.CloseProgressDialog(thaw=True, message="Canceled")
-
-        logger.info("Finished")
     
     def OnProgress(self, event):
         self.PulseProgressDialog(event.data)

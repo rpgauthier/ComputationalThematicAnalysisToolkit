@@ -174,7 +174,7 @@ def chord_diagram(mat, outer_circle=None, names=None, order=None, width=0.1, pad
     def SelectArc(new_arc):
         nonlocal selected_outer_patch
         #turn off old selected patch and reset chords and annotations to default
-        outer_patches[selected_outer_patch].set_facecolor('darkgray')
+        #outer_patches[selected_outer_patch].set_facecolor('darkgray')
         for si in self_patches:
             #self chord
             self_patches[si].set_visible(False)
@@ -200,7 +200,7 @@ def chord_diagram(mat, outer_circle=None, names=None, order=None, width=0.1, pad
             connector_annots[(ci, cj)].set_zorder(0)
         #turn on new selected patch
         selected_outer_patch = new_arc
-        outer_patches[selected_outer_patch].set_facecolor(colors[selected_outer_patch])
+        #outer_patches[selected_outer_patch].set_facecolor(colors[selected_outer_patch])
         #for self chord
         if new_arc in self_patches:
             self_patches[selected_outer_patch].set_visible(True)

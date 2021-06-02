@@ -229,11 +229,14 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
         self.col_names = []
         self.GetColNames()
         self._cols = len(self.col_names)
-        self.data_df['Created UTC'] = pd.to_datetime(self.data_df['created_utc'], unit='s')
+        self.data_df['Created UTC'] = pd.to_datetime(self.data_df['created_utc'], unit='s', utc=True)
 
     def GetColNames(self):
         self.col_names = []
-        self.col_names.append(("", "url"))
+        if self.dataset.dataset_source != 'CSV':
+            self.col_names.append(("", "url"))
+        else:
+            self.col_names.append(("", "id"))
         self.col_names.append(("", 'Created UTC'))
         if self.dataset.grouping_field is not None:
             self.col_names.append(("Grouping Field", self.dataset.grouping_field.key))
@@ -253,7 +256,10 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
         if self.col_names[col][0] == "":
             name = str(self.col_names[col][1])
         else:
-            name = self.col_names[col][1][1]
+            if isinstance(self.col_names[col][1], str):
+                name = str(self.col_names[col][1])
+            else:
+                name = str(self.col_names[col][1][1])
         #    name = str(self.col_names[col][0])+"("+str(self.col_names[col][1])+")"
         return name
     
@@ -750,6 +756,7 @@ class DocumentViewModel(dv.PyDataViewModel):
 
         self.column_names = []
 
+    #TODO handle merged fields differently
     def UpdateColumnNames(self):
         self.column_names = [GUIText.ID, GUIText.NOTES]
         if isinstance(self.dataset_data, Datasets.GroupedDataset):
@@ -761,13 +768,15 @@ class DocumentViewModel(dv.PyDataViewModel):
                     for field_key in self.dataset_data.datasets[dataset_key].merged_fields[merged_field_key].chosen_fields:
                         self.column_names.append((merged_field_key, field_key))
                 for field_key in self.dataset_data.datasets[dataset_key].chosen_fields:
-                    self.column_names.append(field_key)
+                    if field_key not in self.column_names:
+                        self.column_names.append(field_key)
         elif isinstance(self.dataset_data, Datasets.Dataset):
             for merged_field_key in self.dataset_data.merged_fields:
                 for field_key in self.dataset_data.merged_fields[merged_field_key].chosen_fields:
                     self.column_names.append((merged_field_key, field_key))
             for field_key in self.dataset_data.chosen_fields:
-                self.column_names.append(field_key)
+                if field_key not in self.column_names:
+                    self.column_names.append(field_key)
 
     def GetColumnCount(self):
         '''Report how many columns this model provides data for.'''
@@ -794,9 +803,19 @@ class DocumentViewModel(dv.PyDataViewModel):
                     if node.grouped_documents[key].usefulness_flag not in self.usefulness_filter:
                         include = False
                 if include:
-                    children.append(self.ObjectToItem(node.grouped_documents[key]))
+                    group_children = []
+                    self.GetChildren(self.ObjectToItem(node.grouped_documents[key]), group_children)
+
+                    if len(group_children) == 1:
+                        children.append(group_children[0])
+                    else:
+                        children.append(self.ObjectToItem(node.grouped_documents[key]))
             for key in node.datasets:
-                children.append(self.ObjectToItem(node.datasets[key]))
+                dataset_item = self.ObjectToItem(node.datasets[key])
+                dataset_children = []
+                self.GetChildren(dataset_item, dataset_children)
+                if len(dataset_children) > 0:
+                    children.append(self.ObjectToItem(node.datasets[key]))
         elif isinstance(node, Datasets.Dataset):
             #documents that are part of a grouped document should displayed under that group and not displayed under the dataset
             skip_node_keys = []
@@ -864,15 +883,20 @@ class DocumentViewModel(dv.PyDataViewModel):
                 return dv.NullDataViewItem
         elif isinstance(node, Datasets.Document):
             if isinstance(node.parent, Datasets.GroupedDocuments):
-                return self.ObjectToItem(node.parent)
+                if len(node.parent.documents) == 1:
+                    return self.GetParent(self.ObjectToItem(node.parent))
+                else:
+                    return self.ObjectToItem(node.parent)
             elif isinstance(node.parent, Datasets.Dataset):
                 if isinstance(node.parent.parent, Datasets.GroupedDataset):
                     for key in node.parent.parent.grouped_documents:
                         if node.key in node.parent.parent.grouped_documents[key].documents:
                             return self.ObjectToItem(node.parent.parent.grouped_documents[key])
+                    return self.ObjectToItem(node.parent)
                 else:
                     return dv.NullDataViewItem
 
+    #TODO handle merged fields differently
     def GetValue(self, item, col):
         ''''Fetch the data object for this item's column.'''
         node = self.ItemToObject(item)
@@ -974,7 +998,6 @@ class DocumentViewCtrl(dv.DataViewCtrl):
 
     def UpdateColumns(self):
         model = self.GetModel()
-
         #remove exisitng data columns
         if len(model.column_names) > 2:
             for i in reversed(range(2, len(model.column_names))):
@@ -983,7 +1006,10 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         #add data columns
         model.UpdateColumnNames()
         for i in range(2, len(model.column_names)):
-            name = model.column_names[i][1][1]
+            if isinstance(model.column_names[i], str):
+                name = model.column_names[i]
+            else:
+                name = model.column_names[i][1][1]
             text_renderer = dv.DataViewTextRenderer()
             data_column = dv.DataViewColumn(str(name), text_renderer, i, align=wx.ALIGN_LEFT)
             self.AppendColumn(data_column)

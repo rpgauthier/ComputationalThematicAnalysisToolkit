@@ -301,7 +301,7 @@ class DatasetsListPanel(wx.Panel):
                     GroupedDatasetUngrouper(node)
             if performed_flag:
                 for grouped_dataset in impacted_groupeddatasets:
-                    main_frame.PulseProgressDialog(GUIText.UNGROUPING_BUSY_UPDATING_MSG1+str(grouped_dataset.key))
+                    main_frame.PulseProgressDialog(GUIText.UNGROUPING_BUSY_UPDATING_MSG+str(grouped_dataset.key))
                     #TODO need to move into a thread
                     DatasetsUtilities.CreateDatasetObjectsMetadata(grouped_dataset)
                 main_frame.DatasetsUpdated()
@@ -396,7 +396,7 @@ class DatasetDetailsPanel(wx.Panel):
         logger.info("Starting")
         #create a retriever of chosen type in a popup
         main_frame = wx.GetApp().GetTopWindow()
-        CollectionDialogs.RedditDatasetRetrieverDialog(self).Show()
+        CollectionDialogs.RedditDatasetRetrieverDialog(main_frame).Show()
         logger.info("Finished")
     
     def OnAddTwitterDataset(self, event):
@@ -412,7 +412,7 @@ class DatasetDetailsPanel(wx.Panel):
         logger.info("Starting")
         #create a retriever of chosen type in a popup
         main_frame = wx.GetApp().GetTopWindow()
-        CollectionDialogs.CSVDatasetRetrieverDialog(self).Show()
+        CollectionDialogs.CSVDatasetRetrieverDialog(main_frame).Show()
         logger.info("Finished")
 
     def OnDeleteDataset(self, event):
@@ -466,14 +466,16 @@ class DatasetDetailsPanel(wx.Panel):
             toolbar.Realize()
             create_sizer.Add(toolbar)
             self.sizer.Add(create_sizer, 0, wx.ALL, 5)
-        elif isinstance(dataset, Datasets.GroupedDataset):
+        
+        if isinstance(dataset, Datasets.GroupedDataset):
             details_sizer = wx.GridSizer(2, gap=wx.Size(0,0))
             self.sizer.Add(details_sizer)
 
             name_label = wx.StaticText(self, label=GUIText.NAME + ":")
             self.name_ctrl = wx.TextCtrl(self, value=self.dataset.name, style=wx.TE_PROCESS_ENTER)
             self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-            self.name_ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnChangeDatasetKey)
+            #TODO fix this maybe
+            #self.name_ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnChangeDatasetKey)
             name_sizer = wx.BoxSizer(wx.HORIZONTAL)
             name_sizer.Add(name_label)
             name_sizer.Add(self.name_ctrl)
@@ -491,12 +493,11 @@ class DatasetDetailsPanel(wx.Panel):
             language_sizer.Add(language_label)
             language_sizer.Add(self.language_ctrl)
             details_sizer.Add(language_sizer, 0, wx.ALL, 5)
-            self.language_ctrl.Bind(wx.EVT_CHOICE, self.OnChangeDatasetLanguage)
-
+            #TODO fix this maybe
+            #self.language_ctrl.Bind(wx.EVT_CHOICE, self.OnChangeDatasetLanguage)
         elif isinstance(dataset, Datasets.Dataset):
             dataset_panel = DatasetsGUIs.DatasetPanel(self, dataset, header=True)
             self.sizer.Add(dataset_panel)
-
         self.Layout()
         logger.info("Finished")
 

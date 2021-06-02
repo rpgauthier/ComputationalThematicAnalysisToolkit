@@ -66,15 +66,15 @@ class Common:
     CONSUMER_SECRET = "Consumer Secret"
 
 class Main(Common):
-    APP_NAME = "Machine Guided Thematic Analysis Toolkit"
+    APP_NAME = "Computational Thematic Analysis Toolkit"
 
     NEW_WARNING = "Are you sure you wnat to proceed with creating a new workspace?"\
-                  "\nAny recent changes will be lost."
+                  "\nAny unsaved changes will be lost."
     LOAD_WARNING = "Are you sure you want to proceed with loading a workspace?" \
-                   "\nAny recent changes will be lost."
-    LOAD_REQUEST = "Please choose Workspace Folder to Load"
+                   "\nAny unsaved changes will be lost."
+    LOAD_REQUEST = "Please Choose Workspace to Load"
     LOAD_FAILURE = "Cannot open workspace "
-    SAVE_AS_REQUEST = "Choose Folder for Saving Workspace"
+    SAVE_AS_REQUEST = "Please Choose Name for Workspace being Saved"
     SAVE_AS_FAILURE = "Failed to save workspace "
     SAVE_FAILURE = "Failed to save workspace "
     CLOSE_WARNING = "Would you like to save your changes before closing?" \
@@ -132,7 +132,9 @@ class Main(Common):
     GENERAL_LABEL = "General"
     COLLECTION_LABEL = "Data Collection"
     FAMILIARIZATION_LABEL = "Data Cleaning & Filtering"
+    FAMILIARIZATION_MENU_LABEL = "Data Cleaning && Filtering"
     SAMPLING_LABEL = "Sampling & Modelling"
+    SAMPLING_MENU_LABEL = "Sampling && Modelling"
     CODING_LABEL = "Coding"
     OPTIONS_LABEL = "Options"
     NOTES_LABEL = "Notes"
@@ -285,6 +287,10 @@ class Datasets(Common):
                           "If id is not unique rows with the same id will be merged."
     CSV_IDFIELD_MISSING_ERROR = "You must choose an field to use as an id."
     CSV_IDFIELD_DEFAULT = "<Assign based on Row Number>"
+    CSV_URLFIELD = "URL Field"
+    CSV_URLFIELD_TOOLTIP = "Choose a field to use as url to link to the online version of the documents."
+    CSV_DATETIMEFIELD = "Datetime Field"
+    CSV_DATETIMEFIELD_TOOLTIP = "Choose a field to use as datetime to documents."
     CSV_INCLUDEDFIELDS = "Include Fields"
     CSV_INCLUDEDFIELDS_TOOLTIP = "Choose fields you want to treat as data from the CSV file."
 
@@ -342,6 +348,9 @@ class Samples(Main):
     DATASET = Datasets.DATASET
     DATASET_MISSING_ERROR = "Dataset was not chosen." \
                             "\nPlease choose a dataset for the model."
+    DATASET_NOTAVALIABLE_ERROR = "No Data is avaliable." \
+                            "\nPlease load data into the project before trying to create a model."
+    
 
     GENERATE_WARNING = "\nWARNING: Do not shut down program or else model will not be created."
     GENERATE_NOTSAVED_WARNING = "Workspace has not yet been saved."\
@@ -512,12 +521,17 @@ class Familiarization(Main, Datasets):
     FILTERS_ENTRIES_TREEMAP_LABEL = "Entries Treemap"
     FILTERS_INCLUDED = "Included "
     FILTERS_REMOVED = "Removed "
+    FILTERS_TOKENIZER = "Tokenizer:"
+    FILTERS_METHOD = "Method:"
+    FILTERS_RAWTOKENS = "Raw Tokens"
+    FILTERS_STEMMER = "Stemmer: "
+    FILTERS_LEMMATIZER = "Lemmatizer: "
     FILTERS_RULES = "Rules"
     FILTERS_RULES_STEP = "Sequence"
     FILTERS_RULES_ACTION = "Action"
     FILTERS_RULE_REMOVE_TOOLTIP = "Selected rules will be removed"
-    FILTERS_RULE_INCREASE = "Move Latter"
-    FILTERS_RULE_INCREASE_TOOLTIP = "Selected rules will each occur latter"
+    FILTERS_RULE_INCREASE = "Move Later"
+    FILTERS_RULE_INCREASE_TOOLTIP = "Selected rules will each occur later"
     FILTERS_RULE_DECREASE = "Move Earlier"
     FILTERS_RULE_DECREASE_TOOLTIP = "Selected rules will each occur earlier"
     FILTERS_REMOVE_SPACY_AUTO_STOPWORDS = "Remove Spacy Auto Stop Words"

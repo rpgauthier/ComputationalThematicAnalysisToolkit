@@ -94,16 +94,11 @@ class SampleCreatePanel(wx.Panel):
                     metadataset = dataset.metadata
                     model_parameters['metadataset'] = copy.deepcopy(metadataset)
                     model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
-                    while main_frame.workspace_path == '':
-                        wx.MessageBox(GUIText.GENERATE_NOTSAVED_WARNING,
-                                      GUIText.WARNING, wx.OK | wx.ICON_WARNING)
-                        main_frame.OnSaveStart(None)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG2)
-                    model_parameters['workspace_path'] = main_frame.workspace_path
                     new_sample = Samples.LDASample(name, dataset_key, model_parameters)
                     new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
                     main_frame.samples[new_sample.key] = new_sample
-                    new_sample.GenerateStart(new_sample_panel)
+                    new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG3)
                     parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
                     parent_notebook.sample_panels[new_sample.key] = new_sample_panel
@@ -124,16 +119,11 @@ class SampleCreatePanel(wx.Panel):
                     metadataset = dataset.metadata
                     model_parameters['metadataset'] = copy.deepcopy(metadataset)
                     model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
-                    while main_frame.workspace_path == '':
-                        wx.MessageBox(GUIText.GENERATE_NOTSAVED_WARNING,
-                                      GUIText.WARNING, wx.OK | wx.ICON_WARNING)
-                        main_frame.OnSaveStart(None)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG2)
-                    model_parameters['workspace_path'] = main_frame.workspace_path
                     new_sample = Samples.BitermSample(name, dataset_key, model_parameters)
                     new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
                     main_frame.samples[new_sample.key] = new_sample
-                    new_sample.GenerateStart(new_sample_panel)
+                    new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG3)
                     parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
                     parent_notebook.sample_panels[new_sample.key] = new_sample_panel
@@ -352,12 +342,7 @@ class SampleListPanel(wx.Panel):
                     metadataset = dataset.metadata
                     model_parameters['metadataset'] = copy.deepcopy(metadataset)
                     model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
-                    while main_frame.workspace_path == '':
-                        wx.MessageBox(GUIText.GENERATE_NOTSAVED_WARNING,
-                                      GUIText.WARNING, wx.OK | wx.ICON_WARNING)
-                        main_frame.OnSaveStart(None)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG2)
-                    model_parameters['workspace_path'] = main_frame.workspace_path
                     new_sample = Samples.LDASample(name, dataset_key, model_parameters)
                     new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
                     self.samples[new_sample.key] = new_sample
@@ -384,12 +369,7 @@ class SampleListPanel(wx.Panel):
                     metadataset = dataset.metadata
                     model_parameters['metadataset'] = copy.deepcopy(metadataset)
                     model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
-                    while main_frame.workspace_path == '':
-                        wx.MessageBox(GUIText.GENERATE_NOTSAVED_WARNING,
-                                      GUIText.WARNING, wx.OK | wx.ICON_WARNING)
-                        main_frame.OnSaveStart(None)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG2)
-                    model_parameters['workspace_path'] = main_frame.workspace_path
                     new_sample = Samples.BitermSample(name, dataset_key, model_parameters)
                     new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
                     self.samples[new_sample.key] = new_sample
@@ -701,7 +681,7 @@ class RandomSamplePanel(AbstractSamplePanel):
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(sample.dataset_key))
             details_sizer.Add(dataset_label, 0, wx.ALL, 5)
             details_sizer.AddSpacer(10)
-        created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+str(sample.start_dt))
+        created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.start_dt.strftime("%Y-%m-%d %H:%M:%S"))
         details_sizer.Add(created_dt_label, 0, wx.ALL, 5)
         sizer.Add(details_sizer, 0, wx.ALL, 5)
 
@@ -743,13 +723,14 @@ class RandomModelCreateDialog(wx.Dialog):
 
         main_frame = wx.GetApp().GetTopWindow()
         self.usable_datasets = list(main_frame.datasets.keys())
-        dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
         usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
-        self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
-        dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        dataset_sizer.Add(dataset_label)
-        dataset_sizer.Add(self.dataset_ctrl)
-        sizer.Add(dataset_sizer)
+        if len(self.usable_datasets) > 1: 
+            dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
+            self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
+            dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            dataset_sizer.Add(dataset_label)
+            dataset_sizer.Add(self.dataset_ctrl)
+            sizer.Add(dataset_sizer)
 
         ok_button = wx.Button(self, id=wx.ID_OK, label=GUIText.OK, )
         ok_button.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
@@ -786,11 +767,19 @@ class RandomModelCreateDialog(wx.Dialog):
             logger.warning('name field is empty')
             status_flag = False
 
-        dataset_id = self.dataset_ctrl.GetSelection()
-        if dataset_id is wx.NOT_FOUND:
-            wx.MessageBox(GUIText.DATASET_MISSING_ERROR,
+        if len(self.usable_datasets) > 1: 
+            dataset_id = self.dataset_ctrl.GetSelection()
+            if dataset_id is wx.NOT_FOUND:
+                wx.MessageBox(GUIText.DATASET_MISSING_ERROR,
+                            GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                logger.warning('dataset was not chosen')
+                status_flag = False
+        elif len(self.usable_datasets) == 1:
+            dataset_id = 0
+        else:
+            wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('dataset was not chosen')
+            logger.warning('no dataset avaliable')
             status_flag = False
 
         if status_flag:
@@ -852,7 +841,7 @@ class TopicSamplePanel(AbstractSamplePanel):
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(sample.dataset_key))
             details1_sizer.Add(dataset_label, 0, wx.ALL, 5)
             details1_sizer.AddSpacer(10)
-        created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+str(sample.start_dt))
+        created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.created_dt.strftime("%Y-%m-%d %H:%M:%S"))
         details1_sizer.Add(created_dt_label, 0, wx.ALL, 5)
         self.sizer.Add(details1_sizer, 0, wx.ALL, 5)
 
@@ -897,7 +886,7 @@ class TopicSamplePanel(AbstractSamplePanel):
             dataset = None
             if self.sample.dataset_key in main_frame.datasets:
                 dataset = main_frame.datasets[self.sample.dataset_key]
-            self.sample.GenerateFinish(event.data, dataset)
+            self.sample.GenerateFinish(event.data, dataset, main_frame.current_workspace.name)
             self.DisplayModel()
             main_frame.DocumentsUpdated()
         finally:
@@ -1240,7 +1229,6 @@ class TopicVisualizationsNotebook(wx.aui.AuiNotebook):
         logger.info("Finished")
 
     def Refresh(self, selected_parts):
-        #self.pyLDAvis_panel.Render(self.sample.workspace_path+self.sample.filedir, self.sample.dictionary, self.sample.corpus, self.sample.model)
         self.DrawLDAPlots(selected_parts)
 
 class TopicListPanel(wx.Panel):
@@ -1341,10 +1329,8 @@ class LDAModelCreateDialog(wx.Dialog):
         name_sizer.Add(self.name_ctrl)
         sizer.Add(name_sizer)
 
-        dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
         #need to only show tokensets that have fields containing data
         self.usable_datasets = []
-        
         main_frame = wx.GetApp().GetTopWindow()
         for dataset in main_frame.datasets.values():
             if isinstance(dataset, Datasets.Dataset):
@@ -1358,12 +1344,14 @@ class LDAModelCreateDialog(wx.Dialog):
                         if len(sub_dataset.chosen_fields) > 0 or len(sub_dataset.merged_fields) > 0:
                             self.usable_datasets.append(dataset.key)
                             break
-        usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
-        self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
-        dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        dataset_sizer.Add(dataset_label)
-        dataset_sizer.Add(self.dataset_ctrl)
-        sizer.Add(dataset_sizer)
+        if len(self.usable_datasets) > 1: 
+            dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
+            usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
+            self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
+            dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            dataset_sizer.Add(dataset_label)
+            dataset_sizer.Add(self.dataset_ctrl)
+            sizer.Add(dataset_sizer)
 
         num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS_CHOICE)
         self.num_topics_ctrl = wx.SpinCtrl(self, min=1, max=10000, initial=10)
@@ -1420,11 +1408,19 @@ class LDAModelCreateDialog(wx.Dialog):
             logger.warning('name field is empty')
             status_flag = False
 
-        dataset_id = self.dataset_ctrl.GetSelection()
-        if dataset_id is wx.NOT_FOUND:
-            wx.MessageBox(GUIText.DATASET_MISSING_ERROR,
+        if len(self.usable_datasets) > 1:
+            dataset_id = self.dataset_ctrl.GetSelection()
+            if dataset_id is wx.NOT_FOUND:
+                wx.MessageBox(GUIText.DATASET_MISSING_ERROR,
+                            GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                logger.warning('dataset was not chosen')
+                status_flag = False
+        elif len(self.usable_datasets) == 1:
+            dataset_id = 0
+        else:
+            wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('dataset was not chosen')
+            logger.warning('no dataset avaliable')
             status_flag = False
 
         if status_flag:
@@ -1501,7 +1497,6 @@ class BitermModelCreateDialog(wx.Dialog):
         name_sizer.Add(self.name_ctrl)
         sizer.Add(name_sizer)
 
-        dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
         #need to only show tokensets that have fields containing data
         self.usable_datasets = []
         
@@ -1518,12 +1513,14 @@ class BitermModelCreateDialog(wx.Dialog):
                         if len(sub_dataset.chosen_fields) > 0 or len(sub_dataset.merged_fields) > 0:
                             self.usable_datasets.append(dataset.key)
                             break
-        usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
-        self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
-        dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        dataset_sizer.Add(dataset_label)
-        dataset_sizer.Add(self.dataset_ctrl)
-        sizer.Add(dataset_sizer)
+        if len(self.usable_datasets) > 1: 
+            dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
+            usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
+            self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
+            dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            dataset_sizer.Add(dataset_label)
+            dataset_sizer.Add(self.dataset_ctrl)
+            sizer.Add(dataset_sizer)
 
         num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS_CHOICE)
         self.num_topics_ctrl = wx.SpinCtrl(self, min=1, max=10000, initial=10)
@@ -1533,13 +1530,13 @@ class BitermModelCreateDialog(wx.Dialog):
         num_topics_sizer.Add(self.num_topics_ctrl)
         sizer.Add(num_topics_sizer)
 
-        num_iterations_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES_CHOICE)
-        self.num_iterations_ctrl = wx.SpinCtrl(self, min=1, max=1000, initial=100)
-        self.num_iterations_ctrl.SetToolTip(GUIText.NUMBER_OF_PASSES_TOOLTIP)
-        num_iterations_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        num_iterations_sizer.Add(num_iterations_label)
-        num_iterations_sizer.Add(self.num_iterations_ctrl)
-        sizer.Add(num_iterations_sizer)
+        num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES_CHOICE)
+        self.num_passes_ctrl = wx.SpinCtrl(self, min=1, max=1000, initial=100)
+        self.num_passes_ctrl.SetToolTip(GUIText.NUMBER_OF_PASSES_TOOLTIP)
+        num_passes_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        num_passes_sizer.Add(num_passes_label)
+        num_passes_sizer.Add(self.num_passes_ctrl)
+        sizer.Add(num_passes_sizer)
 
         #fields to choose specific fields for model
         #--- not part of mvp so default is to use all fields
@@ -1580,18 +1577,26 @@ class BitermModelCreateDialog(wx.Dialog):
             logger.warning('name field is empty')
             status_flag = False
 
-        dataset_id = self.dataset_ctrl.GetSelection()
-        if dataset_id is wx.NOT_FOUND:
-            wx.MessageBox(GUIText.DATASET_MISSING_ERROR,
+        if len(self.usable_datasets) > 1:
+            dataset_id = self.dataset_ctrl.GetSelection()
+            if dataset_id is wx.NOT_FOUND:
+                wx.MessageBox(GUIText.DATASET_MISSING_ERROR,
+                            GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                logger.warning('dataset was not chosen')
+                status_flag = False
+        elif len(self.usable_datasets) == 1:
+            dataset_id = 0
+        else:
+            wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('dataset was not chosen')
+            logger.warning('no dataset avaliable')
             status_flag = False
 
         if status_flag:
             self.model_parameters['name'] = model_name
             self.model_parameters['dataset_key'] = self.usable_datasets[dataset_id]
             self.model_parameters['num_topics'] = self.num_topics_ctrl.GetValue()
-            self.model_parameters['num_iterations'] = self.num_iterations_ctrl.GetValue()
+            self.model_parameters['num_passes'] = self.num_passes_ctrl.GetValue()
         logger.info("Finished")
         if status_flag:
             self.EndModal(wx.ID_OK)
@@ -1620,8 +1625,8 @@ class BitermModelDetailsDialog(wx.Dialog):
         num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+" "+str(self.sample.num_topics))
         sizer.Add(num_topics_label)
 
-        num_iterations_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+str(self.sample.num_iterations))
-        sizer.Add(num_iterations_label)
+        num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+str(self.sample.num_passes))
+        sizer.Add(num_passes_label)
 
         used_documents_label = wx.StaticText(self, label="Number of documents used during modelling: "+str(len(self.sample.tokensets)))
         sizer.Add(used_documents_label)

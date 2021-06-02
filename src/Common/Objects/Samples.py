@@ -13,6 +13,7 @@ import numpy as np
 import gensim
 import bitermplus as btm
 
+import Common.Constants as Constants
 from Common.Objects.Generic import GenericObject
 import Common.Objects.Threads.Samples as SamplesThreads
 
@@ -115,12 +116,12 @@ class Sample(GenericObject):
         logger.info("Starting")
         logger.info("Finished")
 
-    def Load(self, workspace_path):
+    def Load(self, current_workspace):
         logger = logging.getLogger(__name__+".Sample["+str(self.key)+"].Load")
         logger.info("Starting")
         logger.info("Finished")
 
-    def Save(self, workspace_path):
+    def Save(self, current_workspace):
         logger = logging.getLogger(__name__+".Sample["+str(self.key)+"].Save")
         logger.info("Starting")
         logger.info("Finished")
@@ -162,7 +163,6 @@ class TopicSample(Sample):
         self._word_num = 0
         self._document_cutoff = 0.75
         self._document_topic_prob = None
-        self._topic_documents_prob = None
         #fixed properties that may be externally accessed but do not change after being initialized
         self._tokensets = model_parameters['tokensets']
         self._num_topics = model_parameters['num_topics']
@@ -172,15 +172,6 @@ class TopicSample(Sample):
         #objects that have their own last_changed_dt and thus need to be checked dynamically
         
         #variable that should only be used internally and are never accessed from outside
-        self._workspace_path = model_parameters['workspace_path']
-        self._filedir = "/"+self.sample_type+"/"+key
-        self._new_filedir = "/"+self.sample_type+"/"+key
-
-        #setup directories if needed
-        if not os.path.exists(self._workspace_path+"/"+self.sample_type):
-            os.makedirs(self._workspace_path+"/"+self.sample_type)
-        if not os.path.exists(self._workspace_path+"/"+self.sample_type+"/"+self.key):
-            os.makedirs(self._workspace_path+"/"+self.sample_type+"/"+self.key)
     
     @property
     def key(self):
@@ -218,44 +209,24 @@ class TopicSample(Sample):
         self.last_changed_dt = datetime.now()
 
     @property
-    def topic_documents_prob(self):
-        return self._topic_documents_prob
-    @topic_documents_prob.setter
-    def topic_documents_prob(self, value):
-        self._topic_documents_prob = value
-        self.last_changed_dt = datetime.now()
-    
-    @property
-    def workspace_path(self):
-        return self._workspace_path
-    @workspace_path.setter
-    def workspace_path(self, value):
-        self._workspace_path = value
-        self.last_changed_dt = datetime.now()
-
-    @property
     def num_topics(self):
         return self._num_topics
     
     @property
     def tokensets(self):
         return self._tokensets
-    
-    @property
-    def filedir(self):
-        return self._filedir
 
     def ApplyDocumentCutoff(self):
         logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].ApplyDocumentCutoff")
         logger.info("Starting")
         document_set = set()
+        document_topic_prob_df = pd.DataFrame(data=self.document_topic_prob).transpose()
 
         def UpdateLDATopicPart(topic):
             document_list = []
-            for document in self.topic_documents_prob[topic]:
-                if document[1] >= self.document_cutoff:
-                    document_list.append(document[0])
-                    document_set.add(document[0])
+            document_s = document_topic_prob_df[topic].sort_values(ascending=False)
+            document_list = document_s.index[document_s >= self.document_cutoff].tolist()
+            document_set.update(document_list)
             self.parts_dict[topic].part_data = document_list
 
         for topic in self.parts_dict:
@@ -267,31 +238,15 @@ class TopicSample(Sample):
                         UpdateLDATopicPart(topic)
         
         unknown_list = set(self.tokensets.keys()) - document_set
-        unknown_df = pd.DataFrame(data=self.document_topic_prob).transpose()
-        unknown_df = unknown_df[unknown_df.index.isin(unknown_list)]
+        unknown_df = document_topic_prob_df[document_topic_prob_df.index.isin(unknown_list)]
         unknown_series = unknown_df.max(axis=1).sort_values()
         new_unknown_list = list(unknown_series.index.values)
-        for key in self.document_topic_prob:
-            if key in new_unknown_list:
-                self.document_topic_prob[key]["unknown"] = 1.0
-            else:
-                self.document_topic_prob[key]["unknown"] = 0.0
+        
+        document_topic_prob_df["unknown"] = 0.0
+        document_topic_prob_df.loc[unknown_list, "unknown"] = 1.0
+        self.document_topic_prob = document_topic_prob_df.to_dict(orient='index')
 
-        self.parts_dict['unknown'].part_data = new_unknown_list
-        logger.info("Finished")
-
-    def Save(self, new_workspace_path):
-        logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].Save")
-        logger.info("Starting")
-        #copy associated saved model components to new workspace location if it was changed
-        if self.generated_flag and (self._filedir != self._new_filedir or self._workspace_path != new_workspace_path):
-            if not os.path.exists(new_workspace_path+"/"+self.sample_type):
-                os.makedirs(new_workspace_path+"/"+self.sample_type)
-            if os.path.exists(new_workspace_path + self._new_filedir):
-                os.rename(new_workspace_path+self._new_filedir, new_workspace_path+self._new_filedir+"_old")
-            copytree(self._workspace_path+self._filedir, new_workspace_path+self._new_filedir)
-            self._workspace_path = new_workspace_path
-            self._filedir = self._new_filedir
+        self.parts_dict['unknown'].part_data = list(new_unknown_list)
         logger.info("Finished")
 
 class LDASample(TopicSample):
@@ -335,35 +290,34 @@ class LDASample(TopicSample):
     def eta(self):
         return self._eta
 
-    def GenerateStart(self, notify_window):
+    def GenerateStart(self, notify_window, current_workspace_path):
         logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].GenerateStart")
         logger.info("Starting")
         self.start_dt = datetime.now()
         self.training_thread = SamplesThreads.LDATrainingThread(notify_window,
+                                                                current_workspace_path,
                                                                 self.key,
                                                                 self.tokensets,
                                                                 self.num_topics,
                                                                 self._num_passes,
                                                                 self.alpha,
-                                                                self.eta,
-                                                                self.workspace_path,
-                                                                self.filedir)
+                                                                self.eta)
         logger.info("Finished")
     
-    def GenerateFinish(self, result, dataset):
+    def GenerateFinish(self, result, dataset, current_workspace):
         logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].GenerateFinish")
         logger.info("Starting")
         self.generated_flag = True
         self.training_thread.join()
         self.training_thread = None
-        self.dictionary = gensim.corpora.Dictionary.load(self.workspace_path+self._filedir+'/ldadictionary.dict')
-        self.corpus = gensim.corpora.MmCorpus(self.workspace_path+self._filedir+'/ldacorpus.mm')
-        self.model = gensim.models.ldamodel.LdaModel.load(self.workspace_path+self._filedir+'/ldamodel.lda')
+        self.dictionary = gensim.corpora.Dictionary.load(current_workspace+"/Samples/"+self.key+'/ldadictionary.dict')
+        self.corpus = gensim.corpora.MmCorpus(current_workspace+"/Samples/"+self.key+'/ldacorpus.mm')
+        self.model = gensim.models.ldamodel.LdaModel.load(current_workspace+"/Samples/"+self.key+'/ldamodel.lda')
 
-        self.topic_documents_prob = result['topic_document_prob']
         self.document_topic_prob = result['document_topic_prob']
 
-        for topic_num in self.topic_documents_prob:
+        for i in range(self.num_topics):
+            topic_num = i+1
             self.parts_dict[topic_num] = LDATopicPart(self, topic_num, dataset)
         self.parts_dict['unknown'] = TopicUnknownPart(self, 'unknown', [], dataset)
 
@@ -373,8 +327,8 @@ class LDASample(TopicSample):
         self.end_dt = datetime.now()
         logger.info("Finished")
 
-
-    def Load(self, workspace_path):
+    #TODO change to new temporary file saving structure
+    def OldLoad(self, workspace_path):
         logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].Load")
         logger.info("Starting")
         self._workspace_path = workspace_path
@@ -384,6 +338,26 @@ class LDASample(TopicSample):
             self.model = gensim.models.ldamodel.LdaModel.load(self._workspace_path+self._filedir+'/ldamodel.lda')
         logger.info("Finished")
 
+    def Load(self, current_workspace):
+        logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].Load")
+        logger.info("Starting")
+        if self.generated_flag:
+            self.dictionary = gensim.corpora.Dictionary.load(current_workspace+"/Samples/"+self.key+'/ldadictionary.dict')
+            self.corpus = gensim.corpora.MmCorpus(current_workspace+"/Samples/"+self.key+'/ldacorpus.mm')
+            self.model = gensim.models.ldamodel.LdaModel.load(current_workspace+"/Samples/"+self.key+'/ldamodel.lda')
+        logger.info("Finished")
+
+    def Save(self, current_workspace):
+        logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].Save")
+        logger.info("Starting")
+        if self.model is not None:
+            self.model.save(current_workspace+"/Samples/"+self.key+'/ldamodel.lda', 'wb')
+        if self.dictionary is not None:
+            self.dictionary.save(current_workspace+"/Samples/"+self.key+'/ldadictionary.dict')
+        if self.corpus is not None:
+            gensim.corpora.MmCorpus.serialize(current_workspace+"/Samples/"+self.key+'/ldacorpus.mm', self.corpus)
+
+#TODO figure out why samples dont have any documents attached for biterm when run on grouped documents (might also effect LDASample)
 class BitermSample(TopicSample):
     def __init__(self, key, dataset_key, model_parameters):
         logger = logging.getLogger(__name__+".BitermSample["+str(key)+"].__init__")
@@ -391,7 +365,7 @@ class BitermSample(TopicSample):
         TopicSample.__init__(self, key, dataset_key, "Biterm", model_parameters)
 
         #fixed properties that may be externally accessed but do not change after being initialized
-        self._num_iterations = model_parameters['num_iterations']
+        self._num_passes = model_parameters['num_passes']
 
         #these need to be removed before pickling during saving due to threading and use of multiple processes
         #see __getstate__ for removal and Load and Reload for readdition
@@ -411,39 +385,38 @@ class BitermSample(TopicSample):
         return 'BitermSample: %s' % (self.key,)
 
     @property
-    def num_iterations(self):
-        return self._num_iterations
+    def num_passes(self):
+        return self._num_passes
     
-    def GenerateStart(self, notify_window):
+    def GenerateStart(self, notify_window, current_workspace_path):
         logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].GenerateStart")
         logger.info("Starting")
         self.start_dt = datetime.now()
         self.training_thread = SamplesThreads.BitermTrainingThread(notify_window,
-                                                                self.key,
-                                                                self.tokensets,
-                                                                self.num_topics,
-                                                                self.num_iterations,
-                                                                self.workspace_path,
-                                                                self.filedir)
+                                                                   current_workspace_path,
+                                                                   self.key,
+                                                                   self.tokensets,
+                                                                   self.num_topics,
+                                                                   self._num_passes)
         logger.info("Finished")
     
-    def GenerateFinish(self, result, dataset):
+    def GenerateFinish(self, result, dataset, current_workspace):
         logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].GenerateFinish")
         logger.info("Starting")
         self.generated_flag = True
         self.training_thread.join()
         self.training_thread = None
-        with bz2.BZ2File(self.workspace_path+self.filedir+'/transformed_texts.pk', 'rb') as infile:
+        with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/transformed_texts.pk', 'rb') as infile:
             self.transformed_texts = pickle.load(infile)
-        with bz2.BZ2File(self.workspace_path+self.filedir+'/vocab.pk', 'rb') as infile:
+        with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/vocab.pk', 'rb') as infile:
             self.vocab = pickle.load(infile)
-        with bz2.BZ2File(self.workspace_path+self.filedir+'/btm.pk', 'rb') as infile:
+        with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/btm.pk', 'rb') as infile:
             self.model = pickle.load(infile)
 
-        self.topic_documents_prob = result['topic_document_prob']
         self.document_topic_prob = result['document_topic_prob']
 
-        for topic_num in self.topic_documents_prob:
+        for i in range(self.num_topics):
+            topic_num = i+1
             self.parts_dict[topic_num] = BitermTopicPart(self, topic_num, dataset)
         self.parts_dict['unknown'] = TopicUnknownPart(self, 'unknown', [], dataset)
 
@@ -453,7 +426,8 @@ class BitermSample(TopicSample):
         self.end_dt = datetime.now()
         logger.info("Finished")
 
-    def Load(self, workspace_path):
+    #TODO change to new temporary file saving structure
+    def OldLoad(self, workspace_path):
         logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].Load")
         logger.info("Starting")
         self._workspace_path = workspace_path
@@ -465,6 +439,31 @@ class BitermSample(TopicSample):
             with bz2.BZ2File(self._workspace_path+self.filedir+'/btm.pk', 'rb') as infile:
                 self.model = pickle.load(infile)
         logger.info("Finished")
+
+    def Load(self, current_workspace):
+        logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].Load")
+        logger.info("Starting")
+        if self.generated_flag:
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/transformed_texts.pk', 'rb') as infile:
+                self.transformed_texts = pickle.load(infile)
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/vocab.pk', 'rb') as infile:
+                self.vocab = pickle.load(infile)
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/btm.pk', 'rb') as infile:
+                self.model = pickle.load(infile)
+        logger.info("Finished")
+
+    def Save(self, current_workspace):
+        logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].Save")
+        logger.info("Starting")
+        if self.transformed_texts is not None:
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/transformed_texts.pk', 'wb') as outfile:
+                pickle.dump(self.transformed_texts, outfile)
+        if self.vocab is not None:
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/vocab.pk', 'wb') as outfile:
+                pickle.dump(self.vocab, outfile)
+        if self.model is not None:
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/btm.pk', 'wb') as outfile:
+                pickle.dump(self.model, outfile)
 
 class MergedPart(GenericObject):
     def __init__(self, parent, key, name=None):
@@ -624,7 +623,7 @@ class ModelPart(Part):
         #grow if approrpriate
         elif document_num > self.document_num:
             for i in range(self.document_num, document_num):
-                key = self.part_data[i]
+                key = str(self.part_data[i])
                 document = dataset.SetupDocument(key)
                 if document is not None:
                     self.documents.append(key)
@@ -758,6 +757,7 @@ class TopicUnknownPart(ModelPart):
     def GetTopicKeywordsList(self):
         return []
 
+#TODO needs to be integrated to removed
 class CustomPart(Part):
     def __init__(self, parent, key, name=None):
         logger = logging.getLogger(__name__+".CustomPart["+str(key)+"].__init__")

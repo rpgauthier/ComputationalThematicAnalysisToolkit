@@ -3,6 +3,7 @@ from datetime import datetime
 
 import Common.Constants as Constants
 from Common.Objects.Generic import GenericObject
+import Common.Objects.Samples as Samples
 
 #Object classes to facilitate controlling datasets
 class GroupedDataset(GenericObject):
@@ -316,6 +317,7 @@ class Field(GenericObject):
         self._tokenization_choice = 0
         self._tokenset = None
         self._included_tokenset_df = None
+        self._tokeinzation_package_versions = None
 
         #dictionary that is managed with setters
         #TODO they have not yet been converted into properties due to complexity
@@ -381,6 +383,14 @@ class Field(GenericObject):
     def included_tokenset_df(self, value):
         self._included_tokenset_df = value
         self.last_changed_dt = datetime.now()
+
+    @property
+    def tokeinzation_package_versions(self):
+        return self._tokeinzation_package_versions
+    @tokeinzation_package_versions.setter
+    def tokeinzation_package_versions(self, value):
+        self._tokeinzation_package_versions = value
+        self.last_changed_dt = datetime.now()
     
     def DestroyObject(self):
         #remove self from Dataset
@@ -437,7 +447,7 @@ class GroupedDocuments(GenericObject):
     def DestroyObject(self):
         if self.parent is not None:
             if self.key in self.parent.grouped_documents:
-                if self.parent.grouped_documents[key] == self:
+                if self.parent.grouped_documents[self.key] == self:
                     del self.parent.grouped_documents[self.key]
             self.parent.last_changed_dt = datetime.now()
             self.parent = None
