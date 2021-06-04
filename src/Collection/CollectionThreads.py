@@ -450,18 +450,26 @@ class RetrieveTwitterDatasetThread(Thread):
                 months_notfound.append(month)
             else:
                 months_tocheck.append(month)
+        
+        rate_limit_reached = False
         #retireve data of months that have not been downloaded
         for month in months_notfound:
             wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_ALL_MSG+str(month)))
             try:
-                twr.RetrieveMonth(auth, query, month, prefix)
+                rate_limit_reached = twr.RetrieveMonth(auth, query, month, prefix)
+                if rate_limit_reached:
+                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.TWITTER_RATE_LIMIT_REACHED_MSG))
+                    break
             except RuntimeError as error:
                 errors.append(error)
         #check the exiting months of data for any missing data
         for month in months_tocheck:
             wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_NEW_MSG+str(month)))
             try:
-                twr.UpdateRetrievedMonth(auth, query, month, dict_monthfiles[month], prefix)
+                rate_limit_reached = twr.UpdateRetrievedMonth(auth, query, month, dict_monthfiles[month], prefix)
+                if rate_limit_reached:
+                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.TWITTER_RATE_LIMIT_REACHED_MSG))
+                    break
             except RuntimeError as error:
                 errors.append(error)
         if len(errors) != 0:

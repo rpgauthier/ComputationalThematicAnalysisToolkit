@@ -215,6 +215,8 @@ class Datasets(Common):
     RETRIEVING_BUSY_PREPARING_TWITTER_MSG = "Preparing Twitter Data for Application use."
     RETRIEVING_BUSY_CONSTRUCTING_MSG = "Datasets are being constructed."
 
+    TWITTER_RATE_LIMIT_REACHED_MSG = "Warning: Twitter API rate limit has been reached. The number of tweets will be shortened."
+
     TOKENIZING_BUSY_STARTING_FIELD_MSG = "Starting to tokenize field: "
     TOKENIZING_BUSY_COMPLETED_FIELD_MSG1 = "Completed tokenizing "
     TOKENIZING_BUSY_COMPLETED_FIELD_MSG2 = " of "

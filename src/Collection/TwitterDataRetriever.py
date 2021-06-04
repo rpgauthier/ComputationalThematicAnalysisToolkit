@@ -75,7 +75,9 @@ def RetrieveMonth(auth, query, month, prefix):
                  + relativedelta(months=1)).strftime(r"%Y-%m")
     end_dt = calendar.timegm(datetime.datetime.strptime(month_end, "%Y-%m").timetuple())
     
-    new_data = TweepyRetriever.GetTweetData(auth, start_dt, end_dt, query)
+    tweepy_data = TweepyRetriever.GetTweetData(auth, start_dt, end_dt, query)
+    new_data = tweepy_data['tweets']
+    rate_limit_reached = tweepy_data['rate_limit_reached']
     
     if len(new_data) > 0:
         for entry in new_data:
@@ -102,6 +104,10 @@ def RetrieveMonth(auth, query, month, prefix):
         with open('../Data/Twitter/'+query+'/'+prefix+month+'.json', 'w') as outfile:
             json.dump(data, outfile)
     logger.info("Finished")
+    # TODO remove
+    print(rate_limit_reached) 
+    print(len(new_data))
+    return rate_limit_reached
 
 def UpdateRetrievedMonth(auth, query, month, file, prefix):
     logger = logging.getLogger(__name__+".UpdateRetrievedMonth["+query+"]["+month+"]["+prefix+"]")
@@ -124,7 +130,8 @@ def UpdateRetrievedMonth(auth, query, month, file, prefix):
                      + relativedelta(months=1)).strftime(r"%Y-%m") + "-01"
         end_dt = calendar.timegm(datetime.datetime.strptime(month_end, "%Y-%m-%d").timetuple())
 
-    new_data = TweepyRetriever.GetTweetData(auth, start_dt, end_dt, query)
+    tweepy_data = TweepyRetriever.GetTweetData(auth, start_dt, end_dt, query)
+    new_data = tweepy_data['tweets']
 
     if len(new_data) > 0:
         for entry in new_data:
@@ -168,21 +175,46 @@ class TweepyRetriever():
         start = start_dt
         end = end_dt
 
-        while (start < end):
-            tweets_data = tweepy.Cursor(api.search, query, until=end).items()
-            for tweet in tweets_data:
-                tweet._json['created_utc'] = calendar.timegm(datetime.datetime.strptime(tweet._json['created_at'], "%a %b %d %H:%M:%S +0000 %Y").timetuple()) # TODO: is making a created_utc field like this ok
-                tweet._json['retrieved_on'] = calendar.timegm(datetime.datetime.now().timetuple())
-                if (tweet._json['created_utc'] >= start and tweet._json['created_utc'] < end):
-                    tweets.append(tweet._json)
-                    #print(tweet._json) #TODO: remove
+        last_retrieved_id = None
+        tweets_retrieved = True
+        rate_limit_reached = False
 
-            # TODO: remove
-            #print(datetime.datetime.utcfromtimestamp(start))
-            #print(datetime.datetime.utcfromtimestamp(end))
+        while (start < end):
+            # 100 tweets per API request, and 450 requests/15 mins
+            if last_retrieved_id == None:
+                tweets_data = tweepy.Cursor(api.search, query, until=end).items(100) # TODO: test moving end date back to see if parameter is working
+            else:
+                tweets_data = tweepy.Cursor(api.search, query, until=end, max_id=last_retrieved_id-1).items(100)
+            # send requests for tweets while the rate limit has not been exceeded
+            while (tweets_retrieved):
+                tweets_retrieved = False
+                try:
+                    for tweet in tweets_data:
+                        print(len(tweets)) # TODO remove
+                        tweet._json['created_utc'] = calendar.timegm(datetime.datetime.strptime(tweet._json['created_at'], "%a %b %d %H:%M:%S +0000 %Y").timetuple()) # TODO: is making a created_utc field like this ok
+                        tweet._json['retrieved_on'] = calendar.timegm(datetime.datetime.now().timetuple())
+                        if (tweet._json['created_utc'] >= start and tweet._json['created_utc'] < end):
+                            tweets.append(tweet._json)
+                        last_retrieved_id = tweet._json['id']
+                        tweets_retrieved = True
+
+                    if last_retrieved_id == None:
+                        tweets_data = tweepy.Cursor(api.search, query, until=end).items(100) # TODO: test moving end date back to see if parameter is working
+                    else:
+                        tweets_data = tweepy.Cursor(api.search, query, until=end, max_id=last_retrieved_id-1).items(100)
+                except tweepy.error.TweepError as e:
+                    if e.response.status_code == 429:
+                        print("Twitter API rate limit reached.") # TODO dialog pulse
+                        rate_limit_reached = True
+                    tweets_retrieved=False
+                    break
+
             end = calendar.timegm((datetime.datetime.utcfromtimestamp(end) - relativedelta(weeks=1)).timetuple())
 
-        logger.info("Finished %s tweets have added to list", str(len(tweets)))
-        return tweets
+        logger.info("%s tweets were retrieved.", str(len(tweets)))
+        return {
+            'rate_limit_reached': rate_limit_reached,
+            'tweets': tweets,
+        }
 
         
