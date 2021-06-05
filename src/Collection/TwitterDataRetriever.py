@@ -180,9 +180,9 @@ class TweepyRetriever():
         rate_limit_reached = False
 
         while (start < end):
-            # 100 tweets per API request, and 450 requests/15 mins
+            # 100 tweets per API request, and 450 requests/15 mins (usually only hits < 300 requests before reaching API limit though)
             if last_retrieved_id == None:
-                tweets_data = tweepy.Cursor(api.search, query, until=end).items(100) # TODO: test moving end date back to see if parameter is working
+                tweets_data = tweepy.Cursor(api.search, query, until=end).items(100)
             else:
                 tweets_data = tweepy.Cursor(api.search, query, until=end, max_id=last_retrieved_id-1).items(100)
             # send requests for tweets while the rate limit has not been exceeded
@@ -199,12 +199,12 @@ class TweepyRetriever():
                         tweets_retrieved = True
 
                     if last_retrieved_id == None:
-                        tweets_data = tweepy.Cursor(api.search, query, until=end).items(100) # TODO: test moving end date back to see if parameter is working
+                        tweets_data = tweepy.Cursor(api.search, query, until=end).items(100)
                     else:
                         tweets_data = tweepy.Cursor(api.search, query, until=end, max_id=last_retrieved_id-1).items(100)
                 except tweepy.error.TweepError as e:
                     if e.response.status_code == 429:
-                        print("Twitter API rate limit reached.") # TODO dialog pulse
+                        print("Twitter API rate limit reached.") # TODO remove
                         rate_limit_reached = True
                     tweets_retrieved=False
                     break
