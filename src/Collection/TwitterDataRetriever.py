@@ -104,9 +104,6 @@ def RetrieveMonth(auth, query, month, prefix):
         with open('../Data/Twitter/'+query+'/'+prefix+month+'.json', 'w') as outfile:
             json.dump(data, outfile)
     logger.info("Finished")
-    # TODO remove
-    print(rate_limit_reached) 
-    print(len(new_data))
     return rate_limit_reached
 
 def UpdateRetrievedMonth(auth, query, month, file, prefix):

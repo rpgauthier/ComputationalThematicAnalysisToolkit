@@ -411,7 +411,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         hashtags_sizer.Add(self.hashtags_checkbox_ctrl)
         hashtags_sizer.Add(self.hashtags_ctrl, wx.EXPAND)
 
-        self.account_checkbox_ctrl = wx.CheckBox(self, label=GUIText.TWITTER_LABEL+" "+GUIText.ACCOUNT+": ")
+        self.account_checkbox_ctrl = wx.CheckBox(self, label=GUIText.TWITTER_LABEL+" "+GUIText.ACCOUNTS+": ")
         self.account_ctrl = wx.TextCtrl(self)
         self.account_ctrl.SetHint(GUIText.TWITTER_ACCOUNT_PLACEHOLDER)
         account_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -541,7 +541,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         if selected_option[0].GetLabel() == GUIText.QUERY+": ":
             query = self.query_ctrl.GetValue()
         elif selected_option[0].GetLabel() == GUIText.TWITTER_TWEET_ATTRIBUTES+": ":
-            query_items = [] # individual sub-queries, which are joined by intersection (AND) to form the overall query
+            query_items = [] # individual sub-queries, which are joined by UNION (OR) to form the overall query
             attributes_list_sizer = selected_option[1]
             for attribute_sizer in attributes_list_sizer.GetChildren():
                 sizer = attribute_sizer.GetSizer()
@@ -558,17 +558,22 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
                             query_items.append(phrase)
                     elif checkbox.GetLabel() == GUIText.HASHTAGS+": ":
                         hashtags = text.split(",")
-                        for i in range(len(hashtags)):
-                            hashtags[i] = hashtags[i].strip()
-                            if hashtags[i][0] != "#": # hashtags must start with '#' symbol
-                                hashtags[i] = "#"+hashtags[i]
-                            query_items.append(hashtags[i])
-                    elif checkbox.GetLabel() == GUIText.TWITTER_LABEL+" "+GUIText.ACCOUNT+": ":
-                        query_items.append("from:"+text_field.GetValue())
+                        for hashtag in hashtags:
+                            hashtag = hashtag.strip()
+                            if hashtag[0] != "#": # hashtags must start with '#' symbol
+                                hashtag = "#"+hashtag
+                            query_items.append(hashtag)
+                    elif checkbox.GetLabel() == GUIText.TWITTER_LABEL+" "+GUIText.ACCOUNTS+": ":
+                        accounts = text.split(",")
+                        for account in accounts:
+                            account = account.strip()
+                            if not account.startswith("from:"):
+                                account = "from:"+account
+                            query_items.append(account)
             for i in range(len(query_items)):
                 query += query_items[i]
                 if i < len(query_items)-1:
-                    query += " "
+                    query += " OR "
         logger.info("Query: "+query)
 
         if query == "":
