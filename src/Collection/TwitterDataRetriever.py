@@ -204,7 +204,7 @@ class TweepyRetriever():
                         tweets_data = tweepy.Cursor(api.search, query, until=end, max_id=last_retrieved_id-1).items(100)
                 except tweepy.error.TweepError as e:
                     if e.response.status_code == 429:
-                        print("Twitter API rate limit reached.") # TODO remove
+                        print("Twitter API rate limit reached.") # TODO: remove
                         rate_limit_reached = True
                     tweets_retrieved=False
                     break
