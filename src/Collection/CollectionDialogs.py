@@ -456,6 +456,14 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         end_date_sizer.Add(end_date_label)
         end_date_sizer.Add(self.end_date_ctrl)
 
+        # ethics/terms of use
+        self.ethics_checkbox_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_TWITTER)
+        self.ethics_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.ETHICS_TWITTER_URL)
+
+        ethics_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        ethics_sizer.Add(self.ethics_checkbox_ctrl)
+        ethics_sizer.Add(self.ethics_hyperlink_ctrl)
+
         #Retriever button to collect the requested data
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
         ok_button = wx.Button(self, label=GUIText.OK)
@@ -471,6 +479,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         retriever_sizer.Add(self.search_by_sizer, 0, wx.EXPAND | wx.ALL, 5)
         retriever_sizer.Add(start_date_sizer, 0, wx.EXPAND | wx.ALL, 5)
         retriever_sizer.Add(end_date_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        retriever_sizer.Add(ethics_sizer, 0, wx.EXPAND | wx.ALL, 5)
         retriever_sizer.Add(button_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         self.SetSizer(retriever_sizer)
@@ -508,6 +517,11 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             wx.MessageBox(GUIText.CONSUMER_SECRET_MISSING_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('No consumer secret entered')
+            status_flag = False
+        if not self.ethics_checkbox_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_TWITTER,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
             status_flag = False
 
         auth = tweepy.OAuthHandler(keys['consumer_key'], keys['consumer_secret'])
