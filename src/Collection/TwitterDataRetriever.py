@@ -12,10 +12,10 @@ import requests
 
 from dateutil.relativedelta import relativedelta
 
-def DeleteFiles(query):
-    logger = logging.getLogger(__name__+".FilesAvaliable["+query+"]")
+def DeleteFiles(name):
+    logger = logging.getLogger(__name__+".FilesAvaliable["+name+"]")
     logger.info("Starting")
-    path = '../Data/Twitter/'+query+'/'
+    path = '../Data/Twitter/'+name+'/'
     if os.path.exists(path):
         # r=root, d=directories, f = files
         for r, d, f in os.walk(path):
@@ -23,8 +23,8 @@ def DeleteFiles(query):
                 os.remove(os.path.join(path+filename))
     logger.info("Finished")
 
-def FilesAvaliable(query, start_date, end_date, prefix):
-    logger = logging.getLogger(__name__+".FilesAvaliable["+query+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
+def FilesAvaliable(name, start_date, end_date, prefix):
+    logger = logging.getLogger(__name__+".FilesAvaliable["+name+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
     logger.info("Starting")
     start_month = start_date[0:7]
     end_month = end_date[0:7]
@@ -41,7 +41,7 @@ def FilesAvaliable(query, start_date, end_date, prefix):
         os.makedirs('../Data')
     if not os.path.exists('../Data/Twitter'):
         os.makedirs('../Data/Twitter')    
-    path = '../Data/Twitter/'+query+'/'
+    path = '../Data/Twitter/'+name+'/'
     if not os.path.exists(path):
         os.makedirs(path)
     # r=root, d=directories, f = files
@@ -64,7 +64,7 @@ def FilesAvaliable(query, start_date, end_date, prefix):
     logger.info("Finished")
     return dict_monthfiles
 
-def RetrieveMonth(auth, query, month, prefix):
+def RetrieveMonth(auth, name, query, month, prefix):
     logger = logging.getLogger(__name__+".RetrieveMonth["+query+"]["+month+"]["+prefix+"]")
     logger.info("Starting")
     id_dict = {}
@@ -101,12 +101,12 @@ def RetrieveMonth(auth, query, month, prefix):
                             data.append(entry)
                             break
         data.insert(0, id_dict)
-        with open('../Data/Twitter/'+query+'/'+prefix+month+'.json', 'w') as outfile:
+        with open('../Data/Twitter/'+name+'/'+prefix+month+'.json', 'w') as outfile:
             json.dump(data, outfile)
     logger.info("Finished")
     return rate_limit_reached
 
-def UpdateRetrievedMonth(auth, query, month, file, prefix):
+def UpdateRetrievedMonth(auth, name, query, month, file, prefix):
     logger = logging.getLogger(__name__+".UpdateRetrievedMonth["+query+"]["+month+"]["+prefix+"]")
     logger.info("Starting")
     data = []
@@ -152,7 +152,7 @@ def UpdateRetrievedMonth(auth, query, month, file, prefix):
                             data.append(entry)
                             break
         data.insert(0, id_dict)
-        with open('../Data/Twitter/'+query+'/'+prefix+month+'.json', 'w') as outfile:
+        with open('../Data/Twitter/'+name+'/'+prefix+month+'.json', 'w') as outfile:
             json.dump(data, outfile)
     logger.info("Finished")
 
