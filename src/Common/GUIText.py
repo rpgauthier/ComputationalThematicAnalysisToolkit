@@ -359,6 +359,9 @@ class Samples(Main):
     GENERATING_BITERM_SUBLABEL = "Creating Biterm Topic Sample: "
     GENERATING_BITERM_MSG2 = "Initalizing Biterm Topic Model"
     GENERATING_BITERM_MSG3 = "Generating Biterm Topic Model"
+    GENERATING_NMF_SUBLABEL = "Creating NMF Topic Sample: "
+    GENERATING_NMF_MSG2 = "Initalizing NMF Topic Model"
+    GENERATING_NMF_MSG3 = "Generating NMF Topic Model"
     
     GENERATED_DEFAULT_LABEL = "Generated Sample"
     GENERATED_LDA_SUBLABEL = "Loading results for LDA Topic Sample: "
@@ -366,6 +369,8 @@ class Samples(Main):
                                     +"\nA new dialog will open when completed."
     GENERATED_BITERM_SUBLABEL = "Loading results for Biterm Topic Sample: "
     GENERATED_BITERM_COMPLETED_PART1 = "Biterm Topic Model Generation will continue running in background."\
+                                    +"\nA new dialog will open when completed."
+    GENERATED_NMF_COMPLETED_PART1 = "NMF Topic Model Generation will continue running in background."\
                                     +"\nA new dialog will open when completed."
 
     #review list table column labels
