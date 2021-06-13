@@ -21,6 +21,7 @@
 - pip install -U spacy
 - pip install sentencepiece
 - pip install sklearn
+- pip install dateparser
 
 ## NEED TO BE RUN
 - python -m spacy download fr_core_news_sm
