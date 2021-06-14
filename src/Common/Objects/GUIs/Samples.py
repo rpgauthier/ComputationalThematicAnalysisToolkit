@@ -175,7 +175,6 @@ class SampleCreatePanel(wx.Panel):
                 else:
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
                 self.Thaw()
-        # TODO NMF
         elif model_type == "NMF":
             with NMFModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
@@ -188,7 +187,7 @@ class SampleCreatePanel(wx.Panel):
                     model_parameters['metadataset'] = copy.deepcopy(metadataset)
                     model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_MSG2)
-                    new_sample = Samples.BitermSample(name, dataset_key, model_parameters) # TODO NMF
+                    new_sample = Samples.NMFSample(name, dataset_key, model_parameters)
                     new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
                     main_frame.samples[new_sample.key] = new_sample
                     new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
