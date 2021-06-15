@@ -537,18 +537,16 @@ class NMFSample(TopicSample):
         self.generated_flag = True
         self.training_thread.join()
         self.training_thread = None
-        with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/transformed_texts.pk', 'rb') as infile: #TODO: NMF from here down
+        with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf.pk', 'rb') as infile:
             self.transformed_texts = pickle.load(infile)
-        with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/vocab.pk', 'rb') as infile:
-            self.vocab = pickle.load(infile)
-        with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/btm.pk', 'rb') as infile:
+        with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/nmf_model.pk', 'rb') as infile:
             self.model = pickle.load(infile)
 
         self.document_topic_prob = result['document_topic_prob']
 
         for i in range(self.num_topics):
             topic_num = i+1
-            self.parts_dict[topic_num] = BitermTopicPart(self, topic_num, dataset)
+            self.parts_dict[topic_num] = NMFTopicPart(self, topic_num, dataset)
         self.parts_dict['unknown'] = TopicUnknownPart(self, 'unknown', [], dataset)
 
         self.word_num = 10
@@ -558,6 +556,7 @@ class NMFSample(TopicSample):
         logger.info("Finished")
 
     #TODO change to new temporary file saving structure
+    # TODO: NMF from here down
     def OldLoad(self, workspace_path):
         logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].Load")
         logger.info("Starting")
@@ -884,6 +883,45 @@ class BitermTopicPart(TopicPart):
                     word_idx = np.where(self.parent.model.vocabulary_ == word[0])
                     word_list.append(word[0])
                     prob_list.append(self.parent.model.matrix_topics_words_[self.key-1][word_idx[0]][0])
+                self.word_list = list(zip(word_list, prob_list))
+        self._word_num = value
+        logger.info("Finished")
+
+# TODO: NMF
+class NMFTopicPart(TopicPart):
+    '''Instances of NMF Topic objects'''
+    def __init__(self, parent, key, dataset, name=None):
+        logger = logging.getLogger(__name__+".NMFTopicPart["+str(key)+"].__init__")
+        logger.info("Starting")
+        TopicPart.__init__(self, parent, key, dataset, name=name)
+        logger.info("Finished")
+
+    @property
+    def word_num(self):
+        return self._word_num
+    @word_num.setter
+    def word_num(self, value):
+        logger = logging.getLogger(__name__+".NMFTopicPart["+str(self.key)+"].word_num")
+        logger.info("Starting")
+        if len(self.word_list) < value:
+            self.word_list.clear()
+            if isinstance(self.parent, ModelMergedPart):
+                # word_df = btm.get_top_topic_words(self.parent.parent.model, words_num=value, topics_idx=[self.key-1]) # TODO
+                word_list = ['', 0] # word_df.values.tolist() # TODO: blank string, 0 tuple
+                prob_list = []
+                for word in word_list:
+                    word_idx = np.where(self.parent.model.vocabulary_ == word)
+                    prob_list.append(self.parent.parent.model.matrix_topics_words_[self.key-1][word_idx][0])
+                self.word_list = list(zip(word_list, prob_list))
+            else:
+                # word_df = btm.get_top_topic_words(self.parent.model, words_num=value, topics_idx=[self.key-1])
+                word_list = []
+                prob_list = []
+                # TODO
+                # for word in word_df.values.tolist():
+                #     word_idx = np.where(self.parent.model.vocabulary_ == word[0])
+                #     word_list.append(word[0])
+                #     prob_list.append(self.parent.model.matrix_topics_words_[self.key-1][word_idx[0]][0])
                 self.word_list = list(zip(word_list, prob_list))
         self._word_num = value
         logger.info("Finished")

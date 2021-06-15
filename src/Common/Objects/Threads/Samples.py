@@ -200,9 +200,14 @@ class NMFTrainingThread(Thread):
         #with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/transformed_texts.pk', 'wb') as outfile:
         #    pickle.dump(docs_vec, outfile)
 
+        # TODO params from filtering, remove stop_words
+        # TODO: save tfidf, model
         tfidf_vectorizer = TfidfVectorizer(max_df=0.95, min_df=2, max_features=self.num_topics, stop_words='english')
         tfidf = tfidf_vectorizer.fit_transform(texts)
         logger.info("Texts transformed")
+
+        with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/tfidf.pk', 'wb') as outfile:
+           pickle.dump(tfidf, outfile)
 
         logger.info("Starting Generation of NMF")
         #biterms = btm.get_biterms(docs_vec)
@@ -214,14 +219,20 @@ class NMFTrainingThread(Thread):
         topics = tfidf_vectorizer.get_feature_names()
         print(topics)
 
+        topic_pr = model.transform(tfidf)
+        probs = topic_pr / topic_pr.sum(axis=1, keepdims=True)
+        print(probs)
+
         #topics = model.fit_transform(docs_vec, biterms, iterations=self.num_passes, verbose=False)
-        #with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/btm.pk', 'wb') as outfile:
-        #    pickle.dump(model, outfile)
+        with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/nmf_model.pk', 'wb') as outfile:
+            pickle.dump(model, outfile)
         logger.info("Completed Generation of NMF")
 
+        # TODO: matrix, num columns = # topics, number of rows = # documents, value = probability that topic is associated with document
+        # TODO: change nan's to 0s
         document_topic_prob = {}
-        for doc_num in range(len(topics)):
-            doc_row = topics[doc_num]
+        for doc_num in range(len(probs)):
+            doc_row = probs[doc_num]
             doc_topic_prob_row = {}
             for i in range(len(doc_row)):
                 doc_topic_prob_row[i+1] = doc_row[i]
