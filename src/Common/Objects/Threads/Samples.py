@@ -202,11 +202,12 @@ class NMFTrainingThread(Thread):
 
         # TODO: save tfidf, model
         tfidf_vectorizer = TfidfVectorizer(max_features=self.num_topics)
+        
         tfidf = tfidf_vectorizer.fit_transform(texts)
-        logger.info("Texts transformed")
-
         with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/tfidf.pk', 'wb') as outfile:
            pickle.dump(tfidf, outfile)
+        
+        logger.info("Texts transformed")
 
         logger.info("Starting Generation of NMF")
         #biterms = btm.get_biterms(docs_vec)
@@ -215,6 +216,11 @@ class NMFTrainingThread(Thread):
 
         # TODO NMF MODEL
         model = nmf(self.num_topics, random_state=1).fit(tfidf)
+
+        # must fit tfidf as above before saving tfidf_vectorizer
+        with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/tfidf_vectorizer.pk', 'wb') as outfile:
+           pickle.dump(tfidf_vectorizer, outfile)
+
         topics = tfidf_vectorizer.get_feature_names()
         print(topics)
 

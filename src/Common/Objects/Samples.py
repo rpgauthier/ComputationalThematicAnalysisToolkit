@@ -506,6 +506,7 @@ class NMFSample(TopicSample):
     def __getstate__(self):
         state = dict(self.__dict__)
         state['training_thread'] = None
+        state['vectorizer'] = None
         state['transformed_texts'] = None
         state['model'] = None
         return state
@@ -534,6 +535,8 @@ class NMFSample(TopicSample):
         self.generated_flag = True
         self.training_thread.join()
         self.training_thread = None
+        with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf_vectorizer.pk', 'rb') as infile:
+           self.vectorizer = pickle.load(infile)
         with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf.pk', 'rb') as infile:
             self.transformed_texts = pickle.load(infile)
         with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/nmf_model.pk', 'rb') as infile:
@@ -557,6 +560,8 @@ class NMFSample(TopicSample):
         logger.info("Starting")
         self._workspace_path = workspace_path
         if self.generated_flag:
+            with bz2.BZ2File(self._workspace_path+self.filedir+'/tfidf_vectorizer.pk', 'rb') as infile:
+                self.vectorizer = pickle.load(infile)
             with bz2.BZ2File(self._workspace_path+self.filedir+'/tfidf.pk', 'rb') as infile:
                 self.transformed_texts = pickle.load(infile)
             with bz2.BZ2File(self._workspace_path+self.filedir+'/nmf_model.pk', 'rb') as infile:
@@ -567,6 +572,8 @@ class NMFSample(TopicSample):
         logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].Load")
         logger.info("Starting")
         if self.generated_flag:
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf_vectorizer.pk', 'rb') as infile:
+                self.vectorizer = pickle.load(infile)
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf.pk', 'rb') as infile:
                 self.transformed_texts = pickle.load(infile)
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/nmf_model.pk', 'rb') as infile:
@@ -576,6 +583,9 @@ class NMFSample(TopicSample):
     def Save(self, current_workspace):
         logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].Save")
         logger.info("Starting")
+        if self.vectorizer is not None:
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf_vectorizer.pk', 'wb') as outfile:
+                pickle.dump(self.vectorizer, outfile)
         if self.transformed_texts is not None:
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf.pk', 'wb') as outfile:
                 pickle.dump(self.transformed_texts, outfile)
@@ -867,6 +877,10 @@ class BitermTopicPart(TopicPart):
                 word_df = btm.get_top_topic_words(self.parent.model, words_num=value, topics_idx=[self.key-1])
                 word_list = []
                 prob_list = []
+                #TODO remove prints
+                print(word_df.values.tolist())
+                print(self.parent.model.vocabulary_)
+                print(self.parent.model.matrix_topics_words_)
                 for word in word_df.values.tolist():
                     word_idx = np.where(self.parent.model.vocabulary_ == word[0])
                     word_list.append(word[0])
@@ -895,7 +909,8 @@ class NMFTopicPart(TopicPart):
             self.word_list.clear()
             if isinstance(self.parent, ModelMergedPart):
                 # word_df = btm.get_top_topic_words(self.parent.parent.model, words_num=value, topics_idx=[self.key-1]) # TODO
-                word_list = ['', 0] # word_df.values.tolist() # TODO: blank string, 0 tuple
+                word_list =  self.parent.vectorizer.get_feature_names() #word_df.values.tolist() # TODO: blank string, 0 tuple
+                print(word_list) # TODO
                 prob_list = []
                 for word in word_list:
                     word_idx = np.where(self.parent.model.vocabulary_ == word)
@@ -903,9 +918,19 @@ class NMFTopicPart(TopicPart):
                 self.word_list = list(zip(word_list, prob_list))
             else:
                 # word_df = btm.get_top_topic_words(self.parent.model, words_num=value, topics_idx=[self.key-1])
-                word_list = []
+                #word_list = []
+                word_list =  self.parent.vectorizer.get_feature_names()
+                print(word_list)
                 prob_list = []
                 # TODO
+                topic_pr = self.parent.model.transform(self.parent.transformed_texts)
+                #probs = topic_pr / topic_pr.sum(axis=1, keepdims=True)
+                for word in word_list:
+                    print(self.parent.vectorizer.vocabulary_)
+                    print(np.where(self.parent.vectorizer.vocabulary_ == word))
+                    word_idx = np.where(self.parent.vectorizer.vocabulary_ == word)
+                    prob_list.append(topic_pr[self.key-1][word_idx])
+                print(prob_list)
                 # for word in word_df.values.tolist():
                 #     word_idx = np.where(self.parent.model.vocabulary_ == word[0])
                 #     word_list.append(word[0])
