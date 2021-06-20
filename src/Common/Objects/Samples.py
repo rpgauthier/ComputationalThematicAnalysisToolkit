@@ -487,8 +487,6 @@ class BitermSample(TopicSample):
                 pickle.dump(self.model, outfile)
 
 #TODO figure out why samples dont have any documents attached for biterm/NMF when run on grouped documents (might also effect LDASample)
-# TODO: NMF
-# TODO: NMF equivalents to transformed_texts, vocab, model
 class NMFSample(TopicSample):
     def __init__(self, key, dataset_key, model_parameters):
         logger = logging.getLogger(__name__+".NMFSample["+str(key)+"].__init__")
@@ -509,7 +507,6 @@ class NMFSample(TopicSample):
         state = dict(self.__dict__)
         state['training_thread'] = None
         state['transformed_texts'] = None
-        state['vocab'] = None
         state['model'] = None
         return state
     def __repr__(self):
@@ -555,44 +552,35 @@ class NMFSample(TopicSample):
         self.end_dt = datetime.now()
         logger.info("Finished")
 
-    #TODO change to new temporary file saving structure
-    # TODO: NMF from here down
     def OldLoad(self, workspace_path):
-        logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].Load")
+        logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].Load")
         logger.info("Starting")
         self._workspace_path = workspace_path
         if self.generated_flag:
-            with bz2.BZ2File(self._workspace_path+self.filedir+'/transformed_texts.pk', 'rb') as infile:
+            with bz2.BZ2File(self._workspace_path+self.filedir+'/tfidf.pk', 'rb') as infile:
                 self.transformed_texts = pickle.load(infile)
-            with bz2.BZ2File(self._workspace_path+self.filedir+'/vocab.pk', 'rb') as infile:
-                self.vocab = pickle.load(infile)
-            with bz2.BZ2File(self._workspace_path+self.filedir+'/btm.pk', 'rb') as infile:
+            with bz2.BZ2File(self._workspace_path+self.filedir+'/nmf_model.pk', 'rb') as infile:
                 self.model = pickle.load(infile)
         logger.info("Finished")
 
     def Load(self, current_workspace):
-        logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].Load")
+        logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].Load")
         logger.info("Starting")
         if self.generated_flag:
-            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/transformed_texts.pk', 'rb') as infile:
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf.pk', 'rb') as infile:
                 self.transformed_texts = pickle.load(infile)
-            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/vocab.pk', 'rb') as infile:
-                self.vocab = pickle.load(infile)
-            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/btm.pk', 'rb') as infile:
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/nmf_model.pk', 'rb') as infile:
                 self.model = pickle.load(infile)
         logger.info("Finished")
 
     def Save(self, current_workspace):
-        logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].Save")
+        logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].Save")
         logger.info("Starting")
         if self.transformed_texts is not None:
-            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/transformed_texts.pk', 'wb') as outfile:
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf.pk', 'wb') as outfile:
                 pickle.dump(self.transformed_texts, outfile)
-        if self.vocab is not None:
-            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/vocab.pk', 'wb') as outfile:
-                pickle.dump(self.vocab, outfile)
         if self.model is not None:
-            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/btm.pk', 'wb') as outfile:
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/nmf_model.pk', 'wb') as outfile:
                 pickle.dump(self.model, outfile)
 
 class MergedPart(GenericObject):
