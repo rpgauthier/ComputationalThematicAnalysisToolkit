@@ -205,9 +205,8 @@ class NMFTrainingThread(Thread):
         #with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/transformed_texts.pk', 'wb') as outfile:
         #    pickle.dump(docs_vec, outfile)
 
-        # TODO params from filtering, remove stop_words
         # TODO: save tfidf, model
-        tfidf_vectorizer = TfidfVectorizer(max_df=0.95, min_df=2, max_features=self.num_topics, stop_words='english')
+        tfidf_vectorizer = TfidfVectorizer(max_features=self.num_topics)
         tfidf = tfidf_vectorizer.fit_transform(texts)
         logger.info("Texts transformed")
 
@@ -233,7 +232,7 @@ class NMFTrainingThread(Thread):
             pickle.dump(model, outfile)
         logger.info("Completed Generation of NMF")
 
-        # TODO: matrix, num columns = # topics, number of rows = # documents, value = probability that topic is associated with document
+        # matrix, num columns = # topics, number of rows = # documents, value = probability that topic is associated with document
         # TODO: change nan's to 0s
         document_topic_prob = {}
         for doc_num in range(len(probs)):
