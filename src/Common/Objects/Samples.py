@@ -258,7 +258,7 @@ class TopicSample(Sample):
         return self._tokensets
 
     def ApplyDocumentCutoff(self):
-        logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].ApplyDocumentCutoff")
+        logger = logging.getLogger(__name__+".TopicSample["+str(self.key)+"].ApplyDocumentCutoff")
         logger.info("Starting")
         document_set = set()
         document_topic_prob_df = pd.DataFrame(data=self.document_topic_prob).transpose()
@@ -877,10 +877,6 @@ class BitermTopicPart(TopicPart):
                 word_df = btm.get_top_topic_words(self.parent.model, words_num=value, topics_idx=[self.key-1])
                 word_list = []
                 prob_list = []
-                #TODO remove prints
-                print(word_df.values.tolist())
-                print(self.parent.model.vocabulary_)
-                print(self.parent.model.matrix_topics_words_)
                 for word in word_df.values.tolist():
                     word_idx = np.where(self.parent.model.vocabulary_ == word[0])
                     word_list.append(word[0])
@@ -917,20 +913,34 @@ class NMFTopicPart(TopicPart):
                     prob_list.append(self.parent.parent.model.matrix_topics_words_[self.key-1][word_idx][0])
                 self.word_list = list(zip(word_list, prob_list))
             else:
+                # TODO: same words being used for each topic, just the topics rearranged?
+
+                components_df = pd.DataFrame(self.parent.model.components_, columns=self.parent.vectorizer.get_feature_names())
+                topic = components_df.iloc[self.key-1]
+                word_prob_list = topic.nlargest(value)
+                word_list = word_prob_list.index.tolist()
+                prob_list = word_prob_list.tolist()
+
+                #topic = self.parent.model.components_[self.key-1]
+                #word_list = ([self.parent.vectorizer.get_feature_names()[i] for i in topic.argsort()[-10:]])
+
+                print(word_list)
+                print(self.parent.vectorizer.get_feature_names())
+
+
+
                 # word_df = btm.get_top_topic_words(self.parent.model, words_num=value, topics_idx=[self.key-1])
                 #word_list = []
-                word_list =  self.parent.vectorizer.get_feature_names()
-                print(word_list)
-                prob_list = []
-                # TODO
-                topic_pr = self.parent.model.transform(self.parent.transformed_texts)
+                #word_list =  self.parent.vectorizer.get_feature_names()
+                #prob_list = []
+                #topic_pr = self.parent.model.transform(self.parent.transformed_texts)
                 #probs = topic_pr / topic_pr.sum(axis=1, keepdims=True)
-                for word in word_list:
-                    print(self.parent.vectorizer.vocabulary_)
-                    print(np.where(self.parent.vectorizer.vocabulary_ == word))
-                    word_idx = np.where(self.parent.vectorizer.vocabulary_ == word)
-                    prob_list.append(topic_pr[self.key-1][word_idx])
-                print(prob_list)
+                # for word in word_list:
+                #     print(self.parent.vectorizer.vocabulary_)
+                #     print(np.where(self.parent.vectorizer.vocabulary_ == word))
+                #     word_idx = np.where(self.parent.vectorizer.vocabulary_ == word)
+                #     prob_list.append(topic_pr[self.key-1][word_idx])
+                # print(prob_list)
                 # for word in word_df.values.tolist():
                 #     word_idx = np.where(self.parent.model.vocabulary_ == word[0])
                 #     word_list.append(word[0])
