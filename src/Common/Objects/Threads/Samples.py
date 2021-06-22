@@ -14,6 +14,7 @@ from sklearn.decomposition import NMF as nmf
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 import Common.CustomEvents as CustomEvents
+import Common.Objects.Utilities.Samples as SamplesUtilities
 
 class LDATrainingThread(Thread):
     """LDATrainingThread Class."""
@@ -201,9 +202,10 @@ class NMFTrainingThread(Thread):
         #    pickle.dump(docs_vec, outfile)
 
         # TODO: save tfidf, model
-        tfidf_vectorizer = TfidfVectorizer(max_features=self.num_topics)
+
+        tfidf_vectorizer = TfidfVectorizer(max_features=self.num_topics, preprocessor=SamplesUtilities.dummy, tokenizer=SamplesUtilities.dummy, token_pattern=None)
         
-        tfidf = tfidf_vectorizer.fit_transform(texts)
+        tfidf = tfidf_vectorizer.fit_transform(self.tokensets.values())
         with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/tfidf.pk', 'wb') as outfile:
            pickle.dump(tfidf, outfile)
         
