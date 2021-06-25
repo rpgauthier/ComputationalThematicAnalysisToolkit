@@ -2,19 +2,18 @@
 import logging
 
 import wx
-from wx.core import MessageBox
 #import wx.lib.agw.flatnotebook as FNB
 import External.wxPython.flatnotebook_fix as FNB
 
 import Common.Notes as Notes
-from Common.GUIText import Samples as GUIText
+from Common.GUIText import Sampling as GUIText
 import Common.Objects.GUIs.Samples as SamplesGUIs
 
 class SamplingNotebook(FNB.FlatNotebook):
     def __init__(self, parent, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".SamplingNotebook.__init__")
         logger.info("Starting")
-        FNB.FlatNotebook.__init__(self, parent, agwStyle=FNB.FNB_DEFAULT_STYLE|FNB.FNB_NO_X_BUTTON, size=size)
+        FNB.FlatNotebook.__init__(self, parent, agwStyle=FNB.FNB_DEFAULT_STYLE|FNB.FNB_NO_X_BUTTON|FNB.FNB_FF2, size=size)
         self.name = "sampling_module"
         self.sample_panels = {}
 
@@ -57,7 +56,7 @@ class SamplingNotebook(FNB.FlatNotebook):
 
         if page != self.create_page:
             old_key = page.sample.key
-            with wx.TextEntryDialog(self, "Name of Sample:", value=old_key) as dialog:
+            with wx.TextEntryDialog(self, GUIText.SAMPLE_NAME, value=old_key) as dialog:
                 if dialog.ShowModal() == wx.ID_OK:
                     new_key = dialog.GetValue().replace(" ", "_")
                     main_frame = wx.GetApp().GetTopWindow()
@@ -113,6 +112,7 @@ class SamplingNotebook(FNB.FlatNotebook):
                 main_frame.samples[page.sample.key].DestroyObject()
                 del main_frame.samples[page.sample.key]
                 del self.sample_panels[page.sample.key]
+                main_frame.DocumentsUpdated()
             else:
                 event.Veto()
         main_frame.Thaw()
@@ -146,7 +146,7 @@ class SamplingNotebook(FNB.FlatNotebook):
                     new_sample_panel = SamplesGUIs.TopicSamplePanel(self, main_frame.samples[key], main_frame.datasets[main_frame.samples[key].dataset_key], size=self.GetSize())
                     new_sample_panel.Load({})
                 if new_sample_panel is not None:
-                    self.InsertPage(len(self.sample_panels), new_sample_panel, str(key), select=True)
+                    self.InsertPage(len(self.sample_panels), new_sample_panel, str(repr(new_sample_panel.sample)), select=True)
                     self.sample_panels[key] = new_sample_panel
                     #TODO new_sample_panel.menu_menuitem = self.menu.AppendSubMenu(new_sample_panel.menu, str(sample_key))
 

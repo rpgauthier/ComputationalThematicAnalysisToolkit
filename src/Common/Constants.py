@@ -2,16 +2,12 @@
 import wx
 #import wx.lib.agw.flatnotebook as FNB
 import External.wxPython.flatnotebook_fix as FNB
-import wx.aui as aui
 
 
 #Variables to configure GUI
-FNB_STYLE = FNB.FNB_DEFAULT_STYLE|FNB.FNB_HIDE_ON_SINGLE_TAB|FNB.FNB_NO_X_BUTTON
-NOTEBOOK_MOVEABLE = aui.AUI_NB_TOP | aui.AUI_NB_TAB_MOVE | aui.AUI_NB_SCROLL_BUTTONS
-NOTEBOOK_SPLITABLE = aui.AUI_NB_TOP | aui.AUI_NB_TAB_SPLIT | \
-                    aui.AUI_NB_TAB_MOVE | aui.AUI_NB_SCROLL_BUTTONS
-NOTEBOOK_FIXED = aui.AUI_NB_TOP | aui.AUI_NB_TAB_MOVE | \
-                 aui.AUI_NB_SCROLL_BUTTONS
+FNB_STYLE = FNB.FNB_DEFAULT_STYLE|FNB.FNB_HIDE_ON_SINGLE_TAB|FNB.FNB_NO_X_BUTTON|FNB.FNB_FF2
+
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 PHASE_LABEL_SIZE = 16
 SUBMODULE_LABEL_SIZE = 15
@@ -27,7 +23,7 @@ CURRENT_WORKSPACE = '../Current_Workspace'
 # removed to use built in id generator wx.ID_ANY
 
 #Module Specific Variables
-##Familiarization
+##Filtering
 ##first n indexes need to align to TOKENIZER_APPROACH_LIST and must be 0 to n-1
 TOKEN_TEXT_IDX = 0
 TOKEN_NLTK_PORTERSTEM_IDX = 1
@@ -64,87 +60,139 @@ AVALIABLE_DATASET_LANGUAGES2 = ['English-Efficent', 'English-Accurate', 'French'
 #definition of fields avaliable for use from the retrievers
 avaliable_fields = {
     ('Reddit', 'submission',): {
+        'id': {
+            'desc': "the unique Reddit Submission id (may not be unique across other sources/types",
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
+            },
+        'url': {
+            'desc': "a url link to the original source of the data",
+            'type': 'url',
+            'included_default': False,
+            'metadata_default': True,
+            },
+        'created_utc': {
+            'desc': "The UTC time stamp of when the submission was created",
+            'type': 'UTC-timestamp',
+            'included_default': False,
+            'metadata_default': True,
+            },
+        'title': {
+            'desc': "the raw title of the submission.",
+            'type': 'string',
+            'included_default': True,
+            'metadata_default': True,
+            },
+        },
+        'selftext': {
+            'desc': "the raw text of the submission.",
+            'type': 'string',
+            'included_default': True,
+            'metadata_default': False,
+            },
         'author': {
             'desc': "the account name of the poster",
             'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'author_flair_css_class': {
             'desc': "the CSS class f the author's flair. subreddit specific",
             'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'author_flair_text': {
             'desc': "the text of the author's flair. subreddit specific",
-            'type': 'string'
-            },
-        'created_utc': {
-            'desc': "The UTC time stamp of when the submission was created",
-            'type': 'UTC-timestamp'
-            },
-        'id': {
-            'desc': "the unique Reddit Submission id (may not be unique across other sources/types",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'num_comments': {
             'desc': "the number of comments made under this submission (may be out of date unless updated from Reddit API)",
-            'type': 'integer'
+            'type': 'integer',
+            'included_default': False,
+            'metadata_default': False,
             },
         'num_crossposts': {
             'desc': "the number of crossposts of this submission (may be out of date unless updated from Reddit API)",
-            'type': 'integer'
-            },
-        'selftext': {
-            'desc': "the raw text of the submission.",
-            'type': 'string'
+            'type': 'integer',
+            'included_default': False,
+            'metadata_default': False,
             },
         'score': {
             'desc': "the submission's score (may be out of date unless updated from Reddit API)",
-            'type': 'integer'
+            'type': 'integer',
+            'included_default': False,
+            'metadata_default': False,
             },
         'subreddit': {
             'desc': "the subreddit the comment is from.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'subreddit_id': {
             'desc': "The unique id of the subreddit the comment is from.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
-        'title': {
-            'desc': "the raw title of the submission.",
-            'type': 'string'
-            },
-        },
     ('Reddit', 'comment',): {
-        'author': {
-            'desc': "the account name of the poster",
-            'type': 'string'
+        'id': {
+            'desc': 'unique Reddit Comment id (may not be unique across other sources/types)',
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
-        'author_flair_css_class': {
-            'desc': "the CSS class of the author's flair. subreddit specific",
-            'type': 'string'
-            },
-        'author_flair_text': {
-            'desc': "the text of the author's flair. subreddit specific",
-            'type': 'string'
-            },
-        'body': {
-            'desc': "the raw text of the comment.",
-            'type': 'string'
+        'url': {
+            'desc': "a url link to the original source of the data",
+            'type': 'url',
+            'included_default': False,
+            'metadata_default': True,
             },
         'created_utc': {
             'desc': "The UTC time stamp of when the comment was created",
-            'type': 'UTC-timestamp'
+            'type': 'UTC-timestamp',
+            'included_default': False,
+            'metadata_default': True,
             },
-        'id': {
-            'desc': 'unique Reddit Comment id (may not be unique across other sources/types)',
-            'type': 'string'
+        'body': {
+            'desc': "the raw text of the comment.",
+            'type': 'string',
+            'included_default': True,
+            'metadata_default': True,
+            },
+        'author': {
+            'desc': "the account name of the poster",
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
+            },
+        'author_flair_css_class': {
+            'desc': "the CSS class of the author's flair. subreddit specific",
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
+            },
+        'author_flair_text': {
+            'desc': "the text of the author's flair. subreddit specific",
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'link_id': {
             'desc': "A reference id that can link a comment to it's associated submission's id.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'parent_id': {
             'desc': "A reference id for the item (a comment or submission) that this comment is a reply to",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'score': {
             'desc': "the submission's score (may be out of date unless updated from Reddit API)",
@@ -152,147 +200,211 @@ avaliable_fields = {
             },
         'submission_id':{
             'desc': 'the id of the submission that comment is a response to',
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'subreddit': {
             'desc': "the subreddit the comment is from.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'subreddit_id': {
             'desc': "The unique id of the subreddit the comment is from.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         },
     ('Reddit', 'discussion',): {
+        'id': {
+            'desc': 'unique Reddit Comment id (may not be unique across other sources/types)',
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
+            },
+        'url': {
+            'desc': "a url link to the original source of the data",
+            'type': 'url',
+            'included_default': False,
+            'metadata_default': True,
+            },
+        'created_utc': {
+            'desc': "The UTC time stamp of when the comment was created",
+            'type': 'UTC-timestamp',
+            'included_default': False,
+            'metadata_default': True,
+            },
         'title': {
             'desc': "the raw title of the discussion.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': True,
+            'metadata_default': True,
             },
         'text': {
             'desc': "the raw text of the discussion.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': True,
+            'metadata_default': False,
             },
         'submission.author': {
             'desc': "the account name of the poster",
             'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'submission.author_flair_css_class': {
             'desc': "the CSS class f the author's flair. subreddit specific",
             'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'submission.author_flair_text': {
             'desc': "the text of the author's flair. subreddit specific",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'submission.created_utc': {
             'desc': "The UTC time stamp of when the submission was created",
-            'type': 'UTC-timestamp'
+            'type': 'UTC-timestamp',
+            'included_default': False,
+            'metadata_default': False,
             },
         'submission.id': {
             'desc': "the unique Reddit Submission id (may not be unique across other sources/types",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'submission.num_comments': {
             'desc': "the number of comments made under this submission (may be out of date unless updated from Reddit API)",
-            'type': 'integer'
+            'type': 'integer',
+            'included_default': False,
+            'metadata_default': False,
             },
         'submission.num_crossposts': {
             'desc': "the number of crossposts of this submission (may be out of date unless updated from Reddit API)",
-            'type': 'integer'
+            'type': 'integer',
+            'included_default': False,
+            'metadata_default': False,
             },
         'submission.selftext': {
             'desc': "the raw text of the submission.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'submission.score': {
             'desc': "the submission's score (may be out of date unless updated from Reddit API)",
-            'type': 'integer'
+            'type': 'integer',
+            'included_default': False,
+            'metadata_default': False,
             },
         'submission.subreddit': {
             'desc': "the subreddit the comment is from.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'submission.subreddit_id': {
             'desc': "The unique id of the subreddit the comment is from.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'submission.title': {
             'desc': "the raw title of the submission.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'comment.author': {
             'desc': "the account name of the poster",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'comment.author_flair_css_class': {
             'desc': "the CSS class of the author's flair. subreddit specific",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'comment.author_flair_text': {
             'desc': "the text of the author's flair. subreddit specific",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'comment.body': {
             'desc': "the raw text of the comment.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'comment.created_utc': {
             'desc': "The UTC time stamp of when the comment was created",
-            'type': 'UTC-timestamp'
+            'type': 'UTC-timestamp',
+            'included_default': False,
+            'metadata_default': False,
             },
         'comment.id': {
             'desc': 'unique Reddit Comment id (may not be unique across other sources/types)',
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'comment.link_id': {
             'desc': "A reference id that can link a comment to it's associated submission's id.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'comment.parent_id': {
             'desc': "A reference id for the item (a comment or submission) that this comment is a reply to",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'comment.score': {
             'desc': "the submission's score (may be out of date unless updated from Reddit API)",
-            'type': 'integer'
+            'type': 'integer',
+            'included_default': False,
+            'metadata_default': False,
             },
         'comment.subreddit': {
             'desc': "the subreddit the comment is from.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         'comment.subreddit_id': {
             'desc': "The unique id of the subreddit the comment is from.",
-            'type': 'string'
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': False,
             },
         },
-    }
-
-#definition of default fields chosen for use from the retrievers
-chosen_fields = {
-    ('Reddit', 'submission',): {
-        'selftext': {
-            'desc': "the raw text of the submission.",
-            'type': 'string'
+    ('CSV', 'documents',): {
+        'id': {
+            'desc': "unique id of the row's data",
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': True,
             },
-        'title': {
-            'desc': "the raw title of the submission.",
-            'type': 'string'
+        'url': {
+            'desc': "a url link to the original source of the row's data",
+            'type': 'url',
+            'included_default': False,
+            'metadata_default': False,
             },
-        },
-    ('Reddit', 'comment',): {
-        'body': {
-            'desc': "the raw text of the comment.",
-            'type': 'string'
+        'created_utc': {
+            'desc': "The UTC time stamp of when the row's data was created",
+            'type': 'UTC-timestamp',
+            'included_default': False,
+            'metadata_default': False,
             },
-        },
-    ('Reddit', 'discussion',): {
-        'title': {
-            'desc': "the raw title of the discussion.",
-            'type': 'string'
-            },
-        'text': {
-            'desc': "the raw text of the discussion.",
-            'type': 'string'
-            },
-        },
-    }
+        }
+}

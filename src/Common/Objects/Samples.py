@@ -1,6 +1,5 @@
 import logging
 import random
-import os
 import bz2
 import pickle
 from datetime import datetime
@@ -13,9 +12,9 @@ import numpy as np
 import gensim
 import bitermplus as btm
 
-import Common.Constants as Constants
 from Common.Objects.Generic import GenericObject
 import Common.Objects.Threads.Samples as SamplesThreads
+import Common.Objects.Datasets as Datasets
 
 class Sample(GenericObject):
     '''Instances of Sample objects'''
@@ -31,9 +30,15 @@ class Sample(GenericObject):
         self._generated_flag = False
         self._start_dt = None
         self._end_dt = None
-        
+        self._selected = False
+
+        self._applied_filter_rules = None
+        self._tokenization_package_versions = None
+        self._tokenization_choice = None
+
         #objects that have their own last_changed_dt and thus need to be checked dynamically
         self.parts_dict = OrderedDict()
+        self.selected_documents = []
         
         logger.info("Finished")
     def __repr__(self):
@@ -86,6 +91,40 @@ class Sample(GenericObject):
     def end_dt(self, value):
         self._end_dt = value
         self.last_changed_dt = datetime.now()
+    
+    @property
+    def selected(self):
+        if not hasattr(self, '_selected'):
+            self._selected = False
+        return self._selected
+    @selected.setter
+    def selected(self, value):
+        self._selected = value
+        self.last_changed_dt = datetime.now()
+    
+    @property
+    def applied_filter_rules(self):
+        return self._applied_filter_rules
+    @applied_filter_rules.setter
+    def applied_filter_rules(self, value):
+        self._applied_filter_rules = value
+        self.last_changed_dt = datetime.now()
+    
+    @property
+    def tokenization_choice(self):
+        return self._tokenization_choice
+    @tokenization_choice.setter
+    def tokenization_choice(self, value):
+        self._tokenization_choice = value
+        self.last_changed_dt = datetime.now()
+    
+    @property
+    def tokenization_package_versions(self):
+        return self._tokenization_package_versions
+    @tokenization_package_versions.setter
+    def tokenization_package_versions(self, value):
+        self._tokenization_package_versions = value
+        self.last_changed_dt = datetime.now()
 
     @property
     def last_changed_dt(self):
@@ -132,14 +171,13 @@ class RandomSample(Sample):
         logger.info("Starting")
         Sample.__init__(self, key, dataset_key, "Random")
 
-        #list that is managed
-        #TODO they have not yet been converted into properties due to complexity
+        #list that is not managed thus need lastchanged_dt to be updated when changed
         self.metdataset_key_list = list(model_parameters['metadataset'].keys())
 
         logger.info("Finished")
 
     def __repr__(self):
-        return 'RandomSample: %s' % (self.key,)
+        return 'Random Sample: %s' % (self.key,)
 
     def Generate(self, datasets):
         logger = logging.getLogger(__name__+".RandomSample["+str(self.key)+"].Generate")
@@ -172,6 +210,9 @@ class TopicSample(Sample):
         #objects that have their own last_changed_dt and thus need to be checked dynamically
         
         #variable that should only be used internally and are never accessed from outside
+
+    def __repr__(self):
+        return 'Topic Sample: %s' % (self.key,)
     
     @property
     def key(self):
@@ -267,6 +308,9 @@ class LDASample(TopicSample):
         self.corpus = None
         logger.info("Finished")
 
+    def __repr__(self):
+        return 'LDA Sample: %s' % (self.key,)
+
     def __getstate__(self):
         state = dict(self.__dict__)
         #state['res'] = None
@@ -327,17 +371,6 @@ class LDASample(TopicSample):
         self.end_dt = datetime.now()
         logger.info("Finished")
 
-    #TODO change to new temporary file saving structure
-    def OldLoad(self, workspace_path):
-        logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].Load")
-        logger.info("Starting")
-        self._workspace_path = workspace_path
-        if self.generated_flag:
-            self.dictionary = gensim.corpora.Dictionary.load(self._workspace_path+self._filedir+'/ldadictionary.dict')
-            self.corpus = gensim.corpora.MmCorpus(self._workspace_path+self._filedir+'/ldacorpus.mm')
-            self.model = gensim.models.ldamodel.LdaModel.load(self._workspace_path+self._filedir+'/ldamodel.lda')
-        logger.info("Finished")
-
     def Load(self, current_workspace):
         logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].Load")
         logger.info("Starting")
@@ -357,7 +390,6 @@ class LDASample(TopicSample):
         if self.corpus is not None:
             gensim.corpora.MmCorpus.serialize(current_workspace+"/Samples/"+self.key+'/ldacorpus.mm', self.corpus)
 
-#TODO figure out why samples dont have any documents attached for biterm when run on grouped documents (might also effect LDASample)
 class BitermSample(TopicSample):
     def __init__(self, key, dataset_key, model_parameters):
         logger = logging.getLogger(__name__+".BitermSample["+str(key)+"].__init__")
@@ -373,6 +405,9 @@ class BitermSample(TopicSample):
         self.transformed_texts = None
         self.vocab = None
         logger.info("Finished")
+
+    def __repr__(self):
+        return 'Biterm Sample: %s' % (self.key,)
 
     def __getstate__(self):
         state = dict(self.__dict__)
@@ -426,20 +461,6 @@ class BitermSample(TopicSample):
         self.end_dt = datetime.now()
         logger.info("Finished")
 
-    #TODO change to new temporary file saving structure
-    def OldLoad(self, workspace_path):
-        logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].Load")
-        logger.info("Starting")
-        self._workspace_path = workspace_path
-        if self.generated_flag:
-            with bz2.BZ2File(self._workspace_path+self.filedir+'/transformed_texts.pk', 'rb') as infile:
-                self.transformed_texts = pickle.load(infile)
-            with bz2.BZ2File(self._workspace_path+self.filedir+'/vocab.pk', 'rb') as infile:
-                self.vocab = pickle.load(infile)
-            with bz2.BZ2File(self._workspace_path+self.filedir+'/btm.pk', 'rb') as infile:
-                self.model = pickle.load(infile)
-        logger.info("Finished")
-
     def Load(self, current_workspace):
         logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].Load")
         logger.info("Starting")
@@ -470,18 +491,28 @@ class MergedPart(GenericObject):
         logger = logging.getLogger(__name__+".MergedPart["+str(key)+"].__init__")
         logger.info("Starting")
         if name is None:
-            name="Merged Part: "+str(key)
+            name="Merged Part "+str(key)
         GenericObject.__init__(self, key, parent=parent, name=name)
 
         #properties that automatically update last_changed_dt
+        self._selected  = False
 
         #objects that have their own last_changed_dt and thus need to be checked dynamically
         self.parts_dict = OrderedDict()
 
         logger.info("Finished")
-
     def __repr__(self):
-        return 'MergedPart: %s' % (self.key,)
+        return 'Merged Part %s' % (self.key,)
+
+    @property
+    def selected(self):
+        if not hasattr(self, '_selected'):
+            self._selected = False
+        return self._selected
+    @selected.setter
+    def selected(self, value):
+        self._selected = value
+        self.last_changed_dt = datetime.now()
 
     @property
     def last_changed_dt(self):
@@ -503,7 +534,7 @@ class MergedPart(GenericObject):
 
 class ModelMergedPart(MergedPart):
     def __repr__(self):
-        return 'ModelMergedPart: %s' % (self.key,)
+        return 'Model Merged Part %s' % (self.key,)
 
     def UpdateDocumentNum(self, document_num, dataset):
         logger = logging.getLogger(__name__+".ModelMergedPart["+str(self.key)+"].UpdateDocumentNum")
@@ -526,6 +557,9 @@ class TopicMergedPart(ModelMergedPart):
         self._word_num = 0
 
         logger.info("Finished")
+
+    def __repr__(self):
+        return 'Merged Topic %s' % (self.key,) if self.label == "" else 'Topic %s: %s' % (self.key, self.label,)
     
     @property
     def word_num(self):
@@ -549,21 +583,21 @@ class Part(GenericObject):
         logger = logging.getLogger(__name__+".Part["+str(key)+"].__init__")
         logger.info("Starting")
         if name is None:
-            name = "Part: "+str(key)
+            name = "Part "+str(key)
         GenericObject.__init__(self, key, parent=parent, name=name)
 
         #properties that automatically update last_changed_dt
         self._document_num = 0
+        self._selected = False
         
         #dictionary that is managed with setters
-        #TODO they have not yet been converted into properties due to complexity
         self.documents = []
         
         #properties that track datetime of creation and change
         logger.info("Finished")
 
     def __repr__(self):
-        return 'Part: %s' % (self.key,)
+        return 'Part %s' % (self.key,)
 
     @property
     def document_num(self):
@@ -571,6 +605,16 @@ class Part(GenericObject):
     @document_num.setter
     def document_num(self, value):
         self._document_num = value
+        self.last_changed_dt = datetime.now()
+    
+    @property
+    def selected(self):
+        if not hasattr(self, '_selected'):
+            self._selected = False
+        return self._selected
+    @selected.setter
+    def selected(self, value):
+        self._selected = value
         self.last_changed_dt = datetime.now()
 
     def DestroyObject(self):
@@ -583,7 +627,7 @@ class ModelPart(Part):
         logger = logging.getLogger(__name__+".ModelPart["+str(key)+"].__init__")
         logger.info("Starting")
         if name is None:
-            name = "Model Part: "+str(key)
+            name = "Model Part "+str(key)
         Part.__init__(self, parent, key, name=name)
 
         #properties that automatically update last_changed_dt
@@ -593,7 +637,7 @@ class ModelPart(Part):
         logger.info("Finished")
 
     def __repr__(self):
-        return 'ModelPart: %s' % (self.key,)
+        return 'ModelPart %s' % (self.key,)
 
     @property
     def part_data(self):
@@ -623,8 +667,11 @@ class ModelPart(Part):
         #grow if approrpriate
         elif document_num > self.document_num:
             for i in range(self.document_num, document_num):
-                key = str(self.part_data[i])
-                document = dataset.SetupDocument(key)
+                key = self.part_data[i]
+                if isinstance(dataset, Datasets.Dataset):
+                    if key not in dataset.documents:
+                        dataset.SetupDocument(key)
+                    document = dataset.documents[key]
                 if document is not None:
                     self.documents.append(key)
                     document.AddSampleConnections(self)
@@ -638,7 +685,7 @@ class TopicPart(ModelPart):
         logger = logging.getLogger(__name__+".TopicPart["+str(key)+"].__init__")
         logger.info("Starting")
         if name is None:
-            name = "Topic: "+str(key)
+            name = "Topic "+str(key)
         ModelPart.__init__(self, parent, key, [], dataset, name)
         
         #properties that automatically update last_changed_dt
@@ -646,7 +693,10 @@ class TopicPart(ModelPart):
         self._word_list = []
 
         logger.info("Finished")
-    
+
+    def __repr__(self):
+        return 'Topic %s' % (self.key,) if self.label == "" else 'Topic %s: %s' % (self.key, self.label,)
+
     @property
     def word_num(self):
         return self._word_num
@@ -756,23 +806,3 @@ class TopicUnknownPart(ModelPart):
 
     def GetTopicKeywordsList(self):
         return []
-
-#TODO needs to be integrated to removed
-class CustomPart(Part):
-    def __init__(self, parent, key, name=None):
-        logger = logging.getLogger(__name__+".CustomPart["+str(key)+"].__init__")
-        logger.info("Starting")
-        if name is None:
-            name = "Custom Part: "+key
-        Part.__init__(self, parent, key, name=name)
-
-    def AddDocument(self, key, dataset):
-        dataset.GetDocument(key)
-        self.documents.append(key)
-        self.document_num =+ 1
-        self.last_changed_dt = datetime.now()
-
-    def DeleteDocument(self, key):
-        self.documents.remove(key)
-        self.document_num =- 1
-        self.last_changed_dt = datetime.now()

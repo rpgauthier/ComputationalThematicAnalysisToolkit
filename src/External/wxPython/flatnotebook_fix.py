@@ -927,14 +927,14 @@ def DrawButton(dc, rect, focus, upperTabs):
 
     if focus:
         if upperTabs:
-            leftPt = wx.Point(rect.x, rect.y + (rect.height / 10)*8)
-            rightPt = wx.Point(rect.x + rect.width - 2, rect.y + (rect.height / 10)*8)
+            leftPt = wx.Point(rect.x, rect.y + int((rect.height / 10)*8))
+            rightPt = wx.Point(rect.x + rect.width - 2, rect.y + int((rect.height / 10)*8))
         else:
-            leftPt = wx.Point(rect.x, rect.y + (rect.height / 10)*5)
-            rightPt = wx.Point(rect.x + rect.width - 2, rect.y + (rect.height / 10)*5)
+            leftPt = wx.Point(rect.x, rect.y + int((rect.height / 10)*5))
+            rightPt = wx.Point(rect.x + rect.width - 2, rect.y + int((rect.height / 10)*5))
     else:
-        leftPt = wx.Point(rect.x, rect.y + (rect.height / 2))
-        rightPt = wx.Point(rect.x + rect.width - 2, rect.y + (rect.height / 2))
+        leftPt = wx.Point(rect.x, rect.y + int((rect.height / 2)))
+        rightPt = wx.Point(rect.x + rect.width - 2, int(rect.y + (rect.height / 2)))
 
     # Define the top region
     top = wx.Rect(rect.GetTopLeft(), rightPt)
@@ -2746,9 +2746,9 @@ class FNBRendererFirefox2(FNBRenderer):
         imageYCoord = (pc.HasAGWFlag(FNB_BOTTOM) and [6] or [8])[0]
 
         if hasImage:
-            textOffset = 2*padding + 16 + shapePoints/2
+            textOffset = int(2*padding) + 16 + int(shapePoints/2)
         else:
-            textOffset = padding + shapePoints/2
+            textOffset = padding + int(shapePoints/2)
 
         textOffset += 2
 
@@ -4936,8 +4936,14 @@ class FlatNotebook(wx.Panel):
 
     def GetActiveTabTextColour(self):
         """ Get the active tab text colour. """
-
-        return self._pages._activeTextColour
+        if self._pages._activeTextColour != None:
+            return self._pages._activeTextColour
+        #POSSIBLE DARKMODE FIX FOR OSX
+        elif wx.SystemSettings.GetAppearance().IsDark():
+            return wx.Colour(0, 0, 0)
+        else:
+            return None
+            
 
 
     def SetPageImage(self, page, image):
@@ -5057,7 +5063,13 @@ class FlatNotebook(wx.Panel):
     def GetActiveTabColour(self):
         """ Returns the active tab colour. """
 
-        return self._pages._activeTabColour
+        if self._pages._activeTabColour != None:
+            return self._pages._activeTabColour
+        #POSSIBLE DARKMODE FIX FOR OSX
+        elif wx.SystemSettings.GetAppearance().IsDark():
+            return wx.Colour(255, 255, 255)
+        else:
+            return None
 
 
     def EnsureVisible(self, page):

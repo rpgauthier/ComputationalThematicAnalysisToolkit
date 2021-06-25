@@ -2,7 +2,6 @@
 import logging
 from logging.handlers import RotatingFileHandler
 import os.path
-import shutil
 import tempfile
 from threading import *
 from multiprocessing import get_context
@@ -18,13 +17,13 @@ import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
 from Common.GUIText import Main as GUIText
 import Common.Notes as cn
-import Collection.ModuleCollection as cm
-import Familiarization.ModuleFamiliarization as fm
-import Sampling.ModuleSampling as sm
-import Coding.ModuleCoding as cdm
+import Collection.ModuleCollection as CollectionModule
+import Filtering.ModuleFiltering as FilteringModule
+import Sampling.ModuleSampling as SamplingModule
+import Coding.ModuleCoding as CodingModule
+import Review.ModuleReviewing as ReviewingModule
+import Report.ModuleReporting as ReportingModule
 import MainThreads
-
-import wx.lib.mixins.inspection as wit
 
 class MainFrame(wx.Frame):
     '''the Main GUI'''
@@ -46,7 +45,6 @@ class MainFrame(wx.Frame):
         self.samples = {}
         self.codes = {}
         self.save_path = ''
-        #TODO change to allow resuming previous workspace instead of purging
         if not os.path.exists(Constants.CURRENT_WORKSPACE):
             os.mkdir(Constants.CURRENT_WORKSPACE)
         self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
@@ -59,6 +57,8 @@ class MainFrame(wx.Frame):
 
         #Program's Modes
         self.multipledatasets_mode = False
+        self.adjustable_metadata_mode = False
+        self.adjustable_includedfields_mode = False
 
         #frame and notebook for notes to make accessible when moving between modules
         self.notes_frame = wx.Frame(self,
@@ -74,14 +74,19 @@ class MainFrame(wx.Frame):
         self.main_notebook.SetColour(LB.INB_TAB_AREA_BACKGROUND_COLOUR, self.GetBackgroundColour())
 
         #Modules
-        self.collection_module = cm.CollectionPanel(self.main_notebook, size=self.GetSize())
+        self.collection_module = CollectionModule.CollectionPanel(self.main_notebook, size=self.GetSize())
         self.main_notebook.InsertPage(0, self.collection_module, GUIText.COLLECTION_LABEL)
-        self.familiarization_module = fm.FamiliarizationNotebook(self.main_notebook, size=self.GetSize())
-        self.main_notebook.InsertPage(1, self.familiarization_module, GUIText.FAMILIARIZATION_LABEL)
-        self.sampling_module = sm.SamplingNotebook(self.main_notebook, size=self.GetSize())
+        self.filtering_module = FilteringModule.FilteringNotebook(self.main_notebook, size=self.GetSize())
+        self.main_notebook.InsertPage(1, self.filtering_module, GUIText.FILTERING_LABEL)
+        self.sampling_module = SamplingModule.SamplingNotebook(self.main_notebook, size=self.GetSize())
         self.main_notebook.InsertPage(2, self.sampling_module, GUIText.SAMPLING_LABEL)
-        self.coding_module = cdm.CodingNotebook(self.main_notebook, size=self.GetSize())
+        self.coding_module = CodingModule.CodingNotebook(self.main_notebook, size=self.GetSize())
         self.main_notebook.InsertPage(3, self.coding_module, GUIText.CODING_LABEL)
+        self.reviewing_module = ReviewingModule.ReviewingPanel(self.main_notebook, size=self.GetSize())
+        self.reviewing_module.Hide()
+        #self.main_notebook.InsertPage(4, self.reviewing_module, GUIText.REVIEWING_LABEL)
+        self.reporting_module = ReportingModule.ReportingPanel(self.main_notebook, size=self.GetSize())
+        self.main_notebook.InsertPage(5, self.reporting_module, GUIText.REPORTING_LABEL)
         
         #Sizer for Frame
         self.panel_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -111,10 +116,6 @@ class MainFrame(wx.Frame):
                                               GUIText.LOAD,
                                               GUIText.LOAD_TOOLTIP)
         self.Bind(wx.EVT_MENU, self.OnLoadStart, load_file_menuitem)
-        oldload_file_menuitem = file_menu.Append(wx.ID_ANY,
-                                                 "Old Load",
-                                                 "use to convert existing save folders to new single file format")
-        self.Bind(wx.EVT_MENU, self.OnOldLoadStart, oldload_file_menuitem)
         CustomEvents.LOAD_EVT_RESULT(self, self.OnLoadEnd)
         save_file_menuitem = file_menu.Append(wx.ID_SAVE,
                                               GUIText.SAVE,
@@ -137,10 +138,10 @@ class MainFrame(wx.Frame):
                                                                 GUIText.SHOW_HIDE+GUIText.COLLECTION_LABEL,
                                                                 kind=wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.OnToggleCollection, self.toggle_collection_menuitem)
-        self.toggle_familiarization_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                                     GUIText.SHOW_HIDE+GUIText.FAMILIARIZATION_MENU_LABEL,
+        self.toggle_filtering_menuitem = self.view_menu.Append(wx.ID_ANY,
+                                                                     GUIText.SHOW_HIDE+GUIText.FILTERING_MENU_LABEL,
                                                                      kind=wx.ITEM_CHECK)
-        self.Bind(wx.EVT_MENU, self.OnToggleFamiliarization, self.toggle_familiarization_menuitem)
+        self.Bind(wx.EVT_MENU, self.OnToggleFiltering, self.toggle_filtering_menuitem)
         self.toggle_sampling_menuitem = self.view_menu.Append(wx.ID_ANY,
                                                               GUIText.SHOW_HIDE+GUIText.SAMPLING_MENU_LABEL,
                                                               kind=wx.ITEM_CHECK)
@@ -149,6 +150,14 @@ class MainFrame(wx.Frame):
                                                             GUIText.SHOW_HIDE+GUIText.CODING_LABEL,
                                                             kind=wx.ITEM_CHECK)
         self.Bind(wx.EVT_MENU, self.OnToggleCoding, self.toggle_coding_menuitem)
+        self.toggle_reviewing_menuitem = self.view_menu.Append(wx.ID_ANY,
+                                                               GUIText.SHOW_HIDE+GUIText.REVIEWING_LABEL,
+                                                               kind=wx.ITEM_CHECK)
+        self.Bind(wx.EVT_MENU, self.OnToggleReviewing, self.toggle_reviewing_menuitem)
+        self.toggle_reporting_menuitem = self.view_menu.Append(wx.ID_ANY,
+                                                               GUIText.SHOW_HIDE+GUIText.REPORTING_LABEL,
+                                                               kind=wx.ITEM_CHECK)
+        self.Bind(wx.EVT_MENU, self.OnToggleReporting, self.toggle_reporting_menuitem)
         
         self.view_menu.AppendSeparator()
         self.toggle_notes_menuitem = self.view_menu.Append(wx.ID_ANY,
@@ -158,11 +167,12 @@ class MainFrame(wx.Frame):
 
         self.view_menu.AppendSeparator()
         self.view_menu.AppendSubMenu(self.collection_module.view_menu, GUIText.COLLECTION_LABEL)
-        #TODO need to move actions new submenu syste for Familiarization submodules
-        self.view_menu.AppendSubMenu(self.familiarization_module.view_menu, GUIText.FAMILIARIZATION_MENU_LABEL)
-        #TODO need to move actions new submenu syste for Sampling submodules
+        self.view_menu.AppendSubMenu(self.filtering_module.view_menu, GUIText.FILTERING_MENU_LABEL)
         self.view_menu.AppendSubMenu(self.sampling_module.view_menu, GUIText.SAMPLING_MENU_LABEL)
         self.view_menu.AppendSubMenu(self.coding_module.view_menu, GUIText.CODING_LABEL)
+        self.view_menu.AppendSubMenu(self.reviewing_module.view_menu, GUIText.REVIEWING_LABEL)
+        self.view_menu.AppendSubMenu(self.reporting_module.view_menu, GUIText.REVIEWING_LABEL)
+
         
         self.menu_bar.Append(self.view_menu, GUIText.VIEW_MENU)
 
@@ -172,9 +182,12 @@ class MainFrame(wx.Frame):
 
         #setup default visable state
         self.toggle_collection_menuitem.Check(True)
-        self.toggle_familiarization_menuitem.Check(True)
+        self.toggle_filtering_menuitem.Check(True)
         self.toggle_sampling_menuitem.Check(True)
         self.toggle_coding_menuitem.Check(True)
+        #self.toggle_reviewing_menuitem.Check(True)
+        self.toggle_reporting_menuitem.Check(True)
+
 
         self.Layout()
         self.Fit()
@@ -210,29 +223,29 @@ class MainFrame(wx.Frame):
             #    self.view_menu.Remove(index)
         logger.info("Finished")
 
-    def OnToggleFamiliarization(self, event):
-        logger = logging.getLogger(__name__+".MainFrame.OnToggleFamiliarization")
+    def OnToggleFiltering(self, event):
+        logger = logging.getLogger(__name__+".MainFrame.OnToggleFiltering")
         logger.info("Starting")
-        if self.toggle_familiarization_menuitem.IsChecked():
+        if self.toggle_filtering_menuitem.IsChecked():
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
-                if self.main_notebook.GetPage(idx) is self.familiarization_module:
+                if self.main_notebook.GetPage(idx) is self.filtering_module:
                     index = idx
             if index is None:
-                self.main_notebook.InsertPage(1, self.familiarization_module,
-                                              GUIText.FAMILIARIZATION_LABEL)
-            #index = self.menu_bar.FindMenu(GUIText.FAMILIARIZATION_LABEL)
+                self.main_notebook.InsertPage(1, self.filtering_module,
+                                              GUIText.FILTERING_LABEL)
+            #index = self.menu_bar.FindMenu(GUIText.FILTERING_LABEL)
             #if index is wx.NOT_FOUND:
-            #    self.menu_bar.Append(self.familiarization_module.menu, GUIText.FAMILIARIZATION_LABEL)
+            #    self.menu_bar.Append(self.filtering_module.menu, GUIText.FILTERING_LABEL)
         else:
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
-                if self.main_notebook.GetPage(idx) is self.familiarization_module:
+                if self.main_notebook.GetPage(idx) is self.filtering_module:
                     index = idx
             if index is not None:
                 self.main_notebook.RemovePage(index)
-                self.familiarization_module.Hide()
-            #index = self.menu_bar.FindMenu(GUIText.FAMILIARIZATION_LABEL)
+                self.filtering_module.Hide()
+            #index = self.menu_bar.FindMenu(GUIText.FILTERING_LABEL)
             #if index is not wx.NOT_FOUND:
             #    self.menu_bar.Remove(index)
         logger.info("Finished")
@@ -248,9 +261,9 @@ class MainFrame(wx.Frame):
             if index is None:
                 self.main_notebook.InsertPage(2, self.sampling_module,
                                               GUIText.SAMPLING_LABEL)
-            #index = self.menu_bar.FindMenu(GUIText.FAMILIARIZATION_LABEL)
+            #index = self.menu_bar.FindMenu(GUIText.SAMPLING_LABEL)
             #if index is wx.NOT_FOUND:
-            #    self.menu_bar.Append(self.familiarization_module.menu, GUIText.FAMILIARIZATION_LABEL)
+            #    self.menu_bar.Append(self.filtering_module.menu, GUIText.SAMPLING_LABEL)
         else:
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
@@ -259,7 +272,7 @@ class MainFrame(wx.Frame):
             if index is not None:
                 self.main_notebook.RemovePage(index)
                 self.sampling_module.Hide()
-            #index = self.menu_bar.FindMenu(GUIText.FAMILIARIZATION_LABEL)
+            #index = self.menu_bar.FindMenu(GUIText.SAMPLING_LABEL)
             #if index is not wx.NOT_FOUND:
             #    self.menu_bar.Remove(index)
         logger.info("Finished")
@@ -273,7 +286,7 @@ class MainFrame(wx.Frame):
                 if self.main_notebook.GetPage(idx) is self.coding_module:
                     index = idx
             if index is None:
-                self.main_notebook.InsertPage(2, self.coding_module,
+                self.main_notebook.InsertPage(3, self.coding_module,
                                               GUIText.CODING_LABEL)
             #index = self.menu_bar.FindMenu(GUIText.CODING_LABEL)
             #if index is wx.NOT_FOUND:
@@ -287,6 +300,60 @@ class MainFrame(wx.Frame):
                 self.main_notebook.RemovePage(index)
                 self.coding_module.Hide()
             #index = self.menu_bar.FindMenu(GUIText.CODING_LABEL)
+            #if index is not wx.NOT_FOUND:
+            #    self.menu_bar.Remove(index)
+        logger.info("Finished")
+
+    def OnToggleReviewing(self, event):
+        logger = logging.getLogger(__name__+".MainFrame.OnToggleReviewing")
+        logger.info("Starting")
+        if self.toggle_reviewing_menuitem.IsChecked():
+            index = None
+            for idx in range(self.main_notebook.GetPageCount()):
+                if self.main_notebook.GetPage(idx) is self.reviewing_module:
+                    index = idx
+            if index is None:
+                self.main_notebook.InsertPage(4, self.reviewing_module,
+                                              GUIText.REVIEWING_LABEL)
+            #index = self.menu_bar.FindMenu(GUIText.REVIEWING_LABEL)
+            #if index is wx.NOT_FOUND:
+            #    self.menu_bar.Append(self.reviewing_module.menu, GUIText.REVIEWING_LABEL)
+        else:
+            index = None
+            for idx in range(self.main_notebook.GetPageCount()):
+                if self.main_notebook.GetPage(idx) is self.reviewing_module:
+                    index = idx
+            if index is not None:
+                self.main_notebook.RemovePage(index)
+                self.reviewing_module.Hide()
+            #index = self.menu_bar.FindMenu(GUIText.REVIEWING_LABEL)
+            #if index is not wx.NOT_FOUND:
+            #    self.menu_bar.Remove(index)
+        logger.info("Finished")
+
+    def OnToggleReporting(self, event):
+        logger = logging.getLogger(__name__+".MainFrame.OnToggleReporting")
+        logger.info("Starting")
+        if self.toggle_reporting_menuitem.IsChecked():
+            index = None
+            for idx in range(self.main_notebook.GetPageCount()):
+                if self.main_notebook.GetPage(idx) is self.reporting_module:
+                    index = idx
+            if index is None:
+                self.main_notebook.InsertPage(5, self.reporting_module,
+                                              GUIText.REPORTING_LABEL)
+            #index = self.menu_bar.FindMenu(GUIText.REPORTING_LABEL)
+            #if index is wx.NOT_FOUND:
+            #    self.menu_bar.Append(self.reporting_module.menu, GUIText.REPORTING_LABEL)
+        else:
+            index = None
+            for idx in range(self.main_notebook.GetPageCount()):
+                if self.main_notebook.GetPage(idx) is self.reporting_module:
+                    index = idx
+            if index is not None:
+                self.main_notebook.RemovePage(index)
+                self.reporting_module.Hide()
+            #index = self.menu_bar.FindMenu(GUIText.REPORTING_LABEL)
             #if index is not wx.NOT_FOUND:
             #    self.menu_bar.Remove(index)
         logger.info("Finished")
@@ -333,8 +400,10 @@ class MainFrame(wx.Frame):
             for key in self.samples:
                 self.samples[key].DestroyObject()
             self.samples.clear()
-            #Do not need to destroy as codes do not have nested reference loops
+            for key in self.codes:
+                self.codes[key].DestroyObject()
             self.codes.clear()
+
             self.save_path = ''
             self.current_workspace.cleanup()
             self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
@@ -344,70 +413,63 @@ class MainFrame(wx.Frame):
             self.DatasetsUpdated()
             self.SamplesUpdated()
             self.DocumentsUpdated()
+            self.CodesUpdated()
+
 
             #reset view
             self.toggle_collection_menuitem.Check(True)
             self.OnToggleCollection(None)
-            self.toggle_familiarization_menuitem.Check(True)
-            self.OnToggleFamiliarization(None)
+            self.toggle_filtering_menuitem.Check(True)
+            self.OnToggleFiltering(None)
             self.toggle_coding_menuitem.Check(True)
             self.OnToggleCoding(None)
 
             self.CloseProgressDialog(thaw=True)
         logger.info("Finished")
     
-    def OnOldLoadStart(self, event):
-        #start up load thread that performs all backend load operations that take a long time
-        '''Menu Function for loading data'''
-        logger = logging.getLogger(__name__+".MainFrame.OnLoadStart")
-        logger.info("Starting")
-        if wx.MessageBox(GUIText.LOAD_WARNING,
-                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
-            logger.info("Finished")
-            return
-        #ask the user what workspace to open
-        base_path = os.path.dirname(__file__)
-        dir_name = os.path.abspath(os.path.join(base_path, '..', 'Saved_Workspaces'))
-        with wx.DirDialog(self,
-                          message=GUIText.LOAD_REQUEST,
-                          defaultPath=dir_name,
-                          style=wx.DD_DEFAULT_STYLE|wx.DD_DIR_MUST_EXIST) as dir_dialog:
-            if dir_dialog.ShowModal() == wx.ID_OK:
-                self.save_path = dir_dialog.GetPath()
-                self.CreateProgressDialog(title=GUIText.LOAD_BUSY_LABEL,
-                                          warning=GUIText.SIZE_WARNING_MSG,
-                                          freeze=True)
-                self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG)
-                self.load_thread = MainThreads.OldLoadThread(self, self.save_path)
-        logger.info("Finished")
-
     def OnLoadStart(self, event):
         #start up load thread that performs all backend load operations that take a long time
         '''Menu Function for loading data'''
         logger = logging.getLogger(__name__+".MainFrame.OnLoadStart")
         logger.info("Starting")
         if wx.MessageBox(GUIText.LOAD_WARNING,
-                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
-            logger.info("Finished")
-            return
-        #ask the user what workspace to open
-        base_path = os.path.dirname(__file__)
-        dir_name = os.path.abspath(os.path.join(base_path, '..', 'Saved_Workspaces'))
-        with wx.FileDialog(self,
-                          message=GUIText.LOAD_REQUEST,
-                          defaultDir=dir_name,
-                          style=wx.DD_DEFAULT_STYLE|wx.FD_FILE_MUST_EXIST|wx.FD_OPEN,
-                          wildcard="*.mta") as dir_dialog:
-            if dir_dialog.ShowModal() == wx.ID_OK:
-                self.save_path = dir_dialog.GetPath()
-                self.current_workspace.cleanup()
-                self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
+                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
+            #ask the user what workspace to open
+            base_path = os.path.dirname(__file__)
+            dir_name = os.path.abspath(os.path.join(base_path, '..', 'Saved_Workspaces'))
+            with wx.FileDialog(self,
+                            message=GUIText.LOAD_REQUEST,
+                            defaultDir=dir_name,
+                            style=wx.DD_DEFAULT_STYLE|wx.FD_FILE_MUST_EXIST|wx.FD_OPEN,
+                            wildcard="*.mta") as dir_dialog:
+                if dir_dialog.ShowModal() == wx.ID_OK:
+                    self.CreateProgressDialog(title=GUIText.LOAD_BUSY_LABEL,
+                                            warning=GUIText.SIZE_WARNING_MSG,
+                                            freeze=True)
+                    self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG)
 
-                self.CreateProgressDialog(title=GUIText.LOAD_BUSY_LABEL,
-                                          warning=GUIText.SIZE_WARNING_MSG,
-                                          freeze=True)
-                self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG)
-                self.load_thread = MainThreads.LoadThread(self, self.save_path, self.current_workspace.name)
+                    #reset objects
+                    for key in self.datasets:
+                        self.datasets[key].DestroyObject()
+                    self.datasets.clear()
+                    for key in self.samples:
+                        self.samples[key].DestroyObject()
+                    self.samples.clear()
+                    for key in self.codes:
+                        self.codes[key].DestroyObject()
+                    self.codes.clear()
+
+                    #run the updates to clear any modules of outstanding data
+                    self.DatasetsUpdated()
+                    self.SamplesUpdated()
+                    self.DocumentsUpdated()
+                    self.CodesUpdated()
+
+                    self.save_path = dir_dialog.GetPath()
+                    self.current_workspace.cleanup()
+                    self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
+
+                    self.load_thread = MainThreads.LoadThread(self, self.save_path, self.current_workspace.name)
         logger.info("Finished")
     
     def OnLoadEnd(self, event):
@@ -417,49 +479,33 @@ class MainFrame(wx.Frame):
         
         saved_data = event.data['config']
         
-        datasets = event.data['datasets']                
-        for key in self.datasets:
-            self.datasets[key].DestroyObject()
-        self.datasets.clear()
-        self.datasets.update(datasets)
+        self.datasets.update(event.data['datasets'])
+        self.samples.update(event.data['samples'])
+        self.codes.update(event.data['codes'])
 
-        samples = event.data['samples']
-        for key in self.samples:
-            self.samples[key].DestroyObject()
-        self.samples.clear()
-        self.samples.update(samples)
-
-        codes = event.data['codes']
-        #Do not need to destroy as codes do not have nested reference loops
-        self.codes.clear()
-        self.codes.update(codes)
-
-        self.DatasetsUpdated()
-
-        if 'multipledatasets_mode' in saved_data:
-            self.multipledatasets_mode = saved_data['multipledatasets_mode']
-            self.ModeChange()
+        self.multipledatasets_mode = saved_data['multipledatasets_mode']
+        
+        self.adjustable_metadata_mode = saved_data['adjustable_metadata_mode'] 
+        self.adjustable_includedfields_mode = saved_data['adjustable_includedfields_mode']
+        self.ModeChange()
         self.toggle_collection_menuitem.Check(check=saved_data['collection_check'])
         self.OnToggleCollection(None)
-        if 'collection_module' in saved_data:
-            self.collection_module.Load(saved_data['collection_module'])
-        self.toggle_familiarization_menuitem.Check(check=saved_data['familiarization_check'])
-        self.OnToggleFamiliarization(None)
-        if 'familiarization_module' in saved_data:
-            self.familiarization_module.Load(saved_data['familiarization_module'])
-        if 'sampling_module' in saved_data:
-            self.sampling_module.SamplesUpdated()
-            self.sampling_module.Load(saved_data['sampling_module'])
-        else:
-            self.sampling_module.SamplesUpdated()
-        if 'coding_module' in saved_data:
-            self.coding_module.Load(saved_data['coding_module'])
-            self.toggle_coding_menuitem.Check(check=saved_data['coding_check'])
+        self.collection_module.Load(saved_data['collection_module'])
+        self.toggle_filtering_menuitem.Check(check=saved_data['filtering_check'])
+        self.OnToggleFiltering(None)
+        self.filtering_module.Load(saved_data['filtering_module'])
+        self.sampling_module.Load(saved_data['sampling_module'])
+        self.coding_module.Load(saved_data['coding_module'])
+        self.toggle_coding_menuitem.Check(check=saved_data['coding_check'])
         self.OnToggleCoding(None)
         self.toggle_notes_menuitem.Check(check=saved_data['notes_check'])
         self.OnToggleNotes(None)
-        if 'notes' in saved_data:
-            self.notes_panel.Load(saved_data['notes'])
+        self.notes_panel.Load(saved_data['notes'])
+
+        self.DatasetsUpdated()
+        self.SamplesUpdated()
+        self.DocumentsUpdated()
+        self.CodesUpdated()
 
         self.last_load_dt = datetime.now()
         self.load_thread.join()
@@ -491,7 +537,7 @@ class MainFrame(wx.Frame):
             else:
                 if self.closing:
                     self.closing = False
-                    self.CloseProgressDialog(thaw=True, message="Canceled")
+                    self.CloseProgressDialog(thaw=True, message=GUIText.CANCELED)
 
         logger.info("Finished")
 
@@ -513,16 +559,18 @@ class MainFrame(wx.Frame):
             self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_CONFIG)
             config_data = {}
             config_data['collection_check'] = self.toggle_collection_menuitem.IsChecked()
-            config_data['familiarization_check'] = self.toggle_familiarization_menuitem.IsChecked()
+            config_data['filtering_check'] = self.toggle_filtering_menuitem.IsChecked()
             config_data['coding_check'] = self.toggle_coding_menuitem.IsChecked()
             config_data['notes_check'] = self.toggle_notes_menuitem.IsChecked()
             config_data['notes'] = self.notes_panel.Save()
             config_data['datasets'] = list(self.datasets.keys())
             config_data['multipledatasets_mode'] = self.multipledatasets_mode
+            config_data['adjustable_metadata_mode'] = self.adjustable_metadata_mode
+            config_data['adjustable_includedfields_mode'] = self.adjustable_includedfields_mode
             config_data['samples'] = list(self.samples.keys())
             config_data['codes'] = True
             config_data['collection_module'] = self.collection_module.Save()
-            config_data['familiarization_module'] = self.familiarization_module.Save()
+            config_data['filtering_module'] = self.filtering_module.Save()
             config_data['sampling_module'] = self.sampling_module.Save()
             config_data['coding_module'] = self.coding_module.Save()
 
@@ -579,14 +627,8 @@ class MainFrame(wx.Frame):
         self.pool.join()
         logger.info("Finished shutting down process pool")
 
-        #self.PulseProgressDialog(GUIText.SHUTDOWN_BUSY_FAMILIARIZATION)
-        #self.familiarization_module.Shutdown()
-
-        #self.PulseProgressDialog(GUIText.SHUTDOWN_BUSY_COLLECTION)
-        #self.collection_module.Shutdown()
-
         self.CloseProgressDialog(thaw=True, close=True)
-        logger.info("\nFinished")
+        logger.info("Finished")
 
         windows = wx.GetTopLevelWindows()
         for window in windows:
@@ -608,7 +650,7 @@ class MainFrame(wx.Frame):
         if self.progress_dialog is not None:
             self.progress_dialog.Pulse(text)
     
-    def CloseProgressDialog(self, message="Finished", thaw=False, close=False):
+    def CloseProgressDialog(self, message=GUIText.FINISHED, thaw=False, close=False):
         if self.progress_dialog is not None:
             self.progress_dialog_references -= 1
             if self.progress_dialog_references == 0:
@@ -625,22 +667,22 @@ class MainFrame(wx.Frame):
         for sample_key in self.samples:
             if self.samples[sample_key].dataset_key == old_key:
                 self.samples[sample_key].dataset_key = new_key
+        #TODO NEED TO UPDATE CODES
         logger.info("Finished")
 
     def DatasetsUpdated(self):
         logger = logging.getLogger(__name__+".MainFrame.DatasetsUpdated")
         logger.info("Starting")
         self.collection_module.DatasetsUpdated()
-        self.familiarization_module.DatasetsUpdated()
+        self.filtering_module.DatasetsUpdated()
         self.coding_module.DatasetsUpdated()
         logger.info("Finished")
 
     def SamplesUpdated(self):
         logger = logging.getLogger(__name__+".MainFrame.SamplesUpdated")
         logger.info("Starting")
-        #self.collection_module.SamplesUpdated()
         self.sampling_module.SamplesUpdated()
-        #self.coding_module.SamplesUpdated()
+        self.coding_module.DocumentsUpdated()
         logger.info("Finished")
 
     def DocumentsUpdated(self):
@@ -649,10 +691,19 @@ class MainFrame(wx.Frame):
         self.sampling_module.DocumentsUpdated()
         self.coding_module.DocumentsUpdated()
         logger.info("Finished")
+    
+    def CodesUpdated(self):
+        logger = logging.getLogger(__name__+".MainFrame.CodesUpdated")
+        logger.info("Starting")
+        self.reviewing_module.CodesUpdated()
+        self.reporting_module.CodesUpdated()
+        logger.info("Finished")
 
     def ModeChange(self):
         self.collection_module.ModeChange()
         self.sampling_module.ModeChange()
+        self.coding_module.DocumentsUpdated()
+        self.reviewing_module.ModeChange()
 
 class CustomProgressDialog(wx.Dialog):
     def __init__(self, parent, title, warning=""):
@@ -676,7 +727,7 @@ class CustomProgressDialog(wx.Dialog):
         v_sizer.Add(self.timer_label, 0, wx.EXPAND|wx.ALL, 5)
         self.timer.Start(1000)
 
-        self.text = wx.TextCtrl(self, -1, "Starting\n", size=(320,240), style=wx.TE_MULTILINE | wx.TE_READONLY)
+        self.text = wx.TextCtrl(self, -1, GUIText.STARTING+"\n", size=(320,240), style=wx.TE_MULTILINE | wx.TE_READONLY)
         v_sizer.Add(self.text, 1, wx.EXPAND|wx.ALL, 5)
 
         btnsizer = wx.BoxSizer()
@@ -714,17 +765,42 @@ class OptionsDialog(wx.Dialog):
 
         main_frame = wx.GetApp().GetTopWindow()
 
-        self.multipledatasets_ctrl = wx.CheckBox(self, label="Allow Multiple Datasets Mode (not yet fully tested)")
+        advanced_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.OPTIONS_ADVANCED_MODES)
+        sizer.Add(advanced_sizer, 0, wx.ALL, 5)
+
+        self.multipledatasets_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_MULTIPLEDATASETS)
         self.multipledatasets_ctrl.SetValue(main_frame.multipledatasets_mode)
         self.multipledatasets_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeMultipleDatasetMode)
-        sizer.Add(self.multipledatasets_ctrl, 0, wx.ALL, 5)
-    
+        advanced_sizer.Add(self.multipledatasets_ctrl, 0, wx.ALL, 5)
+
+        self.adjustable_metadata_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_ADJUSTABLE_METADATA)
+        self.adjustable_metadata_ctrl.SetValue(main_frame.adjustable_metadata_mode)
+        self.adjustable_metadata_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeAdjustableMetadataMode)
+        advanced_sizer.Add(self.adjustable_metadata_ctrl, 0, wx.ALL, 5)
+
+        self.adjustable_includedfields_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_ADJUSTABLE_INCLUDEDFIELDS)
+        self.adjustable_includedfields_ctrl.SetValue(main_frame.adjustable_includedfields_mode)
+        self.adjustable_includedfields_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeAdjustableIncludedFieldsMode)
+        advanced_sizer.Add(self.adjustable_includedfields_ctrl, 0, wx.ALL, 5)
+
     def ChangeMultipleDatasetMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.multipledatasets_ctrl.GetValue()
         if main_frame.multipledatasets_mode != new_mode:
             main_frame.multipledatasets_mode = new_mode
             main_frame.ModeChange()
+    
+    def ChangeAdjustableMetadataMode(self, event):
+        main_frame = wx.GetApp().GetTopWindow()
+        new_mode = self.adjustable_metadata_ctrl.GetValue()
+        if main_frame.adjustable_metadata_mode != new_mode:
+            main_frame.adjustable_metadata_mode = new_mode
+    
+    def ChangeAdjustableIncludedFieldsMode(self, event):
+        main_frame = wx.GetApp().GetTopWindow()
+        new_mode = self.adjustable_includedfields_ctrl.GetValue()
+        if main_frame.adjustable_includedfields_mode != new_mode:
+            main_frame.adjustable_includedfields_mode = new_mode
 
 def Main():
     '''setup the main tasks for the application'''

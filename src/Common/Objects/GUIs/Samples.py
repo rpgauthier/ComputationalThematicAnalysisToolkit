@@ -6,17 +6,17 @@ import pandas as pd
 
 import wx
 import wx.adv
-import wx.aui
-from wx.core import VERTICAL
-import wx.dataview as dv
+#import wx.lib.agw.flatnotebook as FNB
+import External.wxPython.flatnotebook_fix as FNB
 
-from Common.GUIText import Samples as GUIText
+from Common.GUIText import Filtering, Samples as GUIText
+from Common.GUIText import Filtering as FilteringGUIText
 from Common.CustomPlots import ChordPlotPanel#, pyLDAvisPanel, TreemapPlotPlanel, NetworkPlotPlanel
 import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
+import Common.Objects.DataViews.Datasets as DatasetsDataViews
 import Common.Objects.Samples as Samples
 import Common.Objects.DataViews.Samples as SamplesDataViews
-import Common.Objects.Datasets as Datasets
 
 class SampleCreatePanel(wx.Panel):
     def __init__(self, parent, size=wx.DefaultSize):
@@ -99,261 +99,13 @@ class SampleCreatePanel(wx.Panel):
                     main_frame.PulseProgressDialog(GUIText.GENERATING_RANDOM_SUBLABEL+str(name))
                     dataset_key = model_parameters['dataset_key']
                     dataset = main_frame.datasets[dataset_key]
-                    metadataset = dataset.metadata
-                    model_parameters['metadataset'] = copy.deepcopy(metadataset)
+                    model_parameters['metadataset'] = copy.deepcopy(dataset.metadata)
                     new_sample = Samples.RandomSample(name, dataset_key, model_parameters)
                     new_sample.Generate(dataset)
                     new_sample_panel = RandomSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())
                     main_frame.samples[new_sample.key] = new_sample
                     parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
                     parent_notebook.sample_panels[new_sample.key] = new_sample_panel
-                    main_frame.CloseProgressDialog(thaw=False)
-                else:
-                    main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
-                self.Thaw()
-        elif model_type == "LDA":
-            main_frame.multiprocessing_inprogress_flag = True
-            with LDAModelCreateDialog(self) as create_dialog:
-                if create_dialog.ShowModal() == wx.ID_OK:
-                    model_parameters = create_dialog.model_parameters
-                    name = model_parameters['name']
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_SUBLABEL+str(name))
-                    dataset_key = model_parameters['dataset_key']
-                    dataset = main_frame.datasets[dataset_key]
-                    metadataset = dataset.metadata
-                    model_parameters['metadataset'] = copy.deepcopy(metadataset)
-                    model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG2)
-                    new_sample = Samples.LDASample(name, dataset_key, model_parameters)
-                    new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
-                    main_frame.samples[new_sample.key] = new_sample
-                    new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG3)
-                    parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
-                    parent_notebook.sample_panels[new_sample.key] = new_sample_panel
-                    main_frame.CloseProgressDialog(message=GUIText.GENERATED_LDA_COMPLETED_PART1,
-                                                   thaw=False)
-                else:
-                    main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
-                    main_frame.multiprocessing_inprogress_flag = False
-                self.Thaw()
-        elif model_type == "Biterm":
-            with BitermModelCreateDialog(self) as create_dialog:
-                if create_dialog.ShowModal() == wx.ID_OK:
-                    model_parameters = create_dialog.model_parameters
-                    name = model_parameters['name']
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_SUBLABEL+str(name))
-                    dataset_key = model_parameters['dataset_key']
-                    dataset = main_frame.datasets[dataset_key]
-                    metadataset = dataset.metadata
-                    model_parameters['metadataset'] = copy.deepcopy(metadataset)
-                    model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG2)
-                    new_sample = Samples.BitermSample(name, dataset_key, model_parameters)
-                    new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
-                    main_frame.samples[new_sample.key] = new_sample
-                    new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG3)
-                    parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
-                    parent_notebook.sample_panels[new_sample.key] = new_sample_panel
-                    main_frame.CloseProgressDialog(message=GUIText.GENERATED_BITERM_COMPLETED_PART1,
-                                                   thaw=False)
-                else:
-                    main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
-                self.Thaw()
-        #TODO need to finish this sample type
-        #elif model_type == "Custom":
-        #    with CustomModelCreateDialog(self) as create_dialog:
-        #        if create_dialog.ShowModal() == wx.ID_OK:
-        #            model_parameters = create_dialog.model_parameters
-        #            name = model_parameters['name']
-        #            main_frame.PulseProgressDialog(GUIText.GENERATING_CUSTOM_SUBLABEL+str(name)\
-        #                                  +GUIText.GENERATING_CUSTOM_MSG)
-        #            dataset_key = model_parameters['dataset_key']
-        #            metadata = main_frame.datasets[dataset_key].metadata
-        #            main_frame.samples[new_sample.key] = new_sample
-        #        else:
-        #            main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
-        #        self.Thaw()
-        else:
-            main_frame.PulseProgressDialog("Failed to create sample of unknown type.")
-            main_frame.CloseProgressDialog(thaw=False)
-            self.Thaw()
-        logger.info("Finished")
-
-    #get a moment in time snap shot of the token set that includes each specified field
-    #snapshot is needed to generate ml samples
-    def CaptureTokens(self, dataset_key):
-        logger = logging.getLogger(__name__+".SampleListPanel.CaptureTokens")
-        logger.info("Starting")
-        token_lists = {}
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.GENERATING_PREPARING_MSG)
-        fields = {}
-        dataset = main_frame.datasets[dataset_key]
-        if isinstance(dataset, Datasets.Dataset):
-            for field_name in dataset.chosen_fields:
-                fields[(dataset_key,), field_name] = dataset.chosen_fields[field_name]
-            for field_name in dataset.merged_fields:
-                fields[(dataset_key,), field_name] = dataset.merged_fields[field_name]
-        elif isinstance(dataset, Datasets.GroupedDataset):
-            for key in dataset.datasets:
-                for field_name in dataset.datasets[key].chosen_fields:
-                    fields[(dataset_key, key), field_name] = dataset.datasets[key].chosen_fields[field_name]
-                for field_name in dataset.datasets[key].merged_fields:
-                    fields[(dataset_key, key), field_name] = dataset.datasets[key].merged_fields[field_name]
-            for field_name in dataset.merged_fields: 
-                fields[(dataset_key,), field_name] = dataset.merged_fields[field_name]
-
-        for filter_key in fields:
-            word_idx = fields[filter_key].tokenization_choice
-            tokenset_df = fields[filter_key].included_tokenset_df
-
-            all_columns = set(tokenset_df.columns)
-            list_columns = {'key', 'order', 'tfidf'}
-            nonlist_columns = list(all_columns - list_columns)
-            tokenset_df = tokenset_df.set_index(nonlist_columns).apply(pd.Series.explode).reset_index()
-
-            tokenset_df.sort_values(by=['order'], inplace=True, ascending=False)
-            tokenset_df = tokenset_df.groupby('key').agg(tokens=(word_idx, lambda x: list(x)))
-            tokenset_df = tokenset_df['tokens']
-
-            tokens_dict = tokenset_df.to_dict()
-            if isinstance(dataset, Datasets.Dataset):
-                for key in tokens_dict:
-                    tokens = tokens_dict[key]
-                    tokens = [token.lower() for token in tokens]
-                    if key in token_lists:
-                        token_lists[key].extend(tokens)
-                    else:
-                        token_lists[key] = tokens
-            elif isinstance(dataset, Datasets.GroupedDataset):
-                for key in tokens_dict:
-                    if len(filter_key[0]) == 2 and 'grouping_key' in dataset.datasets[filter_key[0][1]].metadata[key]:
-                        grouping_key = dataset.datasets[filter_key[0][1]].metadata[key]['grouping_key']
-                    else:
-                        grouping_key = key[0]
-                    tokens = tokens_dict[key]
-                    tokens = [token.lower() for token in tokens]
-                    if grouping_key in token_lists:
-                        token_lists[grouping_key].extend(tokens)
-                    else:
-                        token_lists[grouping_key] = tokens
-
-        #seperate from source by making a deepcopy
-        main_frame.PulseProgressDialog("After filtering "+str(len(token_lists))+" documents remained of the " +str(len(dataset.metadata))+ " documents avaliable")
-        token_lists = copy.deepcopy(token_lists)
-        logger.info("Finished")
-        return token_lists
-
-class SampleListPanel(wx.Panel):
-    def __init__(self, parent, samples, size=wx.DefaultSize):
-        logger = logging.getLogger(__name__+".ModelListPanel.__init__")
-        logger.info("Starting")
-        wx.Panel.__init__(self, parent, size=size)
-
-        self.samples = samples
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-
-        controls_sizer = wx.BoxSizer()
-
-        create_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, self, label=GUIText.CREATE)
-        create_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-        create_random_tool = create_toolbar.AddTool(wx.ID_ANY, label=GUIText.RANDOM_LABEL, bitmap=wx.Bitmap(1, 1),
-                                                  shortHelp=GUIText.CREATE_RANDOM_TOOLTIP)
-        create_toolbar.Bind(wx.EVT_MENU, lambda event: self.OnCreateSample(event, 'Random'), create_random_tool)
-
-        create_lda_tool = create_toolbar.AddTool(wx.ID_ANY, label=GUIText.LDA_LABEL, bitmap=wx.Bitmap(1, 1),
-                                           shortHelp=GUIText.CREATE_LDA_TOOLTIP)
-        create_toolbar.Bind(wx.EVT_MENU, lambda event: self.OnCreateSample(event, 'LDA'), create_lda_tool)
-
-        create_biterm_tool = create_toolbar.AddTool(wx.ID_ANY, label=GUIText.BITERM_LABEL, bitmap=wx.Bitmap(1, 1),
-                                           shortHelp=GUIText.CREATE_BITERM_TOOLTIP)
-        create_toolbar.Bind(wx.EVT_MENU, lambda event: self.OnCreateSample(event, 'Biterm'), create_biterm_tool)
-        create_toolbar.Realize()
-        create_sizer.Add(create_toolbar)
-        controls_sizer.Add(create_sizer, 0, wx.ALL, 5)
-        
-        actions_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, self, label=GUIText.ACTIONS)
-        actions_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-        remove_tool = actions_toolbar.AddTool(wx.ID_ANY, label=GUIText.DELETE, bitmap=wx.Bitmap(1, 1),
-                                           shortHelp=GUIText.DELETE_TOOLTIP)
-        actions_toolbar.Bind(wx.EVT_MENU, self.OnDeleteSamples, remove_tool)
-        actions_toolbar.Realize()
-        actions_sizer.Add(actions_toolbar)
-        controls_sizer.Add(actions_sizer, 0, wx.ALL, 5)
-
-        sizer.Add(controls_sizer, 0, wx.ALL, 5)
-
-        self.samples_model = SamplesDataViews.SamplesViewModel(self.samples.values())
-        self.samples_list = SamplesDataViews.SamplesViewCtrl(self, self.samples_model)
-        self.samples_model.Cleared()
-        sizer.Add(self.samples_list, 1, wx.EXPAND)
-        self.Bind(dv.EVT_DATAVIEW_ITEM_EDITING_DONE, self.OnSampleKeyChange)
-        self.Bind(dv.EVT_DATAVIEW_ITEM_ACTIVATED, self.OnShowSampleDetails)
-
-        self.SetSizer(sizer)
-        self.Layout()
-
-        self.menu = wx.Menu()
-        self.menu_menuitem = None
-        logger.info("Finished")
-    
-    def OnSampleKeyChange(self, event):
-        item = event.GetItem()
-        value = event.GetValue().replace(" ", "_")
-        sample = self.samples_model.ItemToObject(item)
-        if sample.key != value:
-            sample = self.samples.pop(sample.key)
-            sample.key = value
-            self.samples[value] = sample
-    
-    def OnShowSampleDetails(self, event):
-        item = event.GetItem()
-        sample = self.samples_model.ItemToObject(item)
-        if sample.sample_type == "Random":
-            RandomModelDetailsDialog(self, sample).Show()
-        elif sample.sample_type == "LDA":
-            LDAModelDetailsDialog(self, sample).Show()
-        elif sample.sample_type == "Biterm":
-            BitermModelDetailsDialog(self, sample).Show()
-            
-    def OnCreateSample(self, event, model_type):
-        logger = logging.getLogger(__name__+".SampleListPanel.OnCreateSample")
-        logger.info("Starting")
-        parent_notebook = self.GetParent()
-        main_frame = wx.GetApp().GetTopWindow()
-                    
-        new_sample = None
-        self.Freeze()
-        main_frame.CreateProgressDialog(GUIText.GENERATING_DEFAULT_LABEL,
-                                        warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-        main_frame.PulseProgressDialog(GUIText.GENERATING_DEFAULT_MSG)
-        if main_frame.multiprocessing_inprogress_flag:
-            wx.MessageBox(GUIText.MULTIPROCESSING_WARNING_MSG,
-                          GUIText.WARNING, wx.OK | wx.ICON_WARNING)
-            main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
-            self.Thaw()
-        elif model_type == "Random":
-            with RandomModelCreateDialog(self) as create_dialog:
-                if create_dialog.ShowModal() == wx.ID_OK:
-                    model_parameters = create_dialog.model_parameters
-                    name = model_parameters['name']
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_RANDOM_SUBLABEL+str(name))
-                    dataset_key = model_parameters['dataset_key']
-                    dataset = main_frame.datasets[dataset_key]
-                    metadataset = dataset.metadata
-                    model_parameters['metadataset'] = copy.deepcopy(metadataset)
-                    new_sample = Samples.RandomSample(name, dataset_key, model_parameters)
-                    new_sample.Generate(dataset)
-                    new_sample_panel = RandomSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())
-                    self.samples[new_sample.key] = new_sample
-                    parent_notebook.sample_panels[new_sample.key] = new_sample_panel
-                    parent_notebook.AddPage(new_sample_panel, new_sample.key, select=True)
-                    new_sample_panel.menu_menuitem = parent_notebook.menu.AppendSubMenu(new_sample_panel.menu, new_sample.key)
-                    self.samples_model.ItemAdded(dv.NullDataViewItem, self.samples_model.ObjectToItem(self.samples[new_sample.key]))
                     main_frame.DocumentsUpdated()
                     main_frame.CloseProgressDialog(thaw=False)
                 else:
@@ -368,19 +120,19 @@ class SampleListPanel(wx.Panel):
                     main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_SUBLABEL+str(name))
                     dataset_key = model_parameters['dataset_key']
                     dataset = main_frame.datasets[dataset_key]
-                    metadataset = dataset.metadata
-                    model_parameters['metadataset'] = copy.deepcopy(metadataset)
+                    model_parameters['metadataset'] = copy.deepcopy(dataset.metadata)
                     model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG2)
                     new_sample = Samples.LDASample(name, dataset_key, model_parameters)
+                    new_sample.applied_filter_rules = copy.deepcopy(dataset.filter_rules)
+                    new_sample.tokenization_choice = dataset.tokenization_choice
+                    new_sample.tokenization_package_versions = dataset.tokenization_package_versions
                     new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
-                    self.samples[new_sample.key] = new_sample
-                    parent_notebook.sample_panels[new_sample.key] = new_sample_panel
-                    parent_notebook.AddPage(new_sample_panel, new_sample.key, select=True)
-                    new_sample_panel.menu_menuitem = parent_notebook.menu.AppendSubMenu(new_sample_panel.menu, new_sample.key)
-                    self.samples_model.ItemAdded(dv.NullDataViewItem, self.samples_model.ObjectToItem(self.samples[new_sample.key]))
-                    new_sample.GenerateStart(new_sample_panel)
+                    main_frame.samples[new_sample.key] = new_sample
+                    new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG3)
+                    parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
+                    parent_notebook.sample_panels[new_sample.key] = new_sample_panel
                     main_frame.CloseProgressDialog(message=GUIText.GENERATED_LDA_COMPLETED_PART1,
                                                    thaw=False)
                 else:
@@ -395,133 +147,61 @@ class SampleListPanel(wx.Panel):
                     main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_SUBLABEL+str(name))
                     dataset_key = model_parameters['dataset_key']
                     dataset = main_frame.datasets[dataset_key]
-                    metadataset = dataset.metadata
-                    model_parameters['metadataset'] = copy.deepcopy(metadataset)
+                    model_parameters['metadataset'] = copy.deepcopy(dataset.metadata)
                     model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG2)
                     new_sample = Samples.BitermSample(name, dataset_key, model_parameters)
+                    new_sample.applied_filter_rules = copy.deepcopy(dataset.filter_rules)
+                    new_sample.tokenization_choice = dataset.tokenization_choice
+                    new_sample.tokenization_package_versions = dataset.tokenization_package_versions
                     new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
-                    self.samples[new_sample.key] = new_sample
-                    parent_notebook.sample_panels[new_sample.key] = new_sample_panel
-                    parent_notebook.AddPage(new_sample_panel, new_sample.key, select=True)
-                    new_sample_panel.menu_menuitem = parent_notebook.menu.AppendSubMenu(new_sample_panel.menu, new_sample.key)
-                    self.samples_model.ItemAdded(dv.NullDataViewItem, self.samples_model.ObjectToItem(self.samples[new_sample.key])) 
-                    new_sample.GenerateStart(new_sample_panel)
+                    main_frame.samples[new_sample.key] = new_sample
+                    new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG3)
+                    parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
+                    parent_notebook.sample_panels[new_sample.key] = new_sample_panel
                     main_frame.CloseProgressDialog(message=GUIText.GENERATED_BITERM_COMPLETED_PART1,
                                                    thaw=False)
                 else:
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
                 self.Thaw()
-        #TODO need to finish this sample type
-        #elif model_type == "Custom":
-        #    with CustomModelCreateDialog(self) as create_dialog:
-        #        if create_dialog.ShowModal() == wx.ID_OK:
-        #            model_parameters = create_dialog.model_parameters
-        #            name = model_parameters['name']
-        #            main_frame.PulseProgressDialog(GUIText.GENERATING_CUSTOM_SUBLABEL+str(name)\
-        #                                  +GUIText.GENERATING_CUSTOM_MSG)
-        #            dataset_key = model_parameters['dataset_key']
-        #            metadata = main_frame.datasets[dataset_key].metadata
-        #            self.samples[new_sample.key] = new_sample
-        #            parent_notebook.sample_panels[new_sample.key] = new_sample_panel
-        #            parent_notebook.AddPage(new_sample_panel, new_sample.key, select=True)
-        #            new_sample_panel.menu_menuitem = parent_notebook.menu.AppendSubMenu(new_sample_panel.menu, new_sample.key)
-        #            self.samples_model.ItemAdded(dv.NullDataViewItem, self.samples_model.ObjectToItem(self.samples[new_sample.key]))
-        #        else:
-        #            main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
-        #        self.Thaw()
         else:
             main_frame.PulseProgressDialog("Failed to create sample of unknown type.")
             main_frame.CloseProgressDialog(thaw=False)
             self.Thaw()
         logger.info("Finished")
 
-    def OnDeleteSamples(self, event):
-        logger = logging.getLogger(__name__+".SampleListPanel.OnDeleteSamples")
-        logger.info("Starting")
-        delete_samples = []
-        main_frame = wx.GetApp().GetTopWindow()
-        for item in self.samples_list.GetSelections():
-            sample = self.samples_model.ItemToObject(item)
-            if wx.MessageBox(str(sample.key) + GUIText.DELETE_CONFIRMATION
-                             + GUIText.DELETE_CONFIRMATION_WARNING,
-                             GUIText.WARNING, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
-                delete_samples.append(sample)
-        for sample in delete_samples:
-            #remove review
-            del self.samples[sample.key]
-            item = self.samples_model.ObjectToItem(sample)
-            self.samples_model.ItemDeleted(dv.NullDataViewItem, item)
-            sample.DestroyObject()
-            main_frame.SamplesUpdated()
-        logger.info("Finished")
-
-    #TODO consider moving into a thread
     #get a moment in time snap shot of the token set that includes each specified field
     #snapshot is needed to generate ml samples
     def CaptureTokens(self, dataset_key):
-        logger = logging.getLogger(__name__+".SampleListPanel.CaptureTokens")
+        logger = logging.getLogger(__name__+".SampleCreatePanel.CaptureTokens")
         logger.info("Starting")
-        token_lists = {}
+        token_dict = {}
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.PulseProgressDialog(GUIText.GENERATING_PREPARING_MSG)
         fields = {}
         dataset = main_frame.datasets[dataset_key]
-        if isinstance(dataset, Datasets.Dataset):
-            for field_name in dataset.chosen_fields:
-                fields[(dataset_key,), field_name] = dataset.chosen_fields[field_name]
-            for field_name in dataset.merged_fields:
-                fields[(dataset_key,), field_name] = dataset.merged_fields[field_name]
-        elif isinstance(dataset, Datasets.GroupedDataset):
-            for key in dataset.datasets:
-                for field_name in dataset.datasets[key].chosen_fields:
-                    fields[(dataset_key, key), field_name] = dataset.datasets[key].chosen_fields[field_name]
-                for field_name in dataset.datasets[key].merged_fields:
-                    fields[(dataset_key, key), field_name] = dataset.datasets[key].merged_fields[field_name]
-            for field_name in dataset.merged_fields: 
-                fields[(dataset_key,), field_name] = dataset.merged_fields[field_name]
+        for field_name in dataset.chosen_fields:
+            fields[(dataset_key,), field_name] = dataset.chosen_fields[field_name]
+        
+        word_idx = dataset.tokenization_choice
+        tokenset_df = dataset.words_df.loc[~dataset.words_df[Constants.TOKEN_REMOVE_FLG]]
 
-        for filter_key in fields:
-            word_idx = fields[filter_key].tokenization_choice
-            tokenset_df = fields[filter_key].included_tokenset_df
+        all_columns = set(tokenset_df.columns)
+        list_columns = {'field_key', 'key', 'order', 'tfidf'}
+        nonlist_columns = list(all_columns - list_columns)
+        tokenset_df = tokenset_df.set_index(nonlist_columns).apply(pd.Series.explode).reset_index()
 
-            all_columns = set(tokenset_df.columns)
-            list_columns = {'key', 'order', 'tfidf'}
-            nonlist_columns = list(all_columns - list_columns)
-            tokenset_df = tokenset_df.set_index(nonlist_columns).apply(pd.Series.explode).reset_index()
+        tokenset_df.sort_values(by=['order'], inplace=True, ascending=False)
+        tokenset_df = tokenset_df.groupby('key').agg(tokens=(word_idx, lambda x: list(x)))
+        tokenset_df = tokenset_df['tokens']
 
-            tokenset_df.sort_values(by=['order'], inplace=True, ascending=False)
-            tokenset_df = tokenset_df.groupby('key').agg(tokens=(word_idx, lambda x: list(x)))
-            tokenset_df = tokenset_df['tokens']
-
-            tokens_dict = tokenset_df.to_dict()
-            if isinstance(dataset, Datasets.Dataset):
-                for key in tokens_dict:
-                    tokens = tokens_dict[key]
-                    tokens = [token.lower() for token in tokens]
-                    if key in token_lists:
-                        token_lists[key].extend(tokens)
-                    else:
-                        token_lists[key] = tokens
-            elif isinstance(dataset, Datasets.GroupedDataset):
-                for key in tokens_dict:
-                    if len(filter_key[0]) == 2 and 'grouping_key' in dataset.datasets[filter_key[0][1]].metadata[key]:
-                        grouping_key = dataset.datasets[filter_key[0][1]].metadata[key]['grouping_key']
-                    else:
-                        grouping_key = key[0]
-                    tokens = tokens_dict[key]
-                    tokens = [token.lower() for token in tokens]
-                    if grouping_key in token_lists:
-                        token_lists[grouping_key].extend(tokens)
-                    else:
-                        token_lists[grouping_key] = tokens
+        token_dict = tokenset_df.to_dict()
 
         #seperate from source by making a deepcopy
-        main_frame.PulseProgressDialog("After filtering "+str(len(token_lists))+" documents remained of the " +str(len(dataset.metadata))+ " documents avaliable")
-        token_lists = copy.deepcopy(token_lists)
+        main_frame.PulseProgressDialog("After filtering "+str(dataset.total_docs_remaining)+" documents remained of the " +str(dataset.total_docs)+ " documents avaliable")
         logger.info("Finished")
-        return token_lists
+        return token_dict
 
 class AbstractSamplePanel(wx.Panel):
     '''general class for features all model panels should have'''
@@ -575,28 +255,25 @@ class PartPanel(wx.Panel):
         controls_sizer.Add(self.sample_num, 0, wx.ALL, 5)
         
         toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-        useful_tool = toolbar.AddTool(wx.ID_ANY, label="Not Sure", bitmap=wx.Bitmap(1, 1),
-                                      shortHelp="Flags selected entries as not sure if useful")
+        useful_tool = toolbar.AddTool(wx.ID_ANY, label=GUIText.NOT_SURE, bitmap=wx.Bitmap(1, 1),
+                                      shortHelp=GUIText.NOT_SURE_HELP)
         toolbar.Bind(wx.EVT_MENU, self.OnUseful, useful_tool)
         
-        useful_tool = toolbar.AddTool(wx.ID_ANY, label="Useful", bitmap=wx.Bitmap(1, 1),
-                                      shortHelp="Flags selected entries as useful")
+        useful_tool = toolbar.AddTool(wx.ID_ANY, label=GUIText.USEFUL, bitmap=wx.Bitmap(1, 1),
+                                      shortHelp=GUIText.USEFUL_HELP)
         toolbar.Bind(wx.EVT_MENU, self.OnUseful, useful_tool)
-        notuseful_tool = toolbar.AddTool(wx.ID_ANY, label="Not Useful", bitmap=wx.Bitmap(1, 1),
-                                         shortHelp="Flags selected entries as not useful")
+        notuseful_tool = toolbar.AddTool(wx.ID_ANY, label=GUIText.NOT_USEFUL, bitmap=wx.Bitmap(1, 1),
+                                         shortHelp=GUIText.NOT_USEFUL_HELP)
         toolbar.Bind(wx.EVT_MENU, self.OnNotUseful, notuseful_tool)
         toolbar.Realize()
         controls_sizer.Add(toolbar, 0, wx.ALL, 5)
 
         sizer.Add(controls_sizer, 0, wx.ALL, 5)
         
-        self.parts_model = SamplesDataViews.PartsViewModel(self.parts, self.dataset)
+        self.parts_model = SamplesDataViews.PartsViewModel(self.sample, self.dataset)
         self.parts_ctrl = SamplesDataViews.PartsViewCtrl(self, self.parts_model)
         self.parts_model.Cleared()
-        children = []
-        self.parts_model.GetChildren(None, children)
-        for child in children:
-            self.parts_ctrl.Expand(child)
+        self.parts_ctrl.Expander(None)
         columns = self.parts_ctrl.GetColumns()
         for column in reversed(columns):
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
@@ -621,10 +298,7 @@ class PartPanel(wx.Panel):
             else:
                 self.parts[part_key].UpdateDocumentNum(document_num, None)
         self.parts_model.Cleared()
-        children = []
-        self.parts_model.GetChildren(None, children)
-        for child in children:
-            self.parts_ctrl.Expand(child)
+        self.parts_ctrl.Expander(None)
         logger.info("Finished")
 
     def OnNotSure(self, event):
@@ -666,18 +340,12 @@ class PartPanel(wx.Panel):
         self.parts.clear()
         self.parts.update(selected_parts)
         self.parts_model.Cleared()
-        children = []
-        self.parts_model.GetChildren(None, children)
-        for child in children:
-            self.parts_ctrl.Expand(child)
+        self.parts_ctrl.Expander(None)
         logger.info("Finished")
 
     def DocumentsUpdated(self):
         self.parts_model.Cleared()
-        children = []
-        self.parts_model.GetChildren(None, children)
-        for child in children:
-            self.parts_ctrl.Expand(child)
+        self.parts_ctrl.Expander(None)
 
     #Module Control commands
     def Load(self, saved_data):
@@ -881,8 +549,11 @@ class TopicSamplePanel(AbstractSamplePanel):
         num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+str(sample.num_passes))
         details2_sizer.Add(num_passes_label, 0, wx.ALL, 5)
         details2_sizer.AddSpacer(10)
-        used_documents_label = wx.StaticText(self, label="Number of documents used during modelling: "+str(len(self.sample.tokensets)))
+        used_documents_label = wx.StaticText(self, label="Number of documents: "+str(len(self.sample.tokensets)))
         details2_sizer.Add(used_documents_label, 0, wx.ALL, 5)
+        rules_button = wx.Button(self, label=FilteringGUIText.FILTERS_RULES)
+        rules_button.Bind(wx.EVT_BUTTON, self.OnShowRules)
+        details2_sizer.Add(rules_button, 0, wx.ALL, 5)
         self.sizer.Add(details2_sizer, 0, wx.ALL, 5)
 
 
@@ -924,11 +595,18 @@ class TopicSamplePanel(AbstractSamplePanel):
             self.Thaw()
         logger.info("Finished")
     
+    def OnShowRules(self, event):
+        logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].OnChangeTopicWordNum")
+        logger.info("Starting")
+        SampleRulesDialog(self, self.sample).Show()
+        logger.info("Finished")
+    
     def OnChangeTopicWordNum(self, event):
         logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].OnChangeTopicWordNum")
         logger.info("Starting")
         self.sample.word_num = self.topiclist_panel.topic_list_num.GetValue()
         self.topiclist_panel.topic_list_model.Cleared()
+        self.topiclist_panel.topic_list_ctrl.Expander(None)
         #self.visualization_panel.Refresh(self.selected_parts)
         self.DrawLDAPlot(self.selected_parts)
         logger.info("Finished")
@@ -990,10 +668,12 @@ class TopicSamplePanel(AbstractSamplePanel):
                                 doc_topic_prob = max(doc_topic_prob, row_dict[topic_key])
                             row.append((node.key, doc_topic_prob,))
             self.topiclist_panel.topic_list_model.Cleared()
+            self.topiclist_panel.topic_list_ctrl.Expander(None)
             self.ChangeSelections()
             #self.visualization_panel.Refresh(self.selected_parts)
             self.DrawLDAPlot(self.selected_parts)
             self.parts_panel.parts_model.Cleared()
+            self.parts_panel.parts_ctrl.Expander(None)
             
         logger.info("Finished")
     
@@ -1042,10 +722,12 @@ class TopicSamplePanel(AbstractSamplePanel):
                                 doc_topic_prob = max(doc_topic_prob, row_dict[topic_key])
                             row.append((node.key, doc_topic_prob,))
             self.topiclist_panel.topic_list_model.Cleared()
+            self.topiclist_panel.topic_list_ctrl.Expander()
             self.ChangeSelections()
             #self.visualization_panel.Refresh(self.selected_parts)
             self.DrawLDAPlot(self.selected_parts)
             self.parts_panel.parts_model.Cleared()
+            self.parts_panel.parts_ctrl.Expander(None)
             
         logger.info("Finished")
 
@@ -1121,6 +803,7 @@ class TopicSamplePanel(AbstractSamplePanel):
 
         self.ChangeSelections()
         self.topiclist_panel.topic_list_model.Cleared()
+        self.topiclist_panel.topic_list_ctrl.Expander(None)
         #self.visualization_panel.Refresh(self.selected_parts)
         self.DrawLDAPlot(self.selected_parts)
         self.parts_panel.ChangeSelectedParts(self.selected_parts)
@@ -1189,21 +872,19 @@ class TopicSamplePanel(AbstractSamplePanel):
         logger.info("Finished")
         return saved_data
 
-#TODO change to flatnotebook to allow hiding of tabs when only one visualization is turned on
-class TopicVisualizationsNotebook(wx.aui.AuiNotebook):
+class TopicVisualizationsNotebook(FNB.FlatNotebook):
     def __init__(self, parent, sample):
         logger = logging.getLogger(__name__+".TopicVisualizationsNotebook["+str(sample.key)+"].__init__")
         logger.info("Starting")
-        wx.aui.AuiNotebook.__init__(self, parent, style=Constants.NOTEBOOK_FIXED)
+        FNB.FlatNotebook.__init__(self, parent, style=Constants.FNB_STYLE)
         self.sample = sample
 
-        #self.pyLDAvis_panel = pyLDAvisPanel(self)
-        #self.AddPage(self.pyLDAvis_panel, "pyLDAvis")
         self.chordplot_panel = ChordPlotPanel(self)
         self.AddPage(self.chordplot_panel, "Chord Plot")
         
         #TODO replace these or augment to handle unknown topic
-        #self.wordnetworkgraph_panel = NetworkPlotPlanel(self)
+        #self.pyLDAvis_panel = pyLDAvisPanel(self)
+        #self.AddPage(self.pyLDAvis_panel, "pyLDAvis")#self.wordnetworkgraph_panel = NetworkPlotPlanel(self)
         #self.AddPage(self.wordnetworkgraph_panel, "Word Network Graph")
         #self.wordcloudnetworkgraph_panel = NetworkPlotPlanel(self)
         #self.AddPage(self.wordcloudnetworkgraph_panel, "WordCloud Network Graph")
@@ -1295,6 +976,9 @@ class TopicListPanel(wx.Panel):
         details2_sizer.AddSpacer(10)
         used_documents_label = wx.StaticText(self, label=GUIText.NUMBER_OF_DOCUMENTS+str(len(self.sample.tokensets)))
         details2_sizer.Add(used_documents_label, 0, wx.ALL, 5)
+        rules_button = wx.Button(self, label=FilteringGUIText.FILTERS_RULES)
+        rules_button.Bind(wx.EVT_BUTTON, self.OnShowRules)
+        details2_sizer.Add(rules_button, 0, wx.ALL, 5)
         topic_list_sizer.Add(details2_sizer, 0, wx.ALL, 5)
 
         topic_list_label1 = wx.StaticText(self, label=GUIText.WORDS_PER_TOPIC1)
@@ -1339,6 +1023,12 @@ class TopicListPanel(wx.Panel):
 
         self.SetSizer(topic_list_sizer)
         logger.info("Finished")
+    
+    def OnShowRules(self, event):
+        logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].OnChangeTopicWordNum")
+        logger.info("Starting")
+        SampleRulesDialog(self, self.sample).Show()
+        logger.info("Finished")
 
 class LDAModelCreateDialog(wx.Dialog):
     def __init__(self, parent):
@@ -1362,17 +1052,8 @@ class LDAModelCreateDialog(wx.Dialog):
         self.usable_datasets = []
         main_frame = wx.GetApp().GetTopWindow()
         for dataset in main_frame.datasets.values():
-            if isinstance(dataset, Datasets.Dataset):
-                if len(dataset.chosen_fields) > 0 or len(dataset.merged_fields) > 0:
-                    self.usable_datasets.append(dataset.key)
-            elif isinstance(dataset, Datasets.GroupedDataset):
-                if len(dataset.merged_fields) > 0:
-                    self.usable_datasets.append(dataset.key)
-                else:
-                    for sub_dataset in dataset.datasets.values():
-                        if len(sub_dataset.chosen_fields) > 0 or len(sub_dataset.merged_fields) > 0:
-                            self.usable_datasets.append(dataset.key)
-                            break
+            if len(dataset.chosen_fields) > 0:
+                self.usable_datasets.append(dataset.key)
         if len(self.usable_datasets) > 1: 
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
             usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
@@ -1463,51 +1144,6 @@ class LDAModelCreateDialog(wx.Dialog):
         if status_flag:
             self.EndModal(wx.ID_OK)
 
-class LDAModelDetailsDialog(wx.Dialog):
-    def __init__(self, parent, sample):
-        logger = logging.getLogger(__name__+".LDAModelDetailsDialog.__init__")
-        logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title="Details for LDA Model: "+ sample.key)
-
-        self.sample = sample
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-
-        name_label = wx.StaticText(self, label=GUIText.NAME+":")
-        self.name_ctrl = wx.TextCtrl(self, value=self.sample.key)
-        self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label)
-        name_sizer.Add(self.name_ctrl)
-        sizer.Add(name_sizer)
-
-        dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+ str(self.sample.dataset_key))
-        sizer.Add(dataset_label)
-
-        num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+" "+str(self.sample.num_topics))
-        sizer.Add(num_topics_label)
-
-        num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+str(self.sample.num_passes))
-        sizer.Add(num_passes_label)
-
-        used_documents_label = wx.StaticText(self, label="Number of documents used: "+str(len(self.sample.tokensets)))
-        sizer.Add(used_documents_label)
-
-        #fields to choose specific fields for model
-        #--- not part of mvp so default is to use all fields
-
-        #ok_button = wx.Button(self, id=wx.ID_OK, label=GUIText.OK, )
-        #ok_button.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
-        #cancel_button = wx.Button(self, id=wx.ID_CANCEL, label=GUIText.CANCEL)
-        #controls_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        #controls_sizer.Add(ok_button)
-        #controls_sizer.Add(cancel_button)
-        #sizer.Add(controls_sizer)
-
-        self.SetSizer(sizer)
-
-        logger.info("Finished")
-
 class BitermModelCreateDialog(wx.Dialog):
     def __init__(self, parent):
         logger = logging.getLogger(__name__+".BiTermModelCreateDialog.__init__")
@@ -1531,17 +1167,8 @@ class BitermModelCreateDialog(wx.Dialog):
         
         main_frame = wx.GetApp().GetTopWindow()
         for dataset in main_frame.datasets.values():
-            if isinstance(dataset, Datasets.Dataset):
-                if len(dataset.chosen_fields) > 0 or len(dataset.merged_fields) > 0:
-                    self.usable_datasets.append(dataset.key)
-            elif isinstance(dataset, Datasets.GroupedDataset):
-                if len(dataset.merged_fields) > 0:
-                    self.usable_datasets.append(dataset.key)
-                else:
-                    for sub_dataset in dataset.datasets.values():
-                        if len(sub_dataset.chosen_fields) > 0 or len(sub_dataset.merged_fields) > 0:
-                            self.usable_datasets.append(dataset.key)
-                            break
+            if len(dataset.chosen_fields) > 0:
+                self.usable_datasets.append(dataset.key)
         if len(self.usable_datasets) > 1: 
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
             usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
@@ -1630,47 +1257,64 @@ class BitermModelCreateDialog(wx.Dialog):
         if status_flag:
             self.EndModal(wx.ID_OK)
 
-class BitermModelDetailsDialog(wx.Dialog):
-    def __init__(self, parent, sample):
-        logger = logging.getLogger(__name__+".BitermModelDetailsDialog.__init__")
+class SampleRulesDialog(wx.Dialog):
+    def __init__(self, parent, sample, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER):
+        logger = logging.getLogger(__name__+".RulesPanel["+str(sample.key)+"].__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title="Details for Biterm Model: "+sample.key)
-
+        wx.Dialog.__init__(self, parent, title=FilteringGUIText.FILTERS_RULES+": "+repr(sample), style=style, size=wx.Size(600,400))
         self.sample = sample
-
+        
+        package_list = list(sample.tokenization_package_versions)
+        tokenizer_package = sample.tokenization_package_versions[0]
+        package_list[0] = FilteringGUIText.FILTERS_RAWTOKENS
+        package_list[1] = FilteringGUIText.FILTERS_STEMMER + package_list[1]
+        package_list[2] = FilteringGUIText.FILTERS_LEMMATIZER + package_list[2]
+        
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        name_label = wx.StaticText(self, label=GUIText.NAME+":")
-        self.name_ctrl = wx.TextCtrl(self, value=self.sample.key)
-        self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label)
-        name_sizer.Add(self.name_ctrl)
-        sizer.Add(name_sizer)
+        tokenization_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        tokenization_package_label1 = wx.StaticText(self, label=FilteringGUIText.FILTERS_TOKENIZER)
+        tokenization_package_label1.SetFont(wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
+        tokenization_sizer.Add(tokenization_package_label1, proportion=0, flag=wx.ALL, border=5)
+        tokenization_package_label2 = wx.StaticText(self, label=tokenizer_package)
+        tokenization_sizer.Add(tokenization_package_label2, proportion=0, flag=wx.ALL, border=5)
+        tokenization_choice_label = wx.StaticText(self, label=FilteringGUIText.FILTERS_METHOD)
+        tokenization_choice_label.SetFont(wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
+        tokenization_sizer.Add(tokenization_choice_label, proportion=0, flag=wx.ALL, border=5)
+        tokenization_label = wx.StaticText(self, label=package_list[sample.tokenization_choice])
+        tokenization_sizer.Add(tokenization_label, proportion=0, flag=wx.ALL, border=5)
+        sizer.Add(tokenization_sizer, proportion=0, flag=wx.ALL, border=5)
+        
+        #self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
+        #tfidffilter_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_CREATE_TFIDF_RULE,
+        #                                        bitmap=wx.Bitmap(1, 1),
+        #                                        shortHelp=GUIText.FILTERS_CREATE_TFIDF_RULE_TOOLTIP)
+        #self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnCreateTfidfFilter, tfidffilter_tool)
+        #self.toolbar.Realize()
+        #sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
 
-        dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(self.sample.dataset_key))
-        sizer.Add(dataset_label)
-
-        num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+" "+str(self.sample.num_topics))
-        sizer.Add(num_topics_label)
-
-        num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+str(self.sample.num_passes))
-        sizer.Add(num_passes_label)
-
-        used_documents_label = wx.StaticText(self, label="Number of documents used during modelling: "+str(len(self.sample.tokensets)))
-        sizer.Add(used_documents_label)
-
-        #fields to choose specific fields for model
-        #--- not part of mvp so default is to use all fields
-
-        #ok_button = wx.Button(self, id=wx.ID_OK, label=GUIText.OK, )
-        #ok_button.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
-        #cancel_button = wx.Button(self, id=wx.ID_CANCEL, label=GUIText.CANCEL)
-        #controls_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        #controls_sizer.Add(ok_button)
-        #controls_sizer.Add(cancel_button)
-        #sizer.Add(controls_sizer)
+        self.rules_list = DatasetsDataViews.FilterRuleDataViewListCtrl(self)
+        self.DisplayFilterRules(sample.applied_filter_rules)
+        sizer.Add(self.rules_list, proportion=1, flag=wx.EXPAND, border=5)
 
         self.SetSizer(sizer)
+        self.Layout()
 
         logger.info("Finished")
+
+    def DisplayFilterRules(self, filter_rules):
+        column_options = {Constants.TOKEN_NUM_WORDS:FilteringGUIText.FILTERS_NUM_WORDS,
+                          Constants.TOKEN_PER_WORDS:FilteringGUIText.FILTERS_PER_WORDS,
+                          Constants.TOKEN_NUM_DOCS:FilteringGUIText.FILTERS_NUM_DOCS,
+                          Constants.TOKEN_PER_DOCS:FilteringGUIText.FILTERS_PER_DOCS}
+        self.rules_list.DeleteAllItems()
+        i = 1
+        for field, word, pos, action in filter_rules:
+            if isinstance(action, tuple):
+                if action[0] == Constants.FILTER_TFIDF_REMOVE or action[0] == Constants.FILTER_TFIDF_INCLUDE:
+                    action = str(action[0])+str(action[1])+str(action[2]*100)+"%"
+                else:
+                    action = str(action[0]) + " ("+str(column_options[action[1]])+str(action[2])+str(action[3])+")"
+                
+            self.rules_list.AppendItem([i, field, word, pos, str(action)])
+            i += 1

@@ -2,19 +2,19 @@ import logging
 import io
 
 import wx
-import wx.aui
 import wx.richtext
+#import wx.lib.agw.flatnotebook as FNB
+import External.wxPython.flatnotebook_fix as FNB
 
 import Common.Constants as Constants
 from Common.GUIText import Common as GUIText
 
-#TODO change to FlatNotebook for conistant look and feel
-class NotesNotebook(wx.aui.AuiNotebook):
+class NotesNotebook(FNB.FlatNotebook):
     '''Manages the Notes Interface'''
     def __init__(self, parent, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".NotesNotebook.__init__")
         logger.info("Starting")
-        wx.aui.AuiNotebook.__init__(self, parent, style=Constants.NOTEBOOK_SPLITABLE, size=size)
+        FNB.FlatNotebook.__init__(self, parent, agwStyle=Constants.FNB_STYLE, size=size)
         self.name = "notes"
         logger.info("Finished")
 
