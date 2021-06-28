@@ -13,8 +13,6 @@ import wx
 #import wx.lib.agw.flatnotebook as FNB
 import External.wxPython.flatnotebook_fix as FNB
 import wx.lib.scrolledpanel
-from wx.lib.masked.numctrl import NumCtrl
-import wx.dataview as dv
 
 import Common.Constants as Constants
 import Common.Objects.DataViews.Tokens as TokenDataViews

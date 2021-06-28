@@ -187,6 +187,10 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.Layout()
         self.Fit()
 
+        #fix since some operatign systems default to first element of the list instead of blank like windows
+        if self.dataset_type_choice.GetStringSelection() != '':
+            self.OnDatasetTypeChosen(None)
+
         ok_button.Bind(wx.EVT_BUTTON, self.OnRetrieveStart)
         CustomEvents.EVT_PROGRESS(self, self.OnProgress)
         CustomEvents.RETRIEVE_EVT_RESULT(self, self.OnRetrieveEnd)

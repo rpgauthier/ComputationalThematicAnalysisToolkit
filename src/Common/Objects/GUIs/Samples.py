@@ -47,8 +47,8 @@ class SampleCreatePanel(wx.Panel):
                                                                "\nThese groups can contain interesting phenomena that can be used to explore the data, develop codes, and review themes."
                                                                "\nHowever, generated topic model samples should to be treated as windows that look at potentially interesting parts of the data rather than as a generalizable representation of the data.")
         description_sizer.Add(topicmodelling_description, 0, wx.ALL, 5)
-        topicmodelling_link = wx.adv.HyperlinkCtrl(self, label="", url="")#TODO choose approriate reference/s
-        description_sizer.Add(topicmodelling_link, 0, wx.ALL, 5)
+        #topicmodelling_link = wx.adv.HyperlinkCtrl(self, label="2", url="")#TODO choose approriate reference/s
+        #description_sizer.Add(topicmodelling_link, 0, wx.ALL, 5)
         create_lda_sizer = wx.BoxSizer(wx.HORIZONTAL)
         topicmodelling_sizer.Add(create_lda_sizer)
         create_lda_button = wx.Button(self, label=GUIText.LDA_LABEL)
