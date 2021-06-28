@@ -196,7 +196,9 @@ avaliable_fields = {
             },
         'score': {
             'desc': "the submission's score (may be out of date unless updated from Reddit API)",
-            'type': 'integer'
+            'type': 'integer',
+            'included_default': False,
+            'metadata_default': False,
             },
         'submission_id':{
             'desc': 'the id of the submission that comment is a response to',
