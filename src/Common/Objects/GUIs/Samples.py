@@ -1373,17 +1373,8 @@ class NMFModelCreateDialog(wx.Dialog):
         
         main_frame = wx.GetApp().GetTopWindow()
         for dataset in main_frame.datasets.values():
-            if isinstance(dataset, Datasets.Dataset):
-                if len(dataset.chosen_fields) > 0 or len(dataset.merged_fields) > 0:
-                    self.usable_datasets.append(dataset.key)
-            elif isinstance(dataset, Datasets.GroupedDataset):
-                if len(dataset.merged_fields) > 0:
-                    self.usable_datasets.append(dataset.key)
-                else:
-                    for sub_dataset in dataset.datasets.values():
-                        if len(sub_dataset.chosen_fields) > 0 or len(sub_dataset.merged_fields) > 0:
-                            self.usable_datasets.append(dataset.key)
-                            break
+            if len(dataset.chosen_fields) > 0:
+                self.usable_datasets.append(dataset.key)
         if len(self.usable_datasets) > 1: 
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
             usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
