@@ -160,7 +160,6 @@ class BitermTrainingThread(Thread):
         result={'key': self.key, 'document_topic_prob':document_topic_prob}
         wx.PostEvent(self._notify_window, CustomEvents.ModelCreatedResultEvent(result))
 
-# TODO: NMF
 class NMFTrainingThread(Thread):
     """NMFTrainingThread Class."""
     def __init__(self, notify_window, current_workspace_path, key, tokensets, num_topics, num_passes):
@@ -192,23 +191,8 @@ class NMFTrainingThread(Thread):
             texts.append(text)
 
         logger.info("Starting generation of NMF model")
-        #X, vocab, vocab_dict = btm.get_words_freqs(texts) # TODO: NMF equivalent
 
-        # TODO: convert to NMF from here down
-        #with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/vocab.pk', 'wb') as outfile:
-        #   pickle.dump(vocab, outfile)
-        #logger.info("Vocab created")
-
-        #tf = np.array(X.sum(axis=0)).ravel()
-        # Vectorizing documents
-        #docs_vec = btm.get_vectorized_docs(texts, vocab)
-        #docs_lens = list(map(len, docs_vec))
-        #with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/transformed_texts.pk', 'wb') as outfile:
-        #    pickle.dump(docs_vec, outfile)
-
-        # TODO: save tfidf, model
-
-        tfidf_vectorizer = TfidfVectorizer(max_features=self.num_topics, preprocessor=SamplesUtilities.dummy, tokenizer=SamplesUtilities.dummy, token_pattern=None)
+        tfidf_vectorizer = TfidfVectorizer(max_features=len(self.tokensets.values()), preprocessor=SamplesUtilities.dummy, tokenizer=SamplesUtilities.dummy, token_pattern=None)
         
         tfidf = tfidf_vectorizer.fit_transform(self.tokensets.values())
         with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/tfidf.pk', 'wb') as outfile:
@@ -217,11 +201,7 @@ class NMFTrainingThread(Thread):
         logger.info("Texts transformed")
 
         logger.info("Starting Generation of NMF")
-        #biterms = btm.get_biterms(docs_vec)
 
-        #model = btm.BTM(X, vocab, T=self.num_topics, W=vocab.size, M=20, alpha=50/8, beta=0.01)
-
-        # TODO NMF MODEL
         model = nmf(self.num_topics, random_state=1).fit(tfidf)
 
         # must fit tfidf as above before saving tfidf_vectorizer
@@ -229,19 +209,13 @@ class NMFTrainingThread(Thread):
            pickle.dump(tfidf_vectorizer, outfile)
 
         topics = tfidf_vectorizer.get_feature_names()
-        print(topics)
-
         topic_pr = model.transform(tfidf)
         probs = topic_pr / topic_pr.sum(axis=1, keepdims=True)
-        print(probs)
 
-        #topics = model.fit_transform(docs_vec, biterms, iterations=self.num_passes, verbose=False)
         with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/nmf_model.pk', 'wb') as outfile:
             pickle.dump(model, outfile)
         logger.info("Completed Generation of NMF")
 
-        # matrix, num columns = # topics, number of rows = # documents, value = probability that topic is associated with document
-        # TODO: change nan's to 0s
         document_topic_prob = {}
         for doc_num in range(len(probs)):
             doc_row = probs[doc_num]
