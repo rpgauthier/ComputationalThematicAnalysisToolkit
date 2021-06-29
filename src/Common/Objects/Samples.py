@@ -885,7 +885,6 @@ class BitermTopicPart(TopicPart):
         self._word_num = value
         logger.info("Finished")
 
-# TODO: NMF
 class NMFTopicPart(TopicPart):
     '''Instances of NMF Topic objects'''
     def __init__(self, parent, key, dataset, name=None):
@@ -904,47 +903,19 @@ class NMFTopicPart(TopicPart):
         if len(self.word_list) < value:
             self.word_list.clear()
             if isinstance(self.parent, ModelMergedPart):
-                # word_df = btm.get_top_topic_words(self.parent.parent.model, words_num=value, topics_idx=[self.key-1]) # TODO
-                word_list =  self.parent.vectorizer.get_feature_names() #word_df.values.tolist() # TODO: blank string, 0 tuple
-                print(word_list) # TODO
-                prob_list = []
-                for word in word_list:
-                    word_idx = np.where(self.parent.model.vocabulary_ == word)
-                    prob_list.append(self.parent.parent.model.matrix_topics_words_[self.key-1][word_idx][0])
+                # TODO: haven't tested that this works when self.parent is a ModelMergedPart
+                components_df = pd.DataFrame(self.parent.parent.model.components_, columns=self.parent.parent.vectorizer.get_feature_names())
+                topic = components_df.iloc[self.key-1]
+                word_prob_list = topic.nlargest(value)
+                word_list = word_prob_list.index.tolist()
+                prob_list = word_prob_list.tolist()
                 self.word_list = list(zip(word_list, prob_list))
             else:
-                # TODO: same words being used for each topic, just the topics rearranged?
-
                 components_df = pd.DataFrame(self.parent.model.components_, columns=self.parent.vectorizer.get_feature_names())
                 topic = components_df.iloc[self.key-1]
                 word_prob_list = topic.nlargest(value)
                 word_list = word_prob_list.index.tolist()
                 prob_list = word_prob_list.tolist()
-
-                #topic = self.parent.model.components_[self.key-1]
-                #word_list = ([self.parent.vectorizer.get_feature_names()[i] for i in topic.argsort()[-10:]])
-
-                print(word_list)
-                print(self.parent.vectorizer.get_feature_names())
-
-
-
-                # word_df = btm.get_top_topic_words(self.parent.model, words_num=value, topics_idx=[self.key-1])
-                #word_list = []
-                #word_list =  self.parent.vectorizer.get_feature_names()
-                #prob_list = []
-                #topic_pr = self.parent.model.transform(self.parent.transformed_texts)
-                #probs = topic_pr / topic_pr.sum(axis=1, keepdims=True)
-                # for word in word_list:
-                #     print(self.parent.vectorizer.vocabulary_)
-                #     print(np.where(self.parent.vectorizer.vocabulary_ == word))
-                #     word_idx = np.where(self.parent.vectorizer.vocabulary_ == word)
-                #     prob_list.append(topic_pr[self.key-1][word_idx])
-                # print(prob_list)
-                # for word in word_df.values.tolist():
-                #     word_idx = np.where(self.parent.model.vocabulary_ == word[0])
-                #     word_list.append(word[0])
-                #     prob_list.append(self.parent.model.matrix_topics_words_[self.key-1][word_idx[0]][0])
                 self.word_list = list(zip(word_list, prob_list))
         self._word_num = value
         logger.info("Finished")
