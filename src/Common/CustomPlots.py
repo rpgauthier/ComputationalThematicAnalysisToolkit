@@ -321,6 +321,9 @@ class ChordPlotPanel(wx.Panel):
             parent_wordcloudimages = []
             for part_key in parts:
                 if len(word_cloud_freq[part_key]) > 0:
+                    for word in word_cloud_freq[part_key]:
+                        if word_cloud_freq[part_key][word] == 0:
+                            word_cloud_freq[part_key][word] = 10**-15
                     wordcloud = WordCloud(background_color='white').fit_words(word_cloud_freq[part_key])
                     parent_wordcloudimages.append(wordcloud.to_image())
                 else:
