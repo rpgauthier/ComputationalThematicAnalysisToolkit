@@ -108,7 +108,7 @@ class BitermTrainingThread(Thread):
         self.num_passes = num_passes
         self.start()
 
-    #TODO needs to be moved to a process as the thread is still stalling the main GUI
+    #TODO needs to be moved to a process as the thread is stalling the main GUI
     def run(self):
         '''Generates an Biterm model'''
         logger = logging.getLogger(__name__+"BitermTrainingThread["+str(self.key)+"].run")

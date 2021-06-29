@@ -10,6 +10,52 @@ import Common.CustomEvents as CustomEvents
 import Common.Objects.Datasets as Datasets
 from Common.GUIText import Datasets as GUIText
 
+def CreateDataset(dataset_key, retrieval_details, data, avaliable_fields_list, metadata_fields_list, included_fields_list):
+    dataset = Datasets.Dataset(dataset_key,
+                               dataset_key[0],
+                               dataset_key[1],
+                               dataset_key[2],
+                               retrieval_details)
+    dataset.metadata_fields_list = metadata_fields_list
+    dataset.data = data
+    
+    for field_name, field_info in avaliable_fields_list:
+        new_field = Datasets.Field(dataset,
+                                   field_name,
+                                   dataset,
+                                   field_info['desc'],
+                                   field_info['type'])
+        dataset.avaliable_fields[field_name] = new_field
+    for field_name, field_info in included_fields_list:
+        new_field = Datasets.Field(dataset,
+                                   field_name,
+                                   dataset,
+                                   field_info['desc'],
+                                   field_info['type'])
+        dataset.chosen_fields[field_name] = new_field
+    return dataset
+
+def CreateDatasetObjectsMetadata(dataset):
+    id_keys = ["data_source", "data_type", "id"]
+    metadata = {}
+    for data_row in dataset.data.values():
+        data_id = []
+        for key in id_keys:
+            data_id.append(data_row[key])
+        metadata[tuple(data_id)] = {}
+        metadata[tuple(data_id)]['dataset'] = dataset.key
+        if hasattr(dataset, 'metadata_fields_list'):
+            for field in dataset.metadata_fields_list:
+                metadata[tuple(data_id)][field[0]] = data_row[field[0]]
+        else:    
+            url = data_row["url"]
+            if url != '':
+                metadata[tuple(data_id)]["url"] = url
+            else:
+                metadata[tuple(data_id)]["id"] = data_row['id']
+            metadata[tuple(data_id)]["created_utc"] = data_row['created_utc']
+    dataset.metadata = metadata
+
 def TokenizeDatasetObjects(dataset_objects, notify_window, main_frame):
     logger = logging.getLogger(__name__+".TokenizeDatasetObjects")
     logger.info("Starting")
@@ -18,10 +64,7 @@ def TokenizeDatasetObjects(dataset_objects, notify_window, main_frame):
     main_frame = main_frame
 
     def FindDatasetIdFields(dataset):
-        if dataset.grouping_field is not None:
-            id_key_fields = [dataset.grouping_field.key]
-        else:
-            id_key_fields = ["data_source", "data_type", "id"]
+        id_key_fields = ["data_source", "data_type", "id"]
         return id_key_fields
 
     def TokenizationController(key, field, field_data):
@@ -88,36 +131,13 @@ def TokenizeDatasetObjects(dataset_objects, notify_window, main_frame):
         else:
             return field_data
 
-    def MergedFieldTokenizer(merged_field,):
-        field_data = {}
-        for chosen_field_key in merged_field.chosen_fields:
-            tmp_field_data = FieldTokenizer(merged_field.chosen_fields[chosen_field_key], merged=True)
-            for id_key in tmp_field_data:
-                if id_key not in field_data:
-                    field_data[id_key] = tmp_field_data[id_key]
-                else:
-                    field_data[id_key].extend(tmp_field_data[id_key])
-        TokenizationController(merged_field.parent.key, merged_field, field_data)
-
     def DatasetTokenizer(dataset):
         for chosen_field_key in dataset.chosen_fields:
             FieldTokenizer(dataset.chosen_fields[chosen_field_key])
-        for merged_field_key in dataset.merged_fields:
-            MergedFieldTokenizer(dataset.merged_fields[merged_field_key])
-
-    def GroupedDatasetTokenizer(grouped_dataset):
-        for dataset_key in grouped_dataset.datasets:
-            DatasetTokenizer(grouped_dataset.datasets[dataset_key])
-        for merged_field_key in grouped_dataset.merged_fields:
-            MergedFieldTokenizer(grouped_dataset.merged_fields[merged_field_key])
 
     for node in dataset_objects:
-        if isinstance(node, Datasets.GroupedDataset):
-            GroupedDatasetTokenizer(node)
-        elif isinstance(node, Datasets.Dataset):
+        if isinstance(node, Datasets.Dataset):
             DatasetTokenizer(node)
-        elif isinstance(node, Datasets.MergedField):
-            MergedFieldTokenizer(node)
         elif isinstance(node, Datasets.Field):
             FieldTokenizer(node)
 
@@ -187,7 +207,7 @@ def TokenizeDatasetObjects(dataset_objects, notify_window, main_frame):
                 tokensets[toksenset_key] = tokenset
 
             fields[key].tokenset = tokensets
-            fields[key].tokenization_package_versions = package_versions
+            fields[key].dataset.tokenization_package_versions = package_versions
     logger.info("Finished")
 
 def TokenizationWorker(data_list, field, label, language):
@@ -287,38 +307,3 @@ def TokenizationWorker(data_list, field, label, language):
 
     logger.info("Finished")
     return tokensets, rawtext_tokens_df, stem_tokens_df, lemma_tokens_df, package_versions
-
-def CreateDatasetObjectsMetadata(dataset):
-    def DatasetMetadata(dataset):
-        id_keys = ["data_source", "data_type", "id"]
-        metadata = {}
-        for data_row in dataset.data.values():
-            data_id = []
-            for key in id_keys:
-                data_id.append(data_row[key])
-            metadata[tuple(data_id)] = {}
-            if dataset.grouping_field is not None:
-                grouping_key = data_row[dataset.grouping_field.key]
-                metadata[tuple(data_id)]["grouping_key"] = grouping_key
-            url = data_row["url"]
-            metadata[tuple(data_id)]['dataset'] = dataset.key
-            metadata[tuple(data_id)]["url"] = url
-        dataset.metadata = metadata
-
-    def GroupedDatasetMetadata(grouped_dataset):
-        metadata = {}
-        for dataset in grouped_dataset.datasets:
-            DatasetMetadata(grouped_dataset.datasets[dataset])
-            for data_id in grouped_dataset.datasets[dataset].metadata:
-                grouping_key = str(grouped_dataset.datasets[dataset].metadata[data_id]["grouping_key"])
-                if grouping_key not in metadata:
-                    metadata[grouping_key] = {}
-                    metadata[grouping_key]['submetadata'] = {}
-                submetadata = grouped_dataset.datasets[dataset].metadata[data_id]
-                metadata[grouping_key]['submetadata'][data_id] = submetadata
-        grouped_dataset.metadata = metadata
-
-    if isinstance(dataset, Datasets.Dataset):
-        DatasetMetadata(dataset)
-    elif isinstance(dataset, Datasets.GroupedDataset):
-        GroupedDatasetMetadata(dataset)

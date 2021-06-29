@@ -2,10 +2,8 @@ import logging
 import locale
 
 import wx
-import wx.lib.mixins.inspection
 
-#
-class RootApp(wx.App, wx.lib.mixins.inspection.InspectionMixin):
+class RootApp(wx.App):
     '''Defines Root Application'''
     def InitLocale(self):
         '''Overides default local settings to handle windows issue with wxpython'''

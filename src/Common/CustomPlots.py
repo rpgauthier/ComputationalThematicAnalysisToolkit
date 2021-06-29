@@ -390,17 +390,4 @@ class ChordPlotPanel(wx.Panel):
                 self.td_dist.append(td_row)
                 categorized_docs.update(list(topic_docs_df.index.values))
 
-        #TODO may be depricated since unknown now is capturing uncategorized and thius just captures what isn't being included in any category
-        #calculate other document count to show that is not being captured (due to excluded topics)
-        #other_count = len(self.dt_df.index.values)-len(categorized_docs)
-        #if other_count > 0:
-        #    new_row = []
-        #    for td_row in self.td_dist:
-        #        td_row.append(0.0)
-        #        new_row.append(0.0)
-        #    new_row.append(0.0)
-        #    self.td_dist.append(new_row)
-        #    self.outer_circle.append(other_count)
-        #    self.part_names.append("Other")
-
         logger.info("Finished")

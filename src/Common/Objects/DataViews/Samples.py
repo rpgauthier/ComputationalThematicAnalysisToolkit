@@ -1,182 +1,64 @@
 import logging
 import webbrowser
+from datetime import datetime
 
 import wx
 import wx.dataview as dv
 
 from Common.GUIText import Samples as GUIText
+import Common.Constants as Constants
 import Common.Objects.Datasets as Datasets
-import Common.Objects.GUIs.Datasets as DatasetsGUIs
 import Common.Objects.Samples as Samples
-import Common.Objects.GUIs.Datasets as SamplesGUIs
+import Common.Objects.Utilities.Samples as SamplesUtilities
+import Common.Objects.GUIs.Codes as CodesGUIs
 
-#TODO remove as no longer used
-# This model acts as a bridge between the SamplesViewCtrl and the Samples to
-# This model provides these data columns:
-#     0. Sample Name:   string
-#     1. Dataset Name: string
-#     2. Sample Type: string
-#     3. Datetime Created:    string
-class SamplesViewModel(dv.PyDataViewModel):
-    def __init__(self, data):
-        dv.PyDataViewModel.__init__(self)
-        self.data = data
-        self.UseWeakRefs(True)
-
-    def GetColumnCount(self):
-        '''Report how many columns this model provides data for.'''
-        return 4
-
-    def GetColumnType(self, col):
-        col_type = "string"
-        return col_type
-
-    def GetChildren(self, parent, children):
-        # If the parent item is invalid then it represents the hidden root
-        # item, so we'll use the genre objects as its children and they will
-        # end up being the collection of visible roots in our tree.
-        if not parent:
-            for model in self.data:
-                children.append(self.ObjectToItem(model))
-            return len(self.data)
-        return 0
-
-    def IsContainer(self, item):
-        ''' Return Trtue for root but False otherwise for this model.'''
-        # The hidden root is a container
-        if not item:
-            return True
-        # but everything else is not
-        return False
-
-    def GetParent(self, item):
-        return dv.NullDataViewItem
-
-    def GetValue(self, item, col):
-        ''''Fetch the data object for this item's column.'''
-        node = self.ItemToObject(item)
-        if isinstance(node, Samples.Sample):
-            if node.end_dt is None or node.start_dt is None:
-                generate_time = "In Progress"
-            else:
-                generate_time = node.end_dt - node.start_dt
-            mapper = { 0 : str(node.key),
-                       1 : str(node.dataset_key),
-                       2 : str(node.sample_type),
-                       3 : node.created_dt.strftime("%Y-%m-%d, %H:%M:%S"),
-                       4 : str(generate_time)
-                       }
-            return mapper[col]
-        else:
-            raise RuntimeError("unknown node type")
-
-    def GetAttr(self, item, col, attr):
-        '''retrieves custom attributes for item'''
-        return False
-
-    def SetValue(self, value, item, col):
-        '''only allowing updating of key as rest is connected to data that was sampled'''
-        node = self.ItemToObject(item)
-        if col == 0:
-            node.key = value.replace(" ", "_")
-        return True
-
-#TODO remove as no longer used
-#This view enables displaying samples
-class SamplesViewCtrl(dv.DataViewCtrl):
-    def __init__(self, parent, model):
-        dv.DataViewCtrl.__init__(self, parent, style=dv.DV_MULTIPLE|dv.DV_ROW_LINES)
-
-        self.AssociateModel(model)
-        model.DecRef()
-
-        editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
-        column0 = dv.DataViewColumn(GUIText.SAMPLE_NAME, editabletext_renderer, 0,
-                                    flags=dv.DATAVIEW_CELL_EDITABLE, align=wx.ALIGN_LEFT)
-        self.AppendColumn(column0)
-        text_renderer = dv.DataViewTextRenderer()
-        column1 = dv.DataViewColumn(GUIText.DATASET_NAME, text_renderer, 1, align=wx.ALIGN_LEFT)
-        self.AppendColumn(column1)
-        text_renderer = dv.DataViewTextRenderer()
-        column2 = dv.DataViewColumn(GUIText.SAMPLE_TYPE, text_renderer, 2, align=wx.ALIGN_LEFT)
-        self.AppendColumn(column2)
-        text_renderer = dv.DataViewTextRenderer()
-        column3 = dv.DataViewColumn(GUIText.CREATED_ON, text_renderer, 3, align=wx.ALIGN_LEFT)
-        self.AppendColumn(column3)
-        text_renderer = dv.DataViewTextRenderer()
-        column4 = dv.DataViewColumn(GUIText.GENERATE_TIME, text_renderer, 4, align=wx.ALIGN_LEFT)
-        self.AppendColumn(column4)
-
-        for column in self.Columns:
-            column.Sortable = True
-            column.Reorderable = True
-            column.Resizeable = True
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
-
-        self.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
-        self.Bind(wx.EVT_MENU, self.OnCopyItems, id=wx.ID_COPY)
-        accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
-        self.SetAcceleratorTable(accel_tbl)
-
-    def OnShowPopup(self, event):
-        menu = wx.Menu()
-        menu.Append(1, GUIText.COPY)
-        menu.Bind(wx.EVT_MENU, self.OnCopyItems)
-        self.PopupMenu(menu)
-
-    def OnCopyItems(self, event):
-        selected_items = []
-        model = self.GetModel()
-        for item in self.GetSelections():
-            sample_key = model.GetValue(item, 0)
-            dataset_key = model.GetValue(item, 1)
-            sample_type = model.GetValue(item, 2)
-            created_dt = model.GetValue(item, 3)
-            selected_items.append('\t'.join([sample_key, dataset_key, sample_type, created_dt]).strip())
-        clipdata = wx.TextDataObject()
-        clipdata.SetText("\n".join(selected_items))
-        wx.TheClipboard.Open()
-        wx.TheClipboard.SetData(clipdata)
-        wx.TheClipboard.Close()
-
-# This model acts as a bridge between the PartsViewCtrl and the parts of a sample for a particular dataset/grouped_dataset to
+# This model acts as a bridge between the PartsViewCtrl and the parts of a sample for a particular dataset to
 # organizes it hierarchically.
 # This model provides these data columns:
 #     0. ID:   string
 #     1. Notes: string
 #     2. Data:    string
 class PartsViewModel(dv.PyDataViewModel):
-    def __init__(self, sample_data, dataset_data):
+    def __init__(self, sample, dataset):
         dv.PyDataViewModel.__init__(self)
-        self.sample_data = sample_data
-        self.dataset_data = dataset_data
+        self.sample = sample
+        self.dataset = dataset
         self.UseWeakRefs(True)
 
+        self.metadata_column_names = []
+        self.metadata_column_types = []
         self.column_names = []
+        self.UpdateColumnNames()
     
-    #TODO handle merged fields differently
     def UpdateColumnNames(self):
-        self.column_names = [GUIText.ID, GUIText.NOTES]
-        if isinstance(self.dataset_data, Datasets.GroupedDataset):
-            for merged_field_key in self.dataset_data.merged_fields:
-                for field_key in self.dataset_data.merged_fields[merged_field_key].chosen_fields:
-                    self.column_names.append((merged_field_key, field_key))
-            for dataset_key in self.dataset_data.datasets:
-                for merged_field_key in self.dataset_data.datasets[dataset_key].merged_fields:
-                    for field_key in self.dataset_data.datasets[dataset_key].merged_fields[merged_field_key].chosen_fields:
-                        self.column_names.append((merged_field_key, field_key))
-                for field_key in self.dataset_data.datasets[dataset_key].chosen_fields:
-                    self.column_names.append(field_key)
-        elif isinstance(self.dataset_data, Datasets.Dataset):
-            for merged_field_key in self.dataset_data.merged_fields:
-                for field_key in self.dataset_data.merged_fields[merged_field_key].chosen_fields:
-                    self.column_names.append((merged_field_key, field_key))
-            for field_key in self.dataset_data.chosen_fields:
-                self.column_names.append(field_key)
+        if hasattr(self.dataset, 'metadata_fields_list'):
+            if len(self.dataset.metadata_fields_list) == 0:
+                self.metadata_column_names.append('id')
+                self.metadata_column_types.append('string')
+            else:
+                for field_name, field_info in self.dataset.metadata_fields_list:
+                    self.metadata_column_names.append(field_name)
+                    self.metadata_column_types.append(field_info['type'])
+        else:
+            if self.dataset.dataset_source == "Reddit":
+                self.metadata_column_names.append('url')
+                self.metadata_column_types.append('url')
+                if self.dataset.dataset_type == "discussion" or self.dataset.dataset_type == "submission":
+                    self.metadata_column_names.append('title')
+                    self.metadata_column_types.append('string')
+                elif self.dataset.dataset_type == "comment":
+                    self.metadata_column_names.append('body')
+                    self.metadata_column_types.append('string')
+            else:
+                self.metadata_column_names.append('id')
+                self.metadata_column_types.append('string')
+        
+        self.column_names.clear()
+        self.column_names.extend([GUIText.NOTES])
 
     def GetColumnCount(self):
         '''Report how many columns this model provides data for.'''
-        return len(self.column_names)
+        return len(self.metadata_column_names) + len(self.column_names)
 
     def GetChildren(self, parent, children):
         row_num = 0
@@ -184,13 +66,9 @@ class PartsViewModel(dv.PyDataViewModel):
         # item, so we'll use the genre objects as its children and they will
         # end up being the collection of visible roots in our tree.
         if not parent:
-            for key in self.sample_data:
-                node = self.sample_data[key]
+            for key in self.sample.parts_dict:
+                node = self.sample.parts_dict[key]
                 children.append(self.ObjectToItem(node))
-                row_num += 1
-                #if isinstance(node.parent, Samples.Part):
-                #    if row_num >= node.parent.document_num:
-                #        break
             return len(children)
         # Otherwise we'll fetch the python object associated with the parent
         # item and make DV items for each of it's child objects.
@@ -200,29 +78,15 @@ class PartsViewModel(dv.PyDataViewModel):
                 children.append(self.ObjectToItem(node.parts_dict[part_key]))
         elif isinstance(node, Samples.Part):
             for document_key in node.documents:
-                if isinstance(self.dataset_data, Datasets.GroupedDataset):
-                    group_children = []
-                    group_item = self.ObjectToItem(self.dataset_data.grouped_documents[document_key])
-                    self.GetChildren(group_item, group_children)
-                    if len(group_children) == 1:
-                        children.append(group_children[0])
-                    else:
-                        children.append(group_item)
-                elif isinstance(self.dataset_data, Datasets.Dataset):
-                    children.append(self.ObjectToItem(self.dataset_data.documents[document_key]))
+                if isinstance(self.dataset, Datasets.Dataset):
+                    children.append(self.ObjectToItem(self.dataset.documents[document_key]))
                 row_num += 1
                 if row_num >= node.document_num:
                     break
-        elif isinstance(node, Datasets.GroupedDocuments):
-            for document_key in node.documents:
-                children.append(self.ObjectToItem(node.documents[document_key]))
-        #elif isinstance(node, Samples.Document):
-        #    for field_key in node.fields_dict:
-        #       children.append(self.ObjectToItem(node.fields_dict[field_key]))
         return len(children)
 
     def IsContainer(self, item):
-        ''' Return True for GroupedDataset, False otherwise for this model.'''
+        ''' Return True for MergedPart or Part, False otherwise for this model.'''
         # The hidden root is a container
         if not item:
             return True
@@ -232,18 +96,14 @@ class PartsViewModel(dv.PyDataViewModel):
             return True
         if isinstance(node, Samples.Part):
             return True
-        if isinstance(node, Datasets.GroupedDocuments):
-            return True
-        #if isinstance(node, Samples.Document):
-        #    return True
         # but everything else is not
         return False
 
     def GetParent(self, item):
         if not item:
             return dv.NullDataViewItem
-        node = self.ItemToObject(item)
 
+        node = self.ItemToObject(item)
         if isinstance(node, Samples.MergedPart):
             return dv.NullDataViewItem
         elif isinstance(node, Samples.Part):
@@ -251,82 +111,57 @@ class PartsViewModel(dv.PyDataViewModel):
                 return self.ObjectToItem(node.parent)
             else:
                 return dv.NullDataViewItem
-        elif isinstance(node, Datasets.GroupedDocuments):
-            for key in self.sample_data:
-                if isinstance(self.sample_data[key], Samples.MergedPart):
-                    for subkey in self.sample_data[key].parts_dict:
-                        if node.key in self.sample_data[key].parts_dict[subkey].documents:
-                            return self.ObjectToItem(self.sample_data[key].parts_dict[subkey])
-                elif isinstance(self.sample_data[key], Samples.Part):
-                    if node.key in self.sample_data[key].documents:
-                        return self.ObjectToItem(self.sample_data[key])
         elif isinstance(node, Datasets.Document):
-            possible_grouped_documents = []
-            for key in self.sample_data:
-                if isinstance(self.sample_data[key], Samples.MergedPart):
-                    for subkey in self.sample_data[key].parts_dict:
-                        if node.key in self.sample_data[key].parts_dict[subkey].documents:
-                            return self.ObjectToItem(self.sample_data[key].parts_dict[subkey])
-                        else:
-                            possible_grouped_documents.extend(self.sample_data[key].parts_dict[subkey].documents)
-                elif isinstance(self.sample_data[key], Samples.Part):
-                    if node.key in self.sample_data[key].documents:
-                        return self.ObjectToItem(self.sample_data[key])
-                    else:
-                        possible_grouped_documents.extend(self.sample_data[key].documents)
-            if isinstance(self.dataset_data, Datasets.GroupedDataset):
-                for key in self.dataset_data.grouped_documents:
-                    if key in possible_grouped_documents:
-                        if len(self.dataset_data.grouped_documents[key].documents) == 1:
-                            return self.GetParent(self.ObjectToItem(self.dataset_data.grouped_documents[key]))
-                        else:
-                            if node.key in self.dataset_data.grouped_documents[key].documents:
-                                return self.ObjectToItem(self.dataset_data.grouped_documents[key])
+            for key in self.sample.parts_dict:
+                if isinstance(self.sample.parts_dict[key], Samples.MergedPart):
+                    for subkey in self.sample.parts_dict[key].parts_dict:
+                        if node.key in self.sample.parts_dict[key].parts_dict[subkey].documents:
+                            return self.ObjectToItem(self.sample.parts_dict[key].parts_dict[subkey])
+                elif isinstance(self.sample.parts_dict[key], Samples.Part):
+                    if node.key in self.sample.parts_dict[key].documents:
+                        return self.ObjectToItem(self.sample.parts_dict[key])
 
-    #TODO handle merged fields differently
     def GetValue(self, item, col):
         ''''Fetch the data object for this item's column.'''
         node = self.ItemToObject(item)
         if isinstance(node, Samples.MergedPart):
-            mapper = { 0 : str(node.name) +": "+str(node.label),
-                       1 : "\U0001F6C8" if node.notes != "" else "",
+            mapper = { 0 : node.selected if hasattr(node, "selected") and node.selected == True  else False,
+                       1 : str(node.name) +": "+str(node.label),
+                       len(self.metadata_column_names)+1 : "\U0001F6C8" if node.notes != "" else "",
                        }
-            for i in range(2, len(self.column_names)):
+            for i in range(2, len(self.metadata_column_names)+1):
                 mapper[i] = ""
             return mapper[col]
         elif isinstance(node, Samples.Part):
-            mapper = { 0 : str(node.name) +": "+str(node.label),
-                       1 : "\U0001F6C8" if node.notes != "" else "",
+            mapper = { 0 : node.selected if hasattr(node, "selected") and node.selected == True else False,
+                       1 : str(node.name) +": "+str(node.label),
+                       len(self.metadata_column_names)+1 : "\U0001F6C8" if node.notes != "" else "",
                        }
-            for i in range(2, len(self.column_names)):
-                mapper[i] = ""
-            return mapper[col]
-        elif isinstance(node, Datasets.GroupedDocuments):
-            mapper = { 0 : str(node.key),
-                       1 : "\U0001F6C8" if node.notes != "" else "",
-                       }
-            for i in range(2, len(self.column_names)):
+            for i in range(2, len(self.metadata_column_names)+1):
                 mapper[i] = ""
             return mapper[col]
         elif isinstance(node, Datasets.Document):
-            mapper = { 0 : str(node.url) if node.url != '' else str(node.key),
-                       1 : "\U0001F6C8" if node.notes != "" else "",
-                       }
-            for i in range(2, len(self.column_names)):
-                if self.column_names[i] in node.data_dict:
-                    data = node.data_dict[self.column_names[i]]
-                    if isinstance(data, list):
-                        first_entry = ""
-                        for entry in data:
-                            if entry != "":
-                                first_entry = ' '.join(entry.split())
-                                break
-                        if len(data) > 1:
-                            first_entry = str(first_entry) + " ..."
-                        data = first_entry
-                    mapper[i] = str(data)
+            if hasattr(self.sample, "selected_documents") and node.key in self.sample.selected_documents:
+                selected = True
+            else:
+                selected = False
+
+            mapper = { 0 : selected,
+                       len(self.metadata_column_names)+1 : "\U0001F6C8" if node.notes != "" else "", }
+            idx = 1
+            for field_name in self.metadata_column_names:
+                value = node.parent.data[node.key][field_name]
+                if self.metadata_column_types[idx-1] == 'url':
+                    segmented_url = value.split("/")
+                    value = "<span color=\"#0645ad\"><u>"+segmented_url[len(segmented_url)-1]+"</u></span>"
+                elif self.metadata_column_types[idx-1] == 'UTC-timestamp':
+                    value = datetime.utcfromtimestamp(value).strftime(Constants.DATETIME_FORMAT)
+                elif self.metadata_column_types[idx-1] == 'int':
+                    value = value
                 else:
-                    mapper[i] = ""
+                    value = str(value)
+                mapper[idx] = value
+                idx = idx+1
             return mapper[col]
         else:
             raise RuntimeError("unknown node type")
@@ -334,27 +169,27 @@ class PartsViewModel(dv.PyDataViewModel):
     def GetAttr(self, item, col, attr):
         '''retrieves custom attributes for item'''
         node = self.ItemToObject(item)
-        if isinstance(node, Datasets.Document) or isinstance(node, Datasets.GroupedDocuments):
-            if node.usefulness_flag:
-                attr.SetColour(wx.Colour(red=0, green=102, blue=0))
-                attr.SetBold(True)
-                attr.SetStrikethrough(False)
-                return True
-            elif node.usefulness_flag is False:
-                attr.SetColour(wx.Colour(red=255, green=0, blue=0))
-                attr.SetBold(False)
-                attr.SetStrikethrough(True)
-                return True
+        if node.usefulness_flag:
+            attr.SetColour(wx.Colour(red=0, green=102, blue=0))
+            attr.SetBold(True)
+            attr.SetStrikethrough(False)
+            return True
+        elif node.usefulness_flag is False:
+            attr.SetColour(wx.Colour(red=255, green=0, blue=0))
+            attr.SetBold(False)
+            attr.SetStrikethrough(True)
+            return True
         return False
-
-    def SetValue(self, value, item, col):
-        '''only allowing updating of notes as rest is connected to data retrieved'''
-        node = self.ItemToObject(item)
-        if col == 1:
-            node.notes = value
-        return True
     
     def HasContainerColumns(self, item):
+        return True
+    
+    def SetValue(self, value, item, col):
+        node = self.ItemToObject(item)
+        if col == 0:
+            SamplesUtilities.SamplesSelected(self.sample, self.dataset, node, value)
+            main_frame = wx.GetApp().GetTopWindow()
+            main_frame.DocumentsUpdated()
         return True
 
 #This view enables displaying datasets and how they are grouped
@@ -365,43 +200,55 @@ class PartsViewCtrl(dv.DataViewCtrl):
         self.AssociateModel(model)
         model.DecRef()
 
-        
-        text_renderer = dv.DataViewTextRenderer()
-        column0 = dv.DataViewColumn(GUIText.ID, text_renderer, 0, align=wx.ALIGN_LEFT)
-        self.AppendColumn(column0)
-        column0.SetWidth(wx.COL_WIDTH_AUTOSIZE)
-
-        text_renderer = dv.DataViewTextRenderer()
-        column1 = dv.DataViewColumn(GUIText.NOTES, text_renderer, 1, align=wx.ALIGN_LEFT)
-        self.AppendColumn(column1)
-        column1.SetWidth(wx.COL_WIDTH_AUTOSIZE)
-
         self.UpdateColumns()
         
-        self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
+        self.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
         self.Bind(dv.EVT_DATAVIEW_ITEM_ACTIVATED, self.OnOpen)
         self.Bind(wx.EVT_MENU, self.OnCopyItems, id=wx.ID_COPY)
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
+        
+        self.Expander(None)
+
+    def Expander(self, item):
+        model = self.GetModel()
+        if item != None:
+            self.Expand(item)
+        children = []
+        model.GetChildren(item, children)
+        for child in children:
+            self.Expander(child)
 
     def UpdateColumns(self):
         model = self.GetModel()
-        #remove exisitng data columns
-        if len(model.column_names) > 2:
-            for i in reversed(range(2, len(model.column_names))):
+        if self.ColumnCount:
+            for i in reversed(range(0, self.ColumnCount)):
                 self.DeleteColumn(self.GetColumn(i))
 
+        renderer = dv.DataViewToggleRenderer(mode=dv.DATAVIEW_CELL_ACTIVATABLE)
+        column0 = dv.DataViewColumn("", renderer, 0, flags=dv.DATAVIEW_CELL_ACTIVATABLE)
+        self.AppendColumn(column0)
+        self.SetExpanderColumn(column0)
+
         #add data columns
-        model.UpdateColumnNames()
-        for i in range(2, len(model.column_names)):
-            if isinstance(model.column_names[i], str):
-                name = model.column_names[i]
+        idx = 1
+        for field_name in model.metadata_column_names:
+            if model.metadata_column_types[idx-1] == 'int':
+                renderer = dv.DataViewTextRenderer(varianttype="long")
             else:
-                name = model.column_names[i][1][1]
-            text_renderer = dv.DataViewTextRenderer()
-            data_column = dv.DataViewColumn(str(name), text_renderer, i, align=wx.ALIGN_LEFT)
-            self.AppendColumn(data_column)
-            data_column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+                renderer = dv.DataViewTextRenderer()
+                renderer.EnableMarkup()
+
+            column = dv.DataViewColumn(field_name, renderer, idx, align=wx.ALIGN_LEFT)
+            self.AppendColumn(column)
+            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+            idx = idx+1
+
+        text_renderer = dv.DataViewTextRenderer()
+        column1 = dv.DataViewColumn(GUIText.NOTES, text_renderer, idx, align=wx.ALIGN_LEFT)
+        self.AppendColumn(column1)
+        column1.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+        idx = idx+1
         
         for column in self.Columns:
             column.Sortable = True
@@ -422,15 +269,17 @@ class PartsViewCtrl(dv.DataViewCtrl):
     def OnOpen(self, event):
         logger = logging.getLogger(__name__+".PartsViewCtrl.OnOpen")
         logger.info("Starting")
+        model = self.GetModel()
         item = event.GetItem()
-        node = self.GetModel().ItemToObject(item)
+        node = model.ItemToObject(item)
 
         if isinstance(node, Datasets.Document):
-            if event.GetColumn() == 0:
+            col = event.GetColumn()
+            if 0 < col < len(model.metadata_column_names)+1 and model.metadata_column_types[col-1] == 'url':
                 logger.info("Call to access url[%s]", node.url)
                 webbrowser.open_new_tab(node.url)
             else:
-                DatasetsGUIs.DocumentDialog(self, node).Show()
+                CodesGUIs.DocumentDialog(self, node).Show()
         logger.info("Finished")
 
     def OnCopyItems(self, event):
@@ -438,11 +287,11 @@ class PartsViewCtrl(dv.DataViewCtrl):
         logger.info("Starting")
         selected_items = []
         model = self.GetModel()
-        for item in self.GetSelections():
-            document_id = model.GetValue(item, 0)
-            notes = model.GetValue(item, 1)
-            fields = model.GetValue(item, 2)
-            selected_items.append('\t'.join([document_id, notes, fields]).strip())
+        for row in self.GetSelections():
+            line = ''
+            for col in range(0, model.metadata_column_names):
+                line = line + str(model.GetValue(row, col)) + '\t'
+            selected_items.append(line.strip())
         clipdata = wx.TextDataObject()
         clipdata.SetText("\n".join(selected_items))
         wx.TheClipboard.Open()
@@ -484,7 +333,7 @@ class TopicViewModel(dv.PyDataViewModel):
         return 0
 
     def IsContainer(self, item):
-        ''' Return True for GroupedDataset, False otherwise for this model.'''
+        ''' Return True for TopicMergedPart, False otherwise for this model.'''
         # The hidden root is a container
         if not item:
             return True
@@ -540,7 +389,11 @@ class TopicViewModel(dv.PyDataViewModel):
         '''only allowing updating of labels as rest is connected to model that was generated'''
         node = self.ItemToObject(item)
         if col == 1:
-            node.label = value
+            if node.label != value:
+                node.label = value
+                main_frame = wx.GetApp().GetTopWindow()
+                main_frame.SamplesUpdated()
+
         return True
     
     def HasContainerColumns(self, item):
@@ -563,7 +416,7 @@ class TopicViewCtrl(dv.DataViewCtrl):
                                     align=wx.ALIGN_RIGHT)
         self.AppendColumn(column0)
         editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
-        column1 = dv.DataViewColumn(GUIText.LABELS, editabletext_renderer, 1,
+        column1 = dv.DataViewColumn(GUIText.LABEL, editabletext_renderer, 1,
                                     flags=dv.DATAVIEW_CELL_EDITABLE,
                                     align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
@@ -585,7 +438,17 @@ class TopicViewCtrl(dv.DataViewCtrl):
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), copy_id )])
         self.SetAcceleratorTable(accel_tbl)
 
+        self.Expander(None)
         logger.info("Finished")
+
+    def Expander(self, item):
+        model = self.GetModel()
+        if item != None:
+            self.Expand(item)
+        children = []
+        model.GetChildren(item, children)
+        for child in children:
+            self.Expander(child)
 
     def OnShowPopup(self, event):
         '''create popup menu with options that can be performed on the list'''

@@ -1,76 +1,15 @@
 import logging
-import bz2
 import os.path
 import tarfile
 from threading import Thread
 import shutil
-from datetime import datetime
-
-import tempfile
 
 import wx
 import pickle
 
-import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
 from Common.GUIText import Main as GUIText
 import Common.Objects.Datasets as Datasets
-
-# Thread class that executes processing
-class OldLoadThread(Thread):
-    """Load Thread Class."""
-    def __init__(self, notify_window, save_path, current_workspace_path):
-        """Init Worker Thread Class."""
-        Thread.__init__(self)
-        self._notify_window = notify_window
-        self.save_path = save_path
-        self.current_workspace_path = current_workspace_path
-        # This starts the thread running on creation, but you could
-        # also make the GUI thread responsible for calling this
-        self.start()
-
-    def run(self):
-        logger = logging.getLogger(__name__+".LoadThread.run")
-        logger.info("Starting")
-        result = {}
-        try:
-            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_CONFIG))
-            with bz2.BZ2File(self.save_path+"/config.mta", 'rb') as infile:
-                result['config'] = pickle.load(infile)
-
-            result['datasets'] = {}
-            if "datasets" in result['config']:
-                for key in result['config']['datasets']:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_DATASET+str(key)))
-                    dataset_filename = ""
-                    for key_part in key:
-                        dataset_filename = dataset_filename + str(key_part)+"_"
-                    dataset_filename = dataset_filename + "datasets.mta"
-                    if os.path.isfile(self.save_path+"/"+dataset_filename):
-                        with bz2.BZ2File(self.save_path+"/"+dataset_filename, 'rb') as infile:
-                            result['datasets'][key] = pickle.load(infile)
-
-            result['samples'] = {}
-            if 'samples' in result['config']:
-                for key in result['config']['samples']:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_SAMPLE+str(key)))
-                    sample_filename = str(key)+"_sample.mta"
-                    if os.path.isfile(self.save_path+"/"+sample_filename):
-                        with bz2.BZ2File(self.save_path+"/"+sample_filename, 'rb') as infile:
-                            result['samples'][key] = pickle.load(infile)
-                            result['samples'][key].OldLoad(self.save_path)
-
-            result['codes'] = {}
-            if "codes" in result['config']:
-                with bz2.BZ2File(self.save_path+"/codes.mta", 'rb') as infile:
-                    result['codes'] = pickle.load(infile)
-
-        except (TypeError, FileNotFoundError):
-            wx.LogError(GUIText.LOAD_FAILURE + self.save_path)
-            logger.exception("Failed to load workspace[%s]", self.save_path)
-        logger.info("Finished")
-        wx.PostEvent(self._notify_window, CustomEvents.LoadResultEvent(result))
-
 
 # Thread class that executes processing
 class SaveThread(Thread):
@@ -105,8 +44,6 @@ class SaveThread(Thread):
             for key in self.datasets:
                 if isinstance(self.datasets[key], Datasets.Dataset):
                     dataset_filename = str(key[0])+"_"+str(key[1])+"_"+str(key[2])+".pk"
-                elif isinstance(self.datasets[key], Datasets.GroupedDataset):
-                    dataset_filename = str(key[0])+"_"+str(key[1])+".pk"
                 existing_datasets.append(dataset_filename)
                 if self.datasets[key].last_changed_dt > self.last_load_dt:
                     wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_DATASETS+str(key)))
@@ -141,7 +78,6 @@ class SaveThread(Thread):
             with open(self.current_workspace_path+"/codes.pk", 'wb') as outfile:
                 pickle.dump(self.codes, outfile)
 
-            #TODO rework this to append files one at a time and see fi that makes it more responsive
             with tarfile.open(self.save_path, 'w|bz2') as tar_file:
                 tar_file.add(self.current_workspace_path, arcname='.')
 

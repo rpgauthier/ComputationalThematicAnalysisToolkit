@@ -24,7 +24,6 @@ class CollectionPanel(wx.Panel):
         #splitter used to control panels that appear in this module
         self.splitter = wx.SplitterWindow(self)
 
-
         #Each of the panels that could be used for this module:
         self.datasetdetails_panel = SubModuleDatasets.DatasetDetailsPanel(self.splitter)
 
@@ -46,10 +45,7 @@ class CollectionPanel(wx.Panel):
         #Module's notes
         main_frame = wx.GetApp().GetTopWindow()
         self.notes_panel = Notes.NotesPanel(main_frame.notes_notebook, self)
-        index = main_frame.notes_notebook.GetPageIndex(self.notes_panel)
-        if index is wx.NOT_FOUND:
-            main_frame.notes_notebook.AddPage(self.notes_panel,
-                                              GUIText.COLLECTION_LABEL)
+        main_frame.notes_notebook.AddPage(self.notes_panel, GUIText.COLLECTION_LABEL)
 
         #Menu for Module
         self.view_menu = wx.Menu()
@@ -146,7 +142,7 @@ class CollectionPanel(wx.Panel):
         logger.info("Finished")
 
     def Load(self, saved_data):
-        '''initalizes DataFamiliarization Module with saved_data'''
+        '''initalizes Collection Module with saved_data'''
         logger = logging.getLogger(__name__+".CollectionNotebook.Load")
         logger.info("Starting")
         self.Freeze()
@@ -161,7 +157,7 @@ class CollectionPanel(wx.Panel):
         logger.info("Finished")
 
     def Save(self):
-        '''saves current Familiarization Module's data'''
+        '''saves current Collection Module's data'''
         logger = logging.getLogger(__name__+".CollectionNotebook.Save")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()

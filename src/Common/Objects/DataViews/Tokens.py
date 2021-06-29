@@ -3,7 +3,7 @@ import logging
 import wx
 import wx.grid
 
-from Common.GUIText import Familiarization as GUIText
+from Common.GUIText import Filtering as GUIText
 
 class TokenGridTable(wx.grid.GridTableBase):
     def __init__(self, token_df):

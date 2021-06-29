@@ -20,7 +20,7 @@ import Collection.TwitterDataRetriever as twr
 
 class RetrieveRedditDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, subreddit, start_date, end_date, replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type):
+    def __init__(self, notify_window, main_frame, dataset_name, subreddit, start_date, end_date, replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type, avaliable_fields_list, metadata_fields_list, included_fields_list):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self.daemon = True
@@ -34,8 +34,9 @@ class RetrieveRedditDatasetThread(Thread):
         self.subreddit = subreddit
         self.start_date = start_date
         self.end_date = end_date
-        # This starts the thread running on creation, but you could
-        # also make the GUI thread responsible for calling this
+        self.avaliable_fields_list = avaliable_fields_list
+        self.metadata_fields_list = metadata_fields_list
+        self.included_fields_list = included_fields_list
         self.start()
     
     def run(self):
@@ -151,7 +152,7 @@ class RetrieveRedditDatasetThread(Thread):
         if status_flag:
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = self.CreateDataset(dataset_key, retrieval_details, data)
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list)
                 DatasetsUtilities.CreateDatasetObjectsMetadata(dataset)
                 DatasetsUtilities.TokenizeDatasetObjects([dataset], self._notify_window, self.main_frame)
             else:
@@ -166,38 +167,6 @@ class RetrieveRedditDatasetThread(Thread):
         result['error_msg'] = error_msg
         wx.PostEvent(self._notify_window, CustomEvents.RetrieveResultEvent(result))
         logger.info("Finished")
-
-    def CreateDataset(self, dataset_key, retrieval_details, data):
-        dataset = Datasets.Dataset(dataset_key,
-                                   dataset_key[0],
-                                   dataset_key[1],
-                                   dataset_key[2],
-                                   retrieval_details)
-        dataset.data = data
-        avaliable_fields = Constants.avaliable_fields[(dataset_key[1], dataset_key[2],)]
-        for field in avaliable_fields:
-            new_field = Datasets.Field(dataset,
-                                       field,
-                                       dataset,
-                                       avaliable_fields[field]['desc'],
-                                       avaliable_fields[field]['type'])
-            dataset.avaliable_fields[field] = new_field
-        chosen_fields = Constants.chosen_fields[(dataset_key[1], dataset_key[2],)]
-
-        merged_fields = {}
-        for field in chosen_fields:
-            if chosen_fields[field]['type'] not in merged_fields:
-                merged_fields[chosen_fields[field]['type']] = Datasets.MergedField(dataset, chosen_fields[field]['type']+"_Fields")
-            new_field = Datasets.Field(merged_fields[chosen_fields[field]['type']],
-                                       field,
-                                       dataset,
-                                       chosen_fields[field]['desc'],
-                                       chosen_fields[field]['type'])
-            merged_fields[chosen_fields[field]['type']].chosen_fields[dataset.key, field] = new_field
-
-        for key in merged_fields:
-            dataset.merged_fields[merged_fields[key].key] = merged_fields[key]
-        return dataset
 
     def UpdateDataFiles(self, subreddit, start_date, end_date, prefix):
         logger = logging.getLogger(__name__+".RedditRetrieverDialog.UpdateDataFiles["+subreddit+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
@@ -284,10 +253,9 @@ class RetrieveRedditDatasetThread(Thread):
         logger.info("Finished")
         return data
 
-# TODO: convert to twitter
 class RetrieveTwitterDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, keys, query, start_date, end_date, dataset_type):
+    def __init__(self, notify_window, main_frame, dataset_name, keys, query, start_date, end_date, dataset_type, avaliable_fields_list, metadata_fields_list, included_fields_list):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
@@ -299,6 +267,9 @@ class RetrieveTwitterDatasetThread(Thread):
         self.start_date = start_date
         self.end_date = end_date
         self.dataset_type = dataset_type
+        self.avaliable_fields_list = avaliable_fields_list
+        self.metadata_fields_list = metadata_fields_list
+        self.included_fields_list = included_fields_list
         # This starts the thread running on creation, but you could
         # also make the GUI thread responsible for calling this
         self.start()
@@ -386,7 +357,7 @@ class RetrieveTwitterDatasetThread(Thread):
         if status_flag:
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = self.CreateDataset(dataset_key, retrieval_details, data)
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list)
                 DatasetsUtilities.CreateDatasetObjectsMetadata(dataset)
                 DatasetsUtilities.TokenizeDatasetObjects([dataset], self._notify_window, self.main_frame)
             else:
@@ -402,37 +373,37 @@ class RetrieveTwitterDatasetThread(Thread):
         wx.PostEvent(self._notify_window, CustomEvents.RetrieveResultEvent(result))
         logger.info("Finished")
 
-    def CreateDataset(self, dataset_key, retrieval_details, data):
-        dataset = Datasets.Dataset(dataset_key,
-                                   dataset_key[0],
-                                   dataset_key[1],
-                                   dataset_key[2],
-                                   retrieval_details)
-        dataset.data = data
-        avaliable_fields = Constants.avaliable_fields[(dataset_key[1], dataset_key[2],)]
-        for field in avaliable_fields:
-            new_field = Datasets.Field(dataset,
-                                       field,
-                                       dataset,
-                                       avaliable_fields[field]['desc'],
-                                       avaliable_fields[field]['type'])
-            dataset.avaliable_fields[field] = new_field
-        chosen_fields = Constants.chosen_fields[(dataset_key[1], dataset_key[2],)]
+    # def CreateDataset(self, dataset_key, retrieval_details, data):
+    #     dataset = Datasets.Dataset(dataset_key,
+    #                                dataset_key[0],
+    #                                dataset_key[1],
+    #                                dataset_key[2],
+    #                                retrieval_details)
+    #     dataset.data = data
+    #     avaliable_fields = Constants.avaliable_fields[(dataset_key[1], dataset_key[2],)]
+    #     for field in avaliable_fields:
+    #         new_field = Datasets.Field(dataset,
+    #                                    field,
+    #                                    dataset,
+    #                                    avaliable_fields[field]['desc'],
+    #                                    avaliable_fields[field]['type'])
+    #         dataset.avaliable_fields[field] = new_field
+    #     chosen_fields = Constants.chosen_fields[(dataset_key[1], dataset_key[2],)]
 
-        merged_fields = {}
-        for field in chosen_fields:
-            if chosen_fields[field]['type'] not in merged_fields:
-                merged_fields[chosen_fields[field]['type']] = Datasets.MergedField(dataset, chosen_fields[field]['type']+"_Fields")
-            new_field = Datasets.Field(merged_fields[chosen_fields[field]['type']],
-                                       field,
-                                       dataset,
-                                       chosen_fields[field]['desc'],
-                                       chosen_fields[field]['type'])
-            merged_fields[chosen_fields[field]['type']].chosen_fields[dataset.key, field] = new_field
+    #     merged_fields = {}
+    #     for field in chosen_fields:
+    #         if chosen_fields[field]['type'] not in merged_fields:
+    #             merged_fields[chosen_fields[field]['type']] = Datasets.MergedField(dataset, chosen_fields[field]['type']+"_Fields")
+    #         new_field = Datasets.Field(merged_fields[chosen_fields[field]['type']],
+    #                                    field,
+    #                                    dataset,
+    #                                    chosen_fields[field]['desc'],
+    #                                    chosen_fields[field]['type'])
+    #         merged_fields[chosen_fields[field]['type']].chosen_fields[dataset.key, field] = new_field
 
-        for key in merged_fields:
-            dataset.merged_fields[merged_fields[key].key] = merged_fields[key]
-        return dataset
+    #     for key in merged_fields:
+    #         dataset.merged_fields[merged_fields[key].key] = merged_fields[key]
+    #     return dataset
 
     def UpdateDataFiles(self, auth, name, query, start_date, end_date, prefix):
         logger = logging.getLogger(__name__+".TwitterRetrieverDialog.UpdateDataFiles["+query+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
@@ -528,7 +499,7 @@ class RetrieveTwitterDatasetThread(Thread):
 
 class RetrieveCSVDatasetThread(Thread):
     """Retrieve CSV Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, dataset_field, dataset_type, id_field, url_field, datetime_field, datetime_tz, avaliable_fields, included_fields, filename):
+    def __init__(self, notify_window, main_frame, dataset_name, dataset_field, dataset_type, id_field, url_field, datetime_field, datetime_tz, avaliable_fields_list, metadata_fields_list, included_fields_list, filename):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self.daemon = True
@@ -541,11 +512,10 @@ class RetrieveCSVDatasetThread(Thread):
         self.url_field = url_field
         self.datetime_field = datetime_field
         self.datetime_tz = datetime_tz
-        self.avaliable_fields = avaliable_fields
-        self.included_fields = included_fields
+        self.avaliable_fields_list = avaliable_fields_list
+        self.metadata_fields_list = metadata_fields_list
+        self.included_fields_list = included_fields_list
         self.filename = filename
-        # This starts the thread running on creation, but you could
-        # also make the GUI thread responsible for calling this
         self.start()
     
     def run(self):
@@ -562,11 +532,12 @@ class RetrieveCSVDatasetThread(Thread):
         
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG + self.filename))
         file_data = self.ImportDataFiles(self.filename)
-        #convert yhe data into toolkit's dataset format
+        #convert the data into toolkit's dataset format
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_CSV_MSG))
 
         if self.dataset_field == "":
             dataset_key = (self.dataset_name, "CSV", self.dataset_type)
+            
             row_num = 1
             for row in file_data:
                 if self.id_field in row:
@@ -597,7 +568,6 @@ class RetrieveCSVDatasetThread(Thread):
                                 data[key]['created_utc'] = 0
                         else:
                             data[key]['created_utc'] = 0
-
                     for field in row:
                         data[key]["csv."+field] = [row[field]]
                 else:
@@ -610,8 +580,7 @@ class RetrieveCSVDatasetThread(Thread):
             #save as a document dataset
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = self.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields, self.included_fields)
-                #if self.id_field:
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list)
                 DatasetsUtilities.CreateDatasetObjectsMetadata(dataset)
                 DatasetsUtilities.TokenizeDatasetObjects([dataset], self._notify_window, self.main_frame)
             else:
@@ -635,8 +604,24 @@ class RetrieveCSVDatasetThread(Thread):
                     data[new_dataset_key][key]['data_source'] = 'CSV'
                     data[new_dataset_key][key]['data_type'] = row[self.dataset_field]
                     data[new_dataset_key][key]['id'] = document_id
-                    data[new_dataset_key][key]['url'] = ""
-                    data[new_dataset_key][key]['created_utc'] = 0
+                    if self.url_field == "":
+                        data[new_dataset_key][key]['url'] = ""
+                    else:
+                        data[new_dataset_key][key]['url'] = row[self.url_field]
+                    if self.datetime_field == "":
+                        data[new_dataset_key][key]['created_utc'] = 0
+                    else:
+                        datetime_value = row[self.datetime_field]
+                        if datetime_value != '':
+                            datetime_obj = dateparser.parse(datetime_value, settings={'TIMEZONE': self.datetime_tz})
+                            if datetime_obj != None:
+                                datetime_obj = datetime_obj.astimezone(timezone.utc)
+                                datetime_utc = datetime_obj.replace(tzinfo=timezone.utc).timestamp()
+                                data[new_dataset_key][key]['created_utc'] = datetime_utc
+                            else:
+                                data[new_dataset_key][key]['created_utc'] = 0
+                        else:
+                            data[new_dataset_key][key]['created_utc'] = 0
                     for field in row:
                         data[new_dataset_key][key]["csv."+field] = [row[field]]
                 else:
@@ -650,7 +635,7 @@ class RetrieveCSVDatasetThread(Thread):
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 for new_dataset_key in data:
-                    datasets[new_dataset_key] = self.CreateDataset(new_dataset_key, retrieval_details, data[new_dataset_key], self.avaliable_fields, self.included_fields)
+                    datasets[new_dataset_key] = DatasetsUtilities.CreateDataset(new_dataset_key, retrieval_details, data[new_dataset_key], self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list)
                     DatasetsUtilities.CreateDatasetObjectsMetadata(datasets[new_dataset_key])
                     DatasetsUtilities.TokenizeDatasetObjects([datasets[new_dataset_key]], self._notify_window, self.main_frame)
             else:
@@ -668,36 +653,6 @@ class RetrieveCSVDatasetThread(Thread):
         result['error_msg'] = error_msg
         wx.PostEvent(self._notify_window, CustomEvents.RetrieveResultEvent(result))
         logger.info("Finished")
-
-    def CreateDataset(self, dataset_key, retrieval_details, data, avaliable_fields, included_fields):
-        dataset = Datasets.Dataset(dataset_key,
-                                   dataset_key[0],
-                                   dataset_key[1],
-                                   dataset_key[2],
-                                   retrieval_details)
-        dataset.data = data
-        new_field = Datasets.Field(dataset,
-                                   "id",
-                                   dataset,
-                                   "unique identifier for each data element",
-                                   "string")
-        dataset.avaliable_fields["id"] = new_field
-        for field in avaliable_fields:
-            new_field = Datasets.Field(dataset,
-                                       field,
-                                       dataset,
-                                       avaliable_fields[field]['desc'],
-                                       avaliable_fields[field]['type'])
-            dataset.avaliable_fields[field] = new_field
-        #include unique id as a field to enable grouping with other datasets
-        for field in included_fields:
-            new_field = Datasets.Field(dataset,
-                                       field,
-                                       dataset,
-                                       included_fields[field]['desc'],
-                                       included_fields[field]['type'])
-            dataset.chosen_fields[field] = new_field
-        return dataset
 
     def ImportDataFiles(self, filename):
         logger = logging.getLogger(__name__+".RetrieveCSVDatasetThread.ImportDataFiles["+filename+"]")

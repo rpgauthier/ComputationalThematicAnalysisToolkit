@@ -5,11 +5,11 @@ import wx
 import External.wxPython.flatnotebook_fix as FNB
 import wx.dataview as dv
 
-from Common import Constants
-from Common import Notes
+import Common.Notes as Notes
+import Common.Constants as Constants
 from Common.GUIText import Coding as GUIText
 import Common.Objects.Datasets as Datasets
-import Common.Objects.GUIs.Datasets as DatasetGUIs
+import Common.Objects.GUIs.Codes as CodesGUIs
 
 class CodingNotebook(FNB.FlatNotebook):
     '''Manages the Coding Module'''
@@ -109,7 +109,7 @@ class CodingDatasetPanel(wx.Panel):
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.splitter = wx.SplitterWindow(self)
 
-        self.documentlist_panel = DatasetGUIs.DocumentListPanel(self.splitter, self.dataset_key)
+        self.documentlist_panel = CodesGUIs.DocumentListPanel(self.splitter, self.dataset_key)
         self.documentlist_panel.Bind(dv.EVT_DATAVIEW_SELECTION_CHANGED, self.OnSelectDocument)
 
         self.default_document_panel = wx.Panel(self.splitter)
@@ -132,7 +132,7 @@ class CodingDatasetPanel(wx.Panel):
             if isinstance(node, Datasets.Document):
                 self.Freeze()
                 if node.key not in self.document_windows:
-                    self.document_windows[node.key] = DatasetGUIs.DocumentPanel(self.splitter, node, size=(self.GetSize().GetWidth(), int(self.GetSize().GetHeight()/4*3)))
+                    self.document_windows[node.key] = CodesGUIs.DocumentPanel(self.splitter, node, size=(self.GetSize().GetWidth(), int(self.GetSize().GetHeight()/4*3)))
                 
                 bottom_window = self.splitter.GetWindow2()
                 bottom_window.Hide()
@@ -145,14 +145,14 @@ class CodingDatasetPanel(wx.Panel):
         logger.info("Finished")
 
     def DatasetsUpdated(self):
-        '''Triggered by any function from this module or sub modules.
-        updates the datasets to perform a global refresh'''
+        #Triggered by any function from this module or sub modules.
+        #updates the datasets to perform a global refresh
         logger = logging.getLogger(__name__+".CodingDatasetPanel.DatasetsUpdated")
         logger.info("Starting")
         #sets time that dataset was updated to flag for saving
         #trigger updates of any submodules that use the datasets for rendering
         self.Freeze()
-        self.documentlist_panel.DatasetsUpdated()
+        self.documentlist_panel.DocumentsUpdated()
         bottom_window = self.splitter.GetWindow2()
         if bottom_window is not self.default_document_panel:
             self.default_document_panel.Show()
@@ -162,8 +162,8 @@ class CodingDatasetPanel(wx.Panel):
         logger.info("Finished")
 
     def DocumentsUpdated(self):
-        '''Triggered by any function from this module or sub modules.
-        updates the datasets to perform a global refresh'''
+        #Triggered by any function from this module or sub modules.
+        #updates the datasets to perform a global refresh
         logger = logging.getLogger(__name__+".CodingDatasetPanel.DatasetsUpdated")
         logger.info("Starting")
         #sets time that dataset was updated to flag for saving

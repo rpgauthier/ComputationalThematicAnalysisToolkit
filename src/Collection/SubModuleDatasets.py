@@ -50,12 +50,6 @@ class DatasetsListPanel(wx.Panel):
 
         modify_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, self, label=GUIText.MODIFY)
         modify_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-        group_tool = modify_toolbar.AddTool(wx.ID_ANY, label=GUIText.GROUP, bitmap=wx.Bitmap(1, 1),
-                                            shortHelp=GUIText.DATASETS_GROUP_TOOLTIP)
-        modify_toolbar.Bind(wx.EVT_MENU, self.OnGroupDatasets, group_tool)
-        ungroup_tool = modify_toolbar.AddTool(wx.ID_ANY, label=GUIText.UNGROUP, bitmap=wx.Bitmap(1, 1),
-                                              shortHelp=GUIText.DATASETS_UNGROUP_TOOLTIP)
-        modify_toolbar.Bind(wx.EVT_MENU, self.OnUngroupDatasets, ungroup_tool)
         remove_tool = modify_toolbar.AddTool(wx.ID_ANY, label=GUIText.DELETE, bitmap=wx.Bitmap(1, 1),
                                              shortHelp=GUIText.DATASETS_DELETE_TOOLTIP)
         modify_toolbar.Bind(wx.EVT_MENU, self.OnDeleteDatasets, remove_tool)
@@ -112,9 +106,8 @@ class DatasetsListPanel(wx.Panel):
         for item in selections:
             if item is not None:
                 node = self.datasets_model.ItemToObject(item)
-                if isinstance(node, Datasets.GroupedDataset) or isinstance(node, Datasets.Dataset):
+                if isinstance(node, Datasets.Dataset):
                     DatasetsGUIs.DatasetDetailsDialog(self, node).Show()
-                #elif isinstance(node, Datasets.MergedField):
                 #elif isinstance(node, Datasets.Field):
         logger.info("Finished")
 
@@ -122,7 +115,6 @@ class DatasetsListPanel(wx.Panel):
         logger = logging.getLogger(__name__+".DatasetsPanel.OnAddRedditDataset")
         logger.info("Starting")
         #create a retriever of chosen type in a popup
-        main_frame = wx.GetApp().GetTopWindow()
         CollectionDialogs.RedditDatasetRetrieverDialog(self).Show()
         logger.info("Finished")
     
@@ -138,7 +130,6 @@ class DatasetsListPanel(wx.Panel):
         logger = logging.getLogger(__name__+".DatasetsPanel.OnAddCSVDataset")
         logger.info("Starting")
         #create a retriever of chosen type in a popup
-        main_frame = wx.GetApp().GetTopWindow()
         CollectionDialogs.CSVDatasetRetrieverDialog(self).Show()
         logger.info("Finished")
 
@@ -151,160 +142,24 @@ class DatasetsListPanel(wx.Panel):
         try:
             main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_PREPARING_MSG)
             node = self.datasets_model.ItemToObject(event.GetItem())
-            if isinstance(node, Datasets.Dataset) or isinstance(node, Datasets.GroupedDataset):
+            if isinstance(node, Datasets.Dataset):
                 new_name = event.GetValue()
                 if node.name != new_name:
                     old_key = node.key
-                    if isinstance(node, Datasets.GroupedDataset):
-                        new_key = (new_name, 'group')
-                    elif isinstance(node, Datasets.Dataset):
-                        new_key = (new_name, node.dataset_source, node.dataset_type,)
+                    new_key = (new_name, node.dataset_source, node.dataset_type,)
                     if new_key in main_frame.datasets:
                         wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
                                         GUIText.ERROR, wx.OK | wx.ICON_ERROR)
                         logger.error("Duplicate name[%s] entered by user", str(new_key))
                     else:
-                        continue_flag = True
-                        for key in main_frame.datasets:
-                            if isinstance(main_frame.datasets[key], Datasets.GroupedDataset):
-                                if new_key in main_frame.datasets[key].datasets:
-                                    continue_flag = False
-                                    wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
-                                        GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-                                    logger.error("Duplicate name[%s] entered by user", str(new_key))
-                                    break
-                        if continue_flag:
-                            main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_MSG1+str(node.key)\
-                                                           +GUIText.CHANGING_NAME_BUSY_MSG2+str(new_key))
-                            node.key = new_key
-                            node.name = new_name
-                            if old_key in main_frame.datasets:
-                                main_frame.datasets[new_key] = main_frame.datasets[old_key]
-                                del main_frame.datasets[old_key]
-                            elif node.parent is not None:
-                                node.parent.datasets[new_key] = node
-                                del node.parent.datasets[old_key]
-                            main_frame.DatasetKeyChange(old_key, new_key)
-                            main_frame.DatasetsUpdated()
-        finally:
-            main_frame.CloseProgressDialog(thaw=True)
-        logger.info("Finished")
-
-    def OnGroupDatasets(self, event):
-        logger = logging.getLogger(__name__+".DatasetsPanel.OnGroupDatasets")
-        logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        selections = self.datasets_ctrl.GetSelections()
-        main_frame.CreateProgressDialog(GUIText.GROUPING_BUSY_LABEL,
-                                        freeze=True)
-        try:
-            main_frame.PulseProgressDialog(GUIText.GROUPING_BUSY_PREPARING_MSG)
-            nodes = []
-            impacted_groupeddatasets = []
-            #check whether any selections are already grouped and if so break down into datasets
-            for item in selections:
-                node = self.datasets_model.ItemToObject(item)
-                if isinstance(node, Datasets.GroupedDataset):
-                    for dataset in node.datasets:
-                        if dataset not in nodes:
-                            nodes.append(dataset)
-                if isinstance(node, Datasets.Dataset):
-                    if node not in nodes:
-                        nodes.append(node)
-            if len(nodes) > 0:
-                with wx.TextEntryDialog(self, message=GUIText.DATASETS_GROUP_NAME,
-                                        caption=GUIText.INPUT_REQUEST, value="") as name_dialog:
-                    if name_dialog.ShowModal() == wx.ID_OK:
-                        name = name_dialog.GetValue()
-                        key = (name, "group")
-                        if key not in main_frame.datasets:
-                            main_frame.PulseProgressDialog(GUIText.GROUPING_BUSY_CREATING_MSG+name)
-                            group = Datasets.GroupedDataset(key, name)
-                            main_frame.datasets[group.key] = group
-                            for node in nodes:
-                                main_frame.PulseProgressDialog(GUIText.GROUPING_BUSY_ADDING_MSG1+str(node.key)\
-                                                      +GUIText.GROUPING_BUSY_ADDING_MSG2+str(key))
-                                with CollectionDialogs.GroupingFieldDialog(self, node) as groupingfield_dialog:
-                                    if groupingfield_dialog.ShowModal() == wx.ID_OK:
-                                        #get the one element selected
-                                        if node.parent is not None:
-                                            old_parent = node.parent
-                                            del old_parent.datasets[node.name]
-                                            if len(old_parent.datasets) > 0:
-                                                old_parent.last_changed_dt = datetime.now()
-                                                if old_parent not in impacted_groupeddatasets:
-                                                    impacted_groupeddatasets.append(old_parent)
-                                            else:
-                                                if old_parent in impacted_groupeddatasets:
-                                                    impacted_groupeddatasets.remove(old_parent)
-                                        else:
-                                            del main_frame.datasets[node.key]
-                                        node.parent = group
-                                        group.datasets[node.key] = node
-                            impacted_groupeddatasets.append(group)
-                            for grouped_dataset in impacted_groupeddatasets:
-                                main_frame.PulseProgressDialog(GUIText.GROUPING_BUSY_UPDATING_MSG+str(grouped_dataset.key))
-                                #TODO need to move into a thread
-                                DatasetsUtilities.CreateDatasetObjectsMetadata(grouped_dataset)
-                            self.datasets_model.Cleared()
-                            main_frame.DatasetsUpdated()
-                        else:
-                            wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
-                                        GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-        finally:
-            main_frame.CloseProgressDialog(thaw=True)
-        logger.info("Finished")
-
-    def OnUngroupDatasets(self, event):
-        logger = logging.getLogger(__name__+".DatasetsPanel.OnUngroupDatasets")
-        logger.info("Starting")
-        performed_flag = False
-        impacted_groupeddatasets = []
-        def DatasetUngrouper(dataset):
-            if dataset.key not in main_frame.datasets:
-                nonlocal impacted_groupeddatasets
-                nonlocal performed_flag
-                old_parent = dataset.parent
-                main_frame.PulseProgressDialog(GUIText.UNGROUPING_BUSY_REMOVING_MSG1+str(node.key)\
-                                      +GUIText.UNGROUPING_BUSY_REMOVING_MSG2+str(old_parent.key))
-                dataset.parent = None
-                dataset.grouping_field = None
-                main_frame.datasets[dataset.key] = dataset
-                del old_parent.datasets[dataset.key]
-                if len(old_parent.datasets) == 0:
-                    old_parent.DestroyObject()
-                    del main_frame.datasets[old_parent.key]
-                    if old_parent in impacted_groupeddatasets:
-                        impacted_groupeddatasets.remove(old_parent)
-                else:
-                    old_parent.last_changed_dt = datetime.now()
-                    if old_parent not in impacted_groupeddatasets:
-                        impacted_groupeddatasets.append(old_parent)
-                performed_flag = True
-        def GroupedDatasetUngrouper(grouped_dataset):
-            for dataset in list(grouped_dataset.datasets.values()):
-                DatasetUngrouper(dataset)
-
-        main_frame = wx.GetApp().GetTopWindow()
-        selections = self.datasets_ctrl.GetSelections()
-        main_frame.CreateProgressDialog(GUIText.UNGROUPING_BUSY_LABEL,
-                                        freeze=True)
-        try:
-            main_frame.PulseProgressDialog(GUIText.UNGROUPING_BUSY_PREPARING_MSG)
-            #perform ungroup on any selected groups or grouped datasets
-            for item in selections:
-                node = self.datasets_model.ItemToObject(item)
-                
-                if isinstance(node, Datasets.Dataset):
-                    DatasetUngrouper(node)
-                elif isinstance(node, Datasets.GroupedDataset):
-                    GroupedDatasetUngrouper(node)
-            if performed_flag:
-                for grouped_dataset in impacted_groupeddatasets:
-                    main_frame.PulseProgressDialog(GUIText.UNGROUPING_BUSY_UPDATING_MSG+str(grouped_dataset.key))
-                    #TODO need to move into a thread
-                    DatasetsUtilities.CreateDatasetObjectsMetadata(grouped_dataset)
-                main_frame.DatasetsUpdated()
+                        main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_MSG1+str(node.key)\
+                                                       +GUIText.CHANGING_NAME_BUSY_MSG2+str(new_key))
+                        node.key = new_key
+                        node.name = new_name
+                        main_frame.datasets[new_key] = main_frame.datasets[old_key]
+                        del main_frame.datasets[old_key]
+                        main_frame.DatasetKeyChange(old_key, new_key)
+                        main_frame.DatasetsUpdated()
         finally:
             main_frame.CloseProgressDialog(thaw=True)
         logger.info("Finished")
@@ -313,7 +168,6 @@ class DatasetsListPanel(wx.Panel):
         logger = logging.getLogger(__name__+".DatasetsPanel.OnDeleteDatasets")
         logger.info("Starting")
         delete_nodes = []
-        impacted_groupeddatasets = []
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.CreateProgressDialog(GUIText.DELETING_BUSY_LABEL,
                                         freeze=True)
@@ -322,7 +176,7 @@ class DatasetsListPanel(wx.Panel):
             #perform delete on any selected groups or grouped datasets
             for item in self.datasets_ctrl.GetSelections():
                 node = self.datasets_model.ItemToObject(item)
-                if isinstance(node, Datasets.Dataset) or isinstance(node, Datasets.GroupedDataset):
+                if isinstance(node, Datasets.Dataset):
                     if wx.MessageBox(str(node.key) + GUIText.DELETE_CONFIRMATION
                                     + GUIText.DATASETS_DELETE_CONFIRMATION_WARNING,
                                     GUIText.WARNING, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
@@ -330,25 +184,10 @@ class DatasetsListPanel(wx.Panel):
             if len(delete_nodes) > 0:
                 for node in delete_nodes:
                     main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_REMOVING_MSG+str(node.key))
-                    if node.parent is None:
-                        if node.key in main_frame.datasets:
-                            del main_frame.datasets[node.key]
-                    else:
-                        old_parent = node.parent
-                        if len(old_parent.datasets) == 0:
-                            old_parent.DestroyObject()
-                            del main_frame.datasets[old_parent.key]
-                            if old_parent in impacted_groupeddatasets:
-                                impacted_groupeddatasets.remove(old_parent)
-                        else:
-                            old_parent.last_changed_dt = datetime.now()
-                            if old_parent not in impacted_groupeddatasets:
-                                impacted_groupeddatasets.append(old_parent)
+                    if node.key in main_frame.datasets:
+                        del main_frame.datasets[node.key]
                     node.DestroyObject()
-                for grouped_dataset in impacted_groupeddatasets:
-                    main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_UPDATING_MSG+str(grouped_dataset.key))
-                    #TODO need to move into a thread
-                    DatasetsUtilities.CreateDatasetObjectsMetadata(grouped_dataset)
+                    #TODO NEED TO UPDATE SAMPLES AND CODES
                 main_frame.DatasetsUpdated()
         finally:
             main_frame.CloseProgressDialog(thaw=True)
@@ -361,6 +200,7 @@ class DatasetsListPanel(wx.Panel):
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.PulseProgressDialog(GUIText.UPDATING_DATASET_BUSY_MSG)
         self.datasets_model.Cleared()
+        self.datasets_ctrl.Expander(None)
 
         logger.info("Finished")
     
@@ -369,6 +209,7 @@ class DatasetsListPanel(wx.Panel):
         logger = logging.getLogger(__name__+".DatasetsPanel.DocumentsUpdated")
         logger.info("Starting")
         self.datasets_model.Cleared()
+        self.datasets_ctrl.Expander(None)
         logger.info("Finished")
 
 class DatasetDetailsPanel(wx.Panel):
@@ -467,35 +308,7 @@ class DatasetDetailsPanel(wx.Panel):
             create_sizer.Add(toolbar)
             self.sizer.Add(create_sizer, 0, wx.ALL, 5)
         
-        if isinstance(dataset, Datasets.GroupedDataset):
-            details_sizer = wx.GridSizer(2, gap=wx.Size(0,0))
-            self.sizer.Add(details_sizer)
-
-            name_label = wx.StaticText(self, label=GUIText.NAME + ":")
-            self.name_ctrl = wx.TextCtrl(self, value=self.dataset.name, style=wx.TE_PROCESS_ENTER)
-            self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-            #TODO fix this maybe
-            #self.name_ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnChangeDatasetKey)
-            name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            name_sizer.Add(name_label)
-            name_sizer.Add(self.name_ctrl)
-            details_sizer.Add(name_sizer)
-
-            created_date_label = wx.StaticText(self, label=GUIText.CREATED_ON + ": "
-                                               +self.dataset.created_dt.strftime("%Y-%m-%d, %H:%M:%S"))
-            details_sizer.Add(created_date_label)
-
-            selected_lang = Constants.AVALIABLE_DATASET_LANGUAGES1.index(dataset.language)
-            language_label = wx.StaticText(self, label=GUIText.LANGUAGE + ": ")
-            self.language_ctrl = wx.Choice(self, choices=Constants.AVALIABLE_DATASET_LANGUAGES2)
-            self.language_ctrl.Select(selected_lang)
-            language_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            language_sizer.Add(language_label)
-            language_sizer.Add(self.language_ctrl)
-            details_sizer.Add(language_sizer, 0, wx.ALL, 5)
-            #TODO fix this maybe
-            #self.language_ctrl.Bind(wx.EVT_CHOICE, self.OnChangeDatasetLanguage)
-        elif isinstance(dataset, Datasets.Dataset):
+        if isinstance(dataset, Datasets.Dataset):
             dataset_panel = DatasetsGUIs.DatasetPanel(self, dataset, header=True)
             self.sizer.Add(dataset_panel)
         self.Layout()
