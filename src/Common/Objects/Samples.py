@@ -3,7 +3,6 @@ import random
 import bz2
 import pickle
 from datetime import datetime
-from shutil import copytree
 from collections import OrderedDict
 
 #ML Libraries
@@ -41,6 +40,7 @@ class Sample(GenericObject):
         self.selected_documents = []
         
         logger.info("Finished")
+
     def __repr__(self):
         return 'Sample: %s' % (self.key,)
 

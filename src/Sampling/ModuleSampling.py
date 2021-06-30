@@ -75,6 +75,8 @@ class SamplingNotebook(FNB.FlatNotebook):
                         main_frame.samples[new_key] = sample
                         self.sample_panels[new_key] = page
                         self.SetPageText(selection, new_key)
+                        main_frame.SampleKeyChange(old_key, new_key)
+                        main_frame.SamplesUpdated()
                         #sample_panel.menu_menuitem.SetItemLabel(new_key)
         logger.info("Finished")
 
@@ -146,7 +148,7 @@ class SamplingNotebook(FNB.FlatNotebook):
                     new_sample_panel = SamplesGUIs.TopicSamplePanel(self, main_frame.samples[key], main_frame.datasets[main_frame.samples[key].dataset_key], size=self.GetSize())
                     new_sample_panel.Load({})
                 if new_sample_panel is not None:
-                    self.InsertPage(len(self.sample_panels), new_sample_panel, str(repr(new_sample_panel.sample)), select=True)
+                    self.InsertPage(len(self.sample_panels), new_sample_panel, str(new_sample_panel.sample.key), select=True)
                     self.sample_panels[key] = new_sample_panel
                     #TODO new_sample_panel.menu_menuitem = self.menu.AppendSubMenu(new_sample_panel.menu, str(sample_key))
 

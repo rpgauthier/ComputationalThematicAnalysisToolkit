@@ -73,7 +73,8 @@ class Code(GenericObject):
 
     def GetConnections(self, datasets, samples):
         connection_objects = []
-        for key_path in self.connections:
+        for key_path in reversed(self.connections):
+            current_parent = None
             if key_path[0] == Datasets.__name__:
                 current_parent = datasets
                 for key in key_path[1]:
@@ -108,8 +109,6 @@ class Code(GenericObject):
                     else:
                         current_parent = None
                         break
-                if current_parent is not None:
-                    connection_objects.append(current_parent)
             elif key_path[0] == Samples.__name__:
                 current_parent = samples
                 for key in key_path[1]:
@@ -134,9 +133,12 @@ class Code(GenericObject):
                     else:
                         current_parent = None
                         break
-                if current_parent is not None:
-                    connection_objects.append(current_parent)
-        return connection_objects
+            if current_parent is not None:
+                connection_objects.append(current_parent)
+            else:
+                #remove keypaths that dont exist to cleanup from name changes
+                self.connections.remove(key_path)
+        return reversed(connection_objects)
     
     def DestroyObject(self):
         #any childrens

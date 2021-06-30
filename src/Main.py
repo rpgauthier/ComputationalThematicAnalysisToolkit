@@ -1,4 +1,5 @@
 '''Main Program for MachineThematicAnalysisToolkit'''
+from Common.Objects.Datasets import Document
 import logging
 from logging.handlers import RotatingFileHandler
 import os.path
@@ -15,6 +16,7 @@ import External.wxPython.labelbook_fix as LB_fix
 import RootApp
 import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
+import Common.Objects.Samples as Samples
 from Common.GUIText import Main as GUIText
 import Common.Notes as cn
 import Collection.ModuleCollection as CollectionModule
@@ -70,7 +72,7 @@ class MainFrame(wx.Frame):
         self.notes_notebook.AddPage(self.notes_panel, GUIText.GENERAL_LABEL)
 
         #notebook for managing layout and tabs of modules
-        self.main_notebook = LB_fix.LabelBook(self, agwStyle=LB.INB_LEFT|LB.INB_SHOW_ONLY_TEXT|LB.INB_GRADIENT_BACKGROUND|LB.INB_FIT_LABELTEXT, size=self.GetSize())
+        self.main_notebook = LB_fix.LabelBook(self, agwStyle=LB.INB_LEFT|LB.INB_SHOW_ONLY_TEXT|LB.INB_FIT_LABELTEXT, size=self.GetSize())
         self.main_notebook.SetColour(LB.INB_TAB_AREA_BACKGROUND_COLOUR, self.GetBackgroundColour())
 
         #Modules
@@ -667,7 +669,46 @@ class MainFrame(wx.Frame):
         for sample_key in self.samples:
             if self.samples[sample_key].dataset_key == old_key:
                 self.samples[sample_key].dataset_key = new_key
-        #TODO NEED TO UPDATE CODES
+        
+        dataset_codes = self.datasets[new_key].GetCodeConnections(self.codes)
+        for code in dataset_codes:
+            code.GetConnections(self.datasets, self.samples)
+            code.AddConnection(self.datasets[new_key])
+        for field_key in self.datasets[new_key].avaliable_fields:
+            field_codes = self.datasets[new_key].avaliable_fields[field_key].GetCodeConnections(self.codes)
+            for code in field_codes:
+                code.GetConnections(self.datasets, self.samples)
+                code.AddConnection(self.datasets[new_key].avaliable_fields[field_key])
+        for field_key in self.datasets[new_key].chosen_fields:
+            field_codes = self.datasets[new_key].chosen_fields[field_key].GetCodeConnections(self.codes)
+            for code in field_codes:
+                code.GetConnections(self.datasets, self.samples)
+                code.AddConnection(self.datasets[new_key].chosen_fields[field_key])
+        for document_key in self.datasets[new_key].documents:
+            document_codes = self.datasets[new_key].documents[document_key].GetCodeConnections(self.codes)
+            for code in document_codes:
+                code.GetConnections(self.datasets, self.samples)
+                code.AddConnection(self.datasets[new_key].documents[document_key])
+        logger.info("Finished")
+
+    def SampleKeyChange(self, old_key, new_key):
+        logger = logging.getLogger(__name__+".MainFrame.SampletKeyChange")
+        logger.info("Starting")
+        sample_codes = self.samples[new_key].GetCodeConnections(self.codes)
+        for code in sample_codes:
+            code.GetConnections(self.datasets, self.samples)
+            code.AddConnection(self.samples[new_key])
+        for part_key in self.samples[new_key].parts_dict:
+            if isinstance(self.samples[new_key].parts_dict[part_key], Samples.MergedPart):
+                for subpart_key in self.samples[new_key].parts_dict:
+                    part_codes = self.samples[new_key].parts_dict[part_key].parts_dict[subpart_key].GetCodeConnections(self.codes)
+                    for code in part_codes:
+                        code.GetConnections(self.datasets, self.samples)
+                        code.AddConnection(self.samples[new_key].parts_dict[part_key].parts_dict[subpart_key])
+            part_codes = self.samples[new_key].parts_dict[part_key].GetCodeConnections(self.codes)
+            for code in part_codes:
+                code.GetConnections(self.datasets, self.samples)
+                code.AddConnection(self.samples[new_key].parts_dict[part_key])
         logger.info("Finished")
 
     def DatasetsUpdated(self):
@@ -676,6 +717,7 @@ class MainFrame(wx.Frame):
         self.collection_module.DatasetsUpdated()
         self.filtering_module.DatasetsUpdated()
         self.coding_module.DatasetsUpdated()
+        self.coding_module.DocumentsUpdated()
         logger.info("Finished")
 
     def SamplesUpdated(self):

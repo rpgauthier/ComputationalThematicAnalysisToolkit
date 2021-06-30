@@ -90,3 +90,11 @@ class GenericObject(object):
     @last_changed_dt.setter
     def last_changed_dt(self, value):
         self._last_changed_dt = value
+
+    def GetCodeConnections(self, codes):
+        code_objs = []
+        for code_key in codes:
+            if code_key in self.codes:
+                code_objs.append(codes[code_key])
+            code_objs.extend(self.GetCodeConnections(codes[code_key].subcodes))
+        return code_objs
