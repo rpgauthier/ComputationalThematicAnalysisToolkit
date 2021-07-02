@@ -325,7 +325,7 @@ class RetrieveTwitterDatasetThread(Thread):
                     tweets_data[key]['data_type'] = "tweet"
                     tweets_data[key]['id'] = tweet['id']
                     tweets_data[key]["url"] = "https://twitter.com/" + tweet['user']['screen_name'] + "/status/" + tweet['id_str']
-                    tweets_data[key]['created_utc'] = tweet['created_utc'] # TODO: created_utc? or created_at
+                    tweets_data[key]['created_utc'] = tweet['created_utc']
                     # TODO: is 'title' needed if tweets don't have titles?
                     if 'title' in tweet:
                         tweets_data[key]['title'] = tweet['title']

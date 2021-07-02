@@ -559,7 +559,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         metadata_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
         metadata_fields_sizer.Add(metadata_fields_label, 0, wx.ALL)
         metadata_fields_sizer.Add(self.metadata_fields_ctrl, 1, wx.EXPAND)
-        if True: # main_frame.adjustable_metadata_mode: TODO
+        if main_frame.adjustable_metadata_mode:
             sizer.Add(metadata_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
         else:
             metadata_fields_sizer.ShowItems(False)
@@ -574,7 +574,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         included_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
         included_fields_sizer.Add(included_fields_label, 0, wx.ALL)
         included_fields_sizer.Add(self.included_fields_ctrl, 1, wx.EXPAND)
-        if True: #main_frame.adjustable_includedfields_mode: TODO
+        if main_frame.adjustable_includedfields_mode:
             sizer.Add(included_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
         else:
             included_fields_sizer.ShowItems(False)

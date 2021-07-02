@@ -391,25 +391,29 @@ avaliable_fields = {
         },
     # TODO: add all fields
     ('Twitter', 'tweet',): {
-        # 'created_at': { 
-        #     'desc': "The UTC time stamp of when the tweet was posted.",
-        #     'type': 'UTC-timestamp'
-        #     },
-        # 'user.screen_name': {
-        #     'desc': "The screen name of the user who posted this tweet (or retweet).",
-        #     'type': 'string'
-        #     },
-        'text': {
-            'desc': "The text in the tweet, truncated to 140 characters.",
-            'type': "string",
+        'created_utc': { # not a field in tweet object; created using 'created_at'
+            'desc': "The UTC time stamp of when the tweet was posted.",
+            'type': 'UTC-timestamp',
             'included_default': False,
-            'metadata_default': False,
+            'metadata_default': True,
+            },
+        'url': { # not a field in tweet object; created using tweet 'id'
+            'desc': "a url link to the original tweet",
+            'type': 'url',
+            'included_default': False,
+            'metadata_default': True,
             },
         'full_text': {
             'desc': "The full text of this tweet.",
             'type': "string",
             'included_default': True,
             'metadata_default': True,
+            },
+        'text': {
+            'desc': "The text in the tweet, truncated to 140 characters.",
+            'type': "string",
+            'included_default': False,
+            'metadata_default': False,
             },
         },
     }
@@ -448,18 +452,18 @@ chosen_fields = {
         },
     # TODO: add all default fields
     ('Twitter', 'tweet',): {
-        # 'created_at': { 
-        #     'desc': "The UTC time stamp of when the tweet was posted.",
-        #     'type': 'UTC-timestamp'
-        #     },
-        # 'user.screen_name': {
-        #     'desc': "The screen name of the user who posted this tweet (or retweet).",
-        #     'type': 'string'
-        #     },
-        # 'text': {
-        #     'desc': "The text in the tweet, truncated to 140 characters.",
-        #     'type': "string",
-        #     },
+        'created_utc': { # not a field in tweet object; created using 'created_at'
+            'desc': "The UTC time stamp of when the tweet was posted.",
+            'type': 'UTC-timestamp',
+            'included_default': False,
+            'metadata_default': True,
+            },
+        'url': { # not a field in tweet object; created using tweet 'id'
+            'desc': "a url link to the original tweet",
+            'type': 'url',
+            'included_default': False,
+            'metadata_default': True,
+            },
         'full_text': {
             'desc': "The full text of this tweet.",
             'type': "string",
