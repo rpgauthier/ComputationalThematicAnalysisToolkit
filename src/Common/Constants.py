@@ -390,7 +390,7 @@ avaliable_fields = {
             },
         },
     # TODO: add all fields
-    ('Twitter', 'document',): {
+    ('Twitter', 'tweet',): {
         # 'created_at': { 
         #     'desc': "The UTC time stamp of when the tweet was posted.",
         #     'type': 'UTC-timestamp'
@@ -402,10 +402,14 @@ avaliable_fields = {
         'text': {
             'desc': "The text in the tweet, truncated to 140 characters.",
             'type': "string",
+            'included_default': False,
+            'metadata_default': False,
             },
         'full_text': {
             'desc': "The full text of this tweet.",
             'type': "string",
+            'included_default': True,
+            'metadata_default': True,
             },
         },
     }
@@ -443,7 +447,7 @@ chosen_fields = {
             },
         },
     # TODO: add all default fields
-    ('Twitter', 'document',): {
+    ('Twitter', 'tweet',): {
         # 'created_at': { 
         #     'desc': "The UTC time stamp of when the tweet was posted.",
         #     'type': 'UTC-timestamp'
@@ -459,6 +463,8 @@ chosen_fields = {
         'full_text': {
             'desc': "The full text of this tweet.",
             'type': "string",
+            'included_default': True,
+            'metadata_default': True,
             },
         },
     }

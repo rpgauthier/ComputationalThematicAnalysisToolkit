@@ -295,7 +295,7 @@ class RetrieveTwitterDatasetThread(Thread):
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
         api = tweepy.API(auth) # TODO: create auth object in dialog and just pass in auth object
 
-        if self.dataset_type == "document":
+        if self.dataset_type == "tweet":
             # TODO: only update if called with twitter api flag? otherwise just import instead (see reddit)
             if True: # twitter_api_flag
                 try:
@@ -319,10 +319,10 @@ class RetrieveTwitterDatasetThread(Thread):
                 
                 tweets_data = {}
                 for tweet in tweets:
-                    key = ("Twitter", "document", tweet['id'])
+                    key = ("Twitter", "tweet", tweet['id'])
                     tweets_data[key] = {}
                     tweets_data[key]['data_source'] = "Twitter"
-                    tweets_data[key]['data_type'] = "document"
+                    tweets_data[key]['data_type'] = "tweet"
                     tweets_data[key]['id'] = tweet['id']
                     tweets_data[key]["url"] = "https://twitter.com/" + tweet['user']['screen_name'] + "/status/" + tweet['id_str']
                     tweets_data[key]['created_utc'] = tweet['created_utc'] # TODO: created_utc? or created_at

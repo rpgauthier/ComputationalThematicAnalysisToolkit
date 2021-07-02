@@ -421,6 +421,12 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.keys_filename = "../keys.json"
         self.keys = {}
         self.avaliable_fields = {}
+        self.dataset_type = "tweet"
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.SetMinSize(350, -1)
+        
+        main_frame = wx.GetApp().GetTopWindow()
 
         # get saved keys, if any
         if os.path.isfile(self.keys_filename):
@@ -433,6 +439,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         name_sizer = wx.BoxSizer(wx.HORIZONTAL)
         name_sizer.Add(name_label)
         name_sizer.Add(self.name_ctrl, wx.EXPAND)
+        sizer.Add(name_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         consumer_key_label = wx.StaticText(self, label=GUIText.CONSUMER_KEY + ": ")
         self.consumer_key_ctrl = wx.TextCtrl(self)
@@ -442,6 +449,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         consumer_key_sizer = wx.BoxSizer(wx.HORIZONTAL)
         consumer_key_sizer.Add(consumer_key_label)
         consumer_key_sizer.Add(self.consumer_key_ctrl, wx.EXPAND)
+        sizer.Add(consumer_key_sizer, 0, wx.EXPAND | wx.ALL, 5)
     
         consumer_secret_label = wx.StaticText(self, label=GUIText.CONSUMER_SECRET + ": ")
         self.consumer_secret_ctrl = wx.TextCtrl(self)
@@ -451,6 +459,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         consumer_secret_sizer = wx.BoxSizer(wx.HORIZONTAL)
         consumer_secret_sizer.Add(consumer_secret_label)
         consumer_secret_sizer.Add(self.consumer_secret_ctrl, wx.EXPAND)
+        sizer.Add(consumer_secret_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         # search by query
         self.query_radioctrl = wx.RadioButton(self, label=GUIText.QUERY+": ", style=wx.RB_GROUP)
@@ -520,6 +529,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             option_sizer = search_by_option.GetSizer()
             # bind to each radiobutton
             option_sizer.GetChildren()[0].GetWindow().Bind(wx.EVT_RADIOBUTTON, lambda event: self.EnableOnlySelected(self.search_by_sizer))
+        sizer.Add(self.search_by_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
         self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
@@ -528,6 +538,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         start_date_sizer = wx.BoxSizer(wx.HORIZONTAL)
         start_date_sizer.Add(start_date_label)
         start_date_sizer.Add(self.start_date_ctrl)
+        sizer.Add(start_date_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         end_date_label = wx.StaticText(self, label=GUIText.END_DATE+": ")
         self.end_date_ctrl = wx.adv.DatePickerCtrl(self, name="endDate",
@@ -536,6 +547,40 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         end_date_sizer = wx.BoxSizer(wx.HORIZONTAL)
         end_date_sizer.Add(end_date_label)
         end_date_sizer.Add(self.end_date_ctrl)
+        sizer.Add(end_date_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        metadata_fields_label = wx.StaticText(self, label=GUIText.METADATAFIELDS)
+        self.metadata_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.metadata_fields_ctrl.AppendColumn(GUIText.FIELD)
+        self.metadata_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
+        self.metadata_fields_ctrl.AppendColumn(GUIText.TYPE)
+        self.metadata_fields_ctrl.SetToolTip(GUIText.METADATAFIELDS_TOOLTIP)
+        self.metadata_fields_ctrl.EnableCheckBoxes()
+        metadata_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        metadata_fields_sizer.Add(metadata_fields_label, 0, wx.ALL)
+        metadata_fields_sizer.Add(self.metadata_fields_ctrl, 1, wx.EXPAND)
+        if True: # main_frame.adjustable_metadata_mode: TODO
+            sizer.Add(metadata_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        else:
+            metadata_fields_sizer.ShowItems(False)
+
+        included_fields_label = wx.StaticText(self, label=GUIText.INCLUDEDFIELDS)
+        self.included_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.included_fields_ctrl.AppendColumn(GUIText.FIELD)
+        self.included_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
+        self.included_fields_ctrl.AppendColumn(GUIText.TYPE)
+        self.included_fields_ctrl.SetToolTip(GUIText.INCLUDEDFIELDS_TOOLTIP)
+        self.included_fields_ctrl.EnableCheckBoxes()
+        included_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        included_fields_sizer.Add(included_fields_label, 0, wx.ALL)
+        included_fields_sizer.Add(self.included_fields_ctrl, 1, wx.EXPAND)
+        if True: #main_frame.adjustable_includedfields_mode: TODO
+            sizer.Add(included_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        else:
+            included_fields_sizer.ShowItems(False)
+
+        # TODO: defaults to tweet type for now, could add more (like with reddit) if needed
+        self.OnDatasetTypeChosen(None)
 
         # ethics/terms of use
         self.ethics_checkbox_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_TWITTER)
@@ -544,6 +589,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         ethics_sizer = wx.BoxSizer(wx.HORIZONTAL)
         ethics_sizer.Add(self.ethics_checkbox_ctrl)
         ethics_sizer.Add(self.ethics_hyperlink_ctrl)
+        sizer.Add(ethics_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         #Retriever button to collect the requested data
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -551,19 +597,9 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         button_sizer.Add(ok_button)
         cancel_button = wx.Button(self, wx.ID_CANCEL, label=GUIText.CANCEL)
         button_sizer.Add(cancel_button)
+        sizer.Add(button_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
-        retriever_sizer = wx.BoxSizer(wx.VERTICAL)
-        retriever_sizer.SetMinSize(350, -1)
-        retriever_sizer.Add(name_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        retriever_sizer.Add(consumer_key_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        retriever_sizer.Add(consumer_secret_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        retriever_sizer.Add(self.search_by_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        retriever_sizer.Add(start_date_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        retriever_sizer.Add(end_date_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        retriever_sizer.Add(ethics_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        retriever_sizer.Add(button_sizer, 0, wx.EXPAND | wx.ALL, 5)
-
-        self.SetSizer(retriever_sizer)
+        self.SetSizer(sizer)
         self.Layout()
         self.Fit()
 
@@ -571,6 +607,29 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         CustomEvents.EVT_PROGRESS(self, self.OnProgress)
         CustomEvents.RETRIEVE_EVT_RESULT(self, self.OnRetrieveEnd)
 
+        logger.info("Finished")
+
+    def OnDatasetTypeChosen(self, event):
+        logger = logging.getLogger(__name__+".TwitterRetrieverDialog.OnDatasetTypeChosen")
+        logger.info("Starting")
+        dataset_type = self.dataset_type
+
+        self.avaliable_fields = Constants.avaliable_fields[('Twitter', dataset_type,)]
+
+        self.metadata_fields_ctrl.DeleteAllItems()
+        self.included_fields_ctrl.DeleteAllItems()
+        idx = 0
+        for key in self.avaliable_fields:
+            self.metadata_fields_ctrl.Append([key, self.avaliable_fields[key]['desc'], self.avaliable_fields[key]['type']])
+            if self.avaliable_fields[key]['metadata_default']:
+                self.metadata_fields_ctrl.CheckItem(idx)
+            self.included_fields_ctrl.Append([key, self.avaliable_fields[key]['desc'], self.avaliable_fields[key]['type']])
+            if self.avaliable_fields[key]['included_default']:
+                self.included_fields_ctrl.CheckItem(idx)
+            idx = idx+1
+
+        self.Layout()
+        self.Fit()
         logger.info("Finished")
 
     def OnRetrieveStart(self, event):
@@ -686,18 +745,30 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             status_flag = False
 
         dataset_source = "Twitter"
-        # TODO: is document type ok for tweets?
-        dataset_type = "document"
-
-        self.avaliable_fields = Constants.avaliable_fields[('Twitter', dataset_type,)]
-
-        dataset_key = (name, dataset_source, dataset_type)
+        
+        dataset_key = (name, dataset_source, self.dataset_type)
         if dataset_key in main_frame.datasets:
             wx.MessageBox(GUIText.NAME_EXISTS_ERROR,
                           GUIText.ERROR,
                           wx.OK | wx.ICON_ERROR)
             logger.warning("Data with same name[%s] already exists", name)
             status_flag = False
+
+        metadata_fields_list = []
+        item = self.metadata_fields_ctrl.GetNextItem(-1)
+        while item != -1:
+            if self.metadata_fields_ctrl.IsItemChecked(item):
+                field_name = self.metadata_fields_ctrl.GetItemText(item, 0)
+                metadata_fields_list.append((field_name, self.avaliable_fields[field_name],))
+            item = self.metadata_fields_ctrl.GetNextItem(item)
+        
+        included_fields_list = []
+        item = self.included_fields_ctrl.GetNextItem(-1)
+        while item != -1:
+            if self.included_fields_ctrl.IsItemChecked(item):
+                field_name = self.included_fields_ctrl.GetItemText(item, 0)
+                included_fields_list.append((field_name, self.avaliable_fields[field_name],))
+            item = self.included_fields_ctrl.GetNextItem(item)
 
         if status_flag:
             # save keys
@@ -710,8 +781,8 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.Disable()
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
-            self.retrieval_thread = CollectionThreads.RetrieveTwitterDatasetThread(self, main_frame, name, keys, query, start_date, end_date, dataset_type,
-                                                                                    [], [], [])
+            self.retrieval_thread = CollectionThreads.RetrieveTwitterDatasetThread(self, main_frame, name, keys, query, start_date, end_date, self.dataset_type,
+                                                                                    list(self.avaliable_fields.items()), metadata_fields_list, included_fields_list)
         logger.info("Finished")
 
 class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
