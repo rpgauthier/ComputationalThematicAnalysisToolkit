@@ -5,9 +5,7 @@ import psutil
 import bz2
 import pickle
 
-import pandas as pd
 import wx
-import numpy as np
 
 #ML libraries
 import gensim
@@ -15,7 +13,6 @@ import bitermplus as btm
 from sklearn.decomposition import NMF as nmf
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
 import Common.Objects.Utilities.Samples as SamplesUtilities
 
@@ -125,16 +122,14 @@ class BitermTrainingThread(Thread):
             texts.append(text)
 
         logger.info("Starting generation of biterm model")
+
         X, vocab, vocab_dict = btm.get_words_freqs(texts)
-        
         with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/vocab.pk', 'wb') as outfile:
             pickle.dump(vocab, outfile)
         logger.info("Vocab created")
 
-        tf = np.array(X.sum(axis=0)).ravel()
         # Vectorizing documents
         docs_vec = btm.get_vectorized_docs(texts, vocab)
-        docs_lens = list(map(len, docs_vec))
         with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/transformed_texts.pk', 'wb') as outfile:
             pickle.dump(docs_vec, outfile)
         logger.info("Texts transformed")
@@ -143,14 +138,14 @@ class BitermTrainingThread(Thread):
         biterms = btm.get_biterms(docs_vec)
 
         model = btm.BTM(X, vocab, T=self.num_topics, W=vocab.size, M=20, alpha=50/8, beta=0.01)
-        topics = model.fit_transform(docs_vec, biterms, iterations=self.num_passes, verbose=False)
+        p_zd = model.fit_transform(docs_vec, biterms, iterations=self.num_passes, verbose=False)
         with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/btm.pk', 'wb') as outfile:
             pickle.dump(model, outfile)
         logger.info("Completed Generation of BTM")
 
         document_topic_prob = {}
-        for doc_num in range(len(topics)):
-            doc_row = topics[doc_num]
+        for doc_num in range(len(p_zd)):
+            doc_row = p_zd[doc_num]
             doc_topic_prob_row = {}
             for i in range(len(doc_row)):
                 doc_topic_prob_row[i+1] = doc_row[i]

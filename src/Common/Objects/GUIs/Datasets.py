@@ -13,7 +13,6 @@ import Common.Notes as Notes
 import Common.Objects.Datasets as Datasets
 import Common.Objects.Threads.Datasets as DatasetsThreads
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
-import Common.Objects.DataViews.Codes as CodesDataViews
 
 class DataNotebook(FNB.FlatNotebook):
     def __init__(self, parent, grouped_dataset=None, size=wx.DefaultSize):
@@ -289,6 +288,7 @@ class DatasetPanel(wx.Panel):
             details_sizer2.AddSpacer(10)
 
         #TODO add metadata field details
+        #TODO add chosen field details
 
         retrieved_date_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": "
                                              + dataset.created_dt.strftime("%Y-%m-%d, %H:%M:%S"))

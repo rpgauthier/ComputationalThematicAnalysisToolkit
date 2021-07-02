@@ -4936,14 +4936,7 @@ class FlatNotebook(wx.Panel):
 
     def GetActiveTabTextColour(self):
         """ Get the active tab text colour. """
-        if self._pages._activeTextColour != None:
-            return self._pages._activeTextColour
-        #POSSIBLE DARKMODE FIX FOR OSX
-        elif wx.SystemSettings.GetAppearance().IsDark():
-            return wx.Colour(0, 0, 0)
-        else:
-            return None
-            
+        return self._pages._activeTextColour
 
 
     def SetPageImage(self, page, image):
@@ -5063,13 +5056,7 @@ class FlatNotebook(wx.Panel):
     def GetActiveTabColour(self):
         """ Returns the active tab colour. """
 
-        if self._pages._activeTabColour != None:
-            return self._pages._activeTabColour
-        #POSSIBLE DARKMODE FIX FOR OSX
-        elif wx.SystemSettings.GetAppearance().IsDark():
-            return wx.Colour(255, 255, 255)
-        else:
-            return None
+        return self._pages._activeTabColour
 
 
     def EnsureVisible(self, page):
@@ -5133,6 +5120,9 @@ class PageContainer(wx.Panel):
         self._colourFrom = wx.WHITE
         self._activeTabColour = wx.WHITE
         self._activeTextColour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNTEXT)
+        #fix for darkmode on OSX
+        if wx.SystemSettings.GetAppearance().IsDark():
+            self._activeTextColour = wx.Colour(0, 0, 0)
         self._nonActiveTextColour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNTEXT)
         self._tabAreaColour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
 

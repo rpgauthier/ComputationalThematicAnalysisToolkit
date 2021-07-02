@@ -1,15 +1,12 @@
 '''Code for the submodule that controls grouping of data'''
 import logging
-from datetime import datetime
 
 import wx
 import wx.dataview as dv
 import wx.lib.scrolledpanel
 
 from Common.GUIText import Collection as GUIText
-import Common.Constants as Constants
 import Common.Objects.Datasets as Datasets
-import Common.Objects.Utilities.Datasets as DatasetsUtilities
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
 import Common.Objects.GUIs.Datasets as DatasetsGUIs
 import Common.CustomEvents as CustomEvents
