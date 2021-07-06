@@ -1,6 +1,7 @@
 import logging
 
 import wx
+import wx.adv
 
 from Common.GUIText import Coding as GUIText
 import Common.Constants as Constants
@@ -314,7 +315,7 @@ class DocumentPanel(wx.Panel):
 
         data_panel = wx.ScrolledWindow(top_frame_splitter, style=wx.TAB_TRAVERSAL|wx.HSCROLL|wx.VSCROLL|wx.SUNKEN_BORDER)
         data_panel_sizer = wx.BoxSizer(wx.VERTICAL)
-        url = wx.adv.HyperlinkCtrl(data_panel, url=document.url, style=wx.ALIGN_LEFT)
+        url = wx.adv.HyperlinkCtrl(data_panel, url=document.url)
         data_panel_sizer.Add(url, 0, wx.ALL, 5)
 
         field_ctrl = wx.TextCtrl(data_panel, value="", style=wx.TE_READONLY|wx.TE_MULTILINE|wx.BORDER_NONE)

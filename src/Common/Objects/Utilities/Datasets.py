@@ -261,9 +261,9 @@ def TokenizationWorker(data_list, field, label, language):
         for tmp_tokens in nlp.pipe(data):
             for token in tmp_tokens:
                 #order must align to Common.Constants.tokenization.tokenset_indexes
-                rawtext = token.text.strip()
-                stem = stemmer.stem(token.text).strip()
-                lemma = token.lemma_.strip()
+                rawtext = token.text.strip().lower()
+                stem = stemmer.stem(token.text).strip().lower()
+                lemma = token.lemma_.strip().lower()
                 tmp_tokenset.append((rawtext,
                                      stem,
                                      lemma,

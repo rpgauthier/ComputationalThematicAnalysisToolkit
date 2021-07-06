@@ -138,7 +138,7 @@ class Code(GenericObject):
             else:
                 #remove keypaths that dont exist to cleanup from name changes
                 self.connections.remove(key_path)
-        return reversed(connection_objects)
+        return list(reversed(connection_objects))
     
     def DestroyObject(self):
         #any childrens

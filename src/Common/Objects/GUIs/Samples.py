@@ -722,7 +722,7 @@ class TopicSamplePanel(AbstractSamplePanel):
                                 doc_topic_prob = max(doc_topic_prob, row_dict[topic_key])
                             row.append((node.key, doc_topic_prob,))
             self.topiclist_panel.topic_list_model.Cleared()
-            self.topiclist_panel.topic_list_ctrl.Expander()
+            self.topiclist_panel.topic_list_ctrl.Expander(None)
             self.ChangeSelections()
             #self.visualization_panel.Refresh(self.selected_parts)
             self.DrawLDAPlot(self.selected_parts)

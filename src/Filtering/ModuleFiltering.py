@@ -562,17 +562,6 @@ class WordsPanel(wx.Panel):
     def OnSearch(self, event):
         logger = logging.getLogger(__name__+".WordsPanel["+self.word_type+"]["+str(self.parent_frame.name)+"].OnSearch")
         logger.info("Starting")
-        word_idx = self.parent_frame.dataset.tokenization_choice
-        word_search_term = self.word_searchctrl.GetValue()
-        pos_search_term = self.pos_searchctrl.GetValue()
-        if word_search_term != '' and pos_search_term != '':
-            self.search_filter = self.tokens_df[word_idx].str.contains(word_search_term, regex=False) & self.tokens_df[Constants.TOKEN_POS_IDX].str.contains(pos_search_term, regex=False)
-        elif word_search_term != '':
-            self.search_filter = self.tokens_df[word_idx].str.contains(word_search_term, regex=False)
-        elif pos_search_term != '':
-            self.search_filter = self.tokens_df[Constants.TOKEN_POS_IDX].str.contains(pos_search_term, regex=False)
-        else:
-            self.search_filter = None
         self.DisplayWordsList()
         logger.info("Finished")
 
@@ -581,7 +570,7 @@ class WordsPanel(wx.Panel):
         logger.info("Starting")
         search_ctrl = event.GetEventObject()
         search_ctrl.SetValue("")
-        self.OnSearch(event)
+        self.DisplayWordsList()
         logger.info("Finished")
 
     def UpdateWords(self, new_words_df):
@@ -596,17 +585,22 @@ class WordsPanel(wx.Panel):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         self.Freeze()
-        main_frame.CreateProgressDialog(GUIText.FILTERS_DISPLAY_BUSY_LABEL+str(self.parent_frame.name)+" "+self.word_type,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
         main_frame.PulseProgressDialog(GUIText.FILTERS_DISPLAY_BUSY_MSG+str(self.parent_frame.name)+" "+self.word_type)
         try:
-            if self.search_filter is not None:
-                searched_df = self.tokens_df[self.search_filter]
+            word_search_term = self.word_searchctrl.GetValue()
+            pos_search_term = self.pos_searchctrl.GetValue()
+            word_idx = self.parent_frame.dataset.tokenization_choice
+            if word_search_term != '' and pos_search_term != '':
+                search_filter = self.tokens_df[word_idx].str.contains(word_search_term, regex=False) & self.tokens_df[Constants.TOKEN_POS_IDX].str.contains(pos_search_term, regex=False)
+                searched_df = self.tokens_df[search_filter]
+            elif word_search_term != '':
+                search_filter = self.tokens_df[word_idx].str.contains(word_search_term, regex=False)
+                searched_df = self.tokens_df[search_filter]
+            elif pos_search_term != '':
+                search_filter = self.tokens_df[Constants.TOKEN_POS_IDX].str.contains(pos_search_term, regex=False)
+                searched_df = self.tokens_df[search_filter]
             else:
                 searched_df = self.tokens_df
-
-            word_idx = self.parent_frame.dataset.tokenization_choice
 
             self.words_df = searched_df[[word_idx,
                                          Constants.TOKEN_POS_IDX,
@@ -622,7 +616,6 @@ class WordsPanel(wx.Panel):
 
             self.words_list.Update(self.words_df)
         finally:
-            main_frame.CloseProgressDialog(thaw=False)
             self.Thaw()
         logger.info("Finished")
 
