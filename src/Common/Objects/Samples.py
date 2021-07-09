@@ -199,7 +199,7 @@ class TopicSample(Sample):
 
         #properties that automatically update last_changed_dt
         self._word_num = 0
-        self._document_cutoff = 0.75
+        self._document_cutoff = 0.25
         self._document_topic_prob = None
         #fixed properties that may be externally accessed but do not change after being initialized
         self._tokensets = model_parameters['tokensets']

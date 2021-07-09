@@ -1,6 +1,7 @@
 import logging
 
 import wx
+import wx.adv
 
 from Common.GUIText import Coding as GUIText
 import Common.Constants as Constants

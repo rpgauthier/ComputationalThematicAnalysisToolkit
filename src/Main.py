@@ -5,7 +5,7 @@ from logging.handlers import RotatingFileHandler
 import os.path
 import tempfile
 from threading import *
-from multiprocessing import get_context
+import multiprocessing
 import psutil
 from datetime import datetime
 
@@ -860,7 +860,7 @@ def Main():
         pool_num = 1
     else:
         pool_num = cpus-1
-    with get_context("spawn").Pool(processes=pool_num) as pool:
+    with multiprocessing.get_context("spawn").Pool(processes=pool_num) as pool:
         #start up the GUI
         app = RootApp.RootApp()
         MainFrame(None, -1, GUIText.APP_NAME,
@@ -869,6 +869,7 @@ def Main():
         app.MainLoop()
 
 if __name__ == '__main__': 
+    multiprocessing.freeze_support()
     Main()
 
     
