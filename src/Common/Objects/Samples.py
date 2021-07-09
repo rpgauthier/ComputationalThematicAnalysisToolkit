@@ -258,7 +258,7 @@ class TopicSample(Sample):
         return self._tokensets
 
     def ApplyDocumentCutoff(self):
-        logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].ApplyDocumentCutoff")
+        logger = logging.getLogger(__name__+".TopicSample["+str(self.key)+"].ApplyDocumentCutoff")
         logger.info("Starting")
         document_set = set()
         document_topic_prob_df = pd.DataFrame(data=self.document_topic_prob).transpose()
@@ -484,6 +484,113 @@ class BitermSample(TopicSample):
                 pickle.dump(self.vocab, outfile)
         if self.model is not None:
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/btm.pk', 'wb') as outfile:
+                pickle.dump(self.model, outfile)
+
+#TODO figure out why samples dont have any documents attached for biterm/NMF when run on grouped documents (might also effect LDASample)
+class NMFSample(TopicSample):
+    def __init__(self, key, dataset_key, model_parameters):
+        logger = logging.getLogger(__name__+".NMFSample["+str(key)+"].__init__")
+        logger.info("Starting")
+        TopicSample.__init__(self, key, dataset_key, "NMF", model_parameters)
+
+        #fixed properties that may be externally accessed but do not change after being initialized
+        self._num_passes = model_parameters['num_passes']
+
+        #these need to be removed before pickling during saving due to threading and use of multiple processes
+        #see __getstate__ for removal and Load and Reload for readdition
+        self.training_thread = None
+        self.transformed_texts = None
+        self.vocab = None
+        logger.info("Finished")
+
+    def __getstate__(self):
+        state = dict(self.__dict__)
+        state['training_thread'] = None
+        state['vectorizer'] = None
+        state['transformed_texts'] = None
+        state['model'] = None
+        return state
+    def __repr__(self):
+        return 'NMFSample: %s' % (self.key,)
+
+    @property
+    def num_passes(self):
+        return self._num_passes
+    
+    def GenerateStart(self, notify_window, current_workspace_path):
+        logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].GenerateStart")
+        logger.info("Starting")
+        self.start_dt = datetime.now()
+        self.training_thread = SamplesThreads.NMFTrainingThread(notify_window,
+                                                                   current_workspace_path,
+                                                                   self.key,
+                                                                   self.tokensets,
+                                                                   self.num_topics,
+                                                                   self._num_passes)
+        logger.info("Finished")
+    
+    def GenerateFinish(self, result, dataset, current_workspace):
+        logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].GenerateFinish")
+        logger.info("Starting")
+        self.generated_flag = True
+        self.training_thread.join()
+        self.training_thread = None
+        with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf_vectorizer.pk', 'rb') as infile:
+           self.vectorizer = pickle.load(infile)
+        with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf.pk', 'rb') as infile:
+            self.transformed_texts = pickle.load(infile)
+        with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/nmf_model.pk', 'rb') as infile:
+            self.model = pickle.load(infile)
+
+        self.document_topic_prob = result['document_topic_prob']
+
+        for i in range(self.num_topics):
+            topic_num = i+1
+            self.parts_dict[topic_num] = NMFTopicPart(self, topic_num, dataset)
+        self.parts_dict['unknown'] = TopicUnknownPart(self, 'unknown', [], dataset)
+
+        self.word_num = 10
+        self.ApplyDocumentCutoff()
+        
+        self.end_dt = datetime.now()
+        logger.info("Finished")
+
+    def OldLoad(self, workspace_path):
+        logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].Load")
+        logger.info("Starting")
+        self._workspace_path = workspace_path
+        if self.generated_flag:
+            with bz2.BZ2File(self._workspace_path+self.filedir+'/tfidf_vectorizer.pk', 'rb') as infile:
+                self.vectorizer = pickle.load(infile)
+            with bz2.BZ2File(self._workspace_path+self.filedir+'/tfidf.pk', 'rb') as infile:
+                self.transformed_texts = pickle.load(infile)
+            with bz2.BZ2File(self._workspace_path+self.filedir+'/nmf_model.pk', 'rb') as infile:
+                self.model = pickle.load(infile)
+        logger.info("Finished")
+
+    def Load(self, current_workspace):
+        logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].Load")
+        logger.info("Starting")
+        if self.generated_flag:
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf_vectorizer.pk', 'rb') as infile:
+                self.vectorizer = pickle.load(infile)
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf.pk', 'rb') as infile:
+                self.transformed_texts = pickle.load(infile)
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/nmf_model.pk', 'rb') as infile:
+                self.model = pickle.load(infile)
+        logger.info("Finished")
+
+    def Save(self, current_workspace):
+        logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].Save")
+        logger.info("Starting")
+        if self.vectorizer is not None:
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf_vectorizer.pk', 'wb') as outfile:
+                pickle.dump(self.vectorizer, outfile)
+        if self.transformed_texts is not None:
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf.pk', 'wb') as outfile:
+                pickle.dump(self.transformed_texts, outfile)
+        if self.model is not None:
+            with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/nmf_model.pk', 'wb') as outfile:
                 pickle.dump(self.model, outfile)
 
 class MergedPart(GenericObject):
@@ -774,6 +881,41 @@ class BitermTopicPart(TopicPart):
                     word_idx = np.where(self.parent.model.vocabulary_ == word[0])
                     word_list.append(word[0])
                     prob_list.append(self.parent.model.matrix_topics_words_[self.key-1][word_idx[0]][0])
+                self.word_list = list(zip(word_list, prob_list))
+        self._word_num = value
+        logger.info("Finished")
+
+class NMFTopicPart(TopicPart):
+    '''Instances of NMF Topic objects'''
+    def __init__(self, parent, key, dataset, name=None):
+        logger = logging.getLogger(__name__+".NMFTopicPart["+str(key)+"].__init__")
+        logger.info("Starting")
+        TopicPart.__init__(self, parent, key, dataset, name=name)
+        logger.info("Finished")
+
+    @property
+    def word_num(self):
+        return self._word_num
+    @word_num.setter
+    def word_num(self, value):
+        logger = logging.getLogger(__name__+".NMFTopicPart["+str(self.key)+"].word_num")
+        logger.info("Starting")
+        if len(self.word_list) < value:
+            self.word_list.clear()
+            if isinstance(self.parent, ModelMergedPart):
+                # TODO: haven't tested that this works when self.parent is a ModelMergedPart
+                components_df = pd.DataFrame(self.parent.parent.model.components_, columns=self.parent.parent.vectorizer.get_feature_names())
+                topic = components_df.iloc[self.key-1]
+                word_prob_list = topic.nlargest(value)
+                word_list = word_prob_list.index.tolist()
+                prob_list = word_prob_list.tolist()
+                self.word_list = list(zip(word_list, prob_list))
+            else:
+                components_df = pd.DataFrame(self.parent.model.components_, columns=self.parent.vectorizer.get_feature_names())
+                topic = components_df.iloc[self.key-1]
+                word_prob_list = topic.nlargest(value)
+                word_list = word_prob_list.index.tolist()
+                prob_list = word_prob_list.tolist()
                 self.word_list = list(zip(word_list, prob_list))
         self._word_num = value
         logger.info("Finished")

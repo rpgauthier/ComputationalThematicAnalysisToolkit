@@ -69,6 +69,16 @@ class SampleCreatePanel(wx.Panel):
         create_biterm_sizer.Add(create_biterm_description, 0, wx.ALL, 5)
         create_biterm_link = wx.adv.HyperlinkCtrl(self, label="3", url="https://dl.acm.org/doi/10.1145/2488388.2488514")
         create_biterm_sizer.Add(create_biterm_link, 0, wx.ALL, 5)
+        create_nmf_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        topicmodelling_sizer.Add(create_nmf_sizer)
+        create_nmf_button = wx.Button(self, label=GUIText.NMF_LABEL)
+        create_nmf_button.SetToolTip(GUIText.CREATE_NMF_TOOLTIP)
+        self.Bind(wx.EVT_BUTTON, lambda event: self.OnCreateSample(event, 'NMF'), create_nmf_button)
+        create_nmf_sizer.Add(create_nmf_button, 0, wx.ALL, 5)
+        create_nmf_description = wx.StaticText(self, label="This topic model is suited to identifying topics in short texts, such as tweets and instant messages") # TODO: check description is ok
+        create_nmf_sizer.Add(create_nmf_description, 0, wx.ALL, 5)
+        create_nmf_link = wx.adv.HyperlinkCtrl(self, label="4", url="https://dl.acm.org/doi/book/10.5555/aai28114631") # TODO: check URL is ok
+        create_nmf_sizer.Add(create_nmf_link, 0, wx.ALL, 5)
 
         self.SetSizer(sizer)
         self.Layout()
@@ -165,6 +175,44 @@ class SampleCreatePanel(wx.Panel):
                 else:
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
                 self.Thaw()
+        elif model_type == "NMF":
+            with NMFModelCreateDialog(self) as create_dialog:
+                if create_dialog.ShowModal() == wx.ID_OK:
+                    model_parameters = create_dialog.model_parameters
+                    name = model_parameters['name']
+                    main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_SUBLABEL+str(name))
+                    dataset_key = model_parameters['dataset_key']
+                    dataset = main_frame.datasets[dataset_key]
+                    metadataset = dataset.metadata
+                    model_parameters['metadataset'] = copy.deepcopy(metadataset)
+                    model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
+                    main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_MSG2)
+                    new_sample = Samples.NMFSample(name, dataset_key, model_parameters)
+                    new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
+                    main_frame.samples[new_sample.key] = new_sample
+                    new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
+                    main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_MSG3)
+                    parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
+                    parent_notebook.sample_panels[new_sample.key] = new_sample_panel
+                    main_frame.CloseProgressDialog(message=GUIText.GENERATED_NMF_COMPLETED_PART1,
+                                                   thaw=False)
+                else:
+                    main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
+                self.Thaw()
+        #TODO need to finish this sample type
+        #elif model_type == "Custom":
+        #    with CustomModelCreateDialog(self) as create_dialog:
+        #        if create_dialog.ShowModal() == wx.ID_OK:
+        #            model_parameters = create_dialog.model_parameters
+        #            name = model_parameters['name']
+        #            main_frame.PulseProgressDialog(GUIText.GENERATING_CUSTOM_SUBLABEL+str(name)\
+        #                                  +GUIText.GENERATING_CUSTOM_MSG)
+        #            dataset_key = model_parameters['dataset_key']
+        #            metadata = main_frame.datasets[dataset_key].metadata
+        #            main_frame.samples[new_sample.key] = new_sample
+        #        else:
+        #            main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
+        #        self.Thaw()
         else:
             main_frame.PulseProgressDialog("Failed to create sample of unknown type.")
             main_frame.CloseProgressDialog(thaw=False)
@@ -582,7 +630,7 @@ class TopicSamplePanel(AbstractSamplePanel):
                                         warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
                                         freeze=False)
         try:
-            main_frame.PulseProgressDialog(GUIText.GENERATED_LDA_SUBLABEL+str(self.sample.key))
+            main_frame.PulseProgressDialog(GUIText.GENERATED_DEFAULT_LABEL+": "+str(self.sample.key))
             dataset = None
             if self.sample.dataset_key in main_frame.datasets:
                 dataset = main_frame.datasets[self.sample.dataset_key]
@@ -1318,3 +1366,160 @@ class SampleRulesDialog(wx.Dialog):
                 
             self.rules_list.AppendItem([i, field, word, pos, str(action)])
             i += 1
+class NMFModelCreateDialog(wx.Dialog):
+    def __init__(self, parent):
+        logger = logging.getLogger(__name__+".NMFModelCreateDialog.__init__")
+        logger.info("Starting")
+        wx.Dialog.__init__(self, parent, title="Create NMF Model")
+
+        self.model_parameters = {}
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        name_label = wx.StaticText(self, label=GUIText.NAME+":")
+        self.name_ctrl = wx.TextCtrl(self)
+        self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
+        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        name_sizer.Add(name_label)
+        name_sizer.Add(self.name_ctrl)
+        sizer.Add(name_sizer)
+
+        #need to only show tokensets that have fields containing data
+        self.usable_datasets = []
+        
+        main_frame = wx.GetApp().GetTopWindow()
+        for dataset in main_frame.datasets.values():
+            if len(dataset.chosen_fields) > 0:
+                self.usable_datasets.append(dataset.key)
+        if len(self.usable_datasets) > 1: 
+            dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
+            usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
+            self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
+            dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            dataset_sizer.Add(dataset_label)
+            dataset_sizer.Add(self.dataset_ctrl)
+            sizer.Add(dataset_sizer)
+
+        num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS_CHOICE)
+        self.num_topics_ctrl = wx.SpinCtrl(self, min=1, max=10000, initial=10)
+        self.num_topics_ctrl.SetToolTip(GUIText.NUMBER_OF_TOPICS_TOOLTIP)
+        num_topics_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        num_topics_sizer.Add(num_topics_label)
+        num_topics_sizer.Add(self.num_topics_ctrl)
+        sizer.Add(num_topics_sizer)
+
+        num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES_CHOICE)
+        self.num_passes_ctrl = wx.SpinCtrl(self, min=1, max=1000, initial=100)
+        self.num_passes_ctrl.SetToolTip(GUIText.NUMBER_OF_PASSES_TOOLTIP)
+        num_passes_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        num_passes_sizer.Add(num_passes_label)
+        num_passes_sizer.Add(self.num_passes_ctrl)
+        sizer.Add(num_passes_sizer)
+
+        #fields to choose specific fields for model
+        #--- not part of mvp so default is to use all fields
+
+        ok_button = wx.Button(self, id=wx.ID_OK, label=GUIText.OK, )
+        ok_button.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
+        cancel_button = wx.Button(self, id=wx.ID_CANCEL, label=GUIText.CANCEL)
+        controls_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        controls_sizer.Add(ok_button)
+        controls_sizer.Add(cancel_button)
+        sizer.Add(controls_sizer)
+
+        self.SetSizer(sizer)
+        
+        self.Layout()
+        self.Fit()
+        logger.info("Finished")
+
+    def OnOK(self, event):
+        logger = logging.getLogger(__name__+".NMFModelCreateDialog.OnOK")
+        logger.info("Starting")
+        main_frame = wx.GetApp().GetTopWindow()
+        #check that name exists and is unique
+        status_flag = True
+
+        model_name = self.name_ctrl.GetValue()
+        model_name = model_name.replace(" ", "_")
+        model_name = model_name.lower()
+        if model_name != "":
+            if model_name in main_frame.samples:
+                wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
+                              GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                logger.warning('name[%s] is not unique', model_name)
+                status_flag = False
+        else:
+            wx.MessageBox(GUIText.NAME_MISSING_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('name field is empty')
+            status_flag = False
+
+        if len(self.usable_datasets) > 1:
+            dataset_id = self.dataset_ctrl.GetSelection()
+            if dataset_id is wx.NOT_FOUND:
+                wx.MessageBox(GUIText.DATASET_MISSING_ERROR,
+                            GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                logger.warning('dataset was not chosen')
+                status_flag = False
+        elif len(self.usable_datasets) == 1:
+            dataset_id = 0
+        else:
+            wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('no dataset avaliable')
+            status_flag = False
+
+        if status_flag:
+            self.model_parameters['name'] = model_name
+            self.model_parameters['dataset_key'] = self.usable_datasets[dataset_id]
+            self.model_parameters['num_topics'] = self.num_topics_ctrl.GetValue()
+            self.model_parameters['num_passes'] = self.num_passes_ctrl.GetValue()
+        logger.info("Finished")
+        if status_flag:
+            self.EndModal(wx.ID_OK)
+
+class NMFModelDetailsDialog(wx.Dialog):
+    def __init__(self, parent, sample):
+        logger = logging.getLogger(__name__+".NMFModelDetailsDialog.__init__")
+        logger.info("Starting")
+        wx.Dialog.__init__(self, parent, title="Details for NMF Model: "+sample.key)
+
+        self.sample = sample
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        name_label = wx.StaticText(self, label=GUIText.NAME+":")
+        self.name_ctrl = wx.TextCtrl(self, value=self.sample.key)
+        self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
+        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        name_sizer.Add(name_label)
+        name_sizer.Add(self.name_ctrl)
+        sizer.Add(name_sizer)
+
+        dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(self.sample.dataset_key))
+        sizer.Add(dataset_label)
+
+        num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+" "+str(self.sample.num_topics))
+        sizer.Add(num_topics_label)
+
+        num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+str(self.sample.num_passes))
+        sizer.Add(num_passes_label)
+
+        used_documents_label = wx.StaticText(self, label="Number of documents used during modelling: "+str(len(self.sample.tokensets)))
+        sizer.Add(used_documents_label)
+
+        #fields to choose specific fields for model
+        #--- not part of mvp so default is to use all fields
+
+        #ok_button = wx.Button(self, id=wx.ID_OK, label=GUIText.OK, )
+        #ok_button.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
+        #cancel_button = wx.Button(self, id=wx.ID_CANCEL, label=GUIText.CANCEL)
+        #controls_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        #controls_sizer.Add(ok_button)
+        #controls_sizer.Add(cancel_button)
+        #sizer.Add(controls_sizer)
+
+        self.SetSizer(sizer)
+
+        logger.info("Finished")

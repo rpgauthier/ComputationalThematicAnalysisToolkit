@@ -147,6 +147,9 @@ class SamplingNotebook(FNB.FlatNotebook):
                 elif sample.sample_type == "Biterm":
                     new_sample_panel = SamplesGUIs.TopicSamplePanel(self, main_frame.samples[key], main_frame.datasets[main_frame.samples[key].dataset_key], size=self.GetSize())
                     new_sample_panel.Load({})
+                elif sample.sample_type == "NMF":
+                    new_sample_panel = SamplesGUIs.TopicSamplePanel(self, main_frame.samples[key], main_frame.datasets[main_frame.samples[key].dataset_key], size=self.GetSize())
+                    new_sample_panel.Load({})
                 if new_sample_panel is not None:
                     self.InsertPage(len(self.sample_panels), new_sample_panel, str(new_sample_panel.sample.key), select=True)
                     self.sample_panels[key] = new_sample_panel

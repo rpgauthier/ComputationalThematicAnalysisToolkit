@@ -292,6 +292,7 @@ class Samples(Main):
     RANDOM_LABEL = "Random"
     LDA_LABEL = "Latent Dirchlet Allocation"
     BITERM_LABEL = "Biterm"
+    NMF_LABEL = "Non-Negative Matrix Factorization"
 
     #model list columns and tools
     SAMPLE_NAME = "Name"
@@ -304,6 +305,8 @@ class Samples(Main):
     CREATE_LDA_TOOLTIP = "Create a new Latent Dirchlet Allocation Topic Model of a dataset"
     CREATE_BITERM = "Create " + BITERM_LABEL
     CREATE_BITERM_TOOLTIP = "Create a new Biterm Topic Model of a dataset"
+    CREATE_NMF = "Create " + NMF_LABEL
+    CREATE_NMF_TOOLTIP = "Create a new Non-Negative Matrix Factorization Topic Model of a dataset"
     DELETE_TOOLTIP = "Remove selected sample from workspace"
     DELETE_CONFIRMATION_WARNING = "Are you sure you want to delete this sample?"\
                                   "\nWARNING this action cannot be undone."
@@ -355,8 +358,11 @@ class Samples(Main):
     GENERATING_LDA_MSG3 = "Generating LDA Topic Model"
     GENERATING_BITERM_SUBLABEL = "Creating Biterm Topic Sample: "
     GENERATING_BITERM_MSG2 = "Initalizing Biterm Topic Model"
-    GENERATING_BITERM_MSG3 = "Generating Biterm Topic Model"
-    
+    GENERATING_BITERM_MSG3 = "Generating Biterm Topic Model"    
+    GENERATING_NMF_SUBLABEL = "Creating NMF Topic Sample: "
+    GENERATING_NMF_MSG2 = "Initalizing NMF Topic Model"
+    GENERATING_NMF_MSG3 = "Generating NMF Topic Model"
+
     GENERATED_DEFAULT_LABEL = "Generated Sample"
     GENERATED_LDA_SUBLABEL = "Loading results for LDA Topic Sample: "
     GENERATED_LDA_COMPLETED_PART1 = "LDA Topic Model Generation will continue running in background."\
@@ -364,7 +370,9 @@ class Samples(Main):
     GENERATED_BITERM_SUBLABEL = "Loading results for Biterm Topic Sample: "
     GENERATED_BITERM_COMPLETED_PART1 = "Biterm Topic Model Generation will continue running in background."\
                                     +"\nA new dialog will open when completed."
-
+    GENERATED_NMF_COMPLETED_PART1 = "NMF Topic Model Generation will continue running in background."\
+                                    +"\nA new dialog will open when completed."
+                                    
     #review list table column labels
     REVIEW_NAME = "Review Name"
     DATASET_NAME = "Dataset Name"
