@@ -486,7 +486,7 @@ class BitermSample(TopicSample):
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/btm.pk', 'wb') as outfile:
                 pickle.dump(self.model, outfile)
 
-#TODO figure out why samples dont have any documents attached for biterm/NMF when run on grouped documents (might also effect LDASample)
+#TODO check whether samples dont have any documents attached for NMF when run on grouped documents
 class NMFSample(TopicSample):
     def __init__(self, key, dataset_key, model_parameters):
         logger = logging.getLogger(__name__+".NMFSample["+str(key)+"].__init__")
@@ -494,7 +494,6 @@ class NMFSample(TopicSample):
         TopicSample.__init__(self, key, dataset_key, "NMF", model_parameters)
 
         #fixed properties that may be externally accessed but do not change after being initialized
-        self._num_passes = model_parameters['num_passes']
 
         #these need to be removed before pickling during saving due to threading and use of multiple processes
         #see __getstate__ for removal and Load and Reload for readdition
@@ -512,10 +511,6 @@ class NMFSample(TopicSample):
         return state
     def __repr__(self):
         return 'NMFSample: %s' % (self.key,)
-
-    @property
-    def num_passes(self):
-        return self._num_passes
     
     def GenerateStart(self, notify_window, current_workspace_path):
         logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].GenerateStart")
@@ -525,8 +520,7 @@ class NMFSample(TopicSample):
                                                                    current_workspace_path,
                                                                    self.key,
                                                                    self.tokensets,
-                                                                   self.num_topics,
-                                                                   self._num_passes)
+                                                                   self.num_topics)
         logger.info("Finished")
     
     def GenerateFinish(self, result, dataset, current_workspace):

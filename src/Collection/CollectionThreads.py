@@ -254,7 +254,7 @@ class RetrieveRedditDatasetThread(Thread):
 
 class RetrieveCSVDatasetThread(Thread):
     """Retrieve CSV Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, dataset_field, dataset_type, id_field, url_field, datetime_field, datetime_tz, avaliable_fields_list, metadata_fields_list, included_fields_list, filename):
+    def __init__(self, notify_window, main_frame, dataset_name, dataset_field, dataset_type, id_field, url_field, datetime_field, datetime_tz, avaliable_fields_list, metadata_fields_list, included_fields_list, combined_fields_list, filename):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self.daemon = True
@@ -270,6 +270,8 @@ class RetrieveCSVDatasetThread(Thread):
         self.avaliable_fields_list = avaliable_fields_list
         self.metadata_fields_list = metadata_fields_list
         self.included_fields_list = included_fields_list
+        self.combined_fields_list = combined_fields_list
+
         self.filename = filename
         self.start()
     
@@ -327,10 +329,12 @@ class RetrieveCSVDatasetThread(Thread):
                         data[key]["csv."+field] = [row[field]]
                 else:
                     for field in row:
-                        if "csv."+field in data[key]:
-                            data[key]["csv."+field].append(row[field])
+                        field_name = "csv."+field
+                        if field_name in data[key]:
+                            if field_name in self.combined_fields_list:
+                                data[key][field_name].append(row[field])
                         else:
-                            data[key]["csv."+field] = [row[field]]
+                            data[key][field_name] = [row[field]]
                 row_num = row_num + 1
             #save as a document dataset
             if len(data) > 0:

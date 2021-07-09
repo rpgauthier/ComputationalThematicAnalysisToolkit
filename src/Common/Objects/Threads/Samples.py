@@ -157,7 +157,7 @@ class BitermTrainingThread(Thread):
 
 class NMFTrainingThread(Thread):
     """NMFTrainingThread Class."""
-    def __init__(self, notify_window, current_workspace_path, key, tokensets, num_topics, num_passes):
+    def __init__(self, notify_window, current_workspace_path, key, tokensets, num_topics):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self.daemon = True
@@ -166,10 +166,8 @@ class NMFTrainingThread(Thread):
         self.key = key
         self.tokensets = tokensets
         self.num_topics = num_topics
-        self.num_passes = num_passes
         self.start()
 
-    #TODO needs to be moved to a process as the thread is still stalling the main GUI
     def run(self):
         '''Generates an NMF model'''
         logger = logging.getLogger(__name__+"NMFTrainingThread["+str(self.key)+"].run")

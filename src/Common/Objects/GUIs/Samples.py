@@ -188,6 +188,9 @@ class SampleCreatePanel(wx.Panel):
                     model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
                     main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_MSG2)
                     new_sample = Samples.NMFSample(name, dataset_key, model_parameters)
+                    new_sample.applied_filter_rules = copy.deepcopy(dataset.filter_rules)
+                    new_sample.tokenization_choice = dataset.tokenization_choice
+                    new_sample.tokenization_package_versions = dataset.tokenization_package_versions
                     new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
                     main_frame.samples[new_sample.key] = new_sample
                     new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
@@ -594,9 +597,10 @@ class TopicSamplePanel(AbstractSamplePanel):
         num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+" "+str(sample.num_topics))
         details2_sizer.Add(num_topics_label, 0, wx.ALL, 5)
         details2_sizer.AddSpacer(10)
-        num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+str(sample.num_passes))
-        details2_sizer.Add(num_passes_label, 0, wx.ALL, 5)
-        details2_sizer.AddSpacer(10)
+        if hasattr(sample, 'num_passes'):
+            num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+str(sample.num_passes))
+            details2_sizer.Add(num_passes_label, 0, wx.ALL, 5)
+            details2_sizer.AddSpacer(10)
         used_documents_label = wx.StaticText(self, label="Number of documents: "+str(len(self.sample.tokensets)))
         details2_sizer.Add(used_documents_label, 0, wx.ALL, 5)
         rules_button = wx.Button(self, label=FilteringGUIText.FILTERS_RULES)
@@ -605,7 +609,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         self.sizer.Add(details2_sizer, 0, wx.ALL, 5)
 
 
-        #initialize and show an inprogress panel for diaply while model is generating
+        #initialize and show an inprogress panel for display while model is generating
         inprogress_panel = wx.Panel(self)
         inprogress_sizer = wx.BoxSizer(wx.VERTICAL)
         inprogress_text = wx.StaticText(inprogress_panel, label="Currently Generating Model")
@@ -1019,9 +1023,10 @@ class TopicListPanel(wx.Panel):
         num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+str(self.sample.num_topics))
         details2_sizer.Add(num_topics_label, 0, wx.ALL, 5)
         details2_sizer.AddSpacer(10)
-        num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+str(self.sample.num_passes))
-        details2_sizer.Add(num_passes_label, 0, wx.ALL, 5)
-        details2_sizer.AddSpacer(10)
+        if hasattr(self.sample, 'num_passes'):
+            num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+str(self.sample.num_passes))
+            details2_sizer.Add(num_passes_label, 0, wx.ALL, 5)
+            details2_sizer.AddSpacer(10)
         used_documents_label = wx.StaticText(self, label=GUIText.NUMBER_OF_DOCUMENTS+str(len(self.sample.tokensets)))
         details2_sizer.Add(used_documents_label, 0, wx.ALL, 5)
         rules_button = wx.Button(self, label=FilteringGUIText.FILTERS_RULES)
@@ -1408,14 +1413,6 @@ class NMFModelCreateDialog(wx.Dialog):
         num_topics_sizer.Add(self.num_topics_ctrl)
         sizer.Add(num_topics_sizer)
 
-        num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES_CHOICE)
-        self.num_passes_ctrl = wx.SpinCtrl(self, min=1, max=1000, initial=100)
-        self.num_passes_ctrl.SetToolTip(GUIText.NUMBER_OF_PASSES_TOOLTIP)
-        num_passes_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        num_passes_sizer.Add(num_passes_label)
-        num_passes_sizer.Add(self.num_passes_ctrl)
-        sizer.Add(num_passes_sizer)
-
         #fields to choose specific fields for model
         #--- not part of mvp so default is to use all fields
 
@@ -1474,7 +1471,6 @@ class NMFModelCreateDialog(wx.Dialog):
             self.model_parameters['name'] = model_name
             self.model_parameters['dataset_key'] = self.usable_datasets[dataset_id]
             self.model_parameters['num_topics'] = self.num_topics_ctrl.GetValue()
-            self.model_parameters['num_passes'] = self.num_passes_ctrl.GetValue()
         logger.info("Finished")
         if status_flag:
             self.EndModal(wx.ID_OK)
@@ -1502,9 +1498,6 @@ class NMFModelDetailsDialog(wx.Dialog):
 
         num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+" "+str(self.sample.num_topics))
         sizer.Add(num_topics_label)
-
-        num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+str(self.sample.num_passes))
-        sizer.Add(num_passes_label)
 
         used_documents_label = wx.StaticText(self, label="Number of documents used during modelling: "+str(len(self.sample.tokensets)))
         sizer.Add(used_documents_label)

@@ -283,9 +283,17 @@ class Datasets(Common):
     CSV_DATETIMETZ_MISSING_ERROR = "Need to choose the time zone for the contents of the datatime field"
     
     METADATAFIELDS = "Metdata Fields: "
-    METADATAFIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpret the data."
+    METADATAFIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
+                             "\nIf a field occurs multiple times for the same id, the first occurance will be used."
+    COMBINED_METADATAFIELDS = "Combined Metdata Fields: "
+    COMBINED_METADATAFIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
+                                      "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
     INCLUDEDFIELDS = "Included Fields: "
-    INCLUDEDFIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the CSV file."
+    INCLUDEDFIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the CSV file."\
+                             "\nIf a field occurs multiple times for the same id, the first occurance will be used."
+    COMBINED_INCLUDEDFIELDS = "Combined Included Fields: "
+    COMBINED_INCLUDEDFIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the CSV file."\
+                                      "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
 
 class Samples(Main):
     #Model types
