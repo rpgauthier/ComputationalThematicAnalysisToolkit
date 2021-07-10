@@ -318,9 +318,17 @@ class Datasets(Common):
     CSV_DATETIMETZ_MISSING_ERROR = "Need to choose the time zone for the contents of the datatime field"
     
     METADATAFIELDS = "Metdata Fields: "
-    METADATAFIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpret the data."
+    METADATAFIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
+                             "\nIf a field occurs multiple times for the same id, the first occurance will be used."
+    COMBINED_METADATAFIELDS = "Combined Metdata Fields: "
+    COMBINED_METADATAFIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
+                                      "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
     INCLUDEDFIELDS = "Included Fields: "
-    INCLUDEDFIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the CSV file."
+    INCLUDEDFIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the CSV file."\
+                             "\nIf a field occurs multiple times for the same id, the first occurance will be used."
+    COMBINED_INCLUDEDFIELDS = "Combined Included Fields: "
+    COMBINED_INCLUDEDFIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the CSV file."\
+                                      "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
 
 class Samples(Main):
     #Model types
@@ -393,11 +401,11 @@ class Samples(Main):
     GENERATING_LDA_MSG3 = "Generating LDA Topic Model"
     GENERATING_BITERM_SUBLABEL = "Creating Biterm Topic Sample: "
     GENERATING_BITERM_MSG2 = "Initalizing Biterm Topic Model"
-    GENERATING_BITERM_MSG3 = "Generating Biterm Topic Model"
+    GENERATING_BITERM_MSG3 = "Generating Biterm Topic Model"    
     GENERATING_NMF_SUBLABEL = "Creating NMF Topic Sample: "
     GENERATING_NMF_MSG2 = "Initalizing NMF Topic Model"
     GENERATING_NMF_MSG3 = "Generating NMF Topic Model"
-    
+
     GENERATED_DEFAULT_LABEL = "Generated Sample"
     GENERATED_LDA_SUBLABEL = "Loading results for LDA Topic Sample: "
     GENERATED_LDA_COMPLETED_PART1 = "LDA Topic Model Generation will continue running in background."\
@@ -407,7 +415,7 @@ class Samples(Main):
                                     +"\nA new dialog will open when completed."
     GENERATED_NMF_COMPLETED_PART1 = "NMF Topic Model Generation will continue running in background."\
                                     +"\nA new dialog will open when completed."
-
+                                    
     #review list table column labels
     REVIEW_NAME = "Review Name"
     DATASET_NAME = "Dataset Name"

@@ -3,9 +3,6 @@ from datetime import datetime
 import Common.Objects.Samples as Samples
 import Common.Objects.Datasets as Datasets
 
-def dummy(x):
-    return x
-
 def SamplesSelected(sample, dataset, obj, value):
     if isinstance(obj, Samples.Sample):
         for parts_key in obj.parts_dict:
@@ -27,3 +24,6 @@ def SamplesSelected(sample, dataset, obj, value):
             if obj.key in sample.selected_documents:
                 sample.selected_documents.remove(obj.key)
                 sample.last_changed_dt = datetime.now()
+                
+def dummy(x):
+    return x
