@@ -435,13 +435,13 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             with open(self.keys_filename, mode='r') as infile:
                 self.keys = json.load(infile)
 
-        name_label = wx.StaticText(self, label=GUIText.NAME+": ")
-        self.name_ctrl = wx.TextCtrl(self)
-        self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label)
-        name_sizer.Add(self.name_ctrl, wx.EXPAND)
-        sizer.Add(name_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        # name_label = wx.StaticText(self, label=GUIText.NAME+": ")
+        # self.name_ctrl = wx.TextCtrl(self)
+        # self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
+        # name_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        # name_sizer.Add(name_label)
+        # name_sizer.Add(self.name_ctrl, wx.EXPAND)
+        # sizer.Add(name_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         consumer_key_label = wx.StaticText(self, label=GUIText.CONSUMER_KEY + ": ")
         self.consumer_key_ctrl = wx.TextCtrl(self)
@@ -642,12 +642,6 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         main_frame = wx.GetApp().GetTopWindow()
         keys = {}
         
-        name = self.name_ctrl.GetValue()
-        if name == "":
-            wx.MessageBox(GUIText.NAME_MISSING_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('No name entered')
-            status_flag = False
         keys['consumer_key'] = self.consumer_key_ctrl.GetValue()
         if keys['consumer_key'] == "":
             wx.MessageBox(GUIText.CONSUMER_KEY_MISSING_ERROR,
@@ -732,6 +726,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
                     query += " OR "
         logger.info("Query: "+query)
 
+        name = query
         if query == "":
             wx.MessageBox(GUIText.TWITTER_QUERY_MISSING_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
@@ -748,12 +743,12 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         dataset_source = "Twitter"
         
-        dataset_key = (name, dataset_source, self.dataset_type)
+        dataset_key = (query, dataset_source, self.dataset_type)
         if dataset_key in main_frame.datasets:
             wx.MessageBox(GUIText.NAME_EXISTS_ERROR,
                           GUIText.ERROR,
                           wx.OK | wx.ICON_ERROR)
-            logger.warning("Data with same name[%s] already exists", name)
+            logger.warning("Data with same name[%s] already exists", query)
             status_flag = False
 
         metadata_fields_list = []
@@ -777,7 +772,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             with open(self.keys_filename, mode='w') as outfile:
                 json.dump(keys, outfile)
 
-            main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+name,
+            main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+query,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
             self.Disable()
