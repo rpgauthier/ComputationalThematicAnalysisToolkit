@@ -520,7 +520,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         attributes_sizer.Add(self.attributes_radioctrl)
         attributes_sizer.Add(attributes_options_sizer, 0, wx.EXPAND)
 
-        # add 'search by' options to box
+        # add 'search by' elements to box
         self.search_by_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.SEARCH_BY+": ")
         self.search_by_sizer.Add(query_sizer, 0, wx.EXPAND)
         self.search_by_sizer.Add(attributes_sizer, 0, wx.EXPAND)
@@ -532,6 +532,10 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             # bind to each radiobutton
             option_sizer.GetChildren()[0].GetWindow().Bind(wx.EVT_RADIOBUTTON, lambda event: self.EnableOnlySelected(self.search_by_sizer))
         sizer.Add(self.search_by_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        # retweets checkbox
+        self.include_retweets_ctrl = wx.CheckBox(self, label=GUIText.INCLUDE_RETWEETS)
+        sizer.Add(self.include_retweets_ctrl, 0, wx.EXPAND | wx.ALL, 5)
 
         start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
         self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
@@ -586,7 +590,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         # ethics/terms of use
         self.ethics_checkbox_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_TWITTER)
-        self.ethics_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.ETHICS_TWITTER_URL)
+        self.ethics_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="2", url=GUIText.ETHICS_TWITTER_URL)
 
         ethics_sizer = wx.BoxSizer(wx.HORIZONTAL)
         ethics_sizer.Add(self.ethics_checkbox_ctrl)
@@ -707,14 +711,16 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
                                 phrase = "\""+phrase+"\""
                             query_items.append(phrase)
                     elif checkbox.GetLabel() == GUIText.HASHTAGS+": ":
-                        hashtags = text.split(",")
+                        text = text.replace(",", " ")
+                        hashtags = text.split()
                         for hashtag in hashtags:
                             hashtag = hashtag.strip()
                             if hashtag[0] != "#": # hashtags must start with '#' symbol
                                 hashtag = "#"+hashtag
                             query_items.append(hashtag)
                     elif checkbox.GetLabel() == GUIText.TWITTER_LABEL+" "+GUIText.ACCOUNTS+": ":
-                        accounts = text.split(",")
+                        text = text.replace(",", " ")
+                        accounts = text.split()
                         for account in accounts:
                             account = account.strip()
                             if not account.startswith("from:"):
@@ -724,6 +730,9 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
                 query += query_items[i]
                 if i < len(query_items)-1:
                     query += " OR "
+        if not self.include_retweets_ctrl.GetValue():
+            query += " -filter:retweets "
+        print(query)
         logger.info("Query: "+query)
 
         name = query

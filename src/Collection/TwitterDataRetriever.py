@@ -129,6 +129,7 @@ def UpdateRetrievedMonth(auth, name, query, month, file, prefix):
 
     tweepy_data = TweepyRetriever.GetTweetData(auth, start_dt, end_dt, query)
     new_data = tweepy_data['tweets']
+    rate_limit_reached = tweepy_data['rate_limit_reached']
 
     if len(new_data) > 0:
         for entry in new_data:
@@ -155,6 +156,7 @@ def UpdateRetrievedMonth(auth, name, query, month, file, prefix):
         with open('../Data/Twitter/'+name+'/'+prefix+month+'.json', 'w') as outfile:
             json.dump(data, outfile)
     logger.info("Finished")
+    return rate_limit_reached
 
 class TweepyRetriever():
     @staticmethod
