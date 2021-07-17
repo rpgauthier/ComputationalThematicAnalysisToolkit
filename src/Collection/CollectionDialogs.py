@@ -734,7 +734,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
                     query += " OR "
         if not self.include_retweets_ctrl.GetValue():
             query += " -filter:retweets "
-        print(query)
+        print(query) # TODO remove
         logger.info("Query: "+query)
 
         name = query
