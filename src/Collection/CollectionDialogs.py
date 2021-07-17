@@ -435,13 +435,14 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             with open(self.keys_filename, mode='r') as infile:
                 self.keys = json.load(infile)
 
-        # name_label = wx.StaticText(self, label=GUIText.NAME+": ")
-        # self.name_ctrl = wx.TextCtrl(self)
-        # self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-        # name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        # name_sizer.Add(name_label)
-        # name_sizer.Add(self.name_ctrl, wx.EXPAND)
-        # sizer.Add(name_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        # ethics/terms of use
+        self.ethics_checkbox_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_TWITTER)
+        self.ethics_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="2", url=GUIText.ETHICS_TWITTER_URL)
+
+        ethics_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        ethics_sizer.Add(self.ethics_checkbox_ctrl)
+        ethics_sizer.Add(self.ethics_hyperlink_ctrl)
+        sizer.Add(ethics_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         consumer_key_label = wx.StaticText(self, label=GUIText.CONSUMER_KEY + ": ")
         self.consumer_key_ctrl = wx.TextCtrl(self)
@@ -537,6 +538,9 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.include_retweets_ctrl = wx.CheckBox(self, label=GUIText.INCLUDE_RETWEETS)
         sizer.Add(self.include_retweets_ctrl, 0, wx.EXPAND | wx.ALL, 5)
 
+        # dates
+        date_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
         start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
         self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
                                                 style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
@@ -544,7 +548,6 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         start_date_sizer = wx.BoxSizer(wx.HORIZONTAL)
         start_date_sizer.Add(start_date_label)
         start_date_sizer.Add(self.start_date_ctrl)
-        sizer.Add(start_date_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         end_date_label = wx.StaticText(self, label=GUIText.END_DATE+": ")
         self.end_date_ctrl = wx.adv.DatePickerCtrl(self, name="endDate",
@@ -553,8 +556,16 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         end_date_sizer = wx.BoxSizer(wx.HORIZONTAL)
         end_date_sizer.Add(end_date_label)
         end_date_sizer.Add(self.end_date_ctrl)
-        sizer.Add(end_date_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
+        date_sizer.Add(start_date_sizer, 0, wx.EXPAND, 5)
+        date_sizer.AddSpacer(10)
+        date_sizer.Add(end_date_sizer, 0, wx.EXPAND, 5)
+        sizer.Add(date_sizer, 0, wx.ALL, 5)
+
+        # warning/notice
+        notice = wx.StaticText(self, label=GUIText.RETRIEVAL_NOTICE_TWITTER)
+        sizer.Add(notice, 0, wx.EXPAND | wx.ALL, 5)
+        
         metadata_fields_label = wx.StaticText(self, label=GUIText.METADATAFIELDS)
         self.metadata_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
         self.metadata_fields_ctrl.AppendColumn(GUIText.FIELD)
@@ -587,15 +598,6 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         # TODO: defaults to tweet type for now, could add more (like with reddit) if needed
         self.OnDatasetTypeChosen(None)
-
-        # ethics/terms of use
-        self.ethics_checkbox_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_TWITTER)
-        self.ethics_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="2", url=GUIText.ETHICS_TWITTER_URL)
-
-        ethics_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        ethics_sizer.Add(self.ethics_checkbox_ctrl)
-        ethics_sizer.Add(self.ethics_hyperlink_ctrl)
-        sizer.Add(ethics_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         #Retriever button to collect the requested data
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)

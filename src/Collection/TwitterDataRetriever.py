@@ -168,9 +168,7 @@ class TweepyRetriever():
         start_dt = start_dt
         tweets = []
 
-        # TODO: v1.1 search only goes back 7 days back from the end_dt
-        # need to loop end_dt until we reach start date + account for the few days before the start_dt included in the earliest 7-day interval
-        # 450 requests/15 mins == 64 weeks of data/15 mins, not ideal?
+        # TODO: v1.1 search only goes back 7 days back from current day
         start = start_dt
         end = end_dt
 
@@ -181,9 +179,9 @@ class TweepyRetriever():
         while (start < end):
             # 100 tweets per API request, and 450 requests/15 mins (usually only hits < 300 requests before reaching API limit though)
             if last_retrieved_id == None:
-                tweets_data = tweepy.Cursor(api.search, query, until=end).items(100)
+                tweets_data = tweepy.Cursor(api.search, query, lang="en", until=end).items(100)
             else:
-                tweets_data = tweepy.Cursor(api.search, query, until=end, max_id=last_retrieved_id-1).items(100)
+                tweets_data = tweepy.Cursor(api.search, query, lang="en", until=end, max_id=last_retrieved_id-1).items(100)
             # send requests for tweets while the rate limit has not been exceeded
             while (tweets_retrieved):
                 tweets_retrieved = False
@@ -198,9 +196,9 @@ class TweepyRetriever():
                         tweets_retrieved = True
 
                     if last_retrieved_id == None:
-                        tweets_data = tweepy.Cursor(api.search, query, until=end).items(100)
+                        tweets_data = tweepy.Cursor(api.search, query, lang="en", until=end).items(100)
                     else:
-                        tweets_data = tweepy.Cursor(api.search, query, until=end, max_id=last_retrieved_id-1).items(100)
+                        tweets_data = tweepy.Cursor(api.search, query, lang="en", until=end, max_id=last_retrieved_id-1).items(100)
                 except tweepy.error.TweepError as e:
                     if e.response.status_code == 429:
                         print("Twitter API rate limit reached.") # TODO: remove

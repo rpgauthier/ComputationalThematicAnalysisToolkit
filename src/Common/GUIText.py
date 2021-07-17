@@ -435,6 +435,7 @@ class Collection(Main, Datasets):
     ETHICS_PUSHSHIFT = "that this toolkit uses the Pushshift.io api to collect Reddit Data."
 
     INCLUDE_RETWEETS = "Include retweets"
+    RETRIEVAL_NOTICE_TWITTER = "* Currently, only (English) tweets up to 7 days back from the current date may be retrieved. *"
     ETHICS_TWITTER = "and agree to Twitter's developer agreement and policy."
     ETHICS_TWITTER_URL = "https://developer.twitter.com/en/developer-terms/agreement-and-policy"
 
