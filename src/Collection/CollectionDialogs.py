@@ -732,17 +732,21 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
                 query += query_items[i]
                 if i < len(query_items)-1:
                     query += " OR "
-        if not self.include_retweets_ctrl.GetValue():
-            query += " -filter:retweets "
-        print(query) # TODO remove
-        logger.info("Query: "+query)
-
-        name = query
+        
         if query == "":
             wx.MessageBox(GUIText.TWITTER_QUERY_MISSING_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('No query entered')
             status_flag = False
+        else:
+            # retweets flag
+            if not self.include_retweets_ctrl.GetValue():
+                query += " -filter:retweets "
+        print(query) # TODO remove
+        logger.info("Query: "+query)
+
+        name = query
+
         start_date = str(self.start_date_ctrl.GetValue().Format("%Y-%m-%d"))
         end_date = str(self.end_date_ctrl.GetValue().Format("%Y-%m-%d"))
         if start_date > end_date:

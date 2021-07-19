@@ -64,7 +64,7 @@ def FilesAvaliable(name, start_date, end_date, prefix):
     logger.info("Finished")
     return dict_monthfiles
 
-def RetrieveMonth(auth, name, query, month, prefix):
+def RetrieveMonth(auth, name, query, month, end_date, prefix):
     logger = logging.getLogger(__name__+".RetrieveMonth["+query+"]["+month+"]["+prefix+"]")
     logger.info("Starting")
     id_dict = {}
@@ -74,6 +74,13 @@ def RetrieveMonth(auth, name, query, month, prefix):
     month_end = (datetime.datetime.strptime(month, "%Y-%m")
                  + relativedelta(months=1)).strftime(r"%Y-%m")
     end_dt = calendar.timegm(datetime.datetime.strptime(month_end, "%Y-%m").timetuple())
+
+    end_date = calendar.timegm((datetime.datetime.strptime(end_date, "%Y-%m-%d") + relativedelta(days=1)).timetuple())
+    if end_date < end_dt:
+        # twitter data gets cut off after a limit is hit
+        # so we don't want to hit this limit while retrieving unecessary tweets past the specified time interval
+        # because a "no data available" error would come up (even though data is available)
+        end_dt = end_date 
     
     tweepy_data = TweepyRetriever.GetTweetData(auth, start_dt, end_dt, query)
     new_data = tweepy_data['tweets']
@@ -106,7 +113,7 @@ def RetrieveMonth(auth, name, query, month, prefix):
     logger.info("Finished")
     return rate_limit_reached
 
-def UpdateRetrievedMonth(auth, name, query, month, file, prefix):
+def UpdateRetrievedMonth(auth, name, query, month, end_date, file, prefix):
     logger = logging.getLogger(__name__+".UpdateRetrievedMonth["+query+"]["+month+"]["+prefix+"]")
     logger.info("Starting")
     data = []
@@ -126,6 +133,13 @@ def UpdateRetrievedMonth(auth, name, query, month, file, prefix):
         month_end = (datetime.datetime.strptime(month, "%Y-%m")
                      + relativedelta(months=1)).strftime(r"%Y-%m") + "-01"
         end_dt = calendar.timegm(datetime.datetime.strptime(month_end, "%Y-%m-%d").timetuple())
+    
+    end_date = calendar.timegm((datetime.datetime.strptime(end_date, "%Y-%m-%d") + relativedelta(days=1)).timetuple())
+    if end_date < end_dt:
+        # twitter data gets cut off after a limit is hit
+        # so we don't want to hit this limit while retrieving unecessary tweets past the specified time interval
+        # because a "no data available" error would come up (even though data is available)
+        end_dt = end_date 
 
     tweepy_data = TweepyRetriever.GetTweetData(auth, start_dt, end_dt, query)
     new_data = tweepy_data['tweets']
@@ -160,7 +174,7 @@ def UpdateRetrievedMonth(auth, name, query, month, file, prefix):
 
 class TweepyRetriever():
     @staticmethod
-    def GetTweetData(auth, start_dt, end_dt, query):
+    def GetTweetData(auth, start_dt, end_dt, query): # where end_dt is 12 am the day after the specified end date
         logger = logging.getLogger(__name__+".TwitterRetriever.GetTweetData["+str(start_dt)+"]["+str(end_dt)+"]["+query+"]")
         logger.info("Starting")
         

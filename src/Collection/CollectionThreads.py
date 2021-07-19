@@ -406,7 +406,7 @@ class RetrieveTwitterDatasetThread(Thread):
     #     return dataset
 
     def UpdateDataFiles(self, auth, name, query, start_date, end_date, prefix):
-        logger = logging.getLogger(__name__+".TwitterRetrieverDialog.UpdateDataFiles["+query+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
+        logger = logging.getLogger(__name__+".TwitterRetrieverDialog.UpdateDataFiles["+name+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
         logger.info("Starting")
         #check which months of the range are already downloaded
         #data archives are by month so need which months have no data and which months are before months which have no data
@@ -425,7 +425,7 @@ class RetrieveTwitterDatasetThread(Thread):
         for month in months_notfound:
             wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_ALL_MSG+str(month)))
             try:
-                rate_limit_reached = twr.RetrieveMonth(auth, name, query, month, prefix)
+                rate_limit_reached = twr.RetrieveMonth(auth, name, query, month, end_date, prefix)
                 if rate_limit_reached:
                     wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.TWITTER_RATE_LIMIT_REACHED_MSG))
                     break
@@ -435,7 +435,7 @@ class RetrieveTwitterDatasetThread(Thread):
         for month in months_tocheck:
             wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_NEW_MSG+str(month)))
             try:
-                rate_limit_reached = twr.UpdateRetrievedMonth(auth, name, query, month, dict_monthfiles[month], prefix)
+                rate_limit_reached = twr.UpdateRetrievedMonth(auth, name, query, month, end_date, dict_monthfiles[month], prefix)
                 if rate_limit_reached:
                     wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.TWITTER_RATE_LIMIT_REACHED_MSG))
                     break
@@ -446,7 +446,7 @@ class RetrieveTwitterDatasetThread(Thread):
         logger.info("Finished")
 
     def ImportDataFiles(self, name, query, start_date, end_date, prefix):
-        logger = logging.getLogger(__name__+".TwitterRetrieverDialog.ImportDataFiles["+query+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
+        logger = logging.getLogger(__name__+".TwitterRetrieverDialog.ImportDataFiles["+name+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
         logger.info("Starting")
         #get names of files where data is to be loaded from
         dict_monthfiles = twr.FilesAvaliable(name, start_date, end_date, prefix)
