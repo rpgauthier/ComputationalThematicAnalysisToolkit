@@ -420,7 +420,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=GUIText.RETRIEVE_TWITTER_LABEL)
         self.retrieval_thread = None
-        self.keys_filename = "../keys.json"
+        self.keys_filename = "../twitter_keys.json"
         self.keys = {}
         self.avaliable_fields = {}
         self.dataset_type = "tweet"

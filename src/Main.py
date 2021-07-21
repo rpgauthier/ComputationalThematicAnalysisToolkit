@@ -825,6 +825,27 @@ class OptionsDialog(wx.Dialog):
         self.adjustable_includedfields_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeAdjustableIncludedFieldsMode)
         advanced_sizer.Add(self.adjustable_includedfields_ctrl, 0, wx.ALL, 5)
 
+        twitter_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.TWITTER_LABEL+" "+GUIText.OPTIONS_LABEL)
+        sizer.Add(twitter_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        twitter_consumer_key_label = wx.StaticText(self, label=GUIText.CONSUMER_KEY + ": ")
+        self.twitter_consumer_key_ctrl = wx.TextCtrl(self)
+        # if 'consumer_key' in self.keys:
+        #     self.twitter_consumer_key_ctrl.SetValue(self.keys['consumer_key'])
+        twitter_consumer_key_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        twitter_consumer_key_sizer.Add(twitter_consumer_key_label)
+        twitter_consumer_key_sizer.Add(self.twitter_consumer_key_ctrl, wx.EXPAND)
+        twitter_sizer.Add(twitter_consumer_key_sizer, 0, wx.EXPAND | wx.ALL, 5)
+    
+        twitter_consumer_secret_label = wx.StaticText(self, label=GUIText.CONSUMER_SECRET + ": ")
+        self.twitter_consumer_secret_ctrl = wx.TextCtrl(self)
+        # if 'consumer_secret' in self.keys:
+        #     self.twitter_consumer_secret_ctrl.SetValue(self.keys['consumer_secret'])
+        twitter_consumer_secret_ctrl = wx.BoxSizer(wx.HORIZONTAL)
+        twitter_consumer_secret_ctrl.Add(twitter_consumer_secret_label)
+        twitter_consumer_secret_ctrl.Add(self.twitter_consumer_secret_ctrl, wx.EXPAND)
+        twitter_sizer.Add(twitter_consumer_secret_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+
     def ChangeMultipleDatasetMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.multipledatasets_ctrl.GetValue()

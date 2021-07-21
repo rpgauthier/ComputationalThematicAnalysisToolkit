@@ -167,6 +167,7 @@ class Main(Common):
     REPORTING_LABEL = "Reporting"
     OPTIONS_LABEL = "Options"
     NOTES_LABEL = "Notes"
+    TWITTER_LABEL = "Twitter"
 
 class Datasets(Common):
 
