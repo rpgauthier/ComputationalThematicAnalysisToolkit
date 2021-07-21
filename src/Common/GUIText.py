@@ -273,6 +273,7 @@ class Datasets(Common):
     #Retrieval specific fields
     START_DATE = "Start Date"
     END_DATE = "End Date"
+    UTC = "UTC"
 
     REDDIT_LABEL = "Reddit"
     REDDIT_SUBREDDIT = "Subreddit"

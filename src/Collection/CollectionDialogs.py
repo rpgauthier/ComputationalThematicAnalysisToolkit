@@ -437,7 +437,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         # ethics/terms of use
         self.ethics_checkbox_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_TWITTER)
-        self.ethics_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="2", url=GUIText.ETHICS_TWITTER_URL)
+        self.ethics_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.ETHICS_TWITTER_URL)
 
         ethics_sizer = wx.BoxSizer(wx.HORIZONTAL)
         ethics_sizer.Add(self.ethics_checkbox_ctrl)
@@ -469,7 +469,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.query_radioctrl.SetToolTip(GUIText.TWITTER_QUERY_RADIOBUTTON_TOOLTIP)
         self.query_radioctrl.SetValue(True)
 
-        self.query_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.TWITTER_QUERY_HYPERLINK)
+        self.query_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="2", url=GUIText.TWITTER_QUERY_HYPERLINK)
 
         self.query_ctrl = wx.TextCtrl(self)
         self.query_ctrl.SetHint(GUIText.TWITTER_QUERY_PLACEHOLDER)
@@ -541,7 +541,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         # dates
         date_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
+        start_date_label = wx.StaticText(self, label=GUIText.START_DATE+" ("+GUIText.UTC+")"+": ")
         self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
                                                 style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
         self.start_date_ctrl.SetToolTip(GUIText.START_DATE_TOOLTIP)
@@ -549,7 +549,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         start_date_sizer.Add(start_date_label)
         start_date_sizer.Add(self.start_date_ctrl)
 
-        end_date_label = wx.StaticText(self, label=GUIText.END_DATE+": ")
+        end_date_label = wx.StaticText(self, label=GUIText.END_DATE+" ("+GUIText.UTC+")"+": ")
         self.end_date_ctrl = wx.adv.DatePickerCtrl(self, name="endDate",
                                               style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
         self.end_date_ctrl.SetToolTip(GUIText.END_DATE_TOOLTIP)
