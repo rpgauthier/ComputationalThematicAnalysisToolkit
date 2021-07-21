@@ -695,7 +695,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         # generate query
         query = ""
         if selected_option[0].GetLabel() == GUIText.QUERY+": ":
-            query = self.query_ctrl.GetValue()
+            query = self.query_ctrl.GetValue().strip()
         elif selected_option[0].GetLabel() == GUIText.TWITTER_TWEET_ATTRIBUTES+": ":
             query_items = [] # individual sub-queries, which are joined by UNION (OR) to form the overall query
             attributes_list_sizer = selected_option[1]
@@ -742,7 +742,8 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             # retweets flag
             if not self.include_retweets_ctrl.GetValue():
                 query += " -filter:retweets "
-        print(query) # TODO remove
+        query = query.strip() # trim whitespace
+        print("QUERY: " + query) # TODO remove
         logger.info("Query: "+query)
 
         name = query
