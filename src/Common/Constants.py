@@ -57,6 +57,10 @@ TOKENIZER_APPROACH_LISTS = {'eng-sm': ['raw text', 'nltk_PorterStemmer', 'spacy_
 AVALIABLE_DATASET_LANGUAGES1 = ['eng-sm', 'eng-trf', 'fre-sm']
 AVALIABLE_DATASET_LANGUAGES2 = ['English-Efficent', 'English-Accurate', 'French']
 
+# dialogs
+TWITTER_DIALOG_SIZE = wx.Size(350, -1)
+OPTIONS_DIALOG_SIZE = wx.Size(350, 300)
+
 #definition of fields avaliable for use from the retrievers
 avaliable_fields = {
     ('Reddit', 'submission',): {

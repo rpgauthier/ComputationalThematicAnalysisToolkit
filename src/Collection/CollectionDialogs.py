@@ -426,7 +426,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.dataset_type = "tweet"
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.SetMinSize(350, -1)
+        sizer.SetMinSize(Constants.TWITTER_DIALOG_SIZE)
         
         main_frame = wx.GetApp().GetTopWindow()
 

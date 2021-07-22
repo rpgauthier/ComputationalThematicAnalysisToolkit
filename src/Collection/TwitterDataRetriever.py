@@ -201,7 +201,7 @@ class TweepyRetriever():
                 tweets_retrieved = False
                 try:
                     for tweet in tweets_data:
-                        print(len(tweets)) # TODO remove
+                        print("Tweets retrieved: ", len(tweets)) # TODO remove
                         tweet._json['created_utc'] = calendar.timegm(datetime.datetime.strptime(tweet._json['created_at'], "%a %b %d %H:%M:%S +0000 %Y").timetuple()) # TODO: is making a created_utc field like this ok
                         tweet._json['retrieved_on'] = calendar.timegm(datetime.datetime.now().timetuple())
                         if (tweet._json['created_utc'] >= start and tweet._json['created_utc'] < end):
