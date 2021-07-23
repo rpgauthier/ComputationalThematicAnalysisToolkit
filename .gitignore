@@ -5,4 +5,4 @@ Workspaces/
 Saved_Workspaces/
 .vscode/
 **/__pycache__
-keys.json
+twitter_keys.json
