@@ -462,7 +462,6 @@ class RetrieveTwitterDatasetThread(Thread):
                     temp_data = json.load(infile)
                     temp_data.pop(0)
                     for entry in temp_data:
-                        # TODO: change to created_at to match twitter's field name? or no because it expects a created_utc field in files?
                         if entry['created_utc'] >= calendar.timegm((datetime.strptime(start_date, "%Y-%m-%d")).timetuple()):
                                 data.append(entry)
                 if len(files) > 2:
@@ -480,7 +479,6 @@ class RetrieveTwitterDatasetThread(Thread):
                     temp_data = json.load(infile)
                     temp_data.pop(0)
                     for entry in temp_data:
-                        # TODO: created_utc?
                         if entry['created_utc'] < calendar.timegm((datetime.strptime(end_date, "%Y-%m-%d") + relativedelta(days=1)).timetuple()):
                             data.append(entry)
             else:
@@ -489,7 +487,6 @@ class RetrieveTwitterDatasetThread(Thread):
                     temp_data = json.load(infile)
                     temp_data.pop(0)
                     for entry in temp_data:
-                        # TODO: created_utc?
                         if entry['created_utc'] >= calendar.timegm((datetime.strptime(start_date, "%Y-%m-%d")).timetuple()):
                             if (entry['created_utc'] < calendar.timegm((datetime.strptime(end_date,"%Y-%m-%d") + relativedelta(days=1)).timetuple())):
                                 data.append(entry)
