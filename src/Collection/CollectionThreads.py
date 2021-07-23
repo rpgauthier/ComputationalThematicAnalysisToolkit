@@ -296,7 +296,7 @@ class RetrieveTwitterDatasetThread(Thread):
         api = tweepy.API(auth) # TODO: create auth object in dialog and just pass in auth object
 
         if self.dataset_type == "tweet":
-            # TODO: only update if called with twitter api flag? otherwise just import instead (see reddit)
+            # TODO: only update if called with twitter api flag? otherwise just import instead (like with reddit)
             if True: # twitter_api_flag
                 try:
                     wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_TWITTER_TWEETS_MSG))
@@ -308,7 +308,6 @@ class RetrieveTwitterDatasetThread(Thread):
                 # wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BEGINNING_MSG))
 
                 # # TODO: get data from files?
-                # # TODO: remove cap on tweets, this takes a long time without saving to files(?)
                 # tweets = tweepy.Cursor(api.search, self.query).items(10)
 
                 # wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_TWITTER_MSG))

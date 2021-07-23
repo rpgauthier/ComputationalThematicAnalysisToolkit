@@ -393,7 +393,6 @@ avaliable_fields = {
             'metadata_default': False,
             },
         },
-    # TODO: add all fields
     ('Twitter', 'tweet',): {
         'created_utc': { # not a field in tweet object; created using 'created_at'
             'desc': "The UTC time stamp of when the tweet was posted.",
@@ -454,26 +453,26 @@ chosen_fields = {
             'metadata_default': False,
             },
         },
-    # TODO: add all default fields
-    ('Twitter', 'tweet',): {
-        'created_utc': { # not a field in tweet object; created using 'created_at'
-            'desc': "The UTC time stamp of when the tweet was posted.",
-            'type': 'UTC-timestamp',
-            'included_default': False,
-            'metadata_default': True,
-            },
-        'url': { # not a field in tweet object; created using tweet 'id'
-            'desc': "a url link to the original tweet",
-            'type': 'url',
-            'included_default': False,
-            'metadata_default': True,
-            },
-        'full_text': {
-            'desc': "The full text of this tweet.",
-            'type': "string",
-            'included_default': True,
-            'metadata_default': True,
-            },
-        },
+    # TODO: unsure if this is used
+    # ('Twitter', 'tweet',): {
+    #     'created_utc': { # not a field in tweet object; created using 'created_at'
+    #         'desc': "The UTC time stamp of when the tweet was posted.",
+    #         'type': 'UTC-timestamp',
+    #         'included_default': False,
+    #         'metadata_default': True,
+    #         },
+    #     'url': { # not a field in tweet object; created using tweet 'id'
+    #         'desc': "a url link to the original tweet",
+    #         'type': 'url',
+    #         'included_default': False,
+    #         'metadata_default': True,
+    #         },
+    #     'full_text': {
+    #         'desc': "The full text of this tweet.",
+    #         'type': "string",
+    #         'included_default': True,
+    #         'metadata_default': True,
+    #         },
+    #     },
     }
     
