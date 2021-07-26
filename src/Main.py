@@ -8,6 +8,7 @@ from threading import *
 import multiprocessing
 import psutil
 from datetime import datetime
+import json
 
 import wx
 import wx.lib.agw.labelbook as LB
@@ -799,8 +800,16 @@ class CustomProgressDialog(wx.Dialog):
         self.ok_btn.Enable()
 
 class OptionsDialog(wx.Dialog):
-    def __init__(self, parent, size=wx.DefaultSize):
+    def __init__(self, parent, size=Constants.OPTIONS_DIALOG_SIZE):
         wx.Dialog.__init__(self, parent, title=GUIText.OPTIONS_LABEL, size=size, style=wx.DEFAULT_DIALOG_STYLE)
+        self.Bind(wx.EVT_CLOSE, self.SaveData)
+
+        self.twitter_keys_filename = "../twitter_keys.json"
+        self.twitter_keys = {}
+        # get saved keys, if any
+        if os.path.isfile(self.twitter_keys_filename):
+            with open(self.twitter_keys_filename, mode='r') as infile:
+                self.twitter_keys = json.load(infile)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
@@ -825,6 +834,27 @@ class OptionsDialog(wx.Dialog):
         self.adjustable_includedfields_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeAdjustableIncludedFieldsMode)
         advanced_sizer.Add(self.adjustable_includedfields_ctrl, 0, wx.ALL, 5)
 
+        twitter_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.TWITTER_LABEL+" "+GUIText.OPTIONS_LABEL)
+        sizer.Add(twitter_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        twitter_consumer_key_label = wx.StaticText(self, label=GUIText.CONSUMER_KEY + ": ")
+        self.twitter_consumer_key_ctrl = wx.TextCtrl(self)
+        if 'consumer_key' in self.twitter_keys:
+            self.twitter_consumer_key_ctrl.SetValue(self.twitter_keys['consumer_key'])
+        twitter_consumer_key_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        twitter_consumer_key_sizer.Add(twitter_consumer_key_label)
+        twitter_consumer_key_sizer.Add(self.twitter_consumer_key_ctrl, wx.EXPAND)
+        twitter_sizer.Add(twitter_consumer_key_sizer, 0, wx.EXPAND | wx.ALL, 5)
+    
+        twitter_consumer_secret_label = wx.StaticText(self, label=GUIText.CONSUMER_SECRET + ": ")
+        self.twitter_consumer_secret_ctrl = wx.TextCtrl(self)
+        if 'consumer_secret' in self.twitter_keys:
+            self.twitter_consumer_secret_ctrl.SetValue(self.twitter_keys['consumer_secret'])
+        twitter_consumer_secret_ctrl = wx.BoxSizer(wx.HORIZONTAL)
+        twitter_consumer_secret_ctrl.Add(twitter_consumer_secret_label)
+        twitter_consumer_secret_ctrl.Add(self.twitter_consumer_secret_ctrl, wx.EXPAND)
+        twitter_sizer.Add(twitter_consumer_secret_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+
     def ChangeMultipleDatasetMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.multipledatasets_ctrl.GetValue()
@@ -843,7 +873,16 @@ class OptionsDialog(wx.Dialog):
         new_mode = self.adjustable_includedfields_ctrl.GetValue()
         if main_frame.adjustable_includedfields_mode != new_mode:
             main_frame.adjustable_includedfields_mode = new_mode
-
+    
+    def SaveData(self, event):
+        if self.twitter_consumer_key_ctrl.GetValue() != "":
+            self.twitter_keys['consumer_key'] = self.twitter_consumer_key_ctrl.GetValue()
+        if self.twitter_consumer_secret_ctrl.GetValue() != "":
+            self.twitter_keys['consumer_secret'] = self.twitter_consumer_secret_ctrl.GetValue()
+        with open(self.twitter_keys_filename, mode='w') as outfile:
+                json.dump(self.twitter_keys, outfile)
+        self.Destroy()
+        
 def Main():
     '''setup the main tasks for the application'''
     log_path = "../Logs/MachineThematicAnalysis.log"

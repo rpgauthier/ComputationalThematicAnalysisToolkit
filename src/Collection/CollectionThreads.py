@@ -1,4 +1,3 @@
-
 import logging
 import json
 import csv
@@ -7,6 +6,7 @@ from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
 import dateparser
 from threading import Thread
+import tweepy
 
 import wx
 
@@ -16,6 +16,7 @@ import Common.CustomEvents as CustomEvents
 import Common.Objects.Datasets as Datasets
 import Common.Objects.Utilities.Datasets as DatasetsUtilities
 import Collection.RedditDataRetriever as rdr
+import Collection.TwitterDataRetriever as twr
 
 class RetrieveRedditDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
@@ -248,6 +249,246 @@ class RetrieveRedditDatasetThread(Thread):
                                                                     "%Y-%m-%d")).timetuple()):
                             if entry['created_utc'] < calendar.timegm((datetime.strptime(end_date,
                                                                        "%Y-%m-%d") + relativedelta(days=1)).timetuple()):
+                                data.append(entry)
+        logger.info("Finished")
+        return data
+
+class RetrieveTwitterDatasetThread(Thread):
+    """Retrieve Reddit Dataset Thread Class."""
+    def __init__(self, notify_window, main_frame, dataset_name, keys, query, start_date, end_date, dataset_type, avaliable_fields_list, metadata_fields_list, included_fields_list):
+        """Init Worker Thread Class."""
+        Thread.__init__(self)
+        self._notify_window = notify_window
+        self.main_frame = main_frame
+        self.dataset_name = dataset_name
+        self.consumer_key = keys['consumer_key']
+        self.consumer_secret = keys['consumer_secret']
+        self.query = query
+        self.start_date = start_date
+        self.end_date = end_date
+        self.dataset_type = dataset_type
+        self.avaliable_fields_list = avaliable_fields_list
+        self.metadata_fields_list = metadata_fields_list
+        self.included_fields_list = included_fields_list
+        # This starts the thread running on creation, but you could
+        # also make the GUI thread responsible for calling this
+        self.start()
+    
+    def run(self):
+        logger = logging.getLogger(__name__+".RetrieveTwitterDatasetThread.run")
+        logger.info("Starting")
+        status_flag = True
+        dataset_key = (self.dataset_name, "Twitter", self.dataset_type)
+        retrieval_details = {
+                'query': self.query,
+                'start_date': self.start_date,
+                'end_date': self.end_date,
+                }
+        data = {}
+        dataset = None
+        error_msg = ""
+
+        # tweepy auth
+        # TODO: user-level auth
+        consumer_key = self.consumer_key
+        consumer_secret = self.consumer_secret
+        auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+        api = tweepy.API(auth) # TODO: create auth object in dialog and just pass in auth object
+
+        if self.dataset_type == "tweet":
+            # TODO: only update if called with twitter api flag? otherwise just import instead (like with reddit)
+            if True: # twitter_api_flag
+                try:
+                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_TWITTER_TWEETS_MSG))
+                    self.UpdateDataFiles(auth, self.dataset_name, self.query, self.start_date, self.end_date, "TW_") #TODO: TW == twitter, maybe TD? Twitter Document?
+                except RuntimeError:
+                    status_flag = False
+                    error_msg = GUIText.RETRIEVAL_FAILED_ERROR
+            if status_flag:
+                # wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BEGINNING_MSG))
+
+                # # TODO: get data from files?
+                # tweets = tweepy.Cursor(api.search, self.query).items(10)
+
+                # wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_TWITTER_MSG))
+
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_TWITTER_TWEET_MSG))
+                tweets = self.ImportDataFiles(self.dataset_name, self.query, self.start_date, self.end_date, "TW_")
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_TWITTER_MSG))
+                
+                tweets_data = {}
+                for tweet in tweets:
+                    key = ("Twitter", "tweet", tweet['id'])
+                    tweets_data[key] = {}
+                    tweets_data[key]['data_source'] = "Twitter"
+                    tweets_data[key]['data_type'] = "tweet"
+                    tweets_data[key]['id'] = tweet['id']
+                    tweets_data[key]["url"] = "https://twitter.com/" + tweet['user']['screen_name'] + "/status/" + tweet['id_str']
+                    tweets_data[key]['created_utc'] = tweet['created_utc']
+                    # TODO: is 'title' needed if tweets don't have titles?
+                    if 'title' in tweet:
+                        tweets_data[key]['title'] = tweet['title']
+                    else:
+                        tweets_data[key]['title'] = ""
+                    if 'text' in tweet:
+                        tweets_data[key]['text'] = [tweet['text']]
+                    else:
+                        tweets_data[key]['text'] = [""]
+
+                    # tweet always has shortened 'text', but we should use 'full_text' if possible
+                    status = None
+                    try:
+                        status_attempt = api.get_status(tweet['id'], tweet_mode="extended")
+                        status = status_attempt
+                    except tweepy.error.TweepError: # Could not retrieve status for this tweet id, so use shortened 'text'(?) TODO
+                        tweets_data[key]['full_text'] = [tweet['text']]
+                    if status is not None:
+                        try: 
+                            tweets_data[key]['full_text'] = [status.retweeted_status.full_text]
+                        except AttributeError:  # Not a Retweet (no 'retweeted_status' field)
+                            tweets_data[key]['full_text'] = [status.full_text]
+                    
+                    for field in tweet:
+                        tweets_data[key]["tweet."+field] = tweet[field]
+                #save as a document dataset
+                data = tweets_data           
+        
+        if status_flag:
+            if len(data) > 0:
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list)
+                DatasetsUtilities.CreateDatasetObjectsMetadata(dataset)
+                DatasetsUtilities.TokenizeDatasetObjects([dataset], self._notify_window, self.main_frame)
+            else:
+                status_flag = False
+                error_msg = GUIText.NO_DATA_AVALIABLE_ERROR
+
+        #return dataset and associated information
+        result = {}
+        result['status_flag'] = status_flag
+        result['dataset_key'] = dataset_key
+        result['dataset'] = dataset
+        result['error_msg'] = error_msg
+        wx.PostEvent(self._notify_window, CustomEvents.RetrieveResultEvent(result))
+        logger.info("Finished")
+
+    # def CreateDataset(self, dataset_key, retrieval_details, data):
+    #     dataset = Datasets.Dataset(dataset_key,
+    #                                dataset_key[0],
+    #                                dataset_key[1],
+    #                                dataset_key[2],
+    #                                retrieval_details)
+    #     dataset.data = data
+    #     avaliable_fields = Constants.avaliable_fields[(dataset_key[1], dataset_key[2],)]
+    #     for field in avaliable_fields:
+    #         new_field = Datasets.Field(dataset,
+    #                                    field,
+    #                                    dataset,
+    #                                    avaliable_fields[field]['desc'],
+    #                                    avaliable_fields[field]['type'])
+    #         dataset.avaliable_fields[field] = new_field
+    #     chosen_fields = Constants.chosen_fields[(dataset_key[1], dataset_key[2],)]
+
+    #     merged_fields = {}
+    #     for field in chosen_fields:
+    #         if chosen_fields[field]['type'] not in merged_fields:
+    #             merged_fields[chosen_fields[field]['type']] = Datasets.MergedField(dataset, chosen_fields[field]['type']+"_Fields")
+    #         new_field = Datasets.Field(merged_fields[chosen_fields[field]['type']],
+    #                                    field,
+    #                                    dataset,
+    #                                    chosen_fields[field]['desc'],
+    #                                    chosen_fields[field]['type'])
+    #         merged_fields[chosen_fields[field]['type']].chosen_fields[dataset.key, field] = new_field
+
+    #     for key in merged_fields:
+    #         dataset.merged_fields[merged_fields[key].key] = merged_fields[key]
+    #     return dataset
+
+    def UpdateDataFiles(self, auth, name, query, start_date, end_date, prefix):
+        logger = logging.getLogger(__name__+".TwitterRetrieverDialog.UpdateDataFiles["+name+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
+        logger.info("Starting")
+        #check which months of the range are already downloaded
+        #data archives are by month so need which months have no data and which months are before months which have no data
+        dict_monthfiles = twr.FilesAvaliable(name, start_date, end_date, prefix)
+        months_notfound = []
+        months_tocheck = []
+        errors = []
+        for month, filename in dict_monthfiles.items():
+            if filename == "":
+                months_notfound.append(month)
+            else:
+                months_tocheck.append(month)
+        
+        rate_limit_reached = False
+        #retireve data of months that have not been downloaded
+        for month in months_notfound:
+            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_ALL_MSG+str(month)))
+            try:
+                rate_limit_reached = twr.RetrieveMonth(auth, name, query, month, end_date, prefix)
+                if rate_limit_reached:
+                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.TWITTER_RATE_LIMIT_REACHED_MSG))
+                    break
+            except RuntimeError as error:
+                errors.append(error)
+        #check the exiting months of data for any missing data
+        for month in months_tocheck:
+            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_NEW_MSG+str(month)))
+            try:
+                rate_limit_reached = twr.UpdateRetrievedMonth(auth, name, query, month, end_date, dict_monthfiles[month], prefix)
+                if rate_limit_reached:
+                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.TWITTER_RATE_LIMIT_REACHED_MSG))
+                    break
+            except RuntimeError as error:
+                errors.append(error)
+        if len(errors) != 0:
+            raise RuntimeError(str(len(errors)) + " Retrievals Failed")
+        logger.info("Finished")
+
+    def ImportDataFiles(self, name, query, start_date, end_date, prefix):
+        logger = logging.getLogger(__name__+".TwitterRetrieverDialog.ImportDataFiles["+name+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
+        logger.info("Starting")
+        #get names of files where data is to be loaded from
+        dict_monthfiles = twr.FilesAvaliable(name, start_date, end_date, prefix)
+        files = []
+        for filename in dict_monthfiles.values():
+            if filename != "":
+                files.append(filename)
+        data = []
+        if len(files) != 0:
+            if len(files) > 1:
+                #retrieve only needed data from first file
+                with open(files[0], 'r') as infile:
+                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[0])))
+                    temp_data = json.load(infile)
+                    temp_data.pop(0)
+                    for entry in temp_data:
+                        if entry['created_utc'] >= calendar.timegm((datetime.strptime(start_date, "%Y-%m-%d")).timetuple()):
+                                data.append(entry)
+                if len(files) > 2:
+                    #retrieve all data from middle files
+                    for filename in files[1:(len(files)-2)]:
+                        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(filename)))
+                        with open(filename, 'r') as infile:
+                            new_data = json.load(infile)
+                            new_data.pop(0)
+                            data = data + new_data
+
+                #retrieve only needed data from last file
+                with open(files[(len(files)-1)], 'r') as infile:
+                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[(len(files)-1)])))
+                    temp_data = json.load(infile)
+                    temp_data.pop(0)
+                    for entry in temp_data:
+                        if entry['created_utc'] < calendar.timegm((datetime.strptime(end_date, "%Y-%m-%d") + relativedelta(days=1)).timetuple()):
+                            data.append(entry)
+            else:
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[0])))
+                with open(files[0], 'r') as infile:
+                    temp_data = json.load(infile)
+                    temp_data.pop(0)
+                    for entry in temp_data:
+                        if entry['created_utc'] >= calendar.timegm((datetime.strptime(start_date, "%Y-%m-%d")).timetuple()):
+                            if (entry['created_utc'] < calendar.timegm((datetime.strptime(end_date,"%Y-%m-%d") + relativedelta(days=1)).timetuple())):
                                 data.append(entry)
         logger.info("Finished")
         return data

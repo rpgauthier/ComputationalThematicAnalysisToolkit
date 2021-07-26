@@ -1,6 +1,8 @@
 import logging
 import csv
 import os.path
+import tweepy
+import json
 from numpy import source
 import pytz
 
@@ -50,6 +52,68 @@ class AbstractRetrieverDialog(wx.Dialog):
     def OnProgress(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.PulseProgressDialog(event.data)
+
+    # given a sizer, disables all child elements
+    def DisableSizer(self, parent_sizer):
+        for child_sizer in parent_sizer.GetChildren():
+            elem = child_sizer.GetWindow()
+            if not elem:
+                try:
+                    # elem is a sizer
+                    sizer = child_sizer.GetSizer()
+                    self.DisableSizer(sizer)
+                except:
+                    # elem is something else, not a widget
+                    pass
+            else:
+                # elem is a widget
+                # disable all widgets
+                if isinstance(elem, wx.adv.HyperlinkCtrl):
+                    elem.SetNormalColour(wx.Colour(127, 127, 127))
+                elem.Disable()
+
+    # given a sizer, enables all child elements
+    def EnableSizer(self, parent_sizer):
+        for child_sizer in parent_sizer.GetChildren():
+            elem = child_sizer.GetWindow()
+            if not elem:
+                try:
+                    # elem is a sizer
+                    sizer = child_sizer.GetSizer()
+                    self.EnableSizer(sizer)
+                except:
+                    # elem is something else, not a widget
+                    pass
+            else:
+                # elem is a widget
+                # enable all widgets
+                if isinstance(elem, wx.adv.HyperlinkCtrl):
+                    elem.SetNormalColour(wx.Colour(wx.BLUE))
+                elem.Enable()
+    
+    # given an options_list_sizer, where each immediate child is an option sizer,
+    # and each option sizer contains a radio button and a corresponding sizer,
+    # returns an array of tuples (radio button + corresponding sizer)
+    def GetOptionsInRadioGroup(self, options_list_sizer):
+        options = []
+        for option in options_list_sizer.GetChildren(): 
+            tuple = []
+            option_sizer = option.GetSizer() # should have 2 elements: a radiobutton and its corresponding sizer
+            tuple.append(option_sizer.GetChildren()[0].GetWindow())
+            tuple.append(option_sizer.GetChildren()[1].GetSizer())
+            options.append(tuple)
+        return options
+
+    # given a sizer containing a list of option sizers
+    # enables option corresponding to selected radiobutton,
+    # and disables the rest of the options            
+    def EnableOnlySelected(self, options_list_sizer):
+        options = self.GetOptionsInRadioGroup(options_list_sizer)
+        for option in options:
+            if option[0].GetValue():
+                self.EnableSizer(option[1])
+            else:
+                self.DisableSizer(option[1])
 
 class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
     def __init__(self, parent):
@@ -348,6 +412,389 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.retrieval_thread = CollectionThreads.RetrieveRedditDatasetThread(self, main_frame, name, subreddit, start_date, end_date,
                                                                                   replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type,
                                                                                   list(self.avaliable_fields.items()), metadata_fields_list, included_fields_list)
+        logger.info("Finished")
+
+class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
+    def __init__(self, parent):
+        logger = logging.getLogger(__name__+".TwitterRetrieverDialog.__init__")
+        logger.info("Starting")
+        wx.Dialog.__init__(self, parent, title=GUIText.RETRIEVE_TWITTER_LABEL)
+        self.retrieval_thread = None
+        self.keys_filename = "../twitter_keys.json"
+        self.keys = {}
+        self.avaliable_fields = {}
+        self.dataset_type = "tweet"
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.SetMinSize(Constants.TWITTER_DIALOG_SIZE)
+        
+        main_frame = wx.GetApp().GetTopWindow()
+
+        # get saved keys, if any
+        if os.path.isfile(self.keys_filename):
+            with open(self.keys_filename, mode='r') as infile:
+                self.keys = json.load(infile)
+
+        # ethics/terms of use
+        self.ethics_checkbox_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_TWITTER)
+        self.ethics_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.ETHICS_TWITTER_URL)
+
+        ethics_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        ethics_sizer.Add(self.ethics_checkbox_ctrl)
+        ethics_sizer.Add(self.ethics_hyperlink_ctrl)
+        sizer.Add(ethics_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        consumer_key_label = wx.StaticText(self, label=GUIText.CONSUMER_KEY + ": ")
+        self.consumer_key_ctrl = wx.TextCtrl(self)
+        if 'consumer_key' in self.keys:
+            self.consumer_key_ctrl.SetValue(self.keys['consumer_key'])
+        self.consumer_key_ctrl.SetToolTip(GUIText.CONSUMER_KEY_TOOLTIP)
+        consumer_key_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        consumer_key_sizer.Add(consumer_key_label)
+        consumer_key_sizer.Add(self.consumer_key_ctrl, wx.EXPAND)
+        sizer.Add(consumer_key_sizer, 0, wx.EXPAND | wx.ALL, 5)
+    
+        consumer_secret_label = wx.StaticText(self, label=GUIText.CONSUMER_SECRET + ": ")
+        self.consumer_secret_ctrl = wx.TextCtrl(self)
+        if 'consumer_secret' in self.keys:
+            self.consumer_secret_ctrl.SetValue(self.keys['consumer_secret'])
+        self.consumer_secret_ctrl.SetToolTip(GUIText.CONSUMER_SECRET_TOOLTIP)
+        consumer_secret_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        consumer_secret_sizer.Add(consumer_secret_label)
+        consumer_secret_sizer.Add(self.consumer_secret_ctrl, wx.EXPAND)
+        sizer.Add(consumer_secret_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        # search by query
+        self.query_radioctrl = wx.RadioButton(self, label=GUIText.QUERY+": ", style=wx.RB_GROUP)
+        self.query_radioctrl.SetToolTip(GUIText.TWITTER_QUERY_RADIOBUTTON_TOOLTIP)
+        self.query_radioctrl.SetValue(True)
+
+        self.query_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="2", url=GUIText.TWITTER_QUERY_HYPERLINK)
+
+        self.query_ctrl = wx.TextCtrl(self)
+        self.query_ctrl.SetHint(GUIText.TWITTER_QUERY_PLACEHOLDER)
+        self.query_ctrl.SetToolTip(GUIText.TWITTER_QUERY_TOOLTIP)
+
+        query_items_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        query_items_sizer.Add(self.query_hyperlink_ctrl)
+        query_items_sizer.AddSpacer(10)
+        query_items_sizer.Add(self.query_ctrl, wx.EXPAND)
+
+        query_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        query_sizer.Add(self.query_radioctrl)
+        query_sizer.Add(query_items_sizer, wx.EXPAND)
+
+        # search by tweet attributes
+        self.attributes_radioctrl = wx.RadioButton(self, label=GUIText.TWITTER_TWEET_ATTRIBUTES+": ")
+        self.attributes_radioctrl.SetToolTip(GUIText.TWITTER_TWEET_ATTRIBUTES_RADIOBUTTON_TOOLTIP)
+
+        self.keywords_checkbox_ctrl = wx.CheckBox(self, label=GUIText.KEYWORDS+": ")
+        self.keywords_ctrl = wx.TextCtrl(self)
+        self.keywords_ctrl.SetHint(GUIText.TWITTER_KEYWORDS_PLACEHOLDER)
+        keywords_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        keywords_sizer.AddSpacer(20)
+        keywords_sizer.Add(self.keywords_checkbox_ctrl)
+        keywords_sizer.Add(self.keywords_ctrl, wx.EXPAND)
+
+        self.hashtags_checkbox_ctrl = wx.CheckBox(self, label=GUIText.HASHTAGS+": ")
+        self.hashtags_ctrl = wx.TextCtrl(self)
+        self.hashtags_ctrl.SetHint(GUIText.TWITTER_HASHTAGS_PLACEHOLDER)
+        hashtags_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        hashtags_sizer.AddSpacer(20)
+        hashtags_sizer.Add(self.hashtags_checkbox_ctrl)
+        hashtags_sizer.Add(self.hashtags_ctrl, wx.EXPAND)
+
+        self.account_checkbox_ctrl = wx.CheckBox(self, label=GUIText.TWITTER_LABEL+" "+GUIText.ACCOUNTS+": ")
+        self.account_ctrl = wx.TextCtrl(self)
+        self.account_ctrl.SetHint(GUIText.TWITTER_ACCOUNT_PLACEHOLDER)
+        account_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        account_sizer.AddSpacer(20)
+        account_sizer.Add(self.account_checkbox_ctrl)
+        account_sizer.Add(self.account_ctrl, wx.EXPAND)
+
+        attributes_options_sizer = wx.BoxSizer(wx.VERTICAL)
+        attributes_options_sizer.Add(keywords_sizer, 0, wx.EXPAND)
+        attributes_options_sizer.Add(hashtags_sizer, 0, wx.EXPAND)
+        attributes_options_sizer.Add(account_sizer, 0, wx.EXPAND)
+        
+        attributes_sizer = wx.BoxSizer(wx.VERTICAL)
+        attributes_sizer.Add(self.attributes_radioctrl)
+        attributes_sizer.Add(attributes_options_sizer, 0, wx.EXPAND)
+
+        # add 'search by' elements to box
+        self.search_by_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.SEARCH_BY+": ")
+        self.search_by_sizer.Add(query_sizer, 0, wx.EXPAND)
+        self.search_by_sizer.Add(attributes_sizer, 0, wx.EXPAND)
+
+        # enable only the selected 'search by' option
+        self.EnableOnlySelected(self.search_by_sizer)
+        for search_by_option in self.search_by_sizer:
+            option_sizer = search_by_option.GetSizer()
+            # bind to each radiobutton
+            option_sizer.GetChildren()[0].GetWindow().Bind(wx.EVT_RADIOBUTTON, lambda event: self.EnableOnlySelected(self.search_by_sizer))
+        sizer.Add(self.search_by_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        # retweets checkbox
+        self.include_retweets_ctrl = wx.CheckBox(self, label=GUIText.INCLUDE_RETWEETS)
+        sizer.Add(self.include_retweets_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+
+        # dates
+        date_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        start_date_label = wx.StaticText(self, label=GUIText.START_DATE+" ("+GUIText.UTC+")"+": ")
+        self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
+                                                style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
+        self.start_date_ctrl.SetToolTip(GUIText.START_DATE_TOOLTIP)
+        start_date_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        start_date_sizer.Add(start_date_label)
+        start_date_sizer.Add(self.start_date_ctrl)
+
+        end_date_label = wx.StaticText(self, label=GUIText.END_DATE+" ("+GUIText.UTC+")"+": ")
+        self.end_date_ctrl = wx.adv.DatePickerCtrl(self, name="endDate",
+                                              style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
+        self.end_date_ctrl.SetToolTip(GUIText.END_DATE_TOOLTIP)
+        end_date_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        end_date_sizer.Add(end_date_label)
+        end_date_sizer.Add(self.end_date_ctrl)
+
+        date_sizer.Add(start_date_sizer, 0, wx.EXPAND, 5)
+        date_sizer.AddSpacer(10)
+        date_sizer.Add(end_date_sizer, 0, wx.EXPAND, 5)
+        sizer.Add(date_sizer, 0, wx.ALL, 5)
+
+        # warning/notice
+        notice = wx.StaticText(self, label=GUIText.RETRIEVAL_NOTICE_TWITTER)
+        sizer.Add(notice, 0, wx.EXPAND | wx.ALL, 5)
+        
+        metadata_fields_label = wx.StaticText(self, label=GUIText.METADATAFIELDS)
+        self.metadata_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.metadata_fields_ctrl.AppendColumn(GUIText.FIELD)
+        self.metadata_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
+        self.metadata_fields_ctrl.AppendColumn(GUIText.TYPE)
+        self.metadata_fields_ctrl.SetToolTip(GUIText.METADATAFIELDS_TOOLTIP)
+        self.metadata_fields_ctrl.EnableCheckBoxes()
+        metadata_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        metadata_fields_sizer.Add(metadata_fields_label, 0, wx.ALL)
+        metadata_fields_sizer.Add(self.metadata_fields_ctrl, 1, wx.EXPAND)
+        if main_frame.adjustable_metadata_mode:
+            sizer.Add(metadata_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        else:
+            metadata_fields_sizer.ShowItems(False)
+
+        included_fields_label = wx.StaticText(self, label=GUIText.INCLUDEDFIELDS)
+        self.included_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.included_fields_ctrl.AppendColumn(GUIText.FIELD)
+        self.included_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
+        self.included_fields_ctrl.AppendColumn(GUIText.TYPE)
+        self.included_fields_ctrl.SetToolTip(GUIText.INCLUDEDFIELDS_TOOLTIP)
+        self.included_fields_ctrl.EnableCheckBoxes()
+        included_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        included_fields_sizer.Add(included_fields_label, 0, wx.ALL)
+        included_fields_sizer.Add(self.included_fields_ctrl, 1, wx.EXPAND)
+        if main_frame.adjustable_includedfields_mode:
+            sizer.Add(included_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        else:
+            included_fields_sizer.ShowItems(False)
+
+        # TODO: defaults to tweet type for now, could add more (like with reddit) if needed
+        self.OnDatasetTypeChosen(None)
+
+        #Retriever button to collect the requested data
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        ok_button = wx.Button(self, label=GUIText.OK)
+        button_sizer.Add(ok_button)
+        cancel_button = wx.Button(self, wx.ID_CANCEL, label=GUIText.CANCEL)
+        button_sizer.Add(cancel_button)
+        sizer.Add(button_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
+        self.SetSizer(sizer)
+        self.Layout()
+        self.Fit()
+
+        ok_button.Bind(wx.EVT_BUTTON, self.OnRetrieveStart)
+        CustomEvents.EVT_PROGRESS(self, self.OnProgress)
+        CustomEvents.RETRIEVE_EVT_RESULT(self, self.OnRetrieveEnd)
+
+        logger.info("Finished")
+
+    def OnDatasetTypeChosen(self, event):
+        logger = logging.getLogger(__name__+".TwitterRetrieverDialog.OnDatasetTypeChosen")
+        logger.info("Starting")
+        dataset_type = self.dataset_type
+
+        self.avaliable_fields = Constants.avaliable_fields[('Twitter', dataset_type,)]
+
+        self.metadata_fields_ctrl.DeleteAllItems()
+        self.included_fields_ctrl.DeleteAllItems()
+        idx = 0
+        for key in self.avaliable_fields:
+            self.metadata_fields_ctrl.Append([key, self.avaliable_fields[key]['desc'], self.avaliable_fields[key]['type']])
+            if self.avaliable_fields[key]['metadata_default']:
+                self.metadata_fields_ctrl.CheckItem(idx)
+            self.included_fields_ctrl.Append([key, self.avaliable_fields[key]['desc'], self.avaliable_fields[key]['type']])
+            if self.avaliable_fields[key]['included_default']:
+                self.included_fields_ctrl.CheckItem(idx)
+            idx = idx+1
+
+        self.Layout()
+        self.Fit()
+        logger.info("Finished")
+
+    def OnRetrieveStart(self, event):
+        logger = logging.getLogger(__name__+".TwitterRetrieverDialog.OnRetrieveStart")
+        logger.info("Starting")
+
+        status_flag = True
+        main_frame = wx.GetApp().GetTopWindow()
+        keys = {}
+        
+        keys['consumer_key'] = self.consumer_key_ctrl.GetValue()
+        if keys['consumer_key'] == "":
+            wx.MessageBox(GUIText.CONSUMER_KEY_MISSING_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('No consumer key entered')
+            status_flag = False
+        keys['consumer_secret'] = self.consumer_secret_ctrl.GetValue()
+        if keys['consumer_secret'] == "":
+            wx.MessageBox(GUIText.CONSUMER_SECRET_MISSING_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('No consumer secret entered')
+            status_flag = False
+        if not self.ethics_checkbox_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_TWITTER,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
+
+        auth = tweepy.OAuthHandler(keys['consumer_key'], keys['consumer_secret'])
+        api = tweepy.API(auth)
+        valid_credentials = False
+        try:
+            valid_credentials = api.verify_credentials() # throws an error if user credentials are insufficient
+            if not valid_credentials:
+                wx.MessageBox(GUIText.INVALID_CREDENTIALS_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                logger.warning('Invalid credentials')
+                status_flag = False 
+        except tweepy.error.TweepError as e:
+            if e.api_code == 220:
+                # TODO: once user auth is implemented, verify user credentials are sufficient (input for valid user credentials still need to be added)
+                pass
+                # wx.MessageBox(GUIText.INSUFFICIENT_CREDENTIALS_ERROR,
+                #             GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                # logger.warning('User credentials do not allow access to this resource.')
+                # status_flag = False         
+
+        search_by_options = self.GetOptionsInRadioGroup(self.search_by_sizer)
+        selected_option = None
+        for option in search_by_options:
+            if option[0].GetValue():
+                selected_option = option
+                break
+        
+        # generate query
+        query = ""
+        if selected_option[0].GetLabel() == GUIText.QUERY+": ":
+            query = self.query_ctrl.GetValue().strip()
+        elif selected_option[0].GetLabel() == GUIText.TWITTER_TWEET_ATTRIBUTES+": ":
+            query_items = [] # individual sub-queries, which are joined by UNION (OR) to form the overall query
+            attributes_list_sizer = selected_option[1]
+            for attribute_sizer in attributes_list_sizer.GetChildren():
+                sizer = attribute_sizer.GetSizer()
+                checkbox = sizer.GetChildren()[1].GetWindow()
+                text_field = sizer.GetChildren()[2].GetWindow()
+                if checkbox.GetValue() and text_field.GetValue() != "":
+                    text = text_field.GetValue()
+                    if checkbox.GetLabel() == GUIText.KEYWORDS+": ":
+                        keywords = text.split(",")
+                        for phrase in keywords:
+                            phrase = phrase.strip()
+                            if " " in phrase: # multi-word keyword
+                                phrase = "\""+phrase+"\""
+                            query_items.append(phrase)
+                    elif checkbox.GetLabel() == GUIText.HASHTAGS+": ":
+                        text = text.replace(",", " ")
+                        hashtags = text.split()
+                        for hashtag in hashtags:
+                            hashtag = hashtag.strip()
+                            if hashtag[0] != "#": # hashtags must start with '#' symbol
+                                hashtag = "#"+hashtag
+                            query_items.append(hashtag)
+                    elif checkbox.GetLabel() == GUIText.TWITTER_LABEL+" "+GUIText.ACCOUNTS+": ":
+                        text = text.replace(",", " ")
+                        accounts = text.split()
+                        for account in accounts:
+                            account = account.strip()
+                            if not account.startswith("from:"):
+                                account = "from:"+account
+                            query_items.append(account)
+            for i in range(len(query_items)):
+                query += query_items[i]
+                if i < len(query_items)-1:
+                    query += " OR "
+        
+        if query == "":
+            wx.MessageBox(GUIText.TWITTER_QUERY_MISSING_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('No query entered')
+            status_flag = False
+        else:
+            # retweets flag
+            if not self.include_retweets_ctrl.GetValue():
+                query += " -filter:retweets "
+        query = query.strip() # trim whitespace
+        logger.info("Query: "+query)
+
+        name = query
+
+        start_date = str(self.start_date_ctrl.GetValue().Format("%Y-%m-%d"))
+        end_date = str(self.end_date_ctrl.GetValue().Format("%Y-%m-%d"))
+        if start_date > end_date:
+            wx.MessageBox(GUIText.DATE_ERROR,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning("Start Date[%s] not before End Date[%s]",
+                           str(start_date), str(end_date))
+            status_flag = False
+
+        dataset_source = "Twitter"
+        
+        dataset_key = (query, dataset_source, self.dataset_type)
+        if dataset_key in main_frame.datasets:
+            wx.MessageBox(GUIText.NAME_EXISTS_ERROR,
+                          GUIText.ERROR,
+                          wx.OK | wx.ICON_ERROR)
+            logger.warning("Data with same name[%s] already exists", query)
+            status_flag = False
+
+        metadata_fields_list = []
+        item = self.metadata_fields_ctrl.GetNextItem(-1)
+        while item != -1:
+            if self.metadata_fields_ctrl.IsItemChecked(item):
+                field_name = self.metadata_fields_ctrl.GetItemText(item, 0)
+                metadata_fields_list.append((field_name, self.avaliable_fields[field_name],))
+            item = self.metadata_fields_ctrl.GetNextItem(item)
+        
+        included_fields_list = []
+        item = self.included_fields_ctrl.GetNextItem(-1)
+        while item != -1:
+            if self.included_fields_ctrl.IsItemChecked(item):
+                field_name = self.included_fields_ctrl.GetItemText(item, 0)
+                included_fields_list.append((field_name, self.avaliable_fields[field_name],))
+            item = self.included_fields_ctrl.GetNextItem(item)
+
+        if status_flag:
+            # save keys
+            with open(self.keys_filename, mode='w') as outfile:
+                json.dump(keys, outfile)
+
+            main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+query,
+                                            warning=GUIText.SIZE_WARNING_MSG,
+                                            freeze=True)
+            self.Disable()
+            self.Freeze()
+            main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
+            self.retrieval_thread = CollectionThreads.RetrieveTwitterDatasetThread(self, main_frame, name, keys, query, start_date, end_date, self.dataset_type,
+                                                                                    list(self.avaliable_fields.items()), metadata_fields_list, included_fields_list)
         logger.info("Finished")
 
 class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):

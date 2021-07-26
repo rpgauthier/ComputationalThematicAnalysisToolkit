@@ -57,6 +57,10 @@ TOKENIZER_APPROACH_LISTS = {'eng-sm': ['raw text', 'nltk_PorterStemmer', 'spacy_
 AVALIABLE_DATASET_LANGUAGES1 = ['eng-sm', 'eng-trf', 'fre-sm']
 AVALIABLE_DATASET_LANGUAGES2 = ['English-Efficent', 'English-Accurate', 'French']
 
+# dialogs
+TWITTER_DIALOG_SIZE = wx.Size(350, -1)
+OPTIONS_DIALOG_SIZE = wx.Size(350, 300)
+
 #definition of fields avaliable for use from the retrievers
 avaliable_fields = {
     ('Reddit', 'submission',): {
@@ -385,8 +389,48 @@ avaliable_fields = {
         'comment.subreddit_id': {
             'desc': "The unique id of the subreddit the comment is from.",
             'type': 'string',
+            'included_default': False, 
+            'metadata_default': False,
+            },
+        },
+    ('Twitter', 'tweet',): {
+        'created_utc': { # not a field in tweet object; created using 'created_at'
+            'desc': "The UTC time stamp of when the tweet was posted.",
+            'type': 'UTC-timestamp',
+            'included_default': False,
+            'metadata_default': True,
+            },
+        'url': { # not a field in tweet object; created using tweet 'id'
+            'desc': "a url link to the original tweet",
+            'type': 'url',
+            'included_default': False,
+            'metadata_default': True,
+            },
+        'full_text': {
+            'desc': "The full text of this tweet.",
+            'type': "string",
+            'included_default': True,
+            'metadata_default': True,
+            },
+        'text': {
+            'desc': "The text in the tweet, truncated to 140 characters.",
+            'type': "string",
             'included_default': False,
             'metadata_default': False,
+            },
+        },
+    }
+
+#definition of default fields chosen for use from the retrievers
+chosen_fields = {
+    ('Reddit', 'submission',): {
+        'selftext': {
+            'desc': "the raw text of the submission.",
+            'type': 'string'
+            },
+        'title': {
+            'desc': "the raw title of the submission.",
+            'type': 'string'
             },
         },
     ('CSV', 'documents',): {
@@ -408,5 +452,27 @@ avaliable_fields = {
             'included_default': False,
             'metadata_default': False,
             },
-        }
-}
+        },
+    # TODO: unsure if this is used
+    # ('Twitter', 'tweet',): {
+    #     'created_utc': { # not a field in tweet object; created using 'created_at'
+    #         'desc': "The UTC time stamp of when the tweet was posted.",
+    #         'type': 'UTC-timestamp',
+    #         'included_default': False,
+    #         'metadata_default': True,
+    #         },
+    #     'url': { # not a field in tweet object; created using tweet 'id'
+    #         'desc': "a url link to the original tweet",
+    #         'type': 'url',
+    #         'included_default': False,
+    #         'metadata_default': True,
+    #         },
+    #     'full_text': {
+    #         'desc': "The full text of this tweet.",
+    #         'type': "string",
+    #         'included_default': True,
+    #         'metadata_default': True,
+    #         },
+    #     },
+    }
+    

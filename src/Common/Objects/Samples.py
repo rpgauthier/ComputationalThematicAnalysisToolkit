@@ -486,6 +486,7 @@ class BitermSample(TopicSample):
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/btm.pk', 'wb') as outfile:
                 pickle.dump(self.model, outfile)
 
+#TODO figure out why samples dont have any documents attached for biterm/NMF when run on grouped documents (might also effect LDASample)
 #TODO check whether samples dont have any documents attached for NMF when run on grouped documents
 class NMFSample(TopicSample):
     def __init__(self, key, dataset_key, model_parameters):

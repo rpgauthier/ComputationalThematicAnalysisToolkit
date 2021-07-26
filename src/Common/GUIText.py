@@ -79,10 +79,14 @@ class Common:
     CODES = "Codes"
 
     SIZE_WARNING_MSG = "WARNING: may take some time for large datasets"
+
     MULTIPROCESSING_WARNING_MSG = "A cpu intensive operation is currently in progress."\
                                   "\n Please try current action again after this operation has completed"
     MULTIPROCESSING_CLOSING_MSG = "A cpu intensive operation is currently in progress."\
                                   "\n Are you sure you want to exit the application?"
+    
+    CONSUMER_KEY = "Consumer Key"
+    CONSUMER_SECRET = "Consumer Secret"
 
 class Main(Common):
     APP_NAME = "Computational Thematic Analysis Toolkit"
@@ -125,6 +129,11 @@ class Main(Common):
 
     DELETE_CONFIRMATION = " will be deleted. Are you sure you want to proceed?"
 
+    CONSUMER_KEY_MISSING_ERROR = "You must enter a Consumer Key."
+    CONSUMER_SECRET_MISSING_ERROR = "You must enter a Consumer Secret."
+    INVALID_CREDENTIALS_ERROR = "Invalid credentials."
+    INSUFFICIENT_CREDENTIALS_ERROR = "Your credentials do not allow access to this resource."
+    
     OPTIONS_ADVANCED_MODES = "Advanced Modes"
     OPTIONS_MULTIPLEDATASETS = "Allow Multiple Datasets Mode (not yet fully tested)"
     OPTIONS_ADJUSTABLE_METADATA = "Allow adjusting metadata during retrieval"
@@ -158,15 +167,19 @@ class Main(Common):
     REPORTING_LABEL = "Reporting"
     OPTIONS_LABEL = "Options"
     NOTES_LABEL = "Notes"
+    TWITTER_LABEL = "Twitter"
 
 class Datasets(Common):
 
     RETRIEVE_REDDIT_LABEL = "Retrieve New Reddit Dataset"
+    RETRIEVE_TWITTER_LABEL = "Retrieve New Twitter Dataset"
     RETRIEVE_CSV_LABEL = "Retrieve New CSV Dataset"
     GROUPED_DATASET_LABEL = "Grouped Dataset Details"
     RETRIEVED_REDDIT_LABEL = "Retrieved Reddit Dataset Details"
     RETRIEVED_CSV_LABEL = "Retrieved CSV Dataset Details"
     NAME_TOOLTIP = "Choose a unique name for the new dataset"
+    CONSUMER_KEY_TOOLTIP = "The API key of a project created in the Twitter Developer portal. Do not include quotes."
+    CONSUMER_SECRET_TOOLTIP = "The API secret of a project created in the Twitter Developer portal. Do not include quotes."
     START_DATE_TOOLTIP = "Must less than of equal to End Date"
     END_DATE_TOOLTIP = "Must greater than of equal to Start Date"
     DATE_ERROR = "Start Date must be before End Date"
@@ -214,16 +227,21 @@ class Datasets(Common):
     RETRIEVING_BUSY_PUSHSHIFT_DATA = "Retrieving Data from Pushshift"
     RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_MSG = "Preparing to download Submission Data"
     RETRIEVING_BUSY_DOWNLOADING_COMMENTS_MSG = "Preparing to download Comment Data"
+    RETRIEVING_BUSY_DOWNLOADING_TWITTER_TWEETS_MSG = "Preparing to download Twitter tweets data"
     RETRIEVING_BUSY_DOWNLOADING_ALL_MSG = "Downloading all data for month: "
     RETRIEVING_BUSY_DOWNLOADING_NEW_MSG = "Downloading new data for month: "
     RETRIEVING_BUSY_IMPORTING_SUBMISSION_MSG = "Importing required submission data"
     RETRIEVING_BUSY_IMPORTING_COMMENT_MSG = "Importing required comment data"
+    RETRIEVING_BUSY_IMPORTING_TWITTER_TWEET_MSG = "Importing required Twitter tweets data"
     RETRIEVING_BUSY_IMPORTING_FILE_MSG = "Importing from file: "
     RETRIEVING_BUSY_PREPARING_DISCUSSION_MSG = "Preparing Discussion Data for Application use"
     RETRIEVING_BUSY_PREPARING_SUBMISSION_MSG = "Preparing Submission Data for Application use"
     RETRIEVING_BUSY_PREPARING_COMMENT_MSG = "Preparing Comment Data for Application use."
     RETRIEVING_BUSY_PREPARING_CSV_MSG = "Preparing CSV Data for Application use."
+    RETRIEVING_BUSY_PREPARING_TWITTER_MSG = "Preparing Twitter Data for Application use."
     RETRIEVING_BUSY_CONSTRUCTING_MSG = "Datasets are being constructed."
+
+    TWITTER_RATE_LIMIT_REACHED_MSG = "Warning: Twitter API rate limit has been reached. The number of tweets will be shortened."
 
     TOKENIZING_BUSY_STARTING_FIELD_MSG = "Starting to tokenize field: "
     TOKENIZING_BUSY_COMPLETED_FIELD_MSG1 = "Completed tokenizing "
@@ -247,10 +265,17 @@ class Datasets(Common):
     RETRIEVED_ON = "Retrieved On"
     PREPARED_ON = "Prepared On"
     LANGUAGE = "Language"
+    QUERY = "Query"
+    SEARCH_BY = "Search by"
+    KEYWORDS = "Keywords"
+    HASHTAGS = "Hashtags"
+    ACCOUNTS = "Accounts"
 
     #Retrieval specific fields
     START_DATE = "Start Date"
     END_DATE = "End Date"
+    UTC = "UTC"
+
     REDDIT_LABEL = "Reddit"
     REDDIT_SUBREDDIT = "Subreddit"
     REDDIT_SUBREDDIT_TOOLTIP = "Exact case-sensitive spelling of the subreddit for retrieval"
@@ -264,6 +289,18 @@ class Datasets(Common):
     
     REDDIT_UPDATED_REDDITAPI = "Local Subreddit Archive and updated using Pushshift.io and Reddit API"
     REDDIT_FULL_REDDITAPI = "Full retrieved from Pushshift.io and updated using Reddit API"
+
+    TWITTER_LABEL = "Twitter"
+    TWITTER_QUERY_HYPERLINK = "https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
+    TWITTER_QUERY_TOOLTIP = "Query must follow these rules: " + TWITTER_QUERY_HYPERLINK
+    TWITTER_QUERY_RADIOBUTTON_TOOLTIP = "Use a Twitter query to create the dataset, using these rules: " + TWITTER_QUERY_HYPERLINK
+    TWITTER_QUERY_MISSING_ERROR = "You must enter a query."
+    TWITTER_QUERY_PLACEHOLDER = "ex. life OR technology from:google"
+    TWITTER_TWEET_ATTRIBUTES = "Tweet Attributes"
+    TWITTER_TWEET_ATTRIBUTES_RADIOBUTTON_TOOLTIP = "Use specific tweet attributes to create the dataset."
+    TWITTER_KEYWORDS_PLACEHOLDER = "ex. COVID vaccine, health, safety"
+    TWITTER_HASHTAGS_PLACEHOLDER = "ex. #toronto, #raptors"
+    TWITTER_ACCOUNT_PLACEHOLDER = "ex. JustinTrudeau"
 
     CSV_LABEL = "CSV"
     CSV_DATASETFIELD = "Dataset Field: "
@@ -399,11 +436,18 @@ class Collection(Main, Datasets):
     ETHICS_REDDITAPI_URL = "https://www.reddit.com/wiki/api-terms"
     ETHICS_PUSHSHIFT = "that this toolkit uses the Pushshift.io api to collect Reddit Data."
 
+    INCLUDE_RETWEETS = "Include retweets"
+    RETRIEVAL_NOTICE_TWITTER = "* Currently, only (English) tweets up to 7 days back from the current date may be retrieved. *"
+    ETHICS_TWITTER = "and agree to Twitter's developer agreement and policy."
+    ETHICS_TWITTER_URL = "https://developer.twitter.com/en/developer-terms/agreement-and-policy"
+
     DATASETSLIST_LABEL = "Datasets List"
     DATASETS_RETRIEVE_LABEL = "Retrieve"
     DATASETS_RETRIEVE_TOOLTIP = "Retrieve new datasets for workspace"
     DATASETS_RETRIEVE_REDDIT = "Retrieve " + Datasets.REDDIT_LABEL
     DATASETS_RETRIEVE_REDDIT_TOOLTIP = "Retrieve new Reddit datasets for workspace"
+    DATASETS_RETRIEVE_TWITTER = "Retrieve " + Datasets.TWITTER_LABEL
+    DATASETS_RETRIEVE_TWITTER_TOOLTIP = "Retrieve new Twitter datasets for workspace"
     DATASETS_RETRIEVE_CSV = "Retrieve " + Datasets.CSV_LABEL
     DATASETS_RETRIEVE_CSV_TOOLTIP = "Retrieve new CSV datasets for workspace"
     DATASETS_GROUP_TOOLTIP = "Selected datasets will be grouped"

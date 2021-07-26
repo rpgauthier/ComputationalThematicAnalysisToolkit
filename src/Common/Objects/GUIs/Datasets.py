@@ -297,6 +297,12 @@ class DatasetPanel(wx.Panel):
         document_num_label = wx.StaticText(
             self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
         details_sizer2.Add(document_num_label, 0, wx.ALL, 5)
+        details_sizer2.AddSpacer(10)
+
+        if dataset.dataset_source == 'Twitter':
+            if dataset.retrieval_details['query']:
+                query_label = wx.StaticText(self, label=GUIText.QUERY + ": " + dataset.retrieval_details['query'])
+                details_sizer2.Add(query_label, 0, wx.ALL, 5)
 
         self.SetSizer(self.sizer)
         self.Layout()
