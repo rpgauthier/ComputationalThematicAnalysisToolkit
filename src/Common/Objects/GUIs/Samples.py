@@ -1354,6 +1354,23 @@ class SampleRulesDialog(wx.Dialog):
         self.Layout()
 
         logger.info("Finished")
+
+    def DisplayFilterRules(self, filter_rules):
+        column_options = {Constants.TOKEN_NUM_WORDS:FilteringGUIText.FILTERS_NUM_WORDS,
+                          Constants.TOKEN_PER_WORDS:FilteringGUIText.FILTERS_PER_WORDS,
+                          Constants.TOKEN_NUM_DOCS:FilteringGUIText.FILTERS_NUM_DOCS,
+                          Constants.TOKEN_PER_DOCS:FilteringGUIText.FILTERS_PER_DOCS}
+        self.rules_list.DeleteAllItems()
+        i = 1
+        for field, word, pos, action in filter_rules:
+            if isinstance(action, tuple):
+                if action[0] == Constants.FILTER_TFIDF_REMOVE or action[0] == Constants.FILTER_TFIDF_INCLUDE:
+                    action = str(action[0])+str(action[1])+str(action[2]*100)+"%"
+                else:
+                    action = str(action[0]) + " ("+str(column_options[action[1]])+str(action[2])+str(action[3])+")"
+                
+            self.rules_list.AppendItem([i, field, word, pos, str(action)])
+            i += 1        
             
 class NMFModelCreateDialog(wx.Dialog):
     def __init__(self, parent):
