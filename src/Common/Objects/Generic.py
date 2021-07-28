@@ -76,6 +76,9 @@ class GenericObject(object):
     def RemoveCode(self, value):
         self._codes.remove(value)
         self.last_changed_dt = datetime.now()
+    def RemoveAllCodes(self):
+        self._codes.clear()
+        self.last_changed_dt = datetime.now()
 
     @property
     def created_dt(self):

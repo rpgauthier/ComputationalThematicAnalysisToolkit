@@ -24,8 +24,12 @@ class SampleCreatePanel(wx.Panel):
         logger.info("Starting")
         wx.Panel.__init__(self, parent, size=size)
 
+        label_font = wx.Font(Constants.LABEL_SIZE, Constants.LABEL_FAMILY, Constants.LABEL_STYLE, Constants.LABEL_WEIGHT, underline=Constants.LABEL_UNDERLINE)
+
         sizer = wx.BoxSizer(wx.VERTICAL)
-        generic_sizer = wx.StaticBoxSizer(orient=wx.VERTICAL, parent=self, label="Generic Sampling")
+        generic_label_box = wx.StaticBox(self, label=GUIText.GENERIC_SECTION_LABEL)
+        generic_label_box.SetFont(label_font)
+        generic_sizer = wx.StaticBoxSizer(generic_label_box, orient=wx.VERTICAL)
         sizer.Add(generic_sizer, 0, wx.ALL, 5)
         create_random_sizer = wx.BoxSizer(wx.HORIZONTAL)
         generic_sizer.Add(create_random_sizer)
@@ -33,52 +37,52 @@ class SampleCreatePanel(wx.Panel):
         create_random_button.SetToolTip(GUIText.CREATE_RANDOM_TOOLTIP)
         self.Bind(wx.EVT_BUTTON, lambda event: self.OnCreateSample(event, 'Random'), create_random_button)
         create_random_sizer.Add(create_random_button, 0, wx.ALL, 5)
-        create_random_description = wx.StaticText(self, label="This sampling approach depends on the the assumption that codes are uniformly distributed across the data."\
-                                                           "\nHowever, assuming codes follow a uniform distribution may restrict visability of interesting infrequent codes in the data.")
-        create_random_sizer.Add(create_random_description, 0, wx.ALL, 5)
-        create_random_link = wx.adv.HyperlinkCtrl(self, label="1", url="https://academic.oup.com/fampra/article/13/6/522/496701")
-        create_random_sizer.Add(create_random_link, 0, wx.ALL, 5)
+        create_random_description = wx.StaticText(self, label=GUIText.RANDOM_DESC)
+        create_random_sizer.Add(create_random_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        create_random_link = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.RANDOM_URL)
+        create_random_sizer.Add(create_random_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
 
-        topicmodelling_sizer = wx.StaticBoxSizer(orient=wx.VERTICAL, parent=self, label="Topic Model Sampling")
-        sizer.Add(topicmodelling_sizer, 0, wx.ALL, 5)
+        
+        topicmodel_label_box = wx.StaticBox(self, label=GUIText.TOPICMODEL_SECTION_LABEL)
+        topicmodel_label_box.SetFont(label_font)
+        topicmodel_sizer = wx.StaticBoxSizer(topicmodel_label_box, orient=wx.VERTICAL)
+        sizer.Add(topicmodel_sizer, 0, wx.ALL, 5)
         description_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        topicmodelling_sizer.Add(description_sizer, 0, wx.ALL, 5)
-        topicmodelling_description = wx.StaticText(self, label="Topic model sampling attempts to generate samples in the form of groups of documents that are likely to contain similar topics."\
-                                                               "\nThese groups can contain interesting phenomena that can be used to explore the data, develop codes, and review themes."
-                                                               "\nHowever, generated topic model samples should to be treated as windows that look at potentially interesting parts of the data rather than as a generalizable representation of the data.")
-        description_sizer.Add(topicmodelling_description, 0, wx.ALL, 5)
-        topicmodelling_link = wx.adv.HyperlinkCtrl(self, label="placeholder", url="")#TODO choose approriate reference/s
-        description_sizer.Add(topicmodelling_link, 0, wx.ALL, 5)
+        topicmodel_sizer.Add(description_sizer, 0, wx.ALL, 5)
+        topicmodelling_description = wx.StaticText(self, label=GUIText.TOPICMODEL_SECTION_DESC)
+        description_sizer.Add(topicmodelling_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        #topicmodelling_link = wx.adv.HyperlinkCtrl(self, label="", url=GUIText.TOPICMODEL_SECTION_LINK)#TODO choose approriate reference/s
+        #description_sizer.Add(topicmodelling_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         create_lda_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        topicmodelling_sizer.Add(create_lda_sizer)
+        topicmodel_sizer.Add(create_lda_sizer)
         create_lda_button = wx.Button(self, label=GUIText.LDA_LABEL)
         create_lda_button.SetToolTip(GUIText.CREATE_LDA_TOOLTIP)
         self.Bind(wx.EVT_BUTTON, lambda event: self.OnCreateSample(event, 'LDA'), create_lda_button)
         create_lda_sizer.Add(create_lda_button, 0, wx.ALL, 5)
-        create_lda_description = wx.StaticText(self, label="This topic model is suited to identifying topics in long texts, such as discussions, where multiple topics can co-occur")
-        create_lda_sizer.Add(create_lda_description, 0, wx.ALL, 5)
-        create_lda_link = wx.adv.HyperlinkCtrl(self, label="2", url="https://dl.acm.org/doi/10.5555/944919.944937")
-        create_lda_sizer.Add(create_lda_link, 0, wx.ALL, 5)
+        create_lda_description = wx.StaticText(self, label=GUIText.LDA_DESC)
+        create_lda_sizer.Add(create_lda_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        create_lda_link = wx.adv.HyperlinkCtrl(self, label="2", url=GUIText.LDA_URL)
+        create_lda_sizer.Add(create_lda_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         create_biterm_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        topicmodelling_sizer.Add(create_biterm_sizer)
+        topicmodel_sizer.Add(create_biterm_sizer)
         create_biterm_button = wx.Button(self, label=GUIText.BITERM_LABEL)
         create_biterm_button.SetToolTip(GUIText.CREATE_BITERM_TOOLTIP)
         self.Bind(wx.EVT_BUTTON, lambda event: self.OnCreateSample(event, 'Biterm'), create_biterm_button)
         create_biterm_sizer.Add(create_biterm_button, 0, wx.ALL, 5)
-        create_biterm_description = wx.StaticText(self, label="This topic model is suited to identifying topics in short texts, such as tweets and instant messages")
-        create_biterm_sizer.Add(create_biterm_description, 0, wx.ALL, 5)
-        create_biterm_link = wx.adv.HyperlinkCtrl(self, label="3", url="https://dl.acm.org/doi/10.1145/2488388.2488514")
-        create_biterm_sizer.Add(create_biterm_link, 0, wx.ALL, 5)
+        create_biterm_description = wx.StaticText(self, label=GUIText.BITERM_DESC)
+        create_biterm_sizer.Add(create_biterm_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        create_biterm_link = wx.adv.HyperlinkCtrl(self, label="3", url=GUIText.BITERM_URL)
+        create_biterm_sizer.Add(create_biterm_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         create_nmf_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        topicmodelling_sizer.Add(create_nmf_sizer)
+        topicmodel_sizer.Add(create_nmf_sizer)
         create_nmf_button = wx.Button(self, label=GUIText.NMF_LABEL)
         create_nmf_button.SetToolTip(GUIText.CREATE_NMF_TOOLTIP)
         self.Bind(wx.EVT_BUTTON, lambda event: self.OnCreateSample(event, 'NMF'), create_nmf_button)
         create_nmf_sizer.Add(create_nmf_button, 0, wx.ALL, 5)
-        create_nmf_description = wx.StaticText(self, label="This topic model is suited to identifying topics in short texts, such as tweets and instant messages") # TODO: check description is ok
-        create_nmf_sizer.Add(create_nmf_description, 0, wx.ALL, 5)
-        create_nmf_link = wx.adv.HyperlinkCtrl(self, label="4", url="https://dl.acm.org/doi/book/10.5555/aai28114631") # TODO: check URL is ok
-        create_nmf_sizer.Add(create_nmf_link, 0, wx.ALL, 5)
+        create_nmf_description = wx.StaticText(self, label=GUIText.NMF_DESC) # TODO: check description is ok
+        create_nmf_sizer.Add(create_nmf_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        create_nmf_link = wx.adv.HyperlinkCtrl(self, label="4", url=GUIText.NMF_URL) # TODO: check URL is ok
+        create_nmf_sizer.Add(create_nmf_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
 
         self.SetSizer(sizer)
         self.Layout()
@@ -101,7 +105,7 @@ class SampleCreatePanel(wx.Panel):
                           GUIText.WARNING, wx.OK | wx.ICON_WARNING)
             main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
             self.Thaw()
-        elif model_type == "Random":
+        elif model_type == 'Random':
             with RandomModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
                     model_parameters = create_dialog.model_parameters
@@ -121,7 +125,7 @@ class SampleCreatePanel(wx.Panel):
                 else:
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
                 self.Thaw()
-        elif model_type == "LDA":
+        elif model_type == 'LDA':
             main_frame.multiprocessing_inprogress_flag = True
             with LDAModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
@@ -149,7 +153,7 @@ class SampleCreatePanel(wx.Panel):
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
                     main_frame.multiprocessing_inprogress_flag = False
                 self.Thaw()
-        elif model_type == "Biterm":
+        elif model_type == 'Biterm':
             with BitermModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
                     model_parameters = create_dialog.model_parameters
@@ -175,7 +179,7 @@ class SampleCreatePanel(wx.Panel):
                 else:
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
                 self.Thaw()
-        elif model_type == "NMF":
+        elif model_type == 'NMF':
             with NMFModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
                     model_parameters = create_dialog.model_parameters
@@ -202,22 +206,8 @@ class SampleCreatePanel(wx.Panel):
                 else:
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
                 self.Thaw()
-        #TODO need to finish this sample type
-        #elif model_type == "Custom":
-        #    with CustomModelCreateDialog(self) as create_dialog:
-        #        if create_dialog.ShowModal() == wx.ID_OK:
-        #            model_parameters = create_dialog.model_parameters
-        #            name = model_parameters['name']
-        #            main_frame.PulseProgressDialog(GUIText.GENERATING_CUSTOM_SUBLABEL+str(name)\
-        #                                  +GUIText.GENERATING_CUSTOM_MSG)
-        #            dataset_key = model_parameters['dataset_key']
-        #            metadata = main_frame.datasets[dataset_key].metadata
-        #            main_frame.samples[new_sample.key] = new_sample
-        #        else:
-        #            main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
-        #        self.Thaw()
         else:
-            main_frame.PulseProgressDialog("Failed to create sample of unknown type.")
+            main_frame.PulseProgressDialog(GUIText.TYPE_UNKNOWN_ERROR)
             main_frame.CloseProgressDialog(thaw=False)
             self.Thaw()
         logger.info("Finished")
@@ -250,7 +240,7 @@ class SampleCreatePanel(wx.Panel):
         token_dict = tokenset_df.to_dict()
 
         #seperate from source by making a deepcopy
-        main_frame.PulseProgressDialog("After filtering "+str(dataset.total_docs_remaining)+" documents remained of the " +str(dataset.total_docs)+ " documents avaliable")
+        main_frame.PulseProgressDialog(GUIText.AFTERFILTERING_LABEL1+str(dataset.total_docs_remaining)+GUIText.AFTERFILTERING_LABEL2+str(dataset.total_docs)+GUIText.AFTERFILTERING_LABEL3)
         logger.info("Finished")
         return token_dict
 
@@ -300,7 +290,7 @@ class PartPanel(wx.Panel):
 
         controls_sizer = wx.BoxSizer()
         sample_label = wx.StaticText(self, label=GUIText.SAMPLE_REQUEST)
-        controls_sizer.Add(sample_label, 0, wx.ALL, 5)
+        controls_sizer.Add(sample_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         self.sample_num = wx.SpinCtrl(self, min=1, max=100, initial=10)
         self.sample_num.Bind(wx.EVT_SPINCTRL, self.OnChangeDocumentNumber)
         controls_sizer.Add(self.sample_num, 0, wx.ALL, 5)
@@ -411,6 +401,68 @@ class PartPanel(wx.Panel):
         logger.info("Finished")
         return saved_data
 
+class SampleRulesDialog(wx.Dialog):
+    def __init__(self, parent, sample, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER):
+        logger = logging.getLogger(__name__+".RulesPanel["+str(sample.key)+"].__init__")
+        logger.info("Starting")
+        wx.Dialog.__init__(self, parent, title=FilteringGUIText.FILTERS_RULES+": "+repr(sample), style=style, size=wx.Size(600,400))
+        self.sample = sample
+        
+        package_list = list(sample.tokenization_package_versions)
+        tokenizer_package = sample.tokenization_package_versions[0]
+        package_list[0] = FilteringGUIText.FILTERS_RAWTOKENS
+        package_list[1] = FilteringGUIText.FILTERS_STEMMER + package_list[1]
+        package_list[2] = FilteringGUIText.FILTERS_LEMMATIZER + package_list[2]
+        
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        tokenization_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        tokenization_package_label1 = wx.StaticText(self, label=FilteringGUIText.FILTERS_TOKENIZER)
+        tokenization_package_label1.SetFont(wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
+        tokenization_sizer.Add(tokenization_package_label1, proportion=0, flag=wx.ALL, border=5)
+        tokenization_package_label2 = wx.StaticText(self, label=tokenizer_package)
+        tokenization_sizer.Add(tokenization_package_label2, proportion=0, flag=wx.ALL, border=5)
+        tokenization_choice_label = wx.StaticText(self, label=FilteringGUIText.FILTERS_METHOD)
+        tokenization_choice_label.SetFont(wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
+        tokenization_sizer.Add(tokenization_choice_label, proportion=0, flag=wx.ALL, border=5)
+        tokenization_label = wx.StaticText(self, label=package_list[sample.tokenization_choice])
+        tokenization_sizer.Add(tokenization_label, proportion=0, flag=wx.ALL, border=5)
+        sizer.Add(tokenization_sizer, proportion=0, flag=wx.ALL, border=5)
+        
+        #self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
+        #tfidffilter_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_CREATE_TFIDF_RULE,
+        #                                        bitmap=wx.Bitmap(1, 1),
+        #                                        shortHelp=GUIText.FILTERS_CREATE_TFIDF_RULE_TOOLTIP)
+        #self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnCreateTfidfFilter, tfidffilter_tool)
+        #self.toolbar.Realize()
+        #sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
+
+        self.rules_list = DatasetsDataViews.FilterRuleDataViewListCtrl(self)
+        self.DisplayFilterRules(sample.applied_filter_rules)
+        sizer.Add(self.rules_list, proportion=1, flag=wx.EXPAND, border=5)
+
+        self.SetSizer(sizer)
+        self.Layout()
+
+        logger.info("Finished")
+
+    def DisplayFilterRules(self, filter_rules):
+        column_options = {Constants.TOKEN_NUM_WORDS:FilteringGUIText.FILTERS_NUM_WORDS,
+                          Constants.TOKEN_PER_WORDS:FilteringGUIText.FILTERS_PER_WORDS,
+                          Constants.TOKEN_NUM_DOCS:FilteringGUIText.FILTERS_NUM_DOCS,
+                          Constants.TOKEN_PER_DOCS:FilteringGUIText.FILTERS_PER_DOCS}
+        self.rules_list.DeleteAllItems()
+        i = 1
+        for field, word, pos, action in filter_rules:
+            if isinstance(action, tuple):
+                if action[0] == Constants.FILTER_TFIDF_REMOVE or action[0] == Constants.FILTER_TFIDF_INCLUDE:
+                    action = str(action[0])+str(action[1])+str(action[2]*100)+"%"
+                else:
+                    action = str(action[0]) + " ("+str(column_options[action[1]])+str(action[2])+str(action[3])+")"
+                
+            self.rules_list.AppendItem([i, field, word, pos, str(action)])
+            i += 1        
+
 class RandomSamplePanel(AbstractSamplePanel):
     '''general class for features RandomSample panels should have'''
     def __init__(self, parent, sample, dataset, size=wx.DefaultSize):
@@ -423,14 +475,14 @@ class RandomSamplePanel(AbstractSamplePanel):
         details_sizer = wx.BoxSizer(wx.HORIZONTAL)
         main_frame = wx.GetApp().GetTopWindow()
         type_label = wx.StaticText(self, label=GUIText.SAMPLE_TYPE+": "+str(sample.sample_type))
-        details_sizer.Add(type_label, 0, wx.ALL, 5)
+        details_sizer.Add(type_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details_sizer.AddSpacer(10)
         if main_frame.multipledatasets_mode:
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(sample.dataset_key))
-            details_sizer.Add(dataset_label, 0, wx.ALL, 5)
+            details_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer.AddSpacer(10)
         created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.start_dt.strftime("%Y-%m-%d %H:%M:%S"))
-        details_sizer.Add(created_dt_label, 0, wx.ALL, 5)
+        details_sizer.Add(created_dt_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         sizer.Add(details_sizer, 0, wx.ALL, 5)
 
         self.parts_panel = PartPanel(self, self.sample, self.dataset, sample.parts_dict)
@@ -456,7 +508,7 @@ class RandomModelCreateDialog(wx.Dialog):
     def __init__(self, parent):
         logger = logging.getLogger(__name__+".ModelCreateDialog.__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title="Create Random Model", )
+        wx.Dialog.__init__(self, parent, title=GUIText.CREATE_RANDOM, )
 
         self.model_parameters = {}
 
@@ -465,8 +517,8 @@ class RandomModelCreateDialog(wx.Dialog):
         self.name_ctrl = wx.TextCtrl(self)
         self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
         name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label)
-        name_sizer.Add(self.name_ctrl)
+        name_sizer.Add(name_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        name_sizer.Add(self.name_ctrl, 0, wx.ALL, 5)
         sizer.Add(name_sizer)
 
         main_frame = wx.GetApp().GetTopWindow()
@@ -476,8 +528,8 @@ class RandomModelCreateDialog(wx.Dialog):
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
             self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
             dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            dataset_sizer.Add(dataset_label)
-            dataset_sizer.Add(self.dataset_ctrl)
+            dataset_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            dataset_sizer.Add(self.dataset_ctrl, 0, wx.ALL, 5)
             sizer.Add(dataset_sizer)
 
         ok_button = wx.Button(self, id=wx.ID_OK, label=GUIText.OK, )
@@ -537,38 +589,6 @@ class RandomModelCreateDialog(wx.Dialog):
         if status_flag:
             self.EndModal(wx.ID_OK)
 
-class RandomModelDetailsDialog(wx.Dialog):
-    def __init__(self, parent, sample):
-        logger = logging.getLogger(__name__+".RandomModelDetailsDialog.__init__")
-        logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title="Details for Random Model: "+sample.key)
-
-        self.sample = sample
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        name_label = wx.StaticText(self, label=GUIText.NAME+":")
-        self.name_ctrl = wx.TextCtrl(self, value=self.sample.key)
-        self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label)
-        name_sizer.Add(self.name_ctrl)
-        sizer.Add(name_sizer)
-
-        dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(self.sample.dataset_key))
-        dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        dataset_sizer.Add(dataset_label)
-        sizer.Add(dataset_sizer)
-
-        #ok_button = wx.Button(self, id=wx.ID_OK, label=GUIText.OK, )
-        #ok_button.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
-        #cancel_button = wx.Button(self, id=wx.ID_CANCEL, label=GUIText.CANCEL)
-        #controls_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        #controls_sizer.Add(ok_button)
-        #controls_sizer.Add(cancel_button)
-        #sizer.Add(controls_sizer)
-        self.SetSizer(sizer)
-        logger.info("Finished")
-
 class TopicSamplePanel(AbstractSamplePanel):
     '''general class for features TopicSample panels should have'''
     def __init__(self, parent, sample, dataset, size=wx.DefaultSize):
@@ -583,26 +603,26 @@ class TopicSamplePanel(AbstractSamplePanel):
         details1_sizer = wx.BoxSizer(wx.HORIZONTAL)
         main_frame = wx.GetApp().GetTopWindow()
         type_label = wx.StaticText(self, label=GUIText.SAMPLE_TYPE+": "+str(sample.sample_type))
-        details1_sizer.Add(type_label, 0, wx.ALL, 5)
+        details1_sizer.Add(type_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details1_sizer.AddSpacer(10)
         if main_frame.multipledatasets_mode:
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(sample.dataset_key))
-            details1_sizer.Add(dataset_label, 0, wx.ALL, 5)
+            details1_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details1_sizer.AddSpacer(10)
         created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.created_dt.strftime("%Y-%m-%d %H:%M:%S"))
-        details1_sizer.Add(created_dt_label, 0, wx.ALL, 5)
+        details1_sizer.Add(created_dt_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         self.sizer.Add(details1_sizer, 0, wx.ALL, 5)
 
         details2_sizer = wx.BoxSizer(wx.HORIZONTAL)
         num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+" "+str(sample.num_topics))
-        details2_sizer.Add(num_topics_label, 0, wx.ALL, 5)
+        details2_sizer.Add(num_topics_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details2_sizer.AddSpacer(10)
         if hasattr(sample, 'num_passes'):
             num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+str(sample.num_passes))
-            details2_sizer.Add(num_passes_label, 0, wx.ALL, 5)
+            details2_sizer.Add(num_passes_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details2_sizer.AddSpacer(10)
-        used_documents_label = wx.StaticText(self, label="Number of documents: "+str(len(self.sample.tokensets)))
-        details2_sizer.Add(used_documents_label, 0, wx.ALL, 5)
+        used_documents_label = wx.StaticText(self, label=GUIText.NUMBER_OF_DOCUMENTS+str(len(self.sample.tokensets)))
+        details2_sizer.Add(used_documents_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         rules_button = wx.Button(self, label=FilteringGUIText.FILTERS_RULES)
         rules_button.Bind(wx.EVT_BUTTON, self.OnShowRules)
         details2_sizer.Add(rules_button, 0, wx.ALL, 5)
@@ -612,7 +632,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         #initialize and show an inprogress panel for display while model is generating
         inprogress_panel = wx.Panel(self)
         inprogress_sizer = wx.BoxSizer(wx.VERTICAL)
-        inprogress_text = wx.StaticText(inprogress_panel, label="Currently Generating Model")
+        inprogress_text = wx.StaticText(inprogress_panel, label=GUIText.CURRENTLY_GENERATING)
         inprogress_sizer.Add(inprogress_text, 0, wx.ALL, 5)
         inprogress_panel.SetSizer(inprogress_sizer)
         self.sizer.Add(inprogress_panel, 1, wx.EXPAND, 5)
@@ -924,6 +944,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         logger.info("Finished")
         return saved_data
 
+#TODO reactivate and test
 class TopicVisualizationsNotebook(FNB.FlatNotebook):
     def __init__(self, parent, sample):
         logger = logging.getLogger(__name__+".TopicVisualizationsNotebook["+str(sample.key)+"].__init__")
@@ -933,7 +954,7 @@ class TopicVisualizationsNotebook(FNB.FlatNotebook):
 
         self.chordplot_panel = ChordPlotPanel(self)
         self.AddPage(self.chordplot_panel, "Chord Plot")
-        
+
         #TODO replace these or augment to handle unknown topic
         #self.pyLDAvis_panel = pyLDAvisPanel(self)
         #self.AddPage(self.pyLDAvis_panel, "pyLDAvis")#self.wordnetworkgraph_panel = NetworkPlotPlanel(self)
@@ -1006,29 +1027,29 @@ class TopicListPanel(wx.Panel):
         details1_sizer = wx.BoxSizer(wx.HORIZONTAL)
         main_frame = wx.GetApp().GetTopWindow()
         type_label = wx.StaticText(self, label=GUIText.SAMPLE_TYPE+": "+str(self.sample.sample_type))
-        details1_sizer.Add(type_label, 0, wx.ALL, 5)
+        details1_sizer.Add(type_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details1_sizer.AddSpacer(10)
         if main_frame.multipledatasets_mode:
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(self.sample.dataset_key))
-            details1_sizer.Add(dataset_label, 0, wx.ALL, 5)
+            details1_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details1_sizer.AddSpacer(10)
         created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.start_dt.strftime("%Y-%m-%d %H:%M:%S"))
-        details1_sizer.Add(created_dt_label, 0, wx.ALL, 5)
+        details1_sizer.Add(created_dt_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details1_sizer.AddSpacer(10)
         generate_time_label = wx.StaticText(self, label=GUIText.GENERATE_TIME+": "+str(self.sample.end_dt - self.sample.start_dt).split('.')[0])
-        details1_sizer.Add(generate_time_label, 0, wx.ALL, 5)
+        details1_sizer.Add(generate_time_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         topic_list_sizer.Add(details1_sizer, 0, wx.ALL, 5)
 
         details2_sizer = wx.BoxSizer(wx.HORIZONTAL)
         num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+str(self.sample.num_topics))
-        details2_sizer.Add(num_topics_label, 0, wx.ALL, 5)
+        details2_sizer.Add(num_topics_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details2_sizer.AddSpacer(10)
         if hasattr(self.sample, 'num_passes'):
             num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+str(self.sample.num_passes))
-            details2_sizer.Add(num_passes_label, 0, wx.ALL, 5)
+            details2_sizer.Add(num_passes_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details2_sizer.AddSpacer(10)
         used_documents_label = wx.StaticText(self, label=GUIText.NUMBER_OF_DOCUMENTS+str(len(self.sample.tokensets)))
-        details2_sizer.Add(used_documents_label, 0, wx.ALL, 5)
+        details2_sizer.Add(used_documents_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         rules_button = wx.Button(self, label=FilteringGUIText.FILTERS_RULES)
         rules_button.Bind(wx.EVT_BUTTON, self.OnShowRules)
         details2_sizer.Add(rules_button, 0, wx.ALL, 5)
@@ -1038,24 +1059,24 @@ class TopicListPanel(wx.Panel):
         self.topic_list_num = wx.SpinCtrl(self, min=1, max=100, initial=10)
         topic_list_label2 = wx.StaticText(self, label=GUIText.WORDS_PER_TOPIC2)
         topic_list_label_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        topic_list_label_sizer.Add(topic_list_label1, 0, wx.ALL, 5)
+        topic_list_label_sizer.Add(topic_list_label1, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         topic_list_label_sizer.Add(self.topic_list_num, 0, wx.ALL, 5)
-        topic_list_label_sizer.Add(topic_list_label2, 0, wx.ALL, 5)
+        topic_list_label_sizer.Add(topic_list_label2, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
 
         self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
         self.merge_topics_tool = self.toolbar.AddTool(wx.ID_ANY,
-                                                      label="Merge Topics",
+                                                      label=GUIText.MERGE_TOPIC_LABEL,
                                                       bitmap=wx.Bitmap(1, 1),
-                                                      shortHelp="Create a new Merged Topic from selected Topics")
+                                                      shortHelp=GUIText.MERGE_TOPIC_SHORTHELP)
         self.split_topics_tool = self.toolbar.AddTool(wx.ID_ANY,
-                                                      label="Split Topics",
+                                                      label=GUIText.SPLIT_TOPIC_LABEL,
                                                       bitmap=wx.Bitmap(1, 1),
-                                                      shortHelp="Remove selected topics from their Merged Topic")
+                                                      shortHelp=GUIText.SPLIT_TOPIC_SHORTHELP)
         self.toolbar.Realize()
         topic_list_label_sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
 
         cutoff_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        cutoff_label = wx.StaticText(self, label="Probability Cutoff")
+        cutoff_label = wx.StaticText(self, label=GUIText.PROBABILITY_CUTOFF_LABEL)
         #self.cutoff_slider = wx.Slider(self, value=int(sample.document_cutoff*1000), minValue=0, maxValue=1000,
         #                               style = wx.SL_HORIZONTAL)
         #self.cutoff_slider.SetToolTip("Include documents in a topic when the probability of the topic being present in the document is greater or equal to the cutoff")
@@ -1063,7 +1084,7 @@ class TopicListPanel(wx.Panel):
         self.cutoff_spin = wx.SpinCtrlDouble(self, initial=sample.document_cutoff, min=0.0, max=1.0)
         self.cutoff_spin.SetDigits(2)
         self.cutoff_spin.SetIncrement(0.01)
-        self.cutoff_spin.SetToolTip("Include documents in a topic when the probability of the topic being present in the document is greater or equal to the cutoff")
+        self.cutoff_spin.SetToolTip(GUIText.PROBABILITY_CUTOFF_TOOLTIP)
         cutoff_sizer.Add(cutoff_label, 0, wx.ALIGN_CENTER)
         cutoff_sizer.Add(self.cutoff_spin, 0, wx.ALIGN_CENTER)
         topic_list_label_sizer.Add(cutoff_sizer, proportion=0, flag=wx.ALL, border=5)
@@ -1087,7 +1108,7 @@ class LDAModelCreateDialog(wx.Dialog):
     def __init__(self, parent):
         logger = logging.getLogger(__name__+".LDAModelCreateDialog.__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title="Create LDA Model")
+        wx.Dialog.__init__(self, parent, title=GUIText.CREATE_LDA)
 
         self.model_parameters = {}
 
@@ -1097,8 +1118,8 @@ class LDAModelCreateDialog(wx.Dialog):
         self.name_ctrl = wx.TextCtrl(self)
         self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
         name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label)
-        name_sizer.Add(self.name_ctrl)
+        name_sizer.Add(name_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        name_sizer.Add(self.name_ctrl, 0, wx.ALL, 5)
         sizer.Add(name_sizer)
 
         #need to only show tokensets that have fields containing data
@@ -1112,24 +1133,24 @@ class LDAModelCreateDialog(wx.Dialog):
             usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
             self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
             dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            dataset_sizer.Add(dataset_label)
-            dataset_sizer.Add(self.dataset_ctrl)
+            dataset_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            dataset_sizer.Add(self.dataset_ctrl, 0, wx.ALL, 5)
             sizer.Add(dataset_sizer)
 
         num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS_CHOICE)
         self.num_topics_ctrl = wx.SpinCtrl(self, min=1, max=10000, initial=10)
         self.num_topics_ctrl.SetToolTip(GUIText.NUMBER_OF_TOPICS_TOOLTIP)
         num_topics_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        num_topics_sizer.Add(num_topics_label)
-        num_topics_sizer.Add(self.num_topics_ctrl)
+        num_topics_sizer.Add(num_topics_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        num_topics_sizer.Add(self.num_topics_ctrl, 0, wx.ALL, 5)
         sizer.Add(num_topics_sizer)
 
         num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES_CHOICE)
         self.num_passes_ctrl = wx.SpinCtrl(self, min=1, max=1000, initial=100)
         self.num_passes_ctrl.SetToolTip(GUIText.NUMBER_OF_PASSES_TOOLTIP)
         num_passes_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        num_passes_sizer.Add(num_passes_label)
-        num_passes_sizer.Add(self.num_passes_ctrl)
+        num_passes_sizer.Add(num_passes_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        num_passes_sizer.Add(self.num_passes_ctrl, 0, wx.ALL, 5)
         sizer.Add(num_passes_sizer)
 
         #fields to choose specific fields for model
@@ -1201,7 +1222,7 @@ class BitermModelCreateDialog(wx.Dialog):
     def __init__(self, parent):
         logger = logging.getLogger(__name__+".BiTermModelCreateDialog.__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title="Create Biterm Model")
+        wx.Dialog.__init__(self, parent, title=GUIText.CREATE_BITERM)
 
         self.model_parameters = {}
 
@@ -1211,8 +1232,8 @@ class BitermModelCreateDialog(wx.Dialog):
         self.name_ctrl = wx.TextCtrl(self)
         self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
         name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label)
-        name_sizer.Add(self.name_ctrl)
+        name_sizer.Add(name_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        name_sizer.Add(self.name_ctrl, 0, wx.ALL, 5)
         sizer.Add(name_sizer)
 
         #need to only show tokensets that have fields containing data
@@ -1235,16 +1256,16 @@ class BitermModelCreateDialog(wx.Dialog):
         self.num_topics_ctrl = wx.SpinCtrl(self, min=1, max=10000, initial=10)
         self.num_topics_ctrl.SetToolTip(GUIText.NUMBER_OF_TOPICS_TOOLTIP)
         num_topics_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        num_topics_sizer.Add(num_topics_label)
-        num_topics_sizer.Add(self.num_topics_ctrl)
+        num_topics_sizer.Add(num_topics_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        num_topics_sizer.Add(self.num_topics_ctrl, 0, wx.ALL, 5)
         sizer.Add(num_topics_sizer)
 
         num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES_CHOICE)
         self.num_passes_ctrl = wx.SpinCtrl(self, min=1, max=1000, initial=100)
         self.num_passes_ctrl.SetToolTip(GUIText.NUMBER_OF_PASSES_TOOLTIP)
         num_passes_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        num_passes_sizer.Add(num_passes_label)
-        num_passes_sizer.Add(self.num_passes_ctrl)
+        num_passes_sizer.Add(num_passes_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        num_passes_sizer.Add(self.num_passes_ctrl, 0, wx.ALL, 5)
         sizer.Add(num_passes_sizer)
 
         #fields to choose specific fields for model
@@ -1310,73 +1331,11 @@ class BitermModelCreateDialog(wx.Dialog):
         if status_flag:
             self.EndModal(wx.ID_OK)
 
-class SampleRulesDialog(wx.Dialog):
-    def __init__(self, parent, sample, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER):
-        logger = logging.getLogger(__name__+".RulesPanel["+str(sample.key)+"].__init__")
-        logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=FilteringGUIText.FILTERS_RULES+": "+repr(sample), style=style, size=wx.Size(600,400))
-        self.sample = sample
-        
-        package_list = list(sample.tokenization_package_versions)
-        tokenizer_package = sample.tokenization_package_versions[0]
-        package_list[0] = FilteringGUIText.FILTERS_RAWTOKENS
-        package_list[1] = FilteringGUIText.FILTERS_STEMMER + package_list[1]
-        package_list[2] = FilteringGUIText.FILTERS_LEMMATIZER + package_list[2]
-        
-        sizer = wx.BoxSizer(wx.VERTICAL)
-
-        tokenization_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        tokenization_package_label1 = wx.StaticText(self, label=FilteringGUIText.FILTERS_TOKENIZER)
-        tokenization_package_label1.SetFont(wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
-        tokenization_sizer.Add(tokenization_package_label1, proportion=0, flag=wx.ALL, border=5)
-        tokenization_package_label2 = wx.StaticText(self, label=tokenizer_package)
-        tokenization_sizer.Add(tokenization_package_label2, proportion=0, flag=wx.ALL, border=5)
-        tokenization_choice_label = wx.StaticText(self, label=FilteringGUIText.FILTERS_METHOD)
-        tokenization_choice_label.SetFont(wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
-        tokenization_sizer.Add(tokenization_choice_label, proportion=0, flag=wx.ALL, border=5)
-        tokenization_label = wx.StaticText(self, label=package_list[sample.tokenization_choice])
-        tokenization_sizer.Add(tokenization_label, proportion=0, flag=wx.ALL, border=5)
-        sizer.Add(tokenization_sizer, proportion=0, flag=wx.ALL, border=5)
-        
-        #self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
-        #tfidffilter_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_CREATE_TFIDF_RULE,
-        #                                        bitmap=wx.Bitmap(1, 1),
-        #                                        shortHelp=GUIText.FILTERS_CREATE_TFIDF_RULE_TOOLTIP)
-        #self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnCreateTfidfFilter, tfidffilter_tool)
-        #self.toolbar.Realize()
-        #sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
-
-        self.rules_list = DatasetsDataViews.FilterRuleDataViewListCtrl(self)
-        self.DisplayFilterRules(sample.applied_filter_rules)
-        sizer.Add(self.rules_list, proportion=1, flag=wx.EXPAND, border=5)
-
-        self.SetSizer(sizer)
-        self.Layout()
-
-        logger.info("Finished")
-
-    def DisplayFilterRules(self, filter_rules):
-        column_options = {Constants.TOKEN_NUM_WORDS:FilteringGUIText.FILTERS_NUM_WORDS,
-                          Constants.TOKEN_PER_WORDS:FilteringGUIText.FILTERS_PER_WORDS,
-                          Constants.TOKEN_NUM_DOCS:FilteringGUIText.FILTERS_NUM_DOCS,
-                          Constants.TOKEN_PER_DOCS:FilteringGUIText.FILTERS_PER_DOCS}
-        self.rules_list.DeleteAllItems()
-        i = 1
-        for field, word, pos, action in filter_rules:
-            if isinstance(action, tuple):
-                if action[0] == Constants.FILTER_TFIDF_REMOVE or action[0] == Constants.FILTER_TFIDF_INCLUDE:
-                    action = str(action[0])+str(action[1])+str(action[2]*100)+"%"
-                else:
-                    action = str(action[0]) + " ("+str(column_options[action[1]])+str(action[2])+str(action[3])+")"
-                
-            self.rules_list.AppendItem([i, field, word, pos, str(action)])
-            i += 1        
-            
 class NMFModelCreateDialog(wx.Dialog):
     def __init__(self, parent):
         logger = logging.getLogger(__name__+".NMFModelCreateDialog.__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title="Create NMF Model")
+        wx.Dialog.__init__(self, parent, title=GUIText.CREATE_NMF)
 
         self.model_parameters = {}
 
@@ -1386,8 +1345,8 @@ class NMFModelCreateDialog(wx.Dialog):
         self.name_ctrl = wx.TextCtrl(self)
         self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
         name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label)
-        name_sizer.Add(self.name_ctrl)
+        name_sizer.Add(name_label, 0, wx.ALL, 5)
+        name_sizer.Add(self.name_ctrl, 0, wx.ALL, 5)
         sizer.Add(name_sizer)
 
         #need to only show tokensets that have fields containing data
@@ -1402,16 +1361,16 @@ class NMFModelCreateDialog(wx.Dialog):
             usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
             self.dataset_ctrl = wx.Choice(self, choices=usable_datasets_strings)
             dataset_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            dataset_sizer.Add(dataset_label)
-            dataset_sizer.Add(self.dataset_ctrl)
+            dataset_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            dataset_sizer.Add(self.dataset_ctrl, 0, wx.ALL, 5)
             sizer.Add(dataset_sizer)
 
         num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS_CHOICE)
         self.num_topics_ctrl = wx.SpinCtrl(self, min=1, max=10000, initial=10)
         self.num_topics_ctrl.SetToolTip(GUIText.NUMBER_OF_TOPICS_TOOLTIP)
         num_topics_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        num_topics_sizer.Add(num_topics_label)
-        num_topics_sizer.Add(self.num_topics_ctrl)
+        num_topics_sizer.Add(num_topics_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        num_topics_sizer.Add(self.num_topics_ctrl, 0, wx.ALL, 5)
         sizer.Add(num_topics_sizer)
 
         #fields to choose specific fields for model
@@ -1475,45 +1434,3 @@ class NMFModelCreateDialog(wx.Dialog):
         logger.info("Finished")
         if status_flag:
             self.EndModal(wx.ID_OK)
-
-class NMFModelDetailsDialog(wx.Dialog):
-    def __init__(self, parent, sample):
-        logger = logging.getLogger(__name__+".NMFModelDetailsDialog.__init__")
-        logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title="Details for NMF Model: "+sample.key)
-
-        self.sample = sample
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-
-        name_label = wx.StaticText(self, label=GUIText.NAME+":")
-        self.name_ctrl = wx.TextCtrl(self, value=self.sample.key)
-        self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label)
-        name_sizer.Add(self.name_ctrl)
-        sizer.Add(name_sizer)
-
-        dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(self.sample.dataset_key))
-        sizer.Add(dataset_label)
-
-        num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+" "+str(self.sample.num_topics))
-        sizer.Add(num_topics_label)
-
-        used_documents_label = wx.StaticText(self, label="Number of documents used during modelling: "+str(len(self.sample.tokensets)))
-        sizer.Add(used_documents_label)
-
-        #fields to choose specific fields for model
-        #--- not part of mvp so default is to use all fields
-
-        #ok_button = wx.Button(self, id=wx.ID_OK, label=GUIText.OK, )
-        #ok_button.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
-        #cancel_button = wx.Button(self, id=wx.ID_CANCEL, label=GUIText.CANCEL)
-        #controls_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        #controls_sizer.Add(ok_button)
-        #controls_sizer.Add(cancel_button)
-        #sizer.Add(controls_sizer)
-
-        self.SetSizer(sizer)
-
-        logger.info("Finished")

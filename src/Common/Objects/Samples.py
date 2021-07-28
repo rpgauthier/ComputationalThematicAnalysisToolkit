@@ -661,7 +661,7 @@ class TopicMergedPart(ModelMergedPart):
         logger.info("Finished")
 
     def __repr__(self):
-        return 'Merged Topic %s' % (self.key,) if self.label == "" else 'Topic %s: %s' % (self.key, self.label,)
+        return 'Merged Topic %s' % (self.key,) if self.label == "" else 'Merged Topic %s: %s' % (self.key, self.label,)
     
     @property
     def word_num(self):

@@ -49,12 +49,16 @@ class CollectionPanel(wx.Panel):
 
         #Menu for Module
         self.view_menu = wx.Menu()
+        self.view_menu_menuitem = None
         self.toggle_datasetsdata_menuitem = self.view_menu.Append(wx.ID_ANY,
                                                                GUIText.DATASETSDATA_LABEL,
                                                                GUIText.SHOW_HIDE+GUIText.DATASETSDATA_LABEL,
                                                                kind=wx.ITEM_CHECK)
         main_frame.Bind(wx.EVT_MENU, self.OnToggleDatasetsData, self.toggle_datasetsdata_menuitem)
         
+        self.actions_menu = wx.Menu()
+        self.actions_menu_menuitem = None
+
         #setup the default visable state
         self.toggle_datasetsdata_menuitem.Check(True)
         self.OnToggleDatasetsData(None)

@@ -372,38 +372,6 @@ class RetrieveTwitterDatasetThread(Thread):
         wx.PostEvent(self._notify_window, CustomEvents.RetrieveResultEvent(result))
         logger.info("Finished")
 
-    # def CreateDataset(self, dataset_key, retrieval_details, data):
-    #     dataset = Datasets.Dataset(dataset_key,
-    #                                dataset_key[0],
-    #                                dataset_key[1],
-    #                                dataset_key[2],
-    #                                retrieval_details)
-    #     dataset.data = data
-    #     avaliable_fields = Constants.avaliable_fields[(dataset_key[1], dataset_key[2],)]
-    #     for field in avaliable_fields:
-    #         new_field = Datasets.Field(dataset,
-    #                                    field,
-    #                                    dataset,
-    #                                    avaliable_fields[field]['desc'],
-    #                                    avaliable_fields[field]['type'])
-    #         dataset.avaliable_fields[field] = new_field
-    #     chosen_fields = Constants.chosen_fields[(dataset_key[1], dataset_key[2],)]
-
-    #     merged_fields = {}
-    #     for field in chosen_fields:
-    #         if chosen_fields[field]['type'] not in merged_fields:
-    #             merged_fields[chosen_fields[field]['type']] = Datasets.MergedField(dataset, chosen_fields[field]['type']+"_Fields")
-    #         new_field = Datasets.Field(merged_fields[chosen_fields[field]['type']],
-    #                                    field,
-    #                                    dataset,
-    #                                    chosen_fields[field]['desc'],
-    #                                    chosen_fields[field]['type'])
-    #         merged_fields[chosen_fields[field]['type']].chosen_fields[dataset.key, field] = new_field
-
-    #     for key in merged_fields:
-    #         dataset.merged_fields[merged_fields[key].key] = merged_fields[key]
-    #     return dataset
-
     def UpdateDataFiles(self, auth, name, query, start_date, end_date, prefix):
         logger = logging.getLogger(__name__+".TwitterRetrieverDialog.UpdateDataFiles["+name+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
         logger.info("Starting")
@@ -566,16 +534,16 @@ class RetrieveCSVDatasetThread(Thread):
                                 data[key]['created_utc'] = 0
                         else:
                             data[key]['created_utc'] = 0
-                    for field in row:
-                        data[key]["csv."+field] = [row[field]]
-                else:
-                    for field in row:
-                        field_name = "csv."+field
-                        if field_name in data[key]:
-                            if field_name in self.combined_fields_list:
-                                data[key][field_name].append(row[field])
-                        else:
+                for field in row:
+                    field_name = "csv."+field
+                    if field_name in data[key]:
+                        if field_name in self.combined_fields_list:
+                            data[key][field_name].append(row[field])
+                    else:
+                        if field_name in self.combined_fields_list:
                             data[key][field_name] = [row[field]]
+                        else:
+                            data[key][field_name] = row[field]
                 row_num = row_num + 1
             #save as a document dataset
             if len(data) > 0:

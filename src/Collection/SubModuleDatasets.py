@@ -13,6 +13,7 @@ import Common.CustomEvents as CustomEvents
 import Collection.CollectionDialogs as CollectionDialogs
 import Collection.SubModuleFields as SubModuleFields
 
+#TODO rethink create layout to have more description of the sources
 class DatasetsListPanel(wx.Panel):
     def __init__(self, parent, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".DatasetsPanel.__init__")

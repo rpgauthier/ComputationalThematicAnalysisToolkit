@@ -30,11 +30,11 @@ class FilteringNotebook(FNB.FlatNotebook):
         #create dictionary to hold instances of filter panels for each dataset
         self.filters = {}
 
-        
         self.view_menu = wx.Menu()
+        self.view_menu_menuitem = None
 
-        self.menu = wx.Menu()
-        self.menu_menuitem = None
+        self.actions_menu = wx.Menu()
+        self.actions_menu_menuitem = None
 
         self.Fit()
 
@@ -50,7 +50,7 @@ class FilteringNotebook(FNB.FlatNotebook):
                 index = self.GetPageIndex(self.filters[filter_key])
                 if index is not wx.NOT_FOUND:
                     self.RemovePage(index)
-                    self.menu.Remove(self.filters[filter_key].menu_menuitem)
+                    self.actions_menu.Remove(self.filters[filter_key].actions_menu_menuitem)
                 self.filters[filter_key].Hide()
                 del self.filters[filter_key]
         
@@ -61,7 +61,7 @@ class FilteringNotebook(FNB.FlatNotebook):
                 self.filters[key] = FilterPanel(self, main_frame.datasets[key].name, main_frame.datasets[key], size=self.GetSize())
                 self.filters[key].DataRefreshStart()
                 self.AddPage(self.filters[key], main_frame.datasets[key].name)
-                self.filters[key].menu_menuitem = self.menu.AppendSubMenu(self.filters[key].menu, main_frame.datasets[key].name)
+                self.filters[key].actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filters[key].actions_menu, main_frame.datasets[key].name)
 
         logger.info("Finished")
 
@@ -75,7 +75,7 @@ class FilteringNotebook(FNB.FlatNotebook):
                 index = self.GetPageIndex(self.filters[filter_key])
                 if index is not wx.NOT_FOUND:
                     self.RemovePage(index)
-                    self.menu.Remove(self.filters[filter_key].menu_menuitem)
+                    self.actions_menu.Remove(self.filters[filter_key].actions_menu_menuitem)
                 self.filters[filter_key].Hide()
                 del self.filters[filter_key]
         
@@ -83,7 +83,7 @@ class FilteringNotebook(FNB.FlatNotebook):
             if key not in self.filters:
                 self.filters[key] = FilterPanel(self, main_frame.datasets[key].name, main_frame.datasets[key], size=self.GetSize())
                 self.AddPage(self.filters[key], main_frame.datasets[key].name)
-                self.filters[key].menu_menuitem = self.menu.AppendSubMenu(self.filters[key].menu, main_frame.datasets[key].name)
+                self.filters[key].actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filters[key].actions_menu, main_frame.datasets[key].name)
 
         #load all filter panels
         for filter_key in self.filters:
@@ -140,22 +140,22 @@ class FilterPanel(wx.Panel):
 
         #create the menu for the filter
         main_frame = wx.GetApp().GetTopWindow()
-        self.menu = wx.Menu()
-        self.menu_menuitem = None
-        importNLTKStopWordsItem = self.menu.Append(wx.ID_ANY,
+        self.actions_menu = wx.Menu()
+        self.actions_menu_menuitem = None
+        importNLTKStopWordsItem = self.actions_menu.Append(wx.ID_ANY,
                                                    GUIText.FILTERS_IMPORT_NLTK,
                                                    GUIText.FILTERS_IMPORT_NLTK_TOOLTIP)
         main_frame.Bind(wx.EVT_MENU, self.OnImportNLTKStopWords, importNLTKStopWordsItem)
-        importSpacyStopWordsItem = self.menu.Append(wx.ID_ANY,
+        importSpacyStopWordsItem = self.actions_menu.Append(wx.ID_ANY,
                                                     GUIText.FILTERS_IMPORT_SPACY,
                                                     GUIText.FILTERS_IMPORT_SPACY_TOOLTIP)
         main_frame.Bind(wx.EVT_MENU, self.OnImportSpacyStopWords, importSpacyStopWordsItem)
-        self.menu.AppendSeparator()
-        importRemovalSettingsItem = self.menu.Append(wx.ID_ANY,
+        self.actions_menu.AppendSeparator()
+        importRemovalSettingsItem = self.actions_menu.Append(wx.ID_ANY,
                                                      GUIText.FILTERS_IMPORT,
                                                      GUIText.FILTERS_IMPORT_TOOLTIP)
         main_frame.Bind(wx.EVT_MENU, self.OnImportFilterRules, importRemovalSettingsItem)
-        exportRemovalSettingsItem = self.menu.Append(wx.ID_ANY,
+        exportRemovalSettingsItem = self.actions_menu.Append(wx.ID_ANY,
                                                      GUIText.FILTERS_EXPORT,
                                                      GUIText.FILTERS_EXPORT_TOOLTIP)
         main_frame.Bind(wx.EVT_MENU, self.OnExportFilterRules, exportRemovalSettingsItem)
@@ -358,7 +358,7 @@ class FilterPanel(wx.Panel):
                          GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
             # otherwise ask the user what new file to open
             with wx.FileDialog(self, GUIText.FILTERS_IMPORT, defaultDir='../Workspaces/',
-                            wildcard="JSON files (*.json)|*.json",
+                            wildcard="Rules JSON files (*.rules_json)|*.rules_json",
                             style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
                 # cancel if the user changed their mind
                 if file_dialog.ShowModal() == wx.ID_CANCEL:
@@ -380,7 +380,7 @@ class FilterPanel(wx.Panel):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnExportRemovalSettings")
         logger.info("Starting")
         with wx.FileDialog(self, GUIText.FILTERS_EXPORT, defaultDir='../Workspaces/',
-                           wildcard="JSON files (*.json)|*.json",
+                           wildcard="Rules JSON files (*.rules_json)|*.rules_json",
                            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
             # cancel if the user changed their mind
             if file_dialog.ShowModal() == wx.ID_CANCEL:
@@ -535,21 +535,25 @@ class WordsPanel(wx.Panel):
         sizer = wx.StaticBoxSizer(self.label_box, wx.VERTICAL)
         #create the toolbar
         self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
-        self.word_searchctrl = wx.SearchCtrl(self.toolbar)
-        self.word_searchctrl.Bind(wx.EVT_SEARCH, self.OnSearch)
-        self.word_searchctrl.Bind(wx.EVT_SEARCH_CANCEL, self.OnSearchCancel)
-        self.word_searchctrl.SetDescriptiveText("Word Search")
-        self.word_searchctrl.ShowCancelButton(True)
-        self.toolbar.AddControl(self.word_searchctrl)
-        self.pos_searchctrl = wx.SearchCtrl(self.toolbar)
-        self.pos_searchctrl.Bind(wx.EVT_SEARCH, self.OnSearch)
-        self.pos_searchctrl.Bind(wx.EVT_SEARCH_CANCEL, self.OnSearchCancel)
-        self.pos_searchctrl.SetDescriptiveText("Part of Speach Search")
-        self.pos_searchctrl.ShowCancelButton(True)
-        self.toolbar.AddControl(self.pos_searchctrl)
-        self.toolbar.AddSeparator()
         self.toolbar.Realize()
         sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
+        #create search sizer
+        search_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.word_searchctrl = wx.SearchCtrl(self)
+        self.word_searchctrl.Bind(wx.EVT_SEARCH, self.OnSearch)
+        self.word_searchctrl.Bind(wx.EVT_SEARCH_CANCEL, self.OnSearchCancel)
+        self.word_searchctrl.SetDescriptiveText(GUIText.FILTERS_WORD_SEARCH)
+        self.word_searchctrl.ShowCancelButton(True)
+        search_sizer.Add(self.word_searchctrl, 0, wx.ALL, 5)
+        self.pos_searchctrl = wx.SearchCtrl(self)
+        self.pos_searchctrl.Bind(wx.EVT_SEARCH, self.OnSearch)
+        self.pos_searchctrl.Bind(wx.EVT_SEARCH_CANCEL, self.OnSearchCancel)
+        self.pos_searchctrl.SetDescriptiveText(GUIText.FILTERS_POS_SEARCH)
+        self.pos_searchctrl.ShowCancelButton(True)
+        search_sizer.Add(self.pos_searchctrl, 0, wx.ALL, 5)
+        self.search_count_text = wx.StaticText(self)
+        search_sizer.Add(self.search_count_text, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        sizer.Add(search_sizer)
         #create the list to be shown
         self.words_list = TokenDataViews.TokenGrid(self, self.words_df)
         sizer.Add(self.words_list, proportion=1, flag=wx.EXPAND, border=5)
@@ -563,6 +567,7 @@ class WordsPanel(wx.Panel):
         logger = logging.getLogger(__name__+".WordsPanel["+self.word_type+"]["+str(self.parent_frame.name)+"].OnSearch")
         logger.info("Starting")
         self.DisplayWordsList()
+        self.search_count_text.SetLabel(GUIText.SEARCH_COUNT_LABEL+str(len(self.words_list.tokens_df)))
         logger.info("Finished")
 
     def OnSearchCancel(self, event):
@@ -571,6 +576,10 @@ class WordsPanel(wx.Panel):
         search_ctrl = event.GetEventObject()
         search_ctrl.SetValue("")
         self.DisplayWordsList()
+        if self.word_searchctrl.GetValue() == "" and self.pos_searchctrl.GetValue() == "":
+            self.search_count_text.SetLabel("")
+        else:
+            self.search_count_text.SetLabel(GUIText.SEARCH_COUNT_LABEL+str(len(self.words_list.tokens_df)))
         logger.info("Finished")
 
     def UpdateWords(self, new_words_df):
@@ -624,7 +633,7 @@ class IncludedWordsPanel(WordsPanel):
         logger = logging.getLogger(__name__+".IncludedWordsPanel["+str(parent_frame.name)+"]__init__")
         logger.info("Starting")
         WordsPanel.__init__(self, parent, parent_frame, "Included", style=style)
-        self.label_box.SetLabel(GUIText.FILTERS_INCLUDED+GUIText.FILTERS_ENTRIES_LIST)
+        self.label_box.SetLabel(GUIText.FILTERS_INCLUDED_LIST)
         #update the toolbar
         remove_entries_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_REMOVE_ENTRIES, bitmap=wx.Bitmap(1, 1),
                                                        shortHelp=GUIText.FILTERS_REMOVE_ENTRIES_TOOLTIP)
@@ -643,7 +652,7 @@ class RemovedWordsPanel(WordsPanel):
         logger = logging.getLogger(__name__+".RemovedWordsPanel["+str(parent_frame.name)+"].__init__")
         logger.info("Starting")
         WordsPanel.__init__(self, parent, parent_frame, "Removed", style=style)
-        self.label_box.SetLabel(GUIText.FILTERS_REMOVED+GUIText.FILTERS_ENTRIES_LIST)
+        self.label_box.SetLabel(GUIText.FILTERS_REMOVED_LIST)
         #update the toolbar
         readd_entries_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_READD_ENTRIES, bitmap=wx.Bitmap(1, 1),
                                                       shortHelp=GUIText.FILTERS_READD_ENTRIES_TOOLTIP)

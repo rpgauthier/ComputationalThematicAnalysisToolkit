@@ -216,7 +216,7 @@ class DatasetPanel(wx.Panel):
             self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
             self.name_ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnChangeDatasetKey)
             name_sizer.Add(self.name_ctrl)
-            details_sizer1.Add(name_sizer, 0, wx.ALL, 5)
+            details_sizer1.Add(name_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer1.AddSpacer(10)
 
         if dataset.parent is None:
@@ -228,7 +228,7 @@ class DatasetPanel(wx.Panel):
                 self, choices=Constants.AVALIABLE_DATASET_LANGUAGES2)
             self.language_ctrl.Select(selected_lang)
             language_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            language_sizer.Add(language_label)
+            language_sizer.Add(language_label, 0, wx.ALIGN_CENTRE_VERTICAL)
             language_sizer.Add(self.language_ctrl)
             details_sizer1.Add(language_sizer, 0, wx.ALL, 5)
             details_sizer1.AddSpacer(10)
@@ -250,10 +250,10 @@ class DatasetPanel(wx.Panel):
             subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT + ": "
                                             + dataset.retrieval_details['subreddit'])
             if main_frame.multipledatasets_mode:
-                details_sizer2.Insert(0, subreddit_label, 0, wx.ALL, 5)
+                details_sizer2.Insert(0, subreddit_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
                 details_sizer2.InsertSpacer(1, 10)
             else:
-                details_sizer1.Insert(0, subreddit_label, 0, wx.ALL, 5)
+                details_sizer1.Insert(0, subreddit_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
                 details_sizer1.InsertSpacer(1, 10)
 
             if dataset.retrieval_details['pushshift_flg']:
@@ -274,17 +274,17 @@ class DatasetPanel(wx.Panel):
             else:
                 retrieveonline_label = wx.StaticText(
                     self, label=GUIText.SOURCE+": "+GUIText.REDDIT_ARCHIVED)
-            details_sizer2.Add(retrieveonline_label, 0, wx.ALL, 5)
+            details_sizer2.Add(retrieveonline_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer2.AddSpacer(10)
 
             start_date_label = wx.StaticText(self, label=GUIText.START_DATE + ": "
                                              + dataset.retrieval_details['start_date'])
-            details_sizer2.Add(start_date_label, 0, wx.ALL, 5)
+            details_sizer2.Add(start_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer2.AddSpacer(10)
 
             end_date_label = wx.StaticText(self, label=GUIText.END_DATE + ": "
                                            + dataset.retrieval_details['end_date'])
-            details_sizer2.Add(end_date_label, 0, wx.ALL, 5)
+            details_sizer2.Add(end_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer2.AddSpacer(10)
 
         #TODO add metadata field details
@@ -292,17 +292,17 @@ class DatasetPanel(wx.Panel):
 
         retrieved_date_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": "
                                              + dataset.created_dt.strftime("%Y-%m-%d, %H:%M:%S"))
-        details_sizer2.Add(retrieved_date_label, 0, wx.ALL, 5)
+        details_sizer2.Add(retrieved_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details_sizer2.AddSpacer(10)
         document_num_label = wx.StaticText(
             self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
-        details_sizer2.Add(document_num_label, 0, wx.ALL, 5)
+        details_sizer2.Add(document_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details_sizer2.AddSpacer(10)
 
         if dataset.dataset_source == 'Twitter':
             if dataset.retrieval_details['query']:
                 query_label = wx.StaticText(self, label=GUIText.QUERY + ": " + dataset.retrieval_details['query'])
-                details_sizer2.Add(query_label, 0, wx.ALL, 5)
+                details_sizer2.Add(query_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
 
         self.SetSizer(self.sizer)
         self.Layout()
@@ -368,15 +368,16 @@ class DatasetDataPanel(wx.Panel):
 
         sizer = wx.BoxSizer(orient=wx.VERTICAL)
 
-        toolbar = wx.ToolBar(self)
-        self.search_ctrl = wx.SearchCtrl(toolbar)
-        toolbar.AddControl(self.search_ctrl, "Search")
+        controls_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.search_ctrl = wx.SearchCtrl(self)
         self.search_ctrl.Bind(wx.EVT_SEARCH, self.OnSearch)
         self.search_ctrl.Bind(wx.EVT_SEARCH_CANCEL, self.OnSearchCancel)
-        self.search_ctrl.SetDescriptiveText("Search")
+        self.search_ctrl.SetDescriptiveText(GUIText.SEARCH)
         self.search_ctrl.ShowCancelButton(True)
-        toolbar.Realize()
-        sizer.Add(toolbar, 0, wx.ALL, 5)
+        controls_sizer.Add(self.search_ctrl, 0, wx.ALL, 5)
+        self.search_count_text = wx.StaticText(self)
+        controls_sizer.Add(self.search_count_text, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        sizer.Add(controls_sizer, 0, wx.ALL, 5)
 
         self.datasetdata_grid = DatasetsDataViews.DatasetsDataGrid(self, dataset, self.GetSize())
         sizer.Add(self.datasetdata_grid)
@@ -389,6 +390,7 @@ class DatasetDataPanel(wx.Panel):
         search_ctrl = event.GetEventObject()
         search_value = search_ctrl.GetValue()
         self.datasetdata_grid.Search(search_value)
+        self.search_count_text.SetLabel(GUIText.SEARCH_COUNT_LABEL+str(len(self.datasetdata_grid.gridtable.data_df)))
         logger.info("Finished")
 
     def OnSearchCancel(self, event):
@@ -397,4 +399,5 @@ class DatasetDataPanel(wx.Panel):
         search_ctrl = event.GetEventObject()
         search_ctrl.SetValue("")
         self.OnSearch(event)
+        self.search_count_text.SetLabel("")
         logger.info("Finished")

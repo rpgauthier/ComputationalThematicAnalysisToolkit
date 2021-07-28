@@ -8,18 +8,18 @@ import Common.Constants as Constants
 import Common.Notes as Notes
 import Common.Objects.DataViews.Codes as CodesDataViews
 
-class CodeDialog(wx.Dialog):
+class CodeConnectionsDialog(wx.Dialog):
     def __init__(self, parent, code, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".CodeDialog["+str(code.key)+"].__init__")
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=str(code.key), size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
         sizer = wx.BoxSizer()
-        self.document_panel = CodePanel(self, code, size=self.GetSize())
+        self.document_panel = CodeConnectionsPanel(self, code, size=self.GetSize())
         sizer.Add(self.document_panel, 1, wx.EXPAND)
         self.SetSizer(sizer)
         logger.info("Finished")
 
-class CodePanel(wx.Panel):
+class CodeConnectionsPanel(wx.Panel):
     def __init__(self, parent, node, size):
         wx.Panel.__init__(self, parent, size=size)
 
@@ -332,7 +332,7 @@ class DocumentPanel(wx.Panel):
         codes_panel_sizer = wx.BoxSizer(wx.VERTICAL)
         main_frame = wx.GetApp().GetTopWindow()
         self.codes_model = CodesDataViews.ObjectCodesViewModel(main_frame.codes, self.document)
-        self.codes_ctrl = CodesDataViews.CodesViewCtrl(codes_panel, self.codes_model)
+        self.codes_ctrl = CodesDataViews.ObjectCodesViewCtrl(codes_panel, self.codes_model)
         codes_panel_sizer.Add(self.codes_ctrl, 1, wx.EXPAND, 5)
         codes_panel.SetSizer(codes_panel_sizer)
 

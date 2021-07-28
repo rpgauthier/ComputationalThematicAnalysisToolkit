@@ -169,17 +169,34 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnToggleNotes, self.toggle_notes_menuitem)
 
         self.view_menu.AppendSeparator()
-        self.view_menu.AppendSubMenu(self.collection_module.view_menu, GUIText.COLLECTION_LABEL)
-        self.view_menu.AppendSubMenu(self.filtering_module.view_menu, GUIText.FILTERING_MENU_LABEL)
-        self.view_menu.AppendSubMenu(self.sampling_module.view_menu, GUIText.SAMPLING_MENU_LABEL)
-        self.view_menu.AppendSubMenu(self.coding_module.view_menu, GUIText.CODING_LABEL)
-        self.view_menu.AppendSubMenu(self.reviewing_module.view_menu, GUIText.REVIEWING_LABEL)
-        self.view_menu.AppendSubMenu(self.reporting_module.view_menu, GUIText.REVIEWING_LABEL)
 
+        self.collection_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.collection_module.view_menu, GUIText.COLLECTION_LABEL)
+        self.filtering_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.filtering_module.view_menu, GUIText.FILTERING_MENU_LABEL)
+        self.sampling_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.sampling_module.view_menu, GUIText.SAMPLING_MENU_LABEL)
+        self.coding_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.coding_module.view_menu, GUIText.CODING_LABEL)
+        self.reviewing_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.reviewing_module.view_menu, GUIText.REVIEWING_LABEL)
+        self.reporting_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.reporting_module.view_menu, GUIText.REPORTING_LABEL)
         
         self.menu_bar.Append(self.view_menu, GUIText.VIEW_MENU)
 
+        self.actions_menu = wx.Menu()
+        self.collection_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.collection_module.actions_menu, GUIText.COLLECTION_LABEL)
+        self.filtering_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filtering_module.actions_menu, GUIText.FILTERING_MENU_LABEL)
+        self.sampling_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.sampling_module.actions_menu, GUIText.SAMPLING_MENU_LABEL)
+        self.coding_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.coding_module.actions_menu, GUIText.CODING_LABEL)
+        self.reviewing_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.reviewing_module.actions_menu, GUIText.REVIEWING_LABEL)
+        self.reporting_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.reporting_module.actions_menu, GUIText.REPORTING_LABEL)
+        self.menu_bar.Append(self.actions_menu, GUIText.ACTIONS)
+
         self.SetMenuBar(self.menu_bar)
+
+        self.view_toggle_num = 9
+        self.collection_pos = 0
+        self.filtering_pos = 1
+        self.sampling_pos = 2
+        self.coding_pos = 3
+        self.reviewing_pos = 4
+        self.reporting_pos = 5
 
         CustomEvents.EVT_PROGRESS(self, self.OnProgress)
 
@@ -188,7 +205,8 @@ class MainFrame(wx.Frame):
         self.toggle_filtering_menuitem.Check(True)
         self.toggle_sampling_menuitem.Check(True)
         self.toggle_coding_menuitem.Check(True)
-        #self.toggle_reviewing_menuitem.Check(True)
+        self.toggle_reviewing_menuitem.Check(False)
+        self.OnToggleReviewing(None)
         self.toggle_reporting_menuitem.Check(True)
 
 
@@ -208,11 +226,15 @@ class MainFrame(wx.Frame):
                 if self.main_notebook.GetPage(idx) is self.collection_module:
                     index = idx
             if index is None:
-                self.main_notebook.InsertPage(0, self.collection_module,
+                self.main_notebook.InsertPage(self.coding_pos, self.collection_module,
                                               GUIText.COLLECTION_LABEL)
-            #index = self.view_menu.FindItem(GUIText.COLLECTION_LABEL)
-            #if index is wx.NOT_FOUND:
-            #    self.view_menu.AppendSubMenu(self.collection_module.menu, GUIText.COLLECTION_LABEL)
+                self.view_menu.Insert(self.view_toggle_num+self.coding_pos, self.collection_module.view_menu_menuitem)
+                self.actions_menu.Insert(self.coding_pos, self.collection_module.actions_menu_menuitem)
+                self.filtering_pos += 1
+                self.sampling_pos += 1
+                self.coding_pos += 1
+                self.reviewing_pos += 1
+                self.reporting_pos += 1
         else:
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
@@ -221,9 +243,13 @@ class MainFrame(wx.Frame):
             if index is not None:
                 self.main_notebook.RemovePage(index)
                 self.collection_module.Hide()
-            #index = self.view_menu.FindItem(GUIText.COLLECTION_LABEL)
-            #if index is not wx.NOT_FOUND:
-            #    self.view_menu.Remove(index)
+                self.collection_module.view_menu_menuitem = self.view_menu.Remove(self.collection_module.view_menu_menuitem)
+                self.collection_module.actions_menu_menuitem = self.actions_menu.Remove(self.collection_module.actions_menu_menuitem)
+                self.filtering_pos -= 1
+                self.sampling_pos -= 1
+                self.coding_pos -= 1
+                self.reviewing_pos -= 1
+                self.reporting_pos -= 1
         logger.info("Finished")
 
     def OnToggleFiltering(self, event):
@@ -235,11 +261,14 @@ class MainFrame(wx.Frame):
                 if self.main_notebook.GetPage(idx) is self.filtering_module:
                     index = idx
             if index is None:
-                self.main_notebook.InsertPage(1, self.filtering_module,
+                self.main_notebook.InsertPage(self.filtering_pos, self.filtering_module,
                                               GUIText.FILTERING_LABEL)
-            #index = self.menu_bar.FindMenu(GUIText.FILTERING_LABEL)
-            #if index is wx.NOT_FOUND:
-            #    self.menu_bar.Append(self.filtering_module.menu, GUIText.FILTERING_LABEL)
+                self.view_menu.Insert(self.view_toggle_num+self.filtering_pos, self.filtering_module.view_menu_menuitem)
+                self.actions_menu.Insert(self.filtering_pos, self.filtering_module.actions_menu_menuitem)
+                self.sampling_pos += 1
+                self.coding_pos += 1
+                self.reviewing_pos += 1
+                self.reporting_pos += 1
         else:
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
@@ -248,9 +277,12 @@ class MainFrame(wx.Frame):
             if index is not None:
                 self.main_notebook.RemovePage(index)
                 self.filtering_module.Hide()
-            #index = self.menu_bar.FindMenu(GUIText.FILTERING_LABEL)
-            #if index is not wx.NOT_FOUND:
-            #    self.menu_bar.Remove(index)
+                self.filtering_module.view_menu_menuitem = self.view_menu.Remove(self.filtering_module.view_menu_menuitem)
+                self.filtering_module.actions_menu_menuitem = self.actions_menu.Remove(self.filtering_module.actions_menu_menuitem)
+                self.sampling_pos -= 1
+                self.coding_pos -= 1
+                self.reviewing_pos -= 1
+                self.reporting_pos -= 1
         logger.info("Finished")
 
     def OnToggleSampling(self, event):
@@ -262,11 +294,13 @@ class MainFrame(wx.Frame):
                 if self.main_notebook.GetPage(idx) is self.sampling_module:
                     index = idx
             if index is None:
-                self.main_notebook.InsertPage(2, self.sampling_module,
+                self.main_notebook.InsertPage(self.sampling_pos, self.sampling_module,
                                               GUIText.SAMPLING_LABEL)
-            #index = self.menu_bar.FindMenu(GUIText.SAMPLING_LABEL)
-            #if index is wx.NOT_FOUND:
-            #    self.menu_bar.Append(self.filtering_module.menu, GUIText.SAMPLING_LABEL)
+                self.view_menu.Insert(self.view_toggle_num+self.sampling_pos, self.sampling_module.view_menu_menuitem)
+                self.actions_menu.Insert(self.sampling_pos, self.sampling_module.actions_menu_menuitem)
+                self.coding_pos += 1
+                self.reviewing_pos += 1
+                self.reporting_pos += 1
         else:
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
@@ -275,9 +309,11 @@ class MainFrame(wx.Frame):
             if index is not None:
                 self.main_notebook.RemovePage(index)
                 self.sampling_module.Hide()
-            #index = self.menu_bar.FindMenu(GUIText.SAMPLING_LABEL)
-            #if index is not wx.NOT_FOUND:
-            #    self.menu_bar.Remove(index)
+                self.sampling_module.view_menu_menuitem = self.view_menu.Remove(self.sampling_module.view_menu_menuitem)
+                self.sampling_module.actions_menu_menuitem = self.actions_menu.Remove(self.sampling_module.actions_menu_menuitem)
+                self.coding_pos -= 1
+                self.reviewing_pos -= 1
+                self.reporting_pos -= 1
         logger.info("Finished")
 
     def OnToggleCoding(self, event):
@@ -289,11 +325,12 @@ class MainFrame(wx.Frame):
                 if self.main_notebook.GetPage(idx) is self.coding_module:
                     index = idx
             if index is None:
-                self.main_notebook.InsertPage(3, self.coding_module,
+                self.main_notebook.InsertPage(self.coding_pos, self.coding_module,
                                               GUIText.CODING_LABEL)
-            #index = self.menu_bar.FindMenu(GUIText.CODING_LABEL)
-            #if index is wx.NOT_FOUND:
-            #    self.menu_bar.Append(self.coding_module.menu, GUIText.CODING_LABEL)
+                self.view_menu.Insert(self.view_toggle_num+self.coding_pos, self.coding_module.view_menu_menuitem)
+                self.actions_menu.Insert(self.coding_pos, self.coding_module.actions_menu_menuitem)
+                self.reviewing_pos += 1
+                self.reporting_pos += 1
         else:
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
@@ -302,9 +339,10 @@ class MainFrame(wx.Frame):
             if index is not None:
                 self.main_notebook.RemovePage(index)
                 self.coding_module.Hide()
-            #index = self.menu_bar.FindMenu(GUIText.CODING_LABEL)
-            #if index is not wx.NOT_FOUND:
-            #    self.menu_bar.Remove(index)
+                self.coding_module.view_menu_menuitem = self.view_menu.Remove(self.coding_module.view_menu_menuitem)
+                self.coding_module.actions_menu_menuitem = self.actions_menu.Remove(self.coding_module.actions_menu_menuitem)
+                self.reviewing_pos -= 1
+                self.reporting_pos -= 1
         logger.info("Finished")
 
     def OnToggleReviewing(self, event):
@@ -316,11 +354,11 @@ class MainFrame(wx.Frame):
                 if self.main_notebook.GetPage(idx) is self.reviewing_module:
                     index = idx
             if index is None:
-                self.main_notebook.InsertPage(4, self.reviewing_module,
+                self.main_notebook.InsertPage(self.reviewing_pos, self.reviewing_module,
                                               GUIText.REVIEWING_LABEL)
-            #index = self.menu_bar.FindMenu(GUIText.REVIEWING_LABEL)
-            #if index is wx.NOT_FOUND:
-            #    self.menu_bar.Append(self.reviewing_module.menu, GUIText.REVIEWING_LABEL)
+                self.view_menu.Insert(self.view_toggle_num+self.reviewing_pos, self.reviewing_module.view_menu_menuitem)
+                self.actions_menu.Insert(self.reviewing_pos, self.reviewing_module.actions_menu_menuitem)
+                self.reporting_pos += 1
         else:
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
@@ -329,9 +367,9 @@ class MainFrame(wx.Frame):
             if index is not None:
                 self.main_notebook.RemovePage(index)
                 self.reviewing_module.Hide()
-            #index = self.menu_bar.FindMenu(GUIText.REVIEWING_LABEL)
-            #if index is not wx.NOT_FOUND:
-            #    self.menu_bar.Remove(index)
+                self.reviewing_module.view_menu_menuitem = self.view_menu.Remove(self.reviewing_module.view_menu_menuitem)
+                self.reviewing_module.actions_menu_menuitem = self.actions_menu.Remove(self.reviewing_module.actions_menu_menuitem)
+                self.reporting_pos -= 1
         logger.info("Finished")
 
     def OnToggleReporting(self, event):
@@ -343,11 +381,10 @@ class MainFrame(wx.Frame):
                 if self.main_notebook.GetPage(idx) is self.reporting_module:
                     index = idx
             if index is None:
-                self.main_notebook.InsertPage(5, self.reporting_module,
+                self.main_notebook.InsertPage(self.reporting_pos, self.reporting_module,
                                               GUIText.REPORTING_LABEL)
-            #index = self.menu_bar.FindMenu(GUIText.REPORTING_LABEL)
-            #if index is wx.NOT_FOUND:
-            #    self.menu_bar.Append(self.reporting_module.menu, GUIText.REPORTING_LABEL)
+                self.view_menu.Insert(self.view_toggle_num+self.reporting_pos, self.reporting_module.view_menu_menuitem)
+                self.actions_menu.Insert(self.reporting_pos, self.reporting_module.actions_menu_menuitem)
         else:
             index = None
             for idx in range(self.main_notebook.GetPageCount()):
@@ -356,9 +393,8 @@ class MainFrame(wx.Frame):
             if index is not None:
                 self.main_notebook.RemovePage(index)
                 self.reporting_module.Hide()
-            #index = self.menu_bar.FindMenu(GUIText.REPORTING_LABEL)
-            #if index is not wx.NOT_FOUND:
-            #    self.menu_bar.Remove(index)
+                self.reporting_module.view_menu_menuitem = self.view_menu.Remove(self.reporting_module.view_menu_menuitem)
+                self.reporting_module.actions_menu_menuitem = self.actions_menu.Remove(self.reporting_module.actions_menu_menuitem)
         logger.info("Finished")
 
     def OnToggleNotes(self, event):
@@ -412,10 +448,11 @@ class MainFrame(wx.Frame):
             self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
         
             self.last_load_dt = datetime.now()
-            
+
             self.DatasetsUpdated()
             self.SamplesUpdated()
             self.DocumentsUpdated()
+            #TODO investigate error that occurs when a code is selected when new is clicked
             self.CodesUpdated()
 
 

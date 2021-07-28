@@ -68,6 +68,7 @@ class Common:
     NOT_USEFUL_HELP = "Flags selected entries usefulness as not useful"
 
     SEARCH = "Search"
+    SEARCH_COUNT_LABEL = "# of Results: "
     SHOW = "Show"
     GOTO = "Go to"
     PAGE = "Page"
@@ -160,8 +161,8 @@ class Main(Common):
     COLLECTION_LABEL = "Data Collection"
     FILTERING_LABEL = "Data Cleaning & Filtering"
     FILTERING_MENU_LABEL = "Data Cleaning && Filtering"
-    SAMPLING_LABEL = "Sampling & Modelling"
-    SAMPLING_MENU_LABEL = "Sampling && Modelling"
+    SAMPLING_LABEL = "Modelling & Sampling"
+    SAMPLING_MENU_LABEL = "Modelling && Sampling"
     CODING_LABEL = "Coding"
     REVIEWING_LABEL = "Reviewing"
     REPORTING_LABEL = "Reporting"
@@ -334,10 +335,25 @@ class Datasets(Common):
 
 class Samples(Main):
     #Model types
+    GENERIC_SECTION_LABEL = "Generic Sampling"
     RANDOM_LABEL = "Random"
+    RANDOM_DESC = "This sampling approach depends on the the assumption that codes are uniformly distributed across the data."\
+                  "\nHowever, assuming codes follow a uniform distribution may restrict visability of interesting infrequent codes in the data."
+    RANDOM_URL = "https://academic.oup.com/fampra/article/13/6/522/496701"
+    TOPICMODEL_SECTION_LABEL = "Topic Model Sampling"
+    TOPICMODEL_SECTION_DESC = "Topic model sampling attempts to generate samples in the form of groups of documents that are likely to contain similar topics."\
+                              "\nThese groups can contain interesting phenomena that can be used to explore the data, develop codes, and review themes."\
+                              "\nHowever, generated topic model samples should to be treated as windows that look at potentially interesting parts of the data rather than as a generalizable representation of the data."
+    TOPICMODEL_SECTION_LINK = ""
     LDA_LABEL = "Latent Dirchlet Allocation"
+    LDA_DESC = "This topic model is suited to identifying topics in long texts, such as discussions, where multiple topics can co-occur"
+    LDA_URL = "https://dl.acm.org/doi/10.5555/944919.944937"
     BITERM_LABEL = "Biterm"
+    BITERM_DESC = "This topic model is suited to identifying topics in short texts, such as tweets and instant messages"
+    BITERM_URL = "https://dl.acm.org/doi/10.1145/2488388.2488514"
     NMF_LABEL = "Non-Negative Matrix Factorization"
+    NMF_DESC = "This topic model is suited to identifying topics in short texts, such as tweets and instant messages"
+    NMF_URL = "https://dl.acm.org/doi/book/10.5555/aai28114631"
 
     #model list columns and tools
     SAMPLE_NAME = "Name"
@@ -356,6 +372,12 @@ class Samples(Main):
     DELETE_CONFIRMATION_WARNING = "Are you sure you want to delete this sample?"\
                                   "\nWARNING this action cannot be undone."
 
+    MERGE_TOPIC_LABEL = "Merge Topics"
+    MERGE_TOPIC_SHORTHELP = "Create a new Merged Topic from selected Topics"
+    SPLIT_TOPIC_LABEL = "Split Topics"
+    SPLIT_TOPIC_SHORTHELP = "Remove selected topics from their Merged Topic"
+    PROBABILITY_CUTOFF_LABEL = "Probability Cutoff: "
+    PROBABILITY_CUTOFF_TOOLTIP = "Include documents in a topic when the probability of the topic being present in the document is greater or equal to the cutoff"
 
     #random model panel
 
@@ -371,6 +393,7 @@ class Samples(Main):
     SAMPLE_REQUEST = "Choose number of enteries to sample:"
 
     NOT_SAVED_WARNING = "You must save the workspace to generate an LDA Model"
+    CURRENTLY_GENERATING = "Currently Generating Model"
     INPROGRESS = "Inprogress"
     CHECK_STATUS = "Check Status"
     CHECK_STATUS_TOOLTIP = "Check if Model is Ready"
@@ -388,6 +411,10 @@ class Samples(Main):
                             "\nPlease choose a dataset for the model."
     DATASET_NOTAVALIABLE_ERROR = "No Data is avaliable." \
                             "\nPlease load data into the project before trying to create a model."
+    TYPE_UNKNOWN_ERROR = "Failed to create sample due to unknown type."
+    AFTERFILTERING_LABEL1 = "After filtering "
+    AFTERFILTERING_LABEL2 = " documents remained of the "
+    AFTERFILTERING_LABEL3 = " documents avaliable"
     
 
     GENERATE_WARNING = "\nWARNING: Do not shut down program or else model will not be created."
@@ -417,7 +444,7 @@ class Samples(Main):
                                     +"\nA new dialog will open when completed."
     GENERATED_NMF_COMPLETED_PART1 = "NMF Topic Model Generation will continue running in background."\
                                     +"\nA new dialog will open when completed."
-                                    
+
     #review list table column labels
     REVIEW_NAME = "Review Name"
     DATASET_NAME = "Dataset Name"
@@ -554,7 +581,9 @@ class Filtering(Main, Datasets):
     FILTERS_ENTRIES_TREEMAP2 = " Entries (as per # of Words)"
     FILTERS_ENTRIES_TREEMAP_LABEL = "Entries Treemap"
     FILTERS_INCLUDED = "Included "
+    FILTERS_INCLUDED_LIST = FILTERS_INCLUDED + FILTERS_ENTRIES_LIST
     FILTERS_REMOVED = "Removed "
+    FILTERS_REMOVED_LIST = FILTERS_REMOVED + FILTERS_ENTRIES_LIST
     FILTERS_TOKENIZER = "Tokenizer:"
     FILTERS_METHOD = "Method:"
     FILTERS_RAWTOKENS = "Raw Tokens"
@@ -570,6 +599,9 @@ class Filtering(Main, Datasets):
     FILTERS_RULE_DECREASE_TOOLTIP = "Selected rules will each occur earlier"
     FILTERS_REMOVE_SPACY_AUTO_STOPWORDS = "Remove Spacy Auto Stop Words"
     FILTERS_REMOVE_SPACY_AUTO_STOPWORDS_TOOLTIP = "Add a Remove spaCy Auto Stopwords Rule"
+
+    FILTERS_WORD_SEARCH = "Word Search"
+    FILTERS_POS_SEARCH = "Part of Speach Search"
 
     FILTERS_CREATE_RULE_FIELD = "Apply to Field:"
     FILTERS_CREATE_RULE_FIELD_TOOLTIP = "leave blank to apply to all fields"    
@@ -591,10 +623,10 @@ class Filtering(Main, Datasets):
 
     FILTERS_IMPORT_CONFIRMATION_REQUEST = "Are you sure you wnat to proceed with importing removal settings?"\
                                           "\nWARNING: Any current settings will be lost."
-    FILTERS_IMPORT = "Import Settings"
-    FILTERS_IMPORT_TOOLTIP = "Import Custom Removal Settings from file"
-    FILTERS_EXPORT = "Export Settings"
-    FILTERS_EXPORT_TOOLTIP = "Export Custom Removal Settings to file"
+    FILTERS_IMPORT = "Import Rules"
+    FILTERS_IMPORT_TOOLTIP = "Import Custom Rules from file"
+    FILTERS_EXPORT = "Export Rules"
+    FILTERS_EXPORT_TOOLTIP = "Export Custom Rules to file"
     FILTERS_IMPORT_NLTK = "Import NLTK stopwords"
     FILTERS_IMPORT_NLTK_TOOLTIP = "Append nltk stop words to removal list"
     FILTERS_IMPORT_SPACY = "Import spaCy stopwords"
@@ -620,6 +652,8 @@ class Filtering(Main, Datasets):
 
 class Sampling(Samples):
     SAMPLE_NAME = "Name of Sample:"
+
+
 
 class Coding(Main):
     CODING_NOTES_LABEL = "Coding Notes"
@@ -655,6 +689,14 @@ class Coding(Main):
 
     LOAD_BUSY_MSG_CONFIG = "Loading Coding Configurations"
     SAVE_BUSY_MSG_CONFIG ="Saving Coding Configurations"
+
+    CODES_IMPORT = "Import Codes"
+    CODES_IMPORT_TOOLTIP = "Import Codes from file"
+    CODES_IMPORT_CONFIRMATION_REQUEST = "Please confirm you wish to import codes from a different project into this project."\
+                                        "\nWARNING: Any duplicate codes will have a number appended to them to make them unique."
+    CODES_EXPORT = "Export Codes"
+    CODES_EXPORT_TOOLTIP = "Export Codes to a file"
+    
 
 class Reviewing(Main):
     LOAD_BUSY_MSG_CONFIG = "Loading Reviewing Configurations"
