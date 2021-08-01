@@ -803,6 +803,72 @@ class TopicSamplePanel(AbstractSamplePanel):
             
         logger.info("Finished")
 
+    def OnRemoveTopics(self, event):
+        logger = logging.getLogger(__name__+"TopicSamplePanel["+str(self.sample.key)+"].OnRemoveTopics")
+        logger.info("Starting")
+        selections = self.topiclist_panel.topic_list_ctrl.GetSelections()
+        nodes = []
+        old_mergedparts = []
+        for item in selections:
+            node = self.topiclist_panel.topic_list_model.ItemToObject(item)
+            if isinstance(node, Samples.TopicPart):
+                nodes.append(node)
+                if isinstance(node.parent, Samples.TopicMergedPart):
+                    if node.parent not in old_mergedparts:
+                        old_mergedparts.append(node.parent)
+            if isinstance(node, Samples.TopicMergedPart):
+                if node not in old_mergedparts:
+                    old_mergedparts.append(node)
+                for part_key in node.parts_dict:
+                    nodes.append(node.parts_dict[part_key])
+        if len(nodes) > 0:
+            tmp_id = 0
+            while 'M'+str(tmp_id) in self.sample.parts_dict:
+                tmp_id += 1
+            key = 'M'+str(tmp_id)
+            #new_parent = Samples.TopicMergedPart(self.sample, key)
+            #self.sample.parts_dict[key] = new_parent
+            
+            for node in nodes:
+                del node.parent.parts_dict[node.key]
+                #node.parent.last_changed_dt = datetime.now()
+                #node.parent = new_parent
+                #new_parent.parts_dict[node.key] = node
+            # for row in self.sample.document_topic_prob:
+            #     doc_topic_prob = 0.0
+            #     row_dict = self.sample.document_topic_prob[row]
+                # for topic_key in new_parent.parts_dict:
+                #     doc_topic_prob = max(doc_topic_prob, row_dict[topic_key])
+                # self.sample.document_topic_prob[row][key] = doc_topic_prob
+            if len(old_mergedparts) > 0:
+                for node in old_mergedparts:
+                    for document_key in self.sample.document_topic_prob:
+                        to_remove_entry = None
+                        for entry_key in self.sample.document_topic_prob[document_key]:
+                            if entry_key == node.key:
+                                to_remove_entry = entry_key
+                                break
+                        if to_remove_entry != None:
+                            del self.sample.document_topic_prob[document_key][to_remove_entry]
+                    if len(node.parts_dict) == 0:
+                        node.DestroyObject()
+                    else:
+                        for row in self.sample.document_topic_prob:
+                            doc_topic_prob = 0.0
+                            row_dict = dict(row)
+                            for topic_key in node.parts_dict:
+                                doc_topic_prob = max(doc_topic_prob, row_dict[topic_key])
+                            row.append((node.key, doc_topic_prob,))
+            self.topiclist_panel.topic_list_model.Cleared()
+            self.topiclist_panel.topic_list_ctrl.Expander(None)
+            self.ChangeSelections()
+            #self.visualization_panel.Refresh(self.selected_parts)
+            self.DrawLDAPlot(self.selected_parts)
+            self.parts_panel.parts_model.Cleared()
+            self.parts_panel.parts_ctrl.Expander(None)
+            
+        logger.info("Finished")
+
     def OnChangeCutoff(self, event):
         logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].OnChangeCutoff")
         logger.info("Starting")
@@ -855,6 +921,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         self.topiclist_panel = TopicListPanel(self.horizontal_splitter, self.sample)
         self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnMergeTopics, self.topiclist_panel.merge_topics_tool)
         self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnSplitTopics, self.topiclist_panel.split_topics_tool)
+        self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnRemoveTopics, self.topiclist_panel.remove_topics_tool)
         self.topiclist_panel.topic_list_num.Bind(wx.EVT_SPINCTRL, self.OnChangeTopicWordNum)
         #turned off for performance reasons
         #self.topiclist_panel.topic_list_ctrl.Bind(dv.EVT_DATAVIEW_SELECTION_CHANGED, self.OnTopicsSelected)
@@ -1072,6 +1139,10 @@ class TopicListPanel(wx.Panel):
                                                       label=GUIText.SPLIT_TOPIC_LABEL,
                                                       bitmap=wx.Bitmap(1, 1),
                                                       shortHelp=GUIText.SPLIT_TOPIC_SHORTHELP)
+        self.remove_topics_tool = self.toolbar.AddTool(wx.ID_ANY,
+                                                      label=GUIText.REMOVE_TOPIC_LABEL,
+                                                      bitmap=wx.Bitmap(1, 1),
+                                                      shortHelp=GUIText.REMOVE_TOPIC_SHORTHELP)
         self.toolbar.Realize()
         topic_list_label_sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
 
