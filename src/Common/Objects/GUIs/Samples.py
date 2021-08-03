@@ -825,24 +825,8 @@ class TopicSamplePanel(AbstractSamplePanel):
                 for part_key in node.parts_dict:
                     nodes.append(node.parts_dict[part_key])
         if len(nodes) > 0:
-            tmp_id = 0
-            while 'M'+str(tmp_id) in self.sample.parts_dict:
-                tmp_id += 1
-            key = 'M'+str(tmp_id)
-            #new_parent = Samples.TopicMergedPart(self.sample, key)
-            #self.sample.parts_dict[key] = new_parent
-            
             for node in nodes:
                 del node.parent.parts_dict[node.key]
-                #node.parent.last_changed_dt = datetime.now()
-                #node.parent = new_parent
-                #new_parent.parts_dict[node.key] = node
-            # for row in self.sample.document_topic_prob:
-            #     doc_topic_prob = 0.0
-            #     row_dict = self.sample.document_topic_prob[row]
-                # for topic_key in new_parent.parts_dict:
-                #     doc_topic_prob = max(doc_topic_prob, row_dict[topic_key])
-                # self.sample.document_topic_prob[row][key] = doc_topic_prob
             if len(old_mergedparts) > 0:
                 for node in old_mergedparts:
                     for document_key in self.sample.document_topic_prob:
