@@ -829,17 +829,15 @@ class TopicSamplePanel(AbstractSamplePanel):
                 node.parent = None
             if len(old_mergedparts) > 0:
                 for node in old_mergedparts:
-                    
-                    # TODO: set part_data length after child topics have been removed?
-                    # new_part_data_length = 0
-                    # for part_key in node.parts_dict:
-                    #     new_part_data_length += node.parts_dict[part_key]._part_data
-                    # node.part_data(new_part_data_length) 
-
-
-                    # if all children of a MergedPart are deleted, delete MergedPart as well
                     if len(node.parts_dict) == 0:
-                        del node.parent.parts_dict[node.key]
+                        node.DestroyObject()
+                    else:
+                        for row in self.sample.document_topic_prob:
+                            doc_topic_prob = 0.0
+                            row_dict = self.sample.document_topic_prob[row]
+                            for topic_key in node.parts_dict:
+                                doc_topic_prob = max(doc_topic_prob, row_dict[topic_key])
+                            self.sample.document_topic_prob[row][node.key] = doc_topic_prob
             self.topiclist_panel.topic_list_model.Cleared()
             self.topiclist_panel.topic_list_ctrl.Expander(None)
             self.ChangeSelections()
