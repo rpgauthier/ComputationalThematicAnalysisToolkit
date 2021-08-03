@@ -709,7 +709,6 @@ class TopicSamplePanel(AbstractSamplePanel):
             key = 'M'+str(tmp_id)
             new_parent = Samples.TopicMergedPart(self.sample, key)
             self.sample.parts_dict[key] = new_parent
-            
             for node in nodes:
                 del node.parent.parts_dict[node.key]
                 node.parent.last_changed_dt = datetime.now()
@@ -827,25 +826,20 @@ class TopicSamplePanel(AbstractSamplePanel):
         if len(nodes) > 0:
             for node in nodes:
                 del node.parent.parts_dict[node.key]
+                node.parent = None
             if len(old_mergedparts) > 0:
                 for node in old_mergedparts:
-                    for document_key in self.sample.document_topic_prob:
-                        to_remove_entry = None
-                        for entry_key in self.sample.document_topic_prob[document_key]:
-                            if entry_key == node.key:
-                                to_remove_entry = entry_key
-                                break
-                        if to_remove_entry != None:
-                            del self.sample.document_topic_prob[document_key][to_remove_entry]
+                    
+                    # TODO: set part_data length after child topics have been removed?
+                    # new_part_data_length = 0
+                    # for part_key in node.parts_dict:
+                    #     new_part_data_length += node.parts_dict[part_key]._part_data
+                    # node.part_data(new_part_data_length) 
+
+
+                    # if all children of a MergedPart are deleted, delete MergedPart as well
                     if len(node.parts_dict) == 0:
-                        node.DestroyObject()
-                    else:
-                        for row in self.sample.document_topic_prob:
-                            doc_topic_prob = 0.0
-                            row_dict = dict(row)
-                            for topic_key in node.parts_dict:
-                                doc_topic_prob = max(doc_topic_prob, row_dict[topic_key])
-                            row.append((node.key, doc_topic_prob,))
+                        del node.parent.parts_dict[node.key]
             self.topiclist_panel.topic_list_model.Cleared()
             self.topiclist_panel.topic_list_ctrl.Expander(None)
             self.ChangeSelections()
