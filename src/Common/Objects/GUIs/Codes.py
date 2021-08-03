@@ -1,12 +1,16 @@
 import logging
+import webbrowser
+from datetime import datetime
 
 import wx
 import wx.adv
+import wx.richtext
 
 from Common.GUIText import Coding as GUIText
 import Common.Constants as Constants
 import Common.Notes as Notes
 import Common.Objects.DataViews.Codes as CodesDataViews
+import Common.Objects.Datasets as Datasets
 
 class CodeConnectionsDialog(wx.Dialog):
     def __init__(self, parent, code, size=wx.DefaultSize):
@@ -315,17 +319,73 @@ class DocumentPanel(wx.Panel):
 
         data_panel = wx.ScrolledWindow(top_frame_splitter, style=wx.TAB_TRAVERSAL|wx.HSCROLL|wx.VSCROLL|wx.SUNKEN_BORDER)
         data_panel_sizer = wx.BoxSizer(wx.VERTICAL)
-        url = wx.adv.HyperlinkCtrl(data_panel, url=document.url)
-        data_panel_sizer.Add(url, 0, wx.ALL, 5)
 
-        field_ctrl = wx.TextCtrl(data_panel, value="", style=wx.TE_READONLY|wx.TE_MULTILINE|wx.BORDER_NONE)
-        data_panel_sizer.Add(field_ctrl, 1, wx.EXPAND, 5)
-        for field in document.data_dict:
-            if isinstance(document.data_dict[field], list):
-                for entry in document.data_dict[field]:
-                    field_ctrl.AppendText(str(entry)+'\n------------\n')
+        field_ctrl = wx.richtext.RichTextCtrl(data_panel, value="", style=wx.richtext.RE_READONLY)
+        data_panel_sizer.Add(field_ctrl, 1, wx.EXPAND|wx.ALL, 5)
+        urlStyle = wx.richtext.RichTextAttr()
+        urlStyle.SetTextColour(wx.BLUE)
+        urlStyle.SetFontUnderlined(True)
+        field_ctrl.Bind(wx.EVT_TEXT_URL, self.OnURL)
+
+        for field_name in document.parent.metadata_fields:
+            field_data = document.parent.data[document.key][field_name]
+            if isinstance(field_data, list):
+                for entry in field_data:
+                    if document.parent.metadata_fields[field_name].fieldtype == 'url':
+                        field_ctrl.BeginStyle(urlStyle)
+                        field_ctrl.BeginURL(entry)
+                        field_ctrl.WriteText(entry)
+                        field_ctrl.EndURL()
+                        field_ctrl.EndStyle()
+                        field_ctrl.WriteText('\n------------\n')
+                    elif document.parent.metadata_fields[field_name].fieldtype == 'UTC-timestamp':
+                        value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
+                        field_ctrl.WriteText(value_str+' UTC\n------------\n')
+                    else:
+                        field_ctrl.WriteText(str(entry)+'\n------------\n')
             else:
-                field_ctrl.AppendText(str(document.data_dict[field])+'\n------------\n')
+                if document.parent.metadata_fields[field_name].fieldtype == 'url':
+                    field_ctrl.BeginStyle(urlStyle)
+                    field_ctrl.BeginURL(field_data)
+                    field_ctrl.WriteText(field_data)
+                    field_ctrl.EndURL()
+                    field_ctrl.EndStyle()
+                    field_ctrl.WriteText('\n------------\n')
+                elif document.parent.metadata_fields[field_name].fieldtype == 'UTC-timestamp':
+                    value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
+                    field_ctrl.WriteText(value_str+' UTC\n------------\n')
+                else:
+                    field_ctrl.WriteText(str(field_data)+'\n------------\n')
+        for field_name in document.parent.chosen_fields:
+            if field_name not in document.parent.metadata_fields:
+                field_data = document.parent.data[document.key][field_name]
+                if isinstance(field_data, list):
+                    for entry in field_data:
+                        if document.parent.chosen_fields[field_name].fieldtype == 'url':
+                            field_ctrl.BeginStyle(urlStyle)
+                            field_ctrl.BeginURL(entry)
+                            field_ctrl.WriteText(entry)
+                            field_ctrl.EndURL()
+                            field_ctrl.EndStyle()
+                            field_ctrl.WriteText('\n------------\n')
+                        elif document.parent.chosen_fields[field_name].fieldtype == 'UTC-timestamp':
+                            value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
+                            field_ctrl.WriteText(value_str+' UTC\n------------\n')
+                        else:
+                            field_ctrl.WriteText(str(entry)+'\n------------\n')
+                else:
+                    if document.parent.chosen_fields[field_name].fieldtype == 'url':
+                        field_ctrl.BeginStyle(urlStyle)
+                        field_ctrl.BeginURL(field_data)
+                        field_ctrl.WriteText(field_data)
+                        field_ctrl.EndURL()
+                        field_ctrl.EndStyle()
+                        field_ctrl.WriteText('\n------------\n')
+                    elif document.parent.chosen_fields[field_name].fieldtype == 'UTC-timestamp':
+                        value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
+                        field_ctrl.WriteText(value_str+' UTC\n------------\n')
+                    else:
+                        field_ctrl.WriteText(str(field_data)+'\n------------\n')
         data_panel.SetSizer(data_panel_sizer)
 
         codes_panel = wx.Panel(top_frame_splitter, style=wx.TAB_TRAVERSAL|wx.SUNKEN_BORDER)
@@ -333,7 +393,7 @@ class DocumentPanel(wx.Panel):
         main_frame = wx.GetApp().GetTopWindow()
         self.codes_model = CodesDataViews.ObjectCodesViewModel(main_frame.codes, self.document)
         self.codes_ctrl = CodesDataViews.ObjectCodesViewCtrl(codes_panel, self.codes_model)
-        codes_panel_sizer.Add(self.codes_ctrl, 1, wx.EXPAND, 5)
+        codes_panel_sizer.Add(self.codes_ctrl, 1, wx.ALL|wx.EXPAND, 5)
         codes_panel.SetSizer(codes_panel_sizer)
 
         edit_panel = wx.Panel(frame_splitter, style=wx.TAB_TRAVERSAL|wx.SUNKEN_BORDER)
@@ -375,6 +435,11 @@ class DocumentPanel(wx.Panel):
 
         self.Layout()
     
+    def OnURL(self, event):
+        logger = logging.getLogger(__name__+".DocumentPanel["+str(self.document.key)+"].OnURL")
+        logger.info("Call to access url[%s]", event.GetString())
+        webbrowser.open_new_tab(event.GetString())
+
     def OnUpdateUsefulness(self, event):
         choice = self.usefulness_ctrl.GetSelection()
         if choice == 0:

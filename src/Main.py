@@ -455,6 +455,8 @@ class MainFrame(wx.Frame):
             #TODO investigate error that occurs when a code is selected when new is clicked
             self.CodesUpdated()
 
+            self.SetTitle(GUIText.APP_NAME+" - "+GUIText.UNSAVED)
+
 
             #reset view
             self.toggle_collection_menuitem.Check(True)
@@ -481,12 +483,17 @@ class MainFrame(wx.Frame):
                             message=GUIText.LOAD_REQUEST,
                             defaultDir=dir_name,
                             style=wx.DD_DEFAULT_STYLE|wx.FD_FILE_MUST_EXIST|wx.FD_OPEN,
-                            wildcard="*.mta") as dir_dialog:
-                if dir_dialog.ShowModal() == wx.ID_OK:
+                            wildcard="*.mta") as file_dialog:
+                if file_dialog.ShowModal() == wx.ID_OK:
                     self.CreateProgressDialog(title=GUIText.LOAD_BUSY_LABEL,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
                     self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG)
+
+                    self.save_path = file_dialog.GetPath()
+                    self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG_FILE + str(self.save_path))
+                    logger.info("loading file: %s", self.save_path)
+                    self.SetTitle(GUIText.APP_NAME+" - "+file_dialog.GetFilename())
 
                     #reset objects
                     for key in self.datasets:
@@ -505,7 +512,6 @@ class MainFrame(wx.Frame):
                     self.DocumentsUpdated()
                     self.CodesUpdated()
 
-                    self.save_path = dir_dialog.GetPath()
                     self.current_workspace.cleanup()
                     self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
 
@@ -567,6 +573,7 @@ class MainFrame(wx.Frame):
                           wildcard="*.mta") as file_dialog:
             if file_dialog.ShowModal() == wx.ID_OK:
                 self.save_path = file_dialog.GetPath()
+                self.SetTitle(GUIText.APP_NAME+" - "+file_dialog.GetFilename())
                 try:
                     self.last_load_dt = datetime(1990, 1, 1)
                     
@@ -592,7 +599,10 @@ class MainFrame(wx.Frame):
                                       warning=GUIText.SIZE_WARNING_MSG,
                                       freeze=True)
             self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG)
-            
+
+            self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_FILE + str(self.save_path))
+            logger.info("saving file: %s", self.save_path)
+
             self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_NOTES)
             notes_text = self.notes_notebook.Save()
 
@@ -939,7 +949,7 @@ def Main():
     with multiprocessing.get_context("spawn").Pool(processes=pool_num) as pool:
         #start up the GUI
         app = RootApp.RootApp()
-        MainFrame(None, -1, GUIText.APP_NAME,
+        MainFrame(None, -1, GUIText.APP_NAME+" - "+GUIText.UNSAVED,
                   style=wx.DEFAULT_FRAME_STYLE, pool=pool)
         #start up the main loop
         app.MainLoop()

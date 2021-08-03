@@ -681,7 +681,7 @@ class RulesPanel(wx.Panel):
         package_list[2] = GUIText.FILTERS_LEMMATIZER + package_list[2]
 
         #Label for area
-        label_box = wx.StaticBox(self, label=GUIText.FILTERS_RULES)
+        label_box = wx.StaticBox(self, label=GUIText.FILTERS_RULES_LIST)
         label_font = wx.Font(Constants.LABEL_SIZE, Constants.LABEL_FAMILY, Constants.LABEL_STYLE, Constants.LABEL_WEIGHT, underline=Constants.LABEL_UNDERLINE)
         label_box.SetFont(label_font)
         
