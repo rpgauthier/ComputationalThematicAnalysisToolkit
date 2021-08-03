@@ -102,6 +102,22 @@ class LoadThread(Thread):
         # also make the GUI thread responsible for calling this
         self.start()
 
+    def UpgradeDataset(self, dataset):
+        if hasattr(dataset, "_metadata_fields_list"):
+            dataset.metadata_fields = {}
+            for field_name, field_info in dataset._metadata_fields_list:
+                new_field = Datasets.Field(dataset,
+                                        field_name,
+                                        dataset,
+                                        field_info['desc'],
+                                        field_info['type'])
+                dataset.metadata_fields[field_name] = new_field
+
+            del dataset._metadata_fields_list
+        
+        if hasattr(dataset, "_metadata"):
+            del dataset._metadata
+
     def run(self):
         logger = logging.getLogger(__name__+".LoadThread.run")
         logger.info("Starting")
@@ -123,6 +139,7 @@ class LoadThread(Thread):
                     if os.path.isfile(self.current_workspace_path+"/Datasets/"+dataset_filename):
                         with open(self.current_workspace_path+"/Datasets/"+dataset_filename, 'rb') as infile:
                             result['datasets'][key] = pickle.load(infile)
+                            self.UpgradeDataset(result['datasets'][key])
 
             result['samples'] = {}
             if 'samples' in result['config']:

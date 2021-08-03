@@ -153,7 +153,6 @@ class RetrieveRedditDatasetThread(Thread):
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list)
-                DatasetsUtilities.CreateDatasetObjectsMetadata(dataset)
                 DatasetsUtilities.TokenizeDatasetObjects([dataset], self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -357,7 +356,6 @@ class RetrieveTwitterDatasetThread(Thread):
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list)
-                DatasetsUtilities.CreateDatasetObjectsMetadata(dataset)
                 DatasetsUtilities.TokenizeDatasetObjects([dataset], self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -549,7 +547,6 @@ class RetrieveCSVDatasetThread(Thread):
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list)
-                DatasetsUtilities.CreateDatasetObjectsMetadata(dataset)
                 DatasetsUtilities.TokenizeDatasetObjects([dataset], self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -604,7 +601,6 @@ class RetrieveCSVDatasetThread(Thread):
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 for new_dataset_key in data:
                     datasets[new_dataset_key] = DatasetsUtilities.CreateDataset(new_dataset_key, retrieval_details, data[new_dataset_key], self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list)
-                    DatasetsUtilities.CreateDatasetObjectsMetadata(datasets[new_dataset_key])
                     DatasetsUtilities.TokenizeDatasetObjects([datasets[new_dataset_key]], self._notify_window, self.main_frame)
             else:
                 status_flag = False

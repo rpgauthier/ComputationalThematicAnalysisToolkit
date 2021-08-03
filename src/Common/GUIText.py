@@ -91,6 +91,7 @@ class Common:
 
 class Main(Common):
     APP_NAME = "Computational Thematic Analysis Toolkit"
+    UNSAVED = "Unsaved Workspace"
 
     NEW_WARNING = "Are you sure you wnat to proceed with creating a new workspace?"\
                   "\nAny unsaved changes will be lost."
@@ -109,12 +110,14 @@ class Main(Common):
 
     LOAD_BUSY_LABEL = "Loading Workspace"
     LOAD_BUSY_MSG = "Please Wait while data is loaded.\n"
+    LOAD_BUSY_MSG_FILE = "Loading File: "
     LOAD_BUSY_MSG_DATASET = "Loading Dataset: "
     LOAD_BUSY_MSG_SAMPLE = "Loading Sample: "
     LOAD_BUSY_MSG_CONFIG = "Loading Configurations."
 
     SAVE_BUSY_LABEL = "Saving Workspace"
     SAVE_BUSY_MSG = "Please Wait while data is saved.\n"
+    SAVE_BUSY_MSG_FILE = "Saving File: "
     SAVE_BUSY_MSG_NOTES = "Saving Notes to text."
     SAVE_BUSY_MSG_CONFIG = "Saving Configurations."
     SAVE_BUSY_MSG_DATASETS = "Saving Dataset: "
@@ -582,16 +585,15 @@ class Filtering(Main, Datasets):
     FILTERS_ENTRIES_TREEMAP1 = "Top "
     FILTERS_ENTRIES_TREEMAP2 = " Entries (as per # of Words)"
     FILTERS_ENTRIES_TREEMAP_LABEL = "Entries Treemap"
-    FILTERS_INCLUDED = "Included "
-    FILTERS_INCLUDED_LIST = FILTERS_INCLUDED + FILTERS_ENTRIES_LIST
-    FILTERS_REMOVED = "Removed "
-    FILTERS_REMOVED_LIST = FILTERS_REMOVED + FILTERS_ENTRIES_LIST
+    FILTERS_INCLUDED_LIST = "Included List"
+    FILTERS_REMOVED_LIST = "Removed List"
     FILTERS_TOKENIZER = "Tokenizer:"
     FILTERS_METHOD = "Method:"
     FILTERS_RAWTOKENS = "Raw Tokens"
     FILTERS_STEMMER = "Stemmer: "
     FILTERS_LEMMATIZER = "Lemmatizer: "
     FILTERS_RULES = "Rules"
+    FILTERS_RULES_LIST = "Rules List"
     FILTERS_RULES_STEP = "Sequence"
     FILTERS_RULES_ACTION = "Action"
     FILTERS_RULE_REMOVE_TOOLTIP = "Selected rules will be removed"
@@ -643,7 +645,7 @@ class Filtering(Main, Datasets):
     FILTERS_DISPLAY_BUSY_LABEL = "Displaying Filter for Dataset: "
     FILTERS_DISPLAY_BUSY_MSG = "Displaying Filter for Dataset: "
 
-    IMPACT_LABEL = "Impact on Dataset"
+    IMPACT_LABEL = "Impact"
 
 
     LOAD_BUSY_MSG_CONFIG = "Loading Data Cleaning & Filtering Configurations"

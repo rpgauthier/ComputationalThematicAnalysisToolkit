@@ -18,8 +18,6 @@ class Dataset(GenericObject):
         self._dataset_type = dataset_type
         self._retrieval_details = retrieval_details
         self._data = {}
-        self._metadata = {}
-        self._metadata_fields_list = []
         self._language = "eng-sm"
         self._tokenization_choice = 0
         self._tokenization_package_versions = None
@@ -40,6 +38,7 @@ class Dataset(GenericObject):
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, (Constants.FILTER_TFIDF_REMOVE, Constants.FILTER_TFIDF_LOWER, 0.25)))
 
         #objects that have their own last_changed_dt and thus need to be checked dynamically
+        self.metadata_fields = []
         self.avaliable_fields = {}
         self.chosen_fields = {}
         self.selected_documents = []
@@ -80,22 +79,6 @@ class Dataset(GenericObject):
     @data.setter
     def data(self, value):
         self._data = value
-        self.last_changed_dt = datetime.now()
-    
-    @property
-    def metadata(self):
-        return self._metadata
-    @metadata.setter
-    def metadata(self, value):
-        self._metadata = value
-        self.last_changed_dt = datetime.now()
-
-    @property
-    def metadata_fields_list(self):
-        return self._metadata_fields_list
-    @metadata_fields_list.setter
-    def metadata_fields_list(self, value):
-        self._metadata_fields_list = value
         self.last_changed_dt = datetime.now()
 
     @property
@@ -223,7 +206,7 @@ class Dataset(GenericObject):
         self._last_changed_dt = datetime.now()
 
     def SetupDocument(self, key):
-        if key in self._metadata:
+        if key in self._data:
             if key not in self.documents:
                 self.documents[key] = Document(self, key)
             return self.documents[key]
@@ -324,12 +307,12 @@ class Document(GenericObject):
             self._url = ''
         
         #dictionary that is managed with setters
-        self.data_dict = {}
+        #self.data_dict = {}
         self.sample_connections = []
 
         #objects that have their own last_changed_dt and thus need to be checked dynamically
 
-        self.SetDocumentFields()
+        #self.SetDocumentFields()
         logger.info("Finished")
 
     def __repr__(self):
@@ -351,11 +334,11 @@ class Document(GenericObject):
             self.parent.last_changed_dt = datetime.now()
             self.parent = None
 
-    def SetDocumentFields(self):
-        for field_key in self.parent.chosen_fields:
-            if field_key in self.parent.data[self.key]:
-                self.data_dict[field_key] = self.parent.data[self.key][field_key]
-        self.last_changed_dt = datetime.now()
+    #def SetDocumentFields(self):
+    #    for field_key in self.parent.chosen_fields:
+    #        if field_key in self.parent.data[self.key]:
+    #            self.data_dict[field_key] = self.parent.data[self.key][field_key]
+    #    self.last_changed_dt = datetime.now()
 
     def AddSampleConnections(self, obj):
         obj_module = getattr(obj, '__module__', None)

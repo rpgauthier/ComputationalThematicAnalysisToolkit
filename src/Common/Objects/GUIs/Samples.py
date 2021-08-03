@@ -6,6 +6,7 @@ import pandas as pd
 
 import wx
 import wx.adv
+import wx.dataview as dv
 #import wx.lib.agw.flatnotebook as FNB
 import External.wxPython.flatnotebook_fix as FNB
 
@@ -741,6 +742,7 @@ class TopicSamplePanel(AbstractSamplePanel):
                             row.append((node.key, doc_topic_prob,))
             self.topiclist_panel.topic_list_model.Cleared()
             self.topiclist_panel.topic_list_ctrl.Expander(None)
+            self.topiclist_panel.topic_list_ctrl.UnselectAll()
             self.ChangeSelections()
             #self.visualization_panel.Refresh(self.selected_parts)
             self.DrawLDAPlot(self.selected_parts)
@@ -795,6 +797,7 @@ class TopicSamplePanel(AbstractSamplePanel):
                             row.append((node.key, doc_topic_prob,))
             self.topiclist_panel.topic_list_model.Cleared()
             self.topiclist_panel.topic_list_ctrl.Expander(None)
+            self.topiclist_panel.topic_list_ctrl.UnselectAll()
             self.ChangeSelections()
             #self.visualization_panel.Refresh(self.selected_parts)
             self.DrawLDAPlot(self.selected_parts)
@@ -924,7 +927,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnRemoveTopics, self.topiclist_panel.remove_topics_tool)
         self.topiclist_panel.topic_list_num.Bind(wx.EVT_SPINCTRL, self.OnChangeTopicWordNum)
         #turned off for performance reasons
-        #self.topiclist_panel.topic_list_ctrl.Bind(dv.EVT_DATAVIEW_SELECTION_CHANGED, self.OnTopicsSelected)
+        self.topiclist_panel.topic_list_ctrl.Bind(dv.EVT_DATAVIEW_SELECTION_CHANGED, self.OnTopicsSelected)
         #self.topiclist_panel.cutoff_slider.Bind(wx.EVT_SLIDER, self.OnChangeCutoff)
         self.topiclist_panel.cutoff_spin.Bind(wx.EVT_SPINCTRLDOUBLE, self.OnChangeCutoff)
 
@@ -940,9 +943,9 @@ class TopicSamplePanel(AbstractSamplePanel):
 
         self.sizer.Add(self.vertical_splitter, 1, wx.EXPAND, 5)
 
-        self.ChangeSelections()
         self.topiclist_panel.topic_list_model.Cleared()
         self.topiclist_panel.topic_list_ctrl.Expander(None)
+        self.ChangeSelections()
         #self.visualization_panel.Refresh(self.selected_parts)
         self.DrawLDAPlot(self.selected_parts)
         self.parts_panel.ChangeSelectedParts(self.selected_parts)
@@ -955,17 +958,17 @@ class TopicSamplePanel(AbstractSamplePanel):
     def ChangeSelections(self):
         selections = self.topiclist_panel.topic_list_ctrl.GetSelections()
         self.selected_parts = {}
-        if len(selections) > 0:
-            if len(selections) == 1:
-                for item in selections:
-                    part = self.topiclist_panel.topic_list_model.ItemToObject(item)
-                    if isinstance(part, Samples.TopicMergedPart):
-                        for part_key in part.parts_dict:
-                            self.selected_parts[part_key] = part.parts_dict[part_key]
-                    else:
-                        self.selected_parts[part.key] = part
-            else:
-                for item in selections:
+        if len(selections) == 1:
+            for item in selections:
+                part = self.topiclist_panel.topic_list_model.ItemToObject(item)
+                if isinstance(part, Samples.TopicMergedPart):
+                    for part_key in part.parts_dict:
+                        self.selected_parts[part_key] = part.parts_dict[part_key]
+                else:
+                    for key in self.sample.parts_dict:
+                        self.selected_parts[key] = self.sample.parts_dict[key]
+        elif len(selections) > 1:
+            for item in selections:
                     part = self.topiclist_panel.topic_list_model.ItemToObject(item)
                     self.selected_parts[part.key] = part
         else:

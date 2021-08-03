@@ -31,14 +31,14 @@ class PartsViewModel(dv.PyDataViewModel):
         self.UpdateColumnNames()
     
     def UpdateColumnNames(self):
-        if hasattr(self.dataset, 'metadata_fields_list'):
-            if len(self.dataset.metadata_fields_list) == 0:
+        if hasattr(self.dataset, 'metadata_fields'):
+            if len(self.dataset.metadata_fields) == 0:
                 self.metadata_column_names.append('id')
                 self.metadata_column_types.append('string')
             else:
-                for field_name, field_info in self.dataset.metadata_fields_list:
+                for field_name in self.dataset.metadata_fields:
                     self.metadata_column_names.append(field_name)
-                    self.metadata_column_types.append(field_info['type'])
+                    self.metadata_column_types.append(self.dataset.metadata_fields[field_name].fieldtype)
         else:
             if self.dataset.dataset_source == "Reddit":
                 self.metadata_column_names.append('url')

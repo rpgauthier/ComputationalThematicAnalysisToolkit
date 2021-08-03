@@ -207,7 +207,7 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
         
         self.GetColNames()
 
-        if not hasattr(self.dataset, 'metadata_fields_list'):
+        if not hasattr(self.dataset, 'metadata_fields'):
             self.data_df['created_utc']= pd.to_datetime(self.data_df['created_utc'], unit='s', utc=True).dt.strftime(Constants.DATETIME_FORMAT)
         else:
             for col_num in range(0, len(self.metadata_column_names)):
@@ -223,7 +223,7 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
         self.data_column_names = []
         self.data_col_types = []
 
-        if not hasattr(self.dataset, 'metadata_fields_list'):
+        if not hasattr(self.dataset, 'metadata_fields'):
             #CODE for datasets created before metadata enhancements
             if self.dataset.dataset_source != 'CSV':
                 self.data_column_names.append(("", "url"))
@@ -235,9 +235,9 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
             self.data_col_types.append("UTC-timestamp")
         else:
             #CODE for datasets created after metadata enhancements
-            for field in self.dataset.metadata_fields_list:
-                self.metadata_column_names.append(field[0])
-                self.metadata_col_types.append(field[1]['type'])
+            for field_name in self.dataset.metadata_fields:
+                self.metadata_column_names.append(field_name)
+                self.metadata_col_types.append(self.dataset.metadata_fields[field_name].fieldtype)
     
         #CODE to collect approriate fields based on what has been chosen to be included and/or merged
         for field_name in self.dataset.chosen_fields:
@@ -529,7 +529,7 @@ class DatasetsDataGrid(wx.grid.Grid):
 
     def Search(self, value):
         self.gridtable.data_df = pd.DataFrame(self.gridtable.dataset.data.values())
-        if not hasattr(self.dataset, 'metadata_fields_list'):
+        if not hasattr(self.dataset, 'metadata_fields'):
             self.data_df['created_utc']= pd.to_datetime(self.gridtable.data_df['created_utc'], unit='s', utc=True).dt.strftime(Constants.DATETIME_FORMAT)
         else:
             for col_num in range(0, len(self.gridtable.metadata_column_names)):

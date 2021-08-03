@@ -16,9 +16,15 @@ def CreateDataset(dataset_key, retrieval_details, data, avaliable_fields_list, m
                                dataset_key[1],
                                dataset_key[2],
                                retrieval_details)
-    dataset.metadata_fields_list = metadata_fields_list
     dataset.data = data
     
+    for field_name, field_info in metadata_fields_list:
+        new_field = Datasets.Field(dataset,
+                                   field_name,
+                                   dataset,
+                                   field_info['desc'],
+                                   field_info['type'])
+        dataset.metadata_fields[field_name] = new_field
     for field_name, field_info in avaliable_fields_list:
         new_field = Datasets.Field(dataset,
                                    field_name,
@@ -34,27 +40,6 @@ def CreateDataset(dataset_key, retrieval_details, data, avaliable_fields_list, m
                                    field_info['type'])
         dataset.chosen_fields[field_name] = new_field
     return dataset
-
-def CreateDatasetObjectsMetadata(dataset):
-    id_keys = ["data_source", "data_type", "id"]
-    metadata = {}
-    for data_row in dataset.data.values():
-        data_id = []
-        for key in id_keys:
-            data_id.append(data_row[key])
-        metadata[tuple(data_id)] = {}
-        metadata[tuple(data_id)]['dataset'] = dataset.key
-        if hasattr(dataset, 'metadata_fields_list'):
-            for field in dataset.metadata_fields_list:
-                metadata[tuple(data_id)][field[0]] = data_row[field[0]]
-        else:    
-            url = data_row["url"]
-            if url != '':
-                metadata[tuple(data_id)]["url"] = url
-            else:
-                metadata[tuple(data_id)]["id"] = data_row['id']
-            metadata[tuple(data_id)]["created_utc"] = data_row['created_utc']
-    dataset.metadata = metadata
 
 def TokenizeDatasetObjects(dataset_objects, notify_window, main_frame):
     logger = logging.getLogger(__name__+".TokenizeDatasetObjects")
