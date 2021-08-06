@@ -13,6 +13,7 @@ import Common.Notes as Notes
 import Common.Objects.Datasets as Datasets
 import Common.Objects.Threads.Datasets as DatasetsThreads
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
+import Collection.SubModuleFields as SubModuleFields
 
 class DataNotebook(FNB.FlatNotebook):
     def __init__(self, parent, grouped_dataset=None, size=wx.DefaultSize):
@@ -163,7 +164,7 @@ class DatasetDetailsDialog(wx.Dialog):
                     main_frame.PulseProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_PREPARING_MSG)
                     node.language = Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]
                     main_frame.multiprocessing_inprogress_flag = True
-                    self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, [node])
+                    self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, node)
                     tokenizing_flag = True
         finally:
             if not tokenizing_flag:
@@ -287,9 +288,6 @@ class DatasetPanel(wx.Panel):
             details_sizer2.Add(end_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer2.AddSpacer(10)
 
-        #TODO add metadata field details
-        #TODO add chosen field details
-
         retrieved_date_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": "
                                              + dataset.created_dt.strftime("%Y-%m-%d, %H:%M:%S"))
         details_sizer2.Add(retrieved_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
@@ -304,8 +302,32 @@ class DatasetPanel(wx.Panel):
                 query_label = wx.StaticText(self, label=GUIText.QUERY + ": " + dataset.retrieval_details['query'])
                 details_sizer2.Add(query_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
 
+        customizemetdata_ctrl = wx.Button(self, label=GUIText.CUSTOMIZE_METADATAFIELDS)
+        customizemetdata_ctrl.Bind(wx.EVT_BUTTON, self.OnCustomizeMetadataFields)
+        details_sizer1.Add(customizemetdata_ctrl, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        details_sizer1.AddSpacer(10)
+        
+        customizeincluded_ctrl = wx.Button(self, label=GUIText.CUSTOMIZE_INCLUDEDFIELDS)
+        customizeincluded_ctrl.Bind(wx.EVT_BUTTON, self.OnCustomizeIncludedFields)
+        details_sizer1.Add(customizeincluded_ctrl, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        details_sizer1.AddSpacer(10)
+
         self.SetSizer(self.sizer)
         self.Layout()
+
+    def OnCustomizeMetadataFields(self, event):
+        logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeMetadataFields")
+        logger.info("Starting")
+        main_frame = wx.GetApp().GetTopWindow()
+        SubModuleFields.FieldsDialog(main_frame, str(self.dataset.key)+" "+GUIText.CUSTOMIZE_METADATAFIELDS, self.dataset, self.dataset.metadata_fields).Show()
+        logger.info("Finished")
+
+    def OnCustomizeIncludedFields(self, event):
+        logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeIncludedFields")
+        logger.info("Starting")
+        main_frame = wx.GetApp().GetTopWindow()
+        SubModuleFields.FieldsDialog(main_frame, str(self.dataset.key)+" "+GUIText.CUSTOMIZE_INCLUDEDFIELDS, self.dataset, self.dataset.chosen_fields).Show()
+        logger.info("Finished")
 
     def OnChangeDatasetKey(self, event):
         logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnChangeDatasetKey")
@@ -358,7 +380,7 @@ class DatasetPanel(wx.Panel):
             main_frame.PulseProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_PREPARING_MSG)
             node.language = Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]
             main_frame.multiprocessing_inprogress_flag = True
-            self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, [node])
+            self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, node)
         logger.info("Finished")
 
 class DatasetDataPanel(wx.Panel):

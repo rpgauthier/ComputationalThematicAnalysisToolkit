@@ -553,9 +553,9 @@ class DatasetsDataGrid(wx.grid.Grid):
 #   3. Field:    string
 #   4. Description: string   
 class AvaliableFieldsViewModel(dv.PyDataViewModel):
-    def __init__(self, data):
+    def __init__(self, dataset):
         dv.PyDataViewModel.__init__(self)
-        self.data = data
+        self.dataset = dataset
         self.UseWeakRefs(True)
 
     def GetColumnCount(self):
@@ -567,16 +567,9 @@ class AvaliableFieldsViewModel(dv.PyDataViewModel):
         # item, so we'll use the genre objects as its children and they will
         # end up being the collection of visible roots in our tree.
         if not parent:
-            for dataset in self.data:
-                children.append(self.ObjectToItem(dataset))
-            return len(self.data)
-        # Otherwise we'll fetch the python object associated with the parent
-        # item and make DV items for each of it's child objects.
-        node = self.ItemToObject(parent)
-        if isinstance(node, Datasets.Dataset):
-            for field_name in node.avaliable_fields:
-                children.append(self.ObjectToItem(node.avaliable_fields[field_name]))
-            return len(node.avaliable_fields)
+            for field_name in self.dataset.avaliable_fields:
+                children.append(self.ObjectToItem(self.dataset.avaliable_fields[field_name]))
+            return len(children)
         return 0
 
     def IsContainer(self, item):
@@ -585,41 +578,26 @@ class AvaliableFieldsViewModel(dv.PyDataViewModel):
         if not item:
             return True
         # Any node that has a list of lower nodes
-        node = self.ItemToObject(item)
-        if isinstance(node, Datasets.Dataset):
-            return True
-        # but everything elseare not
+        # everything else is not
         return False
     
     def HasContainerColumns(self, item):
         if not item:
             return False
         node = self.ItemToObject(item)
-        if isinstance(node, Datasets.Dataset):
-            return True
         return False
 
     def GetParent(self, item):
         if not item:
             return dv.NullDataViewItem
         node = self.ItemToObject(item)
-        if node.parent == None:
+        if isinstance(node, Datasets.Field):
             return dv.NullDataViewItem
-        else:
-            return self.ObjectToItem(node.parent)
 
     def GetValue(self, item, col):
         ''''Fetch the data object for this item's column.'''
         node = self.ItemToObject(item)
-        if isinstance(node, Datasets.Dataset):
-            mapper = { 0 : node.name,
-                       1 : node.dataset_source,
-                       2 : node.dataset_type,
-                       3 : "",
-                       4 : ""
-                       }
-            return mapper[col]
-        elif isinstance(node, Datasets.Field):
+        if isinstance(node, Datasets.Field):
             mapper = { 0 : node.parent.name,
                        1 : node.parent.dataset_source,
                        2 : node.parent.dataset_type,
@@ -640,9 +618,9 @@ class AvaliableFieldsViewModel(dv.PyDataViewModel):
 #   3. Field:    string
 #   4. Description: string
 class ChosenFieldsViewModel(dv.PyDataViewModel):
-    def __init__(self, data):
+    def __init__(self, fields):
         dv.PyDataViewModel.__init__(self)
-        self.data = data
+        self.fields = fields
         self.UseWeakRefs(True)
 
     def GetColumnCount(self):
@@ -654,15 +632,8 @@ class ChosenFieldsViewModel(dv.PyDataViewModel):
         # item, so we'll use the genre objects as its children and they will
         # end up being the collection of visible roots in our tree.
         if not parent:
-            for dataset in self.data:
-                children.append(self.ObjectToItem(dataset))
-            return len(self.data)
-        # Otherwise we'll fetch the python object associated with the parent
-        # item and make DV items for each of it's child objects.
-        node = self.ItemToObject(parent)
-        if isinstance(node, Datasets.Dataset):
-            for field in node.chosen_fields:
-                children.append(self.ObjectToItem(node.chosen_fields[field]))
+            for field in self.fields:
+                children.append(self.ObjectToItem(self.fields[field]))
             return len(children)
         return 0
 
@@ -672,41 +643,26 @@ class ChosenFieldsViewModel(dv.PyDataViewModel):
         if not item:
             return True
         # Any node that has a list of lower nodes
-        node = self.ItemToObject(item)
-        if isinstance(node, Datasets.Dataset):
-            return True
-        # but everything elseare not
+        # but everything else is not
         return False
     
     def HasContainerColumns(self, item):
         if not item:
             return False
         node = self.ItemToObject(item)
-        if isinstance(node, Datasets.Dataset):
-            return True
         return False
 
     def GetParent(self, item):
         if not item:
             return dv.NullDataViewItem
         node = self.ItemToObject(item)
-        if node.parent == None:
+        if isinstance(node, Datasets.Field):
             return dv.NullDataViewItem
-        else:
-            return self.ObjectToItem(node.parent)
 
     def GetValue(self, item, col):
         ''''Fetch the data object for this item's column.'''
         node = self.ItemToObject(item)
-        if isinstance(node, Datasets.Dataset):
-            mapper = { 0 : node.name,
-                       1 : node.dataset_source,
-                       2 : node.dataset_type,
-                       3 : "",
-                       4 : ""
-                       }
-            return mapper[col]
-        elif isinstance(node, Datasets.Field):
+        if isinstance(node, Datasets.Field):
             mapper = { 0 : node.dataset.name,
                        1 : node.dataset.dataset_source,
                        2 : node.dataset.dataset_type,
