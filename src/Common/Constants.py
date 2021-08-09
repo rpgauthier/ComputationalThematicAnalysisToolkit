@@ -419,4 +419,24 @@ avaliable_fields = {
             'metadata_default': False,
             },
         },
+    ('CSV', 'documents',): {
+        'id': {
+            'desc': "unique id of the row's data",
+            'type': 'string',
+            'included_default': False,
+            'metadata_default': True,
+            },
+        'url': {
+            'desc': "a url link to the original source of the row's data",
+            'type': 'url',
+            'included_default': False,
+            'metadata_default': False,
+            },
+        'created_utc': {
+            'desc': "The UTC time stamp of when the row's data was created",
+            'type': 'UTC-timestamp',
+            'included_default': False,
+            'metadata_default': False,
+            },
+        }
     }
