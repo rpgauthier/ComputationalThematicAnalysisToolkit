@@ -805,6 +805,7 @@ class TopicSamplePanel(AbstractSamplePanel):
             
         logger.info("Finished")
 
+    # TODO: recalculate number of unknown documents when a topic is removed
     def OnRemoveTopics(self, event):
         logger = logging.getLogger(__name__+"TopicSamplePanel["+str(self.sample.key)+"].OnRemoveTopics")
         logger.info("Starting")
