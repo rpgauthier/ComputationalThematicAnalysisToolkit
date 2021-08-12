@@ -13,19 +13,19 @@ import Common.Objects.DataViews.Datasets as DatasetsDataViews
 import Common.Objects.Threads.Datasets as DatasetsThreads
 
 class FieldsDialog(wx.Dialog):
-    def __init__(self, parent, dataset, size=wx.DefaultSize):
+    def __init__(self, parent, title, dataset, fields, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".FieldsDialog["+str(dataset.key)+"].__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=str(dataset.key)+" "+GUIText.FIELDS_LABEL, size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
+        wx.Dialog.__init__(self, parent, title=title, size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
         sizer = wx.BoxSizer()
 
-        self.fields_panel = FieldsPanel(self, dataset, size=self.GetSize())
+        self.fields_panel = FieldsPanel(self, dataset, fields, size=self.GetSize())
         sizer.Add(self.fields_panel, 1, wx.EXPAND)
         self.SetSizer(sizer)
         logger.info("Finished")
 
 class FieldsPanel(wx.Panel):
-    def __init__(self, parent, dataset, size=wx.DefaultSize):
+    def __init__(self, parent, dataset, fields, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".FieldsNotebook.__init__")
         logger.info("Starting")
         wx.Panel.__init__(self, parent, size=size)
@@ -33,6 +33,7 @@ class FieldsPanel(wx.Panel):
         splitter = wx.SplitterWindow(self)
 
         self.dataset = dataset
+        self.fields = fields
         self.tokenization_thread = None
 
         avaliable_panel = wx.lib.scrolledpanel.ScrolledPanel(splitter)
@@ -45,7 +46,7 @@ class FieldsPanel(wx.Panel):
         avaliable_toolbar.Realize()
         avaliable_sizer.Add(avaliable_toolbar, proportion=0, flag=wx.ALL, border=5)
 
-        self.avaliable_fields_model = DatasetsDataViews.AvaliableFieldsViewModel([dataset])
+        self.avaliable_fields_model = DatasetsDataViews.AvaliableFieldsViewModel(dataset)
         self.avaliable_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(avaliable_panel, self.avaliable_fields_model)
         avaliable_sizer.Add(self.avaliable_fields_ctrl, proportion=1, flag=wx.EXPAND, border=5)
         avaliable_panel.SetSizer(avaliable_sizer)
@@ -59,7 +60,7 @@ class FieldsPanel(wx.Panel):
         chosen_toolbar.Bind(wx.EVT_MENU, self.OnRemoveFields, remove_tool)
         chosen_toolbar.Realize()
         chosen_sizer.Add(chosen_toolbar, proportion=0, flag=wx.ALL, border=5)
-        self.chosen_fields_model = DatasetsDataViews.ChosenFieldsViewModel([dataset])
+        self.chosen_fields_model = DatasetsDataViews.ChosenFieldsViewModel(fields)
         self.chosen_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(chosen_panel, self.chosen_fields_model)
         chosen_sizer.Add(self.chosen_fields_ctrl, proportion=1, flag=wx.EXPAND, border=5)
         chosen_panel.SetSizer(chosen_sizer)
@@ -85,21 +86,14 @@ class FieldsPanel(wx.Panel):
 
         def FieldAdder(field):
             add_flag = True
-            for chosen_field_name in field.parent.chosen_fields:
-                if field.key == chosen_field_name :
-                    wx.MessageBox(GUIText.FIELDS_EXISTS_ERROR+str(node.key),
-                                  GUIText.WARNING, wx.OK | wx.ICON_WARNING)
-                    add_flag = False
-                    break
-            if add_flag:
+            if field.key in self.fields :
+                wx.MessageBox(GUIText.FIELDS_EXISTS_ERROR+str(node.key),
+                              GUIText.WARNING, wx.OK | wx.ICON_WARNING)
+            elif add_flag:
                 new_field = copy.copy(field)
-                field.parent.chosen_fields[new_field.key] = (new_field)
+                self.fields[new_field.key] = new_field
                 nonlocal tokenize_fields
                 tokenize_fields.append(new_field)
-
-        def DatasetAdder(dataset):
-            for field in dataset.avaliable_fields:
-                FieldAdder(field)
 
         main_frame = wx.GetApp().GetTopWindow()
         if main_frame.multiprocessing_inprogress_flag:
@@ -115,11 +109,9 @@ class FieldsPanel(wx.Panel):
             main_frame.PulseProgressDialog(GUIText.ADDING_FIELDS_BUSY_MSG+str(node.key))
             if isinstance(node, Datasets.Field):
                 FieldAdder(node)
-            if isinstance(node, Datasets.Dataset):
-                DatasetAdder(node)
         if len(tokenize_fields) > 0:
             main_frame.multiprocessing_inprogress_flag = True
-            self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, tokenize_fields)
+            self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, self.dataset)
         else:
             main_frame.CloseProgressDialog(thaw=True)
             self.GetTopLevelParent().Enable()
@@ -132,17 +124,11 @@ class FieldsPanel(wx.Panel):
 
         def FieldRemover(field):
             item = self.chosen_fields_model.ObjectToItem(field)
-            parent_item = self.chosen_fields_model.ObjectToItem(field.parent)
+            parent_item = self.chosen_fields_model.GetParent(item)
             self.chosen_fields_model.ItemDeleted(parent_item, item)
             field.DestroyObject()
             nonlocal performed_flag
             performed_flag = True
-
-        def DatasetRemover(dataset):
-            if wx.MessageBox(GUIText.FIELDS_REMOVE_DATASET_WARNING+str(dataset.key)+"?",
-                             GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
-                for field in list(reversed(dataset.chosen_fields)):
-                    FieldRemover(dataset.chosen_fields[field])
 
         main_frame = self.GetGrandParent().GetTopLevelParent()
         main_frame.CreateProgressDialog(GUIText.REMOVING_FIELDS_BUSY_LABEL,
@@ -155,8 +141,6 @@ class FieldsPanel(wx.Panel):
                 main_frame.PulseProgressDialog(GUIText.REMOVING_FIELDS_BUSY_MSG+str(node.key))
                 if isinstance(node, Datasets.Field):
                     FieldRemover(node)
-                elif isinstance(node, Datasets.Dataset):
-                    DatasetRemover(node)
             if performed_flag:
                 main_frame = self.GetGrandParent().GetTopLevelParent()
                 self.dataset.last_changed_dt = datetime.now()

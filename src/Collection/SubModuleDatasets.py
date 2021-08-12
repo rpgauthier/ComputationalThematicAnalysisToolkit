@@ -77,23 +77,36 @@ class DatasetsListPanel(wx.Panel):
         menu = wx.Menu()
         details_menuitem = menu.Append(wx.ID_ANY, GUIText.VIEW_DETAILS)
         menu.Bind(wx.EVT_MENU, self.OnAccessDetails, details_menuitem)
-        fields_menuitem = menu.Append(wx.ID_ANY, GUIText.CUSTOMIZE_FIELDS)
-        menu.Bind(wx.EVT_MENU, self.OnCustomizeFields, fields_menuitem)
+        metadatafields_menuitem = menu.Append(wx.ID_ANY, GUIText.CUSTOMIZE_METADATAFIELDS)
+        menu.Bind(wx.EVT_MENU, self.OnCustomizeMetadataFields, metadatafields_menuitem)
+        includedfields_menuitem = menu.Append(wx.ID_ANY, GUIText.CUSTOMIZE_INCLUDEDFIELDS)
+        menu.Bind(wx.EVT_MENU, self.OnCustomizeIncludedFields, includedfields_menuitem)
         menu.AppendSeparator()
         copy_menu_item = menu.Append(wx.ID_ANY, GUIText.COPY)
         menu.Bind(wx.EVT_MENU, self.datasets_ctrl.OnCopyItems, copy_menu_item)
         self.PopupMenu(menu)
         logger.info("Finished")
 
-    def OnCustomizeFields(self, event):
-        logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeFields")
+    def OnCustomizeMetadataFields(self, event):
+        logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeMetadataFields")
         logger.info("Starting")
         selections = self.datasets_ctrl.GetSelections()
         for item in selections:
             node = self.datasets_model.ItemToObject(item)
             while node.parent is not None:
                 node = node.parent
-            SubModuleFields.FieldsDialog(self, node).Show()
+            SubModuleFields.FieldsDialog(self, str(node.key)+" "+GUIText.CUSTOMIZE_METADATAFIELDS, node, node.metadata_fields).Show()
+        logger.info("Finished")
+
+    def OnCustomizeIncludedFields(self, event):
+        logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeIncludedFields")
+        logger.info("Starting")
+        selections = self.datasets_ctrl.GetSelections()
+        for item in selections:
+            node = self.datasets_model.ItemToObject(item)
+            while node.parent is not None:
+                node = node.parent
+            SubModuleFields.FieldsDialog(self, str(node.key)+" "+GUIText.CUSTOMIZE_INCLUDEDFIELDS, node, node.chosen_fields).Show()
         logger.info("Finished")
 
     def OnAccessDetails(self, event):

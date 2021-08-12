@@ -41,8 +41,8 @@ def CreateDataset(dataset_key, retrieval_details, data, avaliable_fields_list, m
         dataset.chosen_fields[field_name] = new_field
     return dataset
 
-def TokenizeDatasetObjects(dataset_objects, notify_window, main_frame):
-    logger = logging.getLogger(__name__+".TokenizeDatasetObjects")
+def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
+    logger = logging.getLogger(__name__+".TokenizeDataset")
     logger.info("Starting")
     fields = {}
     results = {}
@@ -89,7 +89,7 @@ def TokenizeDatasetObjects(dataset_objects, notify_window, main_frame):
             count = count+len(data_list)
             
 
-    def FieldTokenizer(field, merged=False):
+    def FieldTokenizer(field):
         id_key_fields = FindDatasetIdFields(field.dataset)
         field_data = {}
         for data in field.dataset.data.values():
@@ -110,21 +110,14 @@ def TokenizeDatasetObjects(dataset_objects, notify_window, main_frame):
                         field_data[id_key].extend(data[field.key])
                 else:
                     field_data[id_key].append("")
-        if not merged:
+        if field.fieldtype == "string":
             TokenizationController(field.dataset.key, field, field_data)
-            return
         else:
-            return field_data
+            field.tokenset = field_data
 
-    def DatasetTokenizer(dataset):
-        for chosen_field_key in dataset.chosen_fields:
+    for chosen_field_key in dataset.chosen_fields:
+        if rerun or dataset.chosen_fields[chosen_field_key].tokenset is None:
             FieldTokenizer(dataset.chosen_fields[chosen_field_key])
-
-    for node in dataset_objects:
-        if isinstance(node, Datasets.Dataset):
-            DatasetTokenizer(node)
-        elif isinstance(node, Datasets.Field):
-            FieldTokenizer(node)
 
     if len(results) > 0:
         for key in results:

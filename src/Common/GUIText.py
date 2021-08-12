@@ -335,6 +335,8 @@ class Datasets(Common):
     COMBINED_INCLUDEDFIELDS = "Combined Included Fields: "
     COMBINED_INCLUDEDFIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the CSV file."\
                                       "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
+    CUSTOMIZE_METADATAFIELDS = "Customize Metadata Fields"
+    CUSTOMIZE_INCLUDEDFIELDS = "Customize Included Fields"
 
 class Samples(Main):
     #Model types
@@ -459,10 +461,10 @@ class Samples(Main):
 class Collection(Main, Datasets):
     ETHICS_CONFIRMATION = "We have considered "
     ETHICS_CONFIRMATION_MISSING_ERROR = "Before proceeding we need to take time to consider "
-    ETHICS_COMMUNITY1 = "the online community's guidlines, rules, and terms of use."
+    ETHICS_COMMUNITY1 = "the online community's guidelines, rules, and terms of use."
     ETHICS_COMMUNITY2 = "the impact of our project on the online community."
-    ETHICS_RESEARCH = "the research community's ethical guidlines and rules on online public data collection."
-    ETHICS_INSTITUTION = "our institution's ethical guidlines and rules on online public data collection."
+    ETHICS_RESEARCH = "the research community's ethical guidelines and rules on online public data collection."
+    ETHICS_INSTITUTION = "our institution's ethical guidelines and rules on online public data collection."
     ETHICS_REDDIT = "Reddit's rules and terms of use for collecting data."
     ETHICS_REDDIT_URL = "https://www.redditinc.com/policies/"
     ETHICS_REDDITAPI_URL = "https://www.reddit.com/wiki/api-terms"

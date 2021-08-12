@@ -38,7 +38,7 @@ class Dataset(GenericObject):
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, (Constants.FILTER_TFIDF_REMOVE, Constants.FILTER_TFIDF_LOWER, 0.25)))
 
         #objects that have their own last_changed_dt and thus need to be checked dynamically
-        self.metadata_fields = []
+        self.metadata_fields = {}
         self.avaliable_fields = {}
         self.chosen_fields = {}
         self.selected_documents = []
@@ -284,12 +284,15 @@ class Field(GenericObject):
     
     def DestroyObject(self):
         #remove self from Dataset
-        if self.key in self.dataset.chosen_fields:
+        if self in self.dataset.chosen_fields.values():
             if self.dataset.chosen_fields[self.key] == self:
                 del self.dataset.chosen_fields[self.key]
-        if self.key in self.dataset.avaliable_fields:
+        if self in self.dataset.avaliable_fields.values():
             if self.dataset.avaliable_fields[self.key] == self:
                 del self.dataset.avaliable_fields[self.key]
+        if self in self.dataset.metadata_fields.values():
+            if self.dataset.metadata_fields[self.key] == self:
+                del self.dataset.metadata_fields[self.key]    
         self.parent = None
         self.dataset = None
 
