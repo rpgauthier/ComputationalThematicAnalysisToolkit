@@ -31,6 +31,7 @@ class Sample(GenericObject):
         self._end_dt = None
         self._selected = False
 
+        self._fields_list = None
         self._applied_filter_rules = None
         self._tokenization_package_versions = None
         self._tokenization_choice = None
@@ -103,6 +104,14 @@ class Sample(GenericObject):
         self.last_changed_dt = datetime.now()
     
     @property
+    def fields_list(self):
+        return self._fields_list
+    @fields_list.setter
+    def fields_list(self, value):
+        self._fields_list = value
+        self.last_changed_dt = datetime.now()
+    
+    @property
     def applied_filter_rules(self):
         return self._applied_filter_rules
     @applied_filter_rules.setter
@@ -172,7 +181,7 @@ class RandomSample(Sample):
         Sample.__init__(self, key, dataset_key, "Random")
 
         #list that is not managed thus need lastchanged_dt to be updated when changed
-        self.metdataset_key_list = list(model_parameters['metadataset'].keys())
+        self.document_keys = model_parameters['document_keys']
 
         logger.info("Finished")
 
@@ -184,10 +193,10 @@ class RandomSample(Sample):
         logger.info("Starting")
         self.start_dt = datetime.now()
         if not self.generated_flag:
-            random.shuffle(self.metdataset_key_list)
+            random.shuffle(self.document_keys)
             self.last_changed_dt = datetime.now()
             self.generated_flag = True
-            self.parts_dict["Randomly Ordered Documents"] = ModelPart(self, "Randomly Ordered Documents", self.metdataset_key_list, datasets)
+            self.parts_dict["Randomly Ordered Documents"] = ModelPart(self, "Randomly Ordered Documents", self.document_keys, datasets)
         self.end_dt = datetime.now()
         logger.info("Finished")
 
@@ -486,8 +495,6 @@ class BitermSample(TopicSample):
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/btm.pk', 'wb') as outfile:
                 pickle.dump(self.model, outfile)
 
-#TODO figure out why samples dont have any documents attached for biterm/NMF when run on grouped documents (might also effect LDASample)
-#TODO check whether samples dont have any documents attached for NMF when run on grouped documents
 class NMFSample(TopicSample):
     def __init__(self, key, dataset_key, model_parameters):
         logger = logging.getLogger(__name__+".NMFSample["+str(key)+"].__init__")
@@ -898,7 +905,7 @@ class NMFTopicPart(TopicPart):
         if len(self.word_list) < value:
             self.word_list.clear()
             if isinstance(self.parent, ModelMergedPart):
-                # TODO: haven't tested that this works when self.parent is a ModelMergedPart
+                #TODO: test that this works when self.parent is a ModelMergedPart
                 components_df = pd.DataFrame(self.parent.parent.model.components_, columns=self.parent.parent.vectorizer.get_feature_names())
                 topic = components_df.iloc[self.key-1]
                 word_prob_list = topic.nlargest(value)

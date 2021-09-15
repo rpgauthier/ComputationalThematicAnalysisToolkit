@@ -39,9 +39,7 @@ class TokenGridTable(wx.grid.GridTableBase):
 
     def GetValue(self, row, col):
         """Return the value of a cell"""
-        if self.col_names[col] == GUIText.FILTERS_TFIDF:
-            return str(round(max(self.token_df.iloc[row][GUIText.FILTERS_TFIDF]), 4)) + " - " + str(round(min(self.token_df.iloc[row][GUIText.FILTERS_TFIDF]), 4))
-        elif self.col_names[col] == GUIText.FILTERS_NUM_WORDS:
+        if self.col_names[col] == GUIText.FILTERS_NUM_WORDS:
             return str(self.token_df.iloc[row][self.col_names[col]]) +" (" +str(self.token_df.iloc[row][GUIText.FILTERS_PER_WORDS])+"%)"
         elif self.col_names[col] == GUIText.FILTERS_NUM_DOCS:
             return str(self.token_df.iloc[row][self.col_names[col]]) +" (" +str(self.token_df.iloc[row][GUIText.FILTERS_PER_DOCS])+"%)"

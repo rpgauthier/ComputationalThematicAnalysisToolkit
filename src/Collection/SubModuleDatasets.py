@@ -10,6 +10,7 @@ import Common.Objects.Datasets as Datasets
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
 import Common.Objects.GUIs.Datasets as DatasetsGUIs
 import Common.CustomEvents as CustomEvents
+import Common.Database as Database
 import Collection.CollectionDialogs as CollectionDialogs
 import Collection.SubModuleFields as SubModuleFields
 
@@ -95,7 +96,11 @@ class DatasetsListPanel(wx.Panel):
             node = self.datasets_model.ItemToObject(item)
             while node.parent is not None:
                 node = node.parent
-            SubModuleFields.FieldsDialog(self, str(node.key)+" "+GUIText.CUSTOMIZE_METADATAFIELDS, node, node.metadata_fields).Show()
+            SubModuleFields.FieldsDialog(parent=self,
+                                         title=str(node.key)+" "+GUIText.CUSTOMIZE_METADATAFIELDS,
+                                         dataset=node,
+                                         fields=node.metadata_fields,
+                                         metadata_fields=True).Show()
         logger.info("Finished")
 
     def OnCustomizeIncludedFields(self, event):
@@ -106,7 +111,10 @@ class DatasetsListPanel(wx.Panel):
             node = self.datasets_model.ItemToObject(item)
             while node.parent is not None:
                 node = node.parent
-            SubModuleFields.FieldsDialog(self, str(node.key)+" "+GUIText.CUSTOMIZE_INCLUDEDFIELDS, node, node.chosen_fields).Show()
+            SubModuleFields.FieldsDialog(parent=self,
+                                         title=str(node.key)+" "+GUIText.CUSTOMIZE_INCLUDEDFIELDS,
+                                         dataset=node,
+                                         fields=node.chosen_fields).Show()
         logger.info("Finished")
 
     def OnAccessDetails(self, event):
@@ -169,6 +177,7 @@ class DatasetsListPanel(wx.Panel):
                         node.name = new_name
                         main_frame.datasets[new_key] = main_frame.datasets[old_key]
                         del main_frame.datasets[old_key]
+                        Database.DatabaseConnection(main_frame.current_workspace.name).UpdateDatasetKey(old_key, new_key)
                         main_frame.DatasetKeyChange(old_key, new_key)
                         main_frame.DatasetsUpdated()
         finally:
@@ -193,30 +202,32 @@ class DatasetsListPanel(wx.Panel):
                                     GUIText.WARNING, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
                         delete_nodes.append(node)
             if len(delete_nodes) > 0:
+                db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
                 for node in delete_nodes:
                     main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_REMOVING_MSG+str(node.key))
                     if node.key in main_frame.datasets:
                         del main_frame.datasets[node.key]
+                    db_conn.DeleteDatasetFromStringTokens(node.key)
                     node.DestroyObject()
-                    #TODO NEED TO UPDATE SAMPLES AND CODES
+                    #TODO need to either:
+                    # 1) update SAMPLES and CODES
+                    # 2) delete associated SAMPLES and CODES when associated dataset has been deleted as they will no longr work correctly
+
                 main_frame.DatasetsUpdated()
         finally:
             main_frame.CloseProgressDialog(thaw=True)
         logger.info("Finished")
 
     def DatasetsUpdated(self):
-        '''loads data specifications into submodule after a retrieval'''
         logger = logging.getLogger(__name__+".DatasetsPanel.DatasetsUpdated")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.PulseProgressDialog(GUIText.UPDATING_DATASET_BUSY_MSG)
         self.datasets_model.Cleared()
         self.datasets_ctrl.Expander(None)
-
         logger.info("Finished")
     
     def DocumentsUpdated(self):
-        '''loads data specifications into submodule after a retrieval'''
         logger = logging.getLogger(__name__+".DatasetsPanel.DocumentsUpdated")
         logger.info("Starting")
         self.datasets_model.Cleared()
@@ -281,6 +292,7 @@ class DatasetDetailsPanel(wx.Panel):
                 main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_REMOVING_MSG+str(self.dataset.key))
                 if self.dataset.parent is None:
                     del main_frame.datasets[self.dataset.key]
+                Database.DatabaseConnection(main_frame.current_workspace.name).DeleteDataset(self.dataset.key)
                 self.dataset.DestroyObject()
                 main_frame.DatasetsUpdated()
         finally:

@@ -653,7 +653,7 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
 #   0. Code:   string
 #   1. References:  int
 #   2. Notes: string
-#TODO need to rejig ViewModel to show dynamic coloumns to be able to easily idetnify documents based ont heir metadata features instead of based on system ids
+#TODO need to rework ViewModel to show dynamic metadata columns instead of just system ids
 class CodeConnectionsViewModel(dv.PyDataViewModel):
     def __init__(self, objs):
         dv.PyDataViewModel.__init__(self)
@@ -787,7 +787,7 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
             raise RuntimeError("unknown node type")
 
 #this view enables displaying of fields for different datasets
-#TODO need to rejig ViewCtrl to handle dynamic coloumns once ViewModel has been rejigged
+#TODO need to rework ViewModel to show dynamic metadata columns instead of just system ids
 class CodeConnectionsViewCtrl(dv.DataViewCtrl):
     def __init__(self, parent, model, style=dv.DV_MULTIPLE|dv.DV_ROW_LINES):
         dv.DataViewCtrl.__init__(self, parent, style=style)
@@ -1160,49 +1160,79 @@ class DocumentViewModel(dv.PyDataViewModel):
                        }
             idx = 0
             for field_name in self.metadata_column_names:
-                value = node.parent.data[node.key][field_name]
-                #TODO rework to handle lists of dates, ints and urls
-                if self.metadata_column_types[idx] == 'url':
-                    segmented_url = value.split("/")
-                    value = "<span color=\"#0645ad\"><u>"+segmented_url[len(segmented_url)-1]+"</u></span>"
-                elif self.metadata_column_types[idx] == 'UTC-timestamp':
-                    value = datetime.utcfromtimestamp(value).strftime(Constants.DATETIME_FORMAT)
-                elif self.metadata_column_types[idx] == 'int':
-                    value = value
-                else:
-                    if isinstance(value, list):
-                        first_entry = ""
-                        for entry in value:
-                            if entry != "":
-                                first_entry = ' '.join(entry.split())
+                if field_name in node.parent.data[node.key]:
+                    value = node.parent.data[node.key][field_name]
+                    if self.metadata_column_types[idx] == 'url':
+                        segmented_url = value.split("/")
+                        value = "<span color=\"#0645ad\"><u>"+segmented_url[len(segmented_url)-1]+"</u></span>"
+                    elif self.metadata_column_types[idx] == 'UTC-timestamp':
+                        if isinstance(value, list):
+                            value_str = ""
+                            for entry in value:
+                                value_str = str(datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT))+"UTC "
                                 break
-                        if len(value) > 1:
-                            first_entry = str(first_entry) + " ..."
-                        value = first_entry
-                    value = str(value).split('\n')[0]
+                            if len(value) > 1:
+                                value = value_str + "..."
+                            else:
+                                value = value_str
+                        else:
+                            value = datetime.utcfromtimestamp(value).strftime(Constants.DATETIME_FORMAT)+"UTC"
+                    elif self.metadata_column_types[idx] == 'int':
+                        if isinstance(value, list):
+                            value = value[0]
+                        else:
+                            value = value
+                    else:
+                        if isinstance(value, list):
+                            first_entry = ""
+                            for entry in value:
+                                if entry != "":
+                                    first_entry = ' '.join(entry.split())
+                                    break
+                            if len(value) > 1:
+                                first_entry = str(first_entry) + " ..."
+                            value = first_entry
+                        value = str(value).split('\n')[0]
+                else:
+                    value = ""
                 mapper[idx] = value
                 idx = idx+1
             for field_name in self.data_column_names:
-                value = node.parent.data[node.key][field_name]
-                #TODO rework to handle lists of dates, ints and urls
-                if self.data_column_types[idx-len(self.metadata_column_types)] == 'url':
-                    segmented_url = value.split("/")
-                    value = "<span color=\"#0645ad\"><u>"+segmented_url[len(segmented_url)-1]+"</u></span>"
-                elif self.data_column_types[idx-len(self.metadata_column_types)] == 'UTC-timestamp':
-                    value = datetime.utcfromtimestamp(value).strftime(Constants.DATETIME_FORMAT)
-                elif self.data_column_types[idx-len(self.metadata_column_types)] == 'int':
-                    value = value
-                else:
-                    if isinstance(value, list):
-                        first_entry = ""
-                        for entry in value:
-                            if entry != "":
-                                first_entry = ' '.join(entry.split())
+                if field_name not in self.metadata_column_names and field_name in node.parent.data[node.key]:
+                    value = node.parent.data[node.key][field_name]
+                    if self.data_column_types[idx-len(self.metadata_column_types)] == 'url':
+                        segmented_url = value.split("/")
+                        value = "<span color=\"#0645ad\"><u>"+segmented_url[len(segmented_url)-1]+"</u></span>"
+                    elif self.data_column_types[idx-len(self.metadata_column_types)] == 'UTC-timestamp':
+                        if isinstance(value, list):
+                            value_str = ""
+                            for entry in value:
+                                value_str = str(datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT))+"UTC "
                                 break
-                        if len(value) > 1:
-                            first_entry = str(first_entry)
-                        value = first_entry
-                    value = str(value).split('. ')[0] + "..."
+                            if len(value) > 1:
+                                value = value_str + "..."
+                            else:
+                                value = value_str
+                        else:
+                            value = datetime.utcfromtimestamp(value).strftime(Constants.DATETIME_FORMAT)+"UTC"
+                    elif self.data_column_types[idx-len(self.metadata_column_types)] == 'int':
+                        if isinstance(value, list):
+                            value = value[0]
+                        else:
+                            value = value
+                    else:
+                        if isinstance(value, list):
+                            first_entry = ""
+                            for entry in value:
+                                if entry != "":
+                                    first_entry = ' '.join(entry.split())
+                                    break
+                            if len(value) > 1:
+                                first_entry = str(first_entry) + " ..."
+                            value = first_entry
+                        value = str(value).split('\n')[0]
+                else:
+                    value = ""
                 mapper[idx] = value
                 idx = idx+1
             return mapper[col]

@@ -150,16 +150,41 @@ class PartsViewModel(dv.PyDataViewModel):
                        len(self.metadata_column_names)+1 : "\U0001F6C8" if node.notes != "" else "", }
             idx = 1
             for field_name in self.metadata_column_names:
-                value = node.parent.data[node.key][field_name]
-                if self.metadata_column_types[idx-1] == 'url':
-                    segmented_url = value.split("/")
-                    value = "<span color=\"#0645ad\"><u>"+segmented_url[len(segmented_url)-1]+"</u></span>"
-                elif self.metadata_column_types[idx-1] == 'UTC-timestamp':
-                    value = datetime.utcfromtimestamp(value).strftime(Constants.DATETIME_FORMAT)
-                elif self.metadata_column_types[idx-1] == 'int':
-                    value = value
+                if field_name in node.parent.data[node.key]:
+                    value = node.parent.data[node.key][field_name]
+                    if self.metadata_column_types[idx-1] == 'url':
+                        segmented_url = value.split("/")
+                        value = "<span color=\"#0645ad\"><u>"+segmented_url[len(segmented_url)-1]+"</u></span>"
+                    elif self.metadata_column_types[idx-1] == 'UTC-timestamp':
+                        if isinstance(value, list):
+                            value_str = ""
+                            for entry in value:
+                                value_str = str(datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT))+"UTC "
+                                break
+                            if len(value) > 1:
+                                value = value_str + "..."
+                            else:
+                                value = value_str
+                        else:
+                            value = datetime.utcfromtimestamp(value).strftime(Constants.DATETIME_FORMAT)+"UTC"
+                    elif self.metadata_column_types[idx-1] == 'int':
+                        if isinstance(value, list):
+                            value = value[0]
+                        else:
+                            value = value
+                    else:
+                        if isinstance(value, list):
+                            first_entry = ""
+                            for entry in value:
+                                if entry != "":
+                                    first_entry = ' '.join(entry.split())
+                                    break
+                            if len(value) > 1:
+                                first_entry = str(first_entry) + " ..."
+                            value = first_entry
+                        value = str(value).split('\n')[0]
                 else:
-                    value = str(value)
+                    value = ""
                 mapper[idx] = value
                 idx = idx+1
             return mapper[col]

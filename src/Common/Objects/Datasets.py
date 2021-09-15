@@ -21,13 +21,12 @@ class Dataset(GenericObject):
         self._language = "eng-sm"
         self._tokenization_choice = 0
         self._tokenization_package_versions = None
-        self._words_df = None
         self._total_docs = 0
         self._total_tokens = 0
-        self._total_unique_tokens = 0
+        self._total_uniquetokens = 0
         self._total_docs_remaining = 0
         self._total_tokens_remaining = 0
-        self._total_unique_tokens_remaining = 0
+        self._total_uniquetokens_remaining = 0
 
         #properties that when modfied need to have changed date manual updated
         self.filter_rules = []
@@ -35,7 +34,7 @@ class Dataset(GenericObject):
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, 'PUNCT', Constants.FILTER_RULE_REMOVE))
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, 'NUM', Constants.FILTER_RULE_REMOVE))
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS))
-        self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, (Constants.FILTER_TFIDF_REMOVE, Constants.FILTER_TFIDF_LOWER, 0.25)))
+        self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, (Constants.FILTER_TFIDF_REMOVE, Constants.FILTER_TFIDF_LOWER, 25.0)))
 
         #objects that have their own last_changed_dt and thus need to be checked dynamically
         self.metadata_fields = {}
@@ -107,14 +106,6 @@ class Dataset(GenericObject):
     @tokenization_package_versions.setter
     def tokenization_package_versions(self, value):
         self._tokenization_package_versions = value
-        self.last_changed_dt = datetime.now()
-    
-    @property
-    def words_df(self):
-        return self._words_df
-    @words_df.setter
-    def words_df(self, value):
-        self._words_df = value
         self.last_changed_dt = datetime.now()
     
     @property

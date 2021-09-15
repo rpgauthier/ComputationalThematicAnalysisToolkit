@@ -19,6 +19,7 @@ import Common.Objects.DataViews.Tokens as TokenDataViews
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
 import Common.CustomEvents as CustomEvents
 from Common.GUIText import Filtering as GUIText
+import Common.Database as Database
 import Filtering.FilteringThreads as FilteringThreads
 
 class FilteringNotebook(FNB.FlatNotebook):
@@ -44,7 +45,7 @@ class FilteringNotebook(FNB.FlatNotebook):
         logger = logging.getLogger(__name__+".FilteringNotebook.RefreshFilters")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
-
+        self.Freeze()
         for filter_key in list(self.filters.keys()):
             if filter_key not in main_frame.datasets:
                 index = self.GetPageIndex(self.filters[filter_key])
@@ -56,13 +57,14 @@ class FilteringNotebook(FNB.FlatNotebook):
         
         for key in main_frame.datasets:
             if key in self.filters:
-                self.filters[key].DataRefreshStart()
+                self.filters[key].ApplyFilterRulesStart()
             else:
                 self.filters[key] = FilterPanel(self, main_frame.datasets[key].name, main_frame.datasets[key], size=self.GetSize())
-                self.filters[key].DataRefreshStart()
+                self.filters[key].ApplyFilterRulesStart()
+                self.filters[key].rules_panel.DisplayFilterRules(main_frame.datasets[key].filter_rules)
                 self.AddPage(self.filters[key], main_frame.datasets[key].name)
                 self.filters[key].actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filters[key].actions_menu, main_frame.datasets[key].name)
-
+        self.Thaw()
         logger.info("Finished")
 
     def Load(self, saved_data):
@@ -71,19 +73,17 @@ class FilteringNotebook(FNB.FlatNotebook):
         main_frame = wx.GetApp().GetTopWindow()
 
         for filter_key in list(self.filters.keys()):
-            if filter_key not in main_frame.datasets:
-                index = self.GetPageIndex(self.filters[filter_key])
-                if index is not wx.NOT_FOUND:
-                    self.RemovePage(index)
-                    self.actions_menu.Remove(self.filters[filter_key].actions_menu_menuitem)
-                self.filters[filter_key].Hide()
-                del self.filters[filter_key]
+            index = self.GetPageIndex(self.filters[filter_key])
+            if index is not wx.NOT_FOUND:
+                self.RemovePage(index)
+                self.actions_menu.Remove(self.filters[filter_key].actions_menu_menuitem)
+            self.filters[filter_key].Hide()
+            del self.filters[filter_key]
         
         for key in main_frame.datasets:
-            if key not in self.filters:
-                self.filters[key] = FilterPanel(self, main_frame.datasets[key].name, main_frame.datasets[key], size=self.GetSize())
-                self.AddPage(self.filters[key], main_frame.datasets[key].name)
-                self.filters[key].actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filters[key].actions_menu, main_frame.datasets[key].name)
+            self.filters[key] = FilterPanel(self, main_frame.datasets[key].name, main_frame.datasets[key], size=self.GetSize())
+            self.AddPage(self.filters[key], main_frame.datasets[key].name)
+            self.filters[key].actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filters[key].actions_menu, main_frame.datasets[key].name)
 
         #load all filter panels
         for filter_key in self.filters:
@@ -107,7 +107,7 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         wx.Panel.__init__(self, parent, size=size)
 
-        #link to find the associated dataset object from the datasets
+        #link to find the associated dataset object from the datasets and the workspace database
         self.name = name
         self.dataset = dataset
         #thread used to generate dataframes for use when display lists
@@ -161,8 +161,7 @@ class FilterPanel(wx.Panel):
         main_frame.Bind(wx.EVT_MENU, self.OnExportFilterRules, exportRemovalSettingsItem)
 
         #event end points for completed threads
-        CustomEvents.CREATE_WORD_DATAFRAME_EVT_RESULT(self, self.OnDataRefreshEnd)
-        CustomEvents.APPLY_FILTER_RULES_EVT_RESULT(self, self.OnUpdateWordListsEnd)
+        CustomEvents.APPLY_FILTER_RULES_EVT_RESULT(self, self.OnApplyFilterRulesEnd)
         logger.info("Finished")
 
     ######
@@ -179,7 +178,7 @@ class FilterPanel(wx.Panel):
                 pos = self.included_words_panel.words_list.GetCellValue(row, 1)
                 self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, pos, Constants.FILTER_RULE_REMOVE))
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.UpdateWordListsStart()
+            self.ApplyFilterRulesStart()
         logger.info("Finished")
 
     def OnReaddEntry(self, event):
@@ -192,7 +191,7 @@ class FilterPanel(wx.Panel):
                 pos = self.removed_words_panel.words_list.GetCellValue(row, 1)
                 self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, pos, Constants.FILTER_RULE_INCLUDE))
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.UpdateWordListsStart()
+            self.ApplyFilterRulesStart()
         logger.info("Finished")
 
     def OnRemoveWord(self, event):
@@ -204,7 +203,7 @@ class FilterPanel(wx.Panel):
                 word = self.included_words_panel.words_list.GetCellValue(row, 0)
                 self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.UpdateWordListsStart()
+            self.ApplyFilterRulesStart()
         logger.info("Finished")
 
     def OnReaddWord(self, event):
@@ -216,7 +215,7 @@ class FilterPanel(wx.Panel):
                 word = self.removed_words_panel.words_list.GetCellValue(row, 0)
                 self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_INCLUDE))
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.UpdateWordListsStart()
+            self.ApplyFilterRulesStart()
         logger.info("Finished")
 
     def OnRemovePOS(self, event):
@@ -228,7 +227,7 @@ class FilterPanel(wx.Panel):
                 pos = self.included_words_panel.words_list.GetCellValue(row, 1)
                 self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, pos, Constants.FILTER_RULE_REMOVE))
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.UpdateWordListsStart()
+            self.ApplyFilterRulesStart()
         logger.info("Finished")
 
     def OnReaddPOS(self, event):
@@ -240,7 +239,7 @@ class FilterPanel(wx.Panel):
                 pos = self.removed_words_panel.words_list.GetCellValue(row, 1)
                 self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, pos, Constants.FILTER_RULE_INCLUDE))
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.UpdateWordListsStart()
+            self.ApplyFilterRulesStart()
         logger.info("Finished")
     
     def OnRemoveSpacyAutoStopword(self, event):
@@ -248,7 +247,7 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS))
         self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-        self.UpdateWordListsStart()
+        self.ApplyFilterRulesStart()
         logger.info("Finished")
     
     def OnCreateCountFilter(self, event):
@@ -263,7 +262,7 @@ class FilterPanel(wx.Panel):
                         create_dialog.number,)
                 self.dataset.AddFilterRule((create_dialog.field, create_dialog.word, create_dialog.pos, rule))
                 self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-                self.UpdateWordListsStart()
+                self.ApplyFilterRulesStart()
         logger.info("Finished")
     
     def OnCreateTfidfFilter(self, event):
@@ -276,7 +275,7 @@ class FilterPanel(wx.Panel):
                         create_dialog.rank,)
                 self.dataset.AddFilterRule((create_dialog.field, create_dialog.word, create_dialog.pos, rule))
                 self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-                self.UpdateWordListsStart()
+                self.ApplyFilterRulesStart()
         logger.info("Finished")
 
 
@@ -292,7 +291,7 @@ class FilterPanel(wx.Panel):
             flag = True
         if flag:
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.UpdateWordListsStart()
+            self.ApplyFilterRulesStart()
         logger.info("Finished")
     
     def OnMoveRuleUp(self, event):
@@ -310,7 +309,7 @@ class FilterPanel(wx.Panel):
                 break
         if flag:
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.UpdateWordListsStart()
+            self.ApplyFilterRulesStart()
         logger.info("Finished")
     
     def OnMoveRuleDown(self, event):
@@ -328,7 +327,7 @@ class FilterPanel(wx.Panel):
                 break
         if flag:
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.UpdateWordListsStart()
+            self.ApplyFilterRulesStart()
         logger.info("Finished")
 
     def OnImportNLTKStopWords(self, event):
@@ -338,7 +337,7 @@ class FilterPanel(wx.Panel):
         for word in nltk_stopwords:
             self.dataset.AddFilterRule((word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
         self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-        self.UpdateWordListsStart()
+        self.ApplyFilterRulesStart()
         logger.info("Finished")
 
     def OnImportSpacyStopWords(self, event):
@@ -348,7 +347,7 @@ class FilterPanel(wx.Panel):
         for word in spacy_stopwords:
             self.dataset.AddFilterRule((word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
         self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-        self.UpdateWordListsStart()
+        self.ApplyFilterRulesStart()
         logger.info("Finished")
  
     def OnImportFilterRules(self, event):
@@ -373,7 +372,7 @@ class FilterPanel(wx.Panel):
                     wx.LogError("Cannot open file '%s'", self.saved_name)
                     logger.error("Failed to open file '%s'", self.saved_name)
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.UpdateWordListsStart()
+            self.ApplyFilterRulesStart()
         logger.info("Finished")
 
     def OnExportFilterRules(self, event):
@@ -399,66 +398,62 @@ class FilterPanel(wx.Panel):
         choice = self.rules_panel.tokenization_choice.GetSelection()
         if choice != self.dataset.tokenization_choice:
             self.dataset.tokenization_choice = choice
-            self.DataRefreshStart()
+            main_frame = wx.GetApp().GetTopWindow()
+            db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
+            if choice == Constants.TOKEN_TEXT_IDX:
+                db_conn.UpdateDatasetTokenType(self.dataset.key, 'text')
+            elif choice == Constants.TOKEN_STEM_IDX:
+                db_conn.UpdateDatasetTokenType(self.dataset.key, 'stem')
+            elif choice == Constants.TOKEN_LEMMA_IDX:
+                db_conn.UpdateDatasetTokenType(self.dataset.key, 'lemma')
+            counts = db_conn.GetStringTokensCounts(self.dataset.key)
+            self.dataset.total_docs = counts['documents']
+            self.dataset.total_tokens = counts['tokens']
+            self.dataset.total_uniquetokens = counts['unique_tokens']
+            self.ApplyFilterRulesStart()
 
     #functions called to complete operation of other functions
-    def DataRefreshStart(self):
-        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].DataRefresh")
+    def ApplyFilterRulesStart(self):
+        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].ApplyFilterRulesStart")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         self.Freeze()
-        main_frame.CreateProgressDialog(title=GUIText.FILTERS_REFRESH_BUSY_LABEL+str(self.name),
+        main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
                                         warning=GUIText.SIZE_WARNING_MSG,
                                         freeze=False)
-        main_frame.PulseProgressDialog(GUIText.FILTERS_REFRESH_BUSY_MSG+str(self.name))
-        self.thread = FilteringThreads.CreateWordDataFrameThread(self, self.dataset)
+        main_frame.PulseProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_MSG+str(self.name))
+        self.thread = FilteringThreads.ApplyFilterRulesThread(self, self.dataset, main_frame.current_workspace.name)
         logger.info("Finished")
 
-    def OnDataRefreshEnd(self, event):
-        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].DataRefreshEnd")
+    def OnApplyFilterRulesEnd(self, event):
+        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnApplyFilterRulesEnd")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         self.thread.join()
         self.thread = None
-        self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-        self.UpdateWordListsStart()
+        
+        db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
+        self.included_words_panel.UpdateWords(db_conn.GetIncludedStringTokensDataFrame(self.dataset.key))
+        self.removed_words_panel.UpdateWords(db_conn.GetRemovedStringTokensDataFrame(self.dataset.key))
+        del db_conn
 
+        self.UpdateImpact()
+
+        main_frame.CloseProgressDialog(thaw=False)
+        self.Thaw()
+        logger.info("Finished")
+    
+    def UpdateImpact(self):
+        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].UpdateImpact")
+        logger.info("Starting")
         self.impact_panel.document_num_original.SetLabel(str(self.dataset.total_docs))
         self.impact_panel.token_num_original.SetLabel(str(self.dataset.total_tokens))
         self.impact_panel.uniquetoken_num_original.SetLabel(str(self.dataset.total_uniquetokens))
-        self.impact_panel.Update()
-        main_frame.CloseProgressDialog(thaw=False)
-        self.Thaw()
-        logger.info("Finished")
 
-    def UpdateWordListsStart(self):
-        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].UpdateWordListsStart")
-        logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        self.Freeze()
-        main_frame.CreateProgressDialog(GUIText.FILTERS_RELOAD_BUSY_LABEL+str(self.name),
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-        main_frame.PulseProgressDialog(GUIText.FILTERS_RELOAD_BUSY_MSG+str(self.name))
-        self.thread = FilteringThreads.ApplyFilterRulesThread(self, self.dataset)
-
-        logger.info("Finished")
-    
-    def OnUpdateWordListsEnd(self, event):
-        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].UpdateWordListsStart")
-        logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        self.thread.join()
-        self.thread = None
-        self.included_words_panel.UpdateWords(self.dataset.words_df.loc[~self.dataset.words_df[Constants.TOKEN_REMOVE_FLG]])
-        self.removed_words_panel.UpdateWords(self.dataset.words_df.loc[self.dataset.words_df[Constants.TOKEN_REMOVE_FLG]])
-        
         self.impact_panel.document_num_remaining.SetLabel(str(self.dataset.total_docs_remaining))
         self.impact_panel.token_num_remaining.SetLabel(str(self.dataset.total_tokens_remaining))
-        self.impact_panel.uniquetoken_num_remaining.SetLabel(str(self.dataset.total_uniquetokens_remaing))
+        self.impact_panel.uniquetoken_num_remaining.SetLabel(str(self.dataset.total_uniquetokens_remaining))
         self.impact_panel.Update()
-        main_frame.CloseProgressDialog(thaw=False)
-        self.Thaw()
         logger.info("Finished")
 
 
@@ -479,17 +474,15 @@ class FilterPanel(wx.Panel):
             self.removed_words_panel.word_searchctrl.SetValue(saved_data['removed_search_word'])
         if 'removed_search_pos' in saved_data:
             self.removed_words_panel.pos_searchctrl.SetValue(saved_data['removed_search_pos'])
-        
-        self.included_words_panel.UpdateWords(self.dataset.words_df.loc[~self.dataset.words_df[Constants.TOKEN_REMOVE_FLG]])
-        self.removed_words_panel.UpdateWords(self.dataset.words_df.loc[self.dataset.words_df[Constants.TOKEN_REMOVE_FLG]])
+
+        db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
+        self.included_words_panel.UpdateWords(db_conn.GetIncludedStringTokensDataFrame(self.dataset.key))
+        self.removed_words_panel.UpdateWords(db_conn.GetRemovedStringTokensDataFrame(self.dataset.key))
+        del db_conn
+
         self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
 
-        self.impact_panel.document_num_original.SetLabel(str(self.dataset.total_docs))
-        self.impact_panel.token_num_original.SetLabel(str(self.dataset.total_tokens))
-        self.impact_panel.uniquetoken_num_original.SetLabel(str(self.dataset.total_uniquetokens))
-        self.impact_panel.document_num_remaining.SetLabel(str(self.dataset.total_docs_remaining))
-        self.impact_panel.token_num_remaining.SetLabel(str(self.dataset.total_tokens_remaining))
-        self.impact_panel.uniquetoken_num_remaining.SetLabel(str(self.dataset.total_uniquetokens_remaing))
+        self.UpdateImpact()
 
         logger.info("Finished")
 
@@ -506,6 +499,7 @@ class FilterPanel(wx.Panel):
         logger.info("Finished")
         return saved_data
 
+#TODO check if pandas can function on large datasets here or if it needs instead connect the dataviews to the DB
 class WordsPanel(wx.Panel):
     def __init__(self, parent, parent_frame, word_type, style):
         logger = logging.getLogger(__name__+".WordsPanel["+word_type+"]["+str(parent_frame.name)+"].__init__")
@@ -594,30 +588,33 @@ class WordsPanel(wx.Panel):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         self.Freeze()
-        main_frame.PulseProgressDialog(GUIText.FILTERS_DISPLAY_BUSY_MSG+str(self.parent_frame.name)+" "+self.word_type)
+        main_frame.PulseProgressDialog(GUIText.FILTERS_DISPLAY_STRINGS_BUSY_MSG1+self.word_type+GUIText.FILTERS_DISPLAY_STRINGS_BUSY_MSG2+str(self.parent_frame.name))
         try:
             word_search_term = self.word_searchctrl.GetValue()
             pos_search_term = self.pos_searchctrl.GetValue()
-            word_idx = self.parent_frame.dataset.tokenization_choice
             if word_search_term != '' and pos_search_term != '':
-                search_filter = self.tokens_df[word_idx].str.contains(word_search_term, regex=False) & self.tokens_df[Constants.TOKEN_POS_IDX].str.contains(pos_search_term, regex=False)
+                search_filter = self.tokens_df['words'].str.contains(word_search_term, regex=False) & self.tokens_df['pos'].str.contains(pos_search_term, regex=False)
                 searched_df = self.tokens_df[search_filter]
             elif word_search_term != '':
-                search_filter = self.tokens_df[word_idx].str.contains(word_search_term, regex=False)
+                search_filter = self.tokens_df['words'].str.contains(word_search_term, regex=False)
                 searched_df = self.tokens_df[search_filter]
             elif pos_search_term != '':
-                search_filter = self.tokens_df[Constants.TOKEN_POS_IDX].str.contains(pos_search_term, regex=False)
+                search_filter = self.tokens_df['pos'].str.contains(pos_search_term, regex=False)
                 searched_df = self.tokens_df[search_filter]
             else:
                 searched_df = self.tokens_df
+            
+            searched_df = pd.DataFrame(searched_df)
+            searched_df[Constants.TOKEN_PER_WORDS] = searched_df[Constants.TOKEN_NUM_WORDS].div(self.parent_frame.dataset.total_tokens).mul(100).round(4)
+            searched_df[Constants.TOKEN_PER_DOCS] = searched_df[Constants.TOKEN_NUM_DOCS].div(self.parent_frame.dataset.total_docs).mul(100).round(4)
 
-            self.words_df = searched_df[[word_idx,
-                                         Constants.TOKEN_POS_IDX,
+            self.words_df = searched_df[[Constants.TOKEN_WORDS,
+                                         Constants.TOKEN_POS,
                                          Constants.TOKEN_NUM_WORDS,
                                          Constants.TOKEN_PER_WORDS,
                                          Constants.TOKEN_NUM_DOCS,
                                          Constants.TOKEN_PER_DOCS,
-                                         Constants.TOKEN_SPACY_STOPWORD_IDX,
+                                         Constants.TOKEN_SPACY_STOPWORD,
                                          Constants.TOKEN_TFIDF]].copy()
             self.words_df.columns = self.col_names
 
@@ -692,8 +689,8 @@ class RulesPanel(wx.Panel):
         tokenization_package_label1 = wx.StaticText(self, label=GUIText.FILTERS_TOKENIZER)
         tokenization_package_label1.SetFont(wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
         tokenization_sizer.Add(tokenization_package_label1, proportion=0, flag=wx.ALL, border=5)
-        tokenization_package_label2 = wx.StaticText(self, label=tokenizer_package)
-        tokenization_sizer.Add(tokenization_package_label2, proportion=0, flag=wx.ALL, border=5)
+        self.tokenization_package_label2 = wx.StaticText(self, label=tokenizer_package)
+        tokenization_sizer.Add(self.tokenization_package_label2, proportion=0, flag=wx.ALL, border=5)
         tokenization_choice_label = wx.StaticText(self, label=GUIText.FILTERS_METHOD)
         tokenization_choice_label.SetFont(wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
         tokenization_sizer.Add(tokenization_choice_label, proportion=0, flag=wx.ALL, border=5)
@@ -741,6 +738,18 @@ class RulesPanel(wx.Panel):
         logger.info("Finished")
 
     def DisplayFilterRules(self, filter_rules):
+
+        package_list = list(self.parent_frame.dataset.tokenization_package_versions)
+        tokenizer_package = self.parent_frame.dataset.tokenization_package_versions[0]
+        package_list[0] = GUIText.FILTERS_RAWTOKENS
+        package_list[1] = GUIText.FILTERS_STEMMER + package_list[1]
+        package_list[2] = GUIText.FILTERS_LEMMATIZER + package_list[2]
+
+        self.tokenization_package_label2.SetLabel(tokenizer_package)
+        self.tokenization_choice.SetString(0, package_list[0])
+        self.tokenization_choice.SetString(1, package_list[1])
+        self.tokenization_choice.SetString(2, package_list[2])
+
         column_options = {Constants.TOKEN_NUM_WORDS:GUIText.FILTERS_NUM_WORDS,
                           Constants.TOKEN_PER_WORDS:GUIText.FILTERS_PER_WORDS,
                           Constants.TOKEN_NUM_DOCS:GUIText.FILTERS_NUM_DOCS,
@@ -750,7 +759,7 @@ class RulesPanel(wx.Panel):
         for field, word, pos, action in filter_rules:
             if isinstance(action, tuple):
                 if action[0] == Constants.FILTER_TFIDF_REMOVE or action[0] == Constants.FILTER_TFIDF_INCLUDE:
-                    action = str(action[0])+str(action[1])+str(action[2]*100)+"%"
+                    action = str(action[0])+str(action[1])+str(action[2])+"%"
                 else:
                     action = str(action[0]) + " ("+str(column_options[action[1]])+str(action[2])+str(action[3])+")"
                 
@@ -865,7 +874,7 @@ class CreateCountFilterDialog(wx.Dialog):
         self.column_ctrl.SetToolTip(GUIText.FILTERS_CREATE_COUNT_RULE_COLUMN_TOOLTIP)
         self.operation_ctrl = wx.Choice(self, choices=operation_options)
         self.operation_ctrl.SetToolTip(GUIText.FILTERS_CREATE_COUNT_RULE_OPERATION_TOOLTIP)
-        self.number_ctrl = wx.SpinCtrlDouble(self, min=0, max=dataset.total_tokens)
+        self.number_ctrl = wx.SpinCtrlDouble(self, min=0, max=dataset.total_tokens, inc=0.01)
         self.number_ctrl.SetToolTip(GUIText.FILTERS_CREATE_COUNT_RULE_NUMBER_TOOLTIP)
         rule_sizer = wx.BoxSizer(wx.HORIZONTAL)
         rule_sizer.Add(rule_label, 0, wx.ALL, 5)
@@ -965,7 +974,7 @@ class CreateTfidfFilterDialog(wx.Dialog):
         rule_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_RULE)
         self.action1_ctrl = wx.Choice(self, choices=action_options1)
         self.action2_ctrl = wx.Choice(self, choices=action_options2)
-        self.rank_ctrl = wx.SpinCtrlDouble(self, min=0, max=1, inc=0.01)
+        self.rank_ctrl = wx.SpinCtrlDouble(self, min=0, max=100, inc=0.01)
         self.rank_ctrl.SetToolTip(GUIText.FILTERS_CREATE_TFIDF_RULE_NUMBER_TOOLTIP)
         rule_sizer = wx.BoxSizer(wx.HORIZONTAL)
         rule_sizer.Add(rule_label)
@@ -991,7 +1000,7 @@ class CreateTfidfFilterDialog(wx.Dialog):
         #check that name exists and is unique
         status_flag = True
 
-        self.field = self.field_ctrl.GetValue()
+        self.field = self.field_ctrl.GetStringSelection()
         if self.field == "":
             self.field = Constants.FILTER_RULE_ANY
         self.word = self.word_ctrl.GetValue()

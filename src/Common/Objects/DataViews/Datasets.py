@@ -212,7 +212,16 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
         else:
             for col_num in range(0, len(self.metadata_column_names)):
                 if self.metadata_col_types[col_num] == 'UTC-timestamp':
-                    self.data_df[self.metadata_column_names[col_num]]= pd.to_datetime(self.data_df[self.metadata_column_names[col_num]], unit='s', utc=True).dt.strftime(Constants.DATETIME_FORMAT)
+                    try:
+                        self.data_df[self.metadata_column_names[col_num]] = pd.to_datetime(self.data_df[self.metadata_column_names[col_num]], unit='s', utc=True).dt.strftime(Constants.DATETIME_FORMAT)
+                    except ValueError:
+                        def ListConvert(list_):
+                            value_list = []
+                            if isinstance(list_, list):
+                                for value in list_:
+                                    value_list.append(str(datetime.utcfromtimestamp(value).strftime(Constants.DATETIME_FORMAT))+'UTC')
+                            return value_list
+                        self.data_df[self.metadata_column_names[col_num]] = self.data_df[self.metadata_column_names[col_num]].apply(ListConvert)
         
         self._rows = len(self.data_df)
         self._cols = 1+len(self.metadata_column_names)+len(self.data_column_names)
@@ -319,7 +328,6 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
             col = col-1
             col_name = self.metadata_column_names[col]
             df_row = self.data_df.iloc[row]
-            #TODO rework to handle lists of dates, ints and urls
             if self.metadata_col_types[col] == 'url':
                 segmented_url = df_row[col_name].split("/")
                 data = segmented_url[len(segmented_url)-1]
@@ -331,9 +339,14 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
                         if entry != "":
                             first_entry = ' '.join(entry.split())
                             break
+                    first_entry = str(first_entry)
                     if len(data) > 1:
-                        first_entry = str(first_entry)
-                    data = first_entry.split('\n')[0] + "..."
+                        data = first_entry.split('. ')[0] + "..."
+                    else:
+                        if len(first_entry.split('. ')) > 1:
+                            data = first_entry.split('. ')[0] + "..."
+                        else:
+                            data = first_entry
         else:
             col = col - (len(self.metadata_column_names)+1)
             col_name = self.data_column_names[col]
@@ -350,11 +363,20 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
                     first_entry = ""
                     for entry in data:
                         if entry != "":
-                            first_entry = ' '.join(entry.split())
+                            if self.data_col_types[col] == 'string':
+                                first_entry = ' '.join(entry.split())
+                            elif self.data_col_types[col] == 'UTC-timestamp':
+                                first_entry = str(datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT))+'UTC'
+                            else:
+                                first_entry = str(entry)
                             break
                     if len(data) > 1:
-                        first_entry = str(first_entry)
-                    data = first_entry.split('. ')[0] + "..."
+                        data = first_entry.split('. ')[0] + "..."
+                    else:
+                        if len(first_entry.split('. ')) > 1:
+                            data = first_entry.split('. ')[0] + "..."
+                        else:
+                            data = first_entry
         type_name = self.GetTypeName(row, col)
         if type_name == wx.grid.wx.grid.GRID_VALUE_TEXT:
             return str(data)

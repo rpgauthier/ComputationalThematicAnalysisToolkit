@@ -37,6 +37,20 @@ class TokenizerResultEvent(wx.PyEvent):
         self.SetEventType(TOKENIZER_EVT_RESULT_ID)
         self.data = data
 
+CAPTURE_EVT_RESULT_ID = wx.NewIdRef()
+def CAPTURE_EVT_RESULT(win, func):
+    """Define Result Event."""
+    win.Connect(-1, -1, CAPTURE_EVT_RESULT_ID, func)
+class CaptureResultEvent(wx.PyEvent):
+    """Simple event to carry arbitrary result data."""
+    def __init__(self, model_type, model_parameters, field_list):
+        """Init Result Event."""
+        wx.PyEvent.__init__(self)
+        self.SetEventType(CAPTURE_EVT_RESULT_ID)
+        self.model_type = model_type
+        self.model_parameters = model_parameters
+        self.field_list = field_list
+
 LOAD_EVT_RESULT_ID = wx.NewIdRef()
 def LOAD_EVT_RESULT(win, func):
     """Define Result Event."""

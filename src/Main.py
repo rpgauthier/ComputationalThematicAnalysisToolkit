@@ -18,6 +18,7 @@ import RootApp
 import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
 import Common.Objects.Samples as Samples
+import Common.Database as Database
 from Common.GUIText import Main as GUIText
 import Common.Notes as cn
 import Collection.ModuleCollection as CollectionModule
@@ -51,6 +52,7 @@ class MainFrame(wx.Frame):
         if not os.path.exists(Constants.CURRENT_WORKSPACE):
             os.mkdir(Constants.CURRENT_WORKSPACE)
         self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
+        Database.DatabaseConnection(self.current_workspace.name).Create()
         
         self.last_load_dt = datetime.now()
         self.load_thread = None
@@ -446,6 +448,7 @@ class MainFrame(wx.Frame):
             self.save_path = ''
             self.current_workspace.cleanup()
             self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
+            Database.DatabaseConnection(self.current_workspace.name).Create()
         
             self.last_load_dt = datetime.now()
 
@@ -456,7 +459,6 @@ class MainFrame(wx.Frame):
             self.CodesUpdated()
 
             self.SetTitle(GUIText.APP_NAME+" - "+GUIText.UNSAVED)
-
 
             #reset view
             self.toggle_collection_menuitem.Check(True)
@@ -506,15 +508,10 @@ class MainFrame(wx.Frame):
                         self.codes[key].DestroyObject()
                     self.codes.clear()
 
-                    #run the updates to clear any modules of outstanding data
-                    self.DatasetsUpdated()
-                    self.SamplesUpdated()
-                    self.DocumentsUpdated()
-                    self.CodesUpdated()
-
                     self.current_workspace.cleanup()
                     self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
 
+                    self.last_load_dt = datetime.now()
                     self.load_thread = MainThreads.LoadThread(self, self.save_path, self.current_workspace.name)
         logger.info("Finished")
     
@@ -531,9 +528,6 @@ class MainFrame(wx.Frame):
 
         self.multipledatasets_mode = saved_data['multipledatasets_mode']
         
-        self.adjustable_metadata_mode = saved_data['adjustable_metadata_mode'] 
-        self.adjustable_includedfields_mode = saved_data['adjustable_includedfields_mode']
-        self.ModeChange()
         self.toggle_collection_menuitem.Check(check=saved_data['collection_check'])
         self.OnToggleCollection(None)
         self.collection_module.Load(saved_data['collection_module'])
@@ -544,16 +538,34 @@ class MainFrame(wx.Frame):
         self.coding_module.Load(saved_data['coding_module'])
         self.toggle_coding_menuitem.Check(check=saved_data['coding_check'])
         self.OnToggleCoding(None)
+        if 'reviewing_module' in saved_data:
+            self.reviewing_module.Load(saved_data['reviewing_module'])
+        else:
+            self.reviewing_module.Load({})
+        if 'reviewing_check' in saved_data:
+            self.toggle_notes_menuitem.Check(check=saved_data['reviewing_check'])
+            self.OnToggleReviewing(None)
+        if 'reporting_module' in saved_data:
+            self.reporting_module.Load(saved_data['reporting_module'])
+        else:
+            self.reporting_module.Load({})
+        if 'reporting_check' in saved_data:
+            self.toggle_notes_menuitem.Check(check=saved_data['reporting_check'])
+            self.OnToggleReporting(None)
         self.toggle_notes_menuitem.Check(check=saved_data['notes_check'])
         self.OnToggleNotes(None)
         self.notes_panel.Load(saved_data['notes'])
 
-        self.DatasetsUpdated()
-        self.SamplesUpdated()
-        self.DocumentsUpdated()
-        self.CodesUpdated()
+        mode_changed = False
+        if self.adjustable_metadata_mode != saved_data['adjustable_metadata_mode']:
+            mode_changed = True
+            self.adjustable_metadata_mode = saved_data['adjustable_metadata_mode'] 
+        if self.adjustable_includedfields_mode != saved_data['adjustable_includedfields_mode']:
+            mode_changed = True
+            self.adjustable_includedfields_mode = saved_data['adjustable_includedfields_mode']
+        if mode_changed:
+            self.ModeChange()
 
-        self.last_load_dt = datetime.now()
         self.load_thread.join()
         self.load_thread = None
         self.CloseProgressDialog(thaw=True)
@@ -611,6 +623,8 @@ class MainFrame(wx.Frame):
             config_data['collection_check'] = self.toggle_collection_menuitem.IsChecked()
             config_data['filtering_check'] = self.toggle_filtering_menuitem.IsChecked()
             config_data['coding_check'] = self.toggle_coding_menuitem.IsChecked()
+            config_data['reviewing_check'] = self.toggle_coding_menuitem.IsChecked()
+            config_data['reporting_check'] = self.toggle_coding_menuitem.IsChecked()
             config_data['notes_check'] = self.toggle_notes_menuitem.IsChecked()
             config_data['notes'] = self.notes_panel.Save()
             config_data['datasets'] = list(self.datasets.keys())
@@ -623,6 +637,8 @@ class MainFrame(wx.Frame):
             config_data['filtering_module'] = self.filtering_module.Save()
             config_data['sampling_module'] = self.sampling_module.Save()
             config_data['coding_module'] = self.coding_module.Save()
+            config_data['reviewing_module'] = self.sampling_module.Save()
+            config_data['reporting_module'] = self.coding_module.Save()
 
             self.save_thread = MainThreads.SaveThread(self, self.save_path, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, notes_text, self.last_load_dt)
 
@@ -683,7 +699,7 @@ class MainFrame(wx.Frame):
         windows = wx.GetTopLevelWindows()
         for window in windows:
             window.Destroy()
-        
+
     #Functions called by other modules
     def CreateProgressDialog(self, title, warning="", freeze=False):
         if freeze:
@@ -714,6 +730,7 @@ class MainFrame(wx.Frame):
     def DatasetKeyChange(self, old_key, new_key):
         logger = logging.getLogger(__name__+".MainFrame.DatasetKeyChange")
         logger.info("Starting")
+        
         for sample_key in self.samples:
             if self.samples[sample_key].dataset_key == old_key:
                 self.samples[sample_key].dataset_key = new_key
@@ -764,7 +781,14 @@ class MainFrame(wx.Frame):
         logger.info("Starting")
         self.collection_module.DatasetsUpdated()
         self.filtering_module.DatasetsUpdated()
+        self.sampling_module.DatasetsUpdated()
         self.coding_module.DatasetsUpdated()
+        logger.info("Finished")
+
+    def DocumentsUpdated(self):
+        logger = logging.getLogger(__name__+".MainFrame.DocumentsUpdated")
+        logger.info("Starting")
+        self.sampling_module.DocumentsUpdated()
         self.coding_module.DocumentsUpdated()
         logger.info("Finished")
 
@@ -772,13 +796,6 @@ class MainFrame(wx.Frame):
         logger = logging.getLogger(__name__+".MainFrame.SamplesUpdated")
         logger.info("Starting")
         self.sampling_module.SamplesUpdated()
-        self.coding_module.DocumentsUpdated()
-        logger.info("Finished")
-
-    def DocumentsUpdated(self):
-        logger = logging.getLogger(__name__+".MainFrame.DocumentsUpdated")
-        logger.info("Starting")
-        self.sampling_module.DocumentsUpdated()
         self.coding_module.DocumentsUpdated()
         logger.info("Finished")
     

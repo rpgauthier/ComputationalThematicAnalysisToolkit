@@ -152,6 +152,9 @@ class CollectionPanel(wx.Panel):
         self.Freeze()
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.PulseProgressDialog(GUIText.LOAD_BUSY_MSG_CONFIG)
+        #TODO confirm that custom load functionality isnt needed to properly reset this panel and this notebook
+        self.datasetslist_panel.DatasetsUpdated()
+        self.datasetsdata_notebook.DatasetsUpdated()
         if 'datasetsdata_toggle_flag' in saved_data:
             self.toggle_datasetsdata_menuitem.Check(saved_data['datasetsdata_toggle_flag'])
             self.OnToggleDatasetsData(None)

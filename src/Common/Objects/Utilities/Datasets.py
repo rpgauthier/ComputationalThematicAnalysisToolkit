@@ -8,15 +8,23 @@ import wx
 
 import Common.CustomEvents as CustomEvents
 import Common.Objects.Datasets as Datasets
+import Common.Database as Database
 from Common.GUIText import Datasets as GUIText
 
-def CreateDataset(dataset_key, retrieval_details, data, avaliable_fields_list, metadata_fields_list, included_fields_list):
+def CreateDataset(dataset_key, retrieval_details, data, avaliable_fields_list, metadata_fields_list, included_fields_list, main_frame):
     dataset = Datasets.Dataset(dataset_key,
                                dataset_key[0],
                                dataset_key[1],
                                dataset_key[2],
                                retrieval_details)
+
+    db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
+    
+    db_conn.InsertDataset(dataset_key, 'text')
+
     dataset.data = data
+    
+    db_conn.InsertDocuments(dataset_key, dataset.data.keys())
     
     for field_name, field_info in metadata_fields_list:
         new_field = Datasets.Field(dataset,
@@ -44,21 +52,13 @@ def CreateDataset(dataset_key, retrieval_details, data, avaliable_fields_list, m
 def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
     logger = logging.getLogger(__name__+".TokenizeDataset")
     logger.info("Starting")
-    fields = {}
-    results = {}
     main_frame = main_frame
+    db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
 
-    def FindDatasetIdFields(dataset):
-        id_key_fields = ["data_source", "data_type", "id"]
-        return id_key_fields
-
-    def TokenizationController(key, field, field_data):
-        logger.info("Preparing Processes for dataset[%s], field[%s], for %s documents", str(key), str(field.key), str(len(field_data)))
-        wx.PostEvent(notify_window, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_STARTING_FIELD_MSG+str(key)))
-        nonlocal fields
-        fields[(key, field.key)] = field
-        nonlocal results
-        results[(key, field.key)] = []
+    def TokenizationController(field, field_data):
+        logger.info("Preparing Processes for dataset[%s], field[%s], for %s documents", str(dataset.key), str(field.key), str(len(field_data)))
+        wx.PostEvent(notify_window, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_STARTING_FIELD_MSG+str(field.key)))
+        results = []
 
         total = len(field_data)
         nonlocal main_frame
@@ -82,15 +82,34 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
         for data_list in split_data_lists:
             logger.info("Creating TokenizationWorker for Documents %s - %s", str(count+1), str(count+len(data_list)))
             res = main_frame.pool.apply_async(TokenizationWorker, (data_list, 
-                                                                   str((key, field.key)),
+                                                                   str(field.key),
                                                                    str(count+1)+"-"+str(count+len(data_list)-1),
                                                                    field.parent.language))
-            results[(key, field.key)].append(res)
+            results.append(res)
             count = count+len(data_list)
-            
+        
+        completed = 0
+        wx.PostEvent(notify_window, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
+                                                               +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG2+str(len(results))\
+                                                               +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(field.key)))
+        if not db_conn.CheckIfFieldExists(dataset.key, field.key):
+            db_conn.InsertField(dataset.key, field.key)
+        for res in results:
+            new_tokensets = res.get()[0]
+            package_versions = res.get()[1]
+
+            #insert documents' tokens into database
+            db_conn.InsertStringTokens(dataset.key, field.key, new_tokensets)
+            completed += 1
+            logger.info("%s %s", str(field.key), completed)
+            wx.PostEvent(notify_window, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
+                                                                   +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG2+str(len(results))\
+                                                                   +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(field.key)))
+
+        dataset.tokenization_package_versions = package_versions
 
     def FieldTokenizer(field):
-        id_key_fields = FindDatasetIdFields(field.dataset)
+        id_key_fields = ["data_source", "data_type", "id"]
         field_data = {}
         for data in field.dataset.data.values():
             id_key = tuple(data[id_key_field] for id_key_field in id_key_fields)
@@ -111,85 +130,38 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
                 else:
                     field_data[id_key].append("")
         if field.fieldtype == "string":
-            TokenizationController(field.dataset.key, field, field_data)
+            TokenizationController(field, field_data)
         else:
             field.tokenset = field_data
 
+    stringfield_count = 0
     for chosen_field_key in dataset.chosen_fields:
-        if rerun or dataset.chosen_fields[chosen_field_key].tokenset is None:
+        has_data = False
+        if dataset.chosen_fields[chosen_field_key].fieldtype == 'string':
+            if rerun:
+                db_conn.DeleteField(dataset.key, chosen_field_key)
+            else:
+                has_data = db_conn.CheckIfFieldExists(dataset.key, chosen_field_key)
+            if not has_data:
+                FieldTokenizer(dataset.chosen_fields[chosen_field_key])
+                stringfield_count = stringfield_count + 1
+        elif dataset.chosen_fields[chosen_field_key].tokenset == None or rerun:
             FieldTokenizer(dataset.chosen_fields[chosen_field_key])
 
-    if len(results) > 0:
-        for key in results:
-            completed = 0
-            wx.PostEvent(notify_window, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
-                                                                   +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG2+str(len(results[key]))\
-                                                                   +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(key)))
-            tmp_tokensets = {}
-            rawtext_df = {}
-            stem_df = {}
-            lemma_df = {}
-            for res in results[key]:
-                new_tokensets = res.get()[0]
-                new_rawtext_df = res.get()[1]
-                for rawtext in new_rawtext_df:
-                    if rawtext in rawtext_df:
-                        rawtext_df[rawtext] = rawtext_df[rawtext] + new_rawtext_df[rawtext]
-                    else:
-                        rawtext_df[rawtext] = new_rawtext_df[rawtext]
-                new_stem_df = res.get()[2]
-                for stem in new_stem_df:
-                    if stem in stem_df:
-                        stem_df[stem] = stem_df[stem] + new_stem_df[stem]
-                    else:
-                        stem_df[stem] = new_stem_df[stem]
-                new_lemma_df = res.get()[3]
-                for lemma in new_lemma_df:
-                    if lemma in lemma_df:
-                        lemma_df[lemma] = lemma_df[lemma] + new_lemma_df[lemma]
-                    else:
-                        lemma_df[lemma] = new_lemma_df[lemma]
-                completed += 1
-                package_versions = res.get()[4]
-                tmp_tokensets.update(new_tokensets)
-                logger.info("%s %s", str(key), len(tmp_tokensets))
-                wx.PostEvent(notify_window, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
-                                                                       +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG2+str(len(results[key]))\
-                                                                       +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(key)))
-            #convert df to idf
-            doc_num = len(tmp_tokensets)
-            rawtext_idf = {}
-            for rawtext in rawtext_df:
-                rawtext_idf[rawtext] = log(doc_num/rawtext_df[rawtext])
-            stem_idf = {}
-            for stem in stem_df:
-                stem_idf[stem] = log(doc_num/stem_df[stem])
-            lemma_idf = {}
-            for lemma in lemma_df:
-                lemma_idf[lemma] = log(doc_num/lemma_df[lemma])
-
-            #combine with tf with idf for all tokens in tokensets
-            tokensets = {}
-            for toksenset_key in tmp_tokensets:
-                tokenset = []
-                order = 0
-                for tmp_token in tmp_tokensets[toksenset_key]:
-                    token = (order,
-                             tmp_token[0], tmp_token[1], tmp_token[2],
-                             tmp_token[3], tmp_token[4],
-                             tmp_token[5]*rawtext_idf[tmp_token[0]],
-                             tmp_token[6]*stem_idf[tmp_token[1]],
-                             tmp_token[7]*lemma_idf[tmp_token[2]])
-                    tokenset.append(token)
-                    order = order + 1
-                tokensets[toksenset_key] = tokenset
-
-            fields[key].tokenset = tokensets
-            fields[key].dataset.tokenization_package_versions = package_versions
+    #calculate tfidf scores for all stored string tokens if any changes occured
+    if stringfield_count > 0:
+        wx.PostEvent(notify_window, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_STARTING_TFIDF_MSG))
+        db_conn.UpdateStringTokensTFIDF(dataset.key)
+        counts = db_conn.GetStringTokensCounts(dataset.key)
+        dataset.total_docs = counts['documents']
+        dataset.total_tokens = counts['tokens']
+        dataset.total_uniquetokens = counts['unique_tokens']
+        wx.PostEvent(notify_window, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_TFIDF_MSG))
+            
     logger.info("Finished")
 
-def TokenizationWorker(data_list, field, label, language):
-    logger = logging.getLogger(__name__+".TokenizationWorker["+str(field)+"]["+str(label)+"]")
+def TokenizationWorker(data_list, field_key, label, language):
+    logger = logging.getLogger(__name__+".TokenizationWorker["+str(field_key)+"]["+str(label)+"]")
     logger.info("Starting")
 
     package_versions = []
@@ -226,62 +198,23 @@ def TokenizationWorker(data_list, field, label, language):
         package_versions.append(spacy.__name__ +" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
     
     tokensets = {}
-    #document frequency
-    rawtext_tokens_df = {}
-    stem_tokens_df = {}
-    lemma_tokens_df = {}
-    
     for key, data in data_list:
-        tmp_tokenset = []
-        rawtext_tf = {}
-        stem_tf = {}
-        lemma_tf = {}
+        tokenset = []
+        position = 0
         for tmp_tokens in nlp.pipe(data):
             for token in tmp_tokens:
-                #order must align to Common.Constants.tokenization.tokenset_indexes
-                rawtext = token.text.strip().lower()
+                text = token.text.strip().lower()
                 stem = stemmer.stem(token.text).strip().lower()
                 lemma = token.lemma_.strip().lower()
-                tmp_tokenset.append((rawtext,
+                tokenset.append((position,
+                                     text,
                                      stem,
                                      lemma,
                                      token.pos_,
                                      token.is_stop))
-                if rawtext in rawtext_tf:
-                    rawtext_tf[rawtext] = rawtext_tf[rawtext] + 1
-                else:
-                    rawtext_tf[rawtext] = 1
-                if stem in stem_tf:
-                    stem_tf[stem] = stem_tf[stem] + 1
-                else:
-                    stem_tf[stem] = 1
-                if lemma in lemma_tf:
-                    lemma_tf[lemma] = lemma_tf[lemma] + 1
-                else:
-                    lemma_tf[lemma] = 1
-
-        tokenset = []
-        for tmp_token in tmp_tokenset:
-            tokenset.append((tmp_token[0], tmp_token[1], tmp_token[2],
-                            tmp_token[3], tmp_token[4],
-                            rawtext_tf[tmp_token[0]], stem_tf[tmp_token[1]], lemma_tf[tmp_token[2]]))
-        tokensets[key] = tokenset        
-
-        for rawtext in rawtext_tf:
-            if rawtext in rawtext_tokens_df:
-                rawtext_tokens_df[rawtext] = rawtext_tokens_df[rawtext] + 1
-            else:
-                rawtext_tokens_df[rawtext] = 1
-        for stem in stem_tf:
-            if stem in stem_tokens_df:
-                stem_tokens_df[stem] = stem_tokens_df[stem] + 1
-            else:
-                stem_tokens_df[stem] = 1
-        for lemma in lemma_tf:
-            if lemma in lemma_tokens_df:
-                lemma_tokens_df[lemma] = lemma_tokens_df[lemma] + 1
-            else:
-                lemma_tokens_df[lemma] = 1
+                position = position + 1
+        tokensets[key] = tokenset
 
     logger.info("Finished")
-    return tokensets, rawtext_tokens_df, stem_tokens_df, lemma_tokens_df, package_versions
+    #return tokensets, rawtext_tokens_df, stem_tokens_df, lemma_tokens_df, package_versions
+    return tokensets, package_versions

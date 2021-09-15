@@ -122,7 +122,7 @@ def UpdateRetrievedMonth(auth, name, query, month, end_date, file, prefix):
         data = json.load(infile)
         id_dict = data.pop(0)
     if len(data) > 0:
-        start_dt = data[len(data)-1]['created_utc'] # TODO: created_utc?
+        start_dt = data[len(data)-1]['created_utc'] #TODO: created_utc?
         month_end = (datetime.datetime.strptime(month, "%Y-%m")
                      + relativedelta(months=1)).strftime(r"%Y-%m") + "-01"
         end_dt = calendar.timegm(datetime.datetime.strptime(month_end, "%Y-%m-%d").timetuple())
@@ -182,7 +182,7 @@ class TweepyRetriever():
         start_dt = start_dt
         tweets = []
 
-        # TODO: v1.1 search only goes back 7 days back from current day
+        #TODO: v1.1 search only goes back 7 days back from current day
         start = start_dt
         end = end_dt
 
@@ -199,10 +199,10 @@ class TweepyRetriever():
             # send requests for tweets while the rate limit has not been exceeded
             while (tweets_retrieved):
                 tweets_retrieved = False
-                try:
+                try:    
                     for tweet in tweets_data:
-                        print("Tweets retrieved: ", len(tweets)) # TODO remove
-                        tweet._json['created_utc'] = calendar.timegm(datetime.datetime.strptime(tweet._json['created_at'], "%a %b %d %H:%M:%S +0000 %Y").timetuple()) # TODO: is making a created_utc field like this ok
+                        #TODO: check if making a created_utc field like this ok
+                        tweet._json['created_utc'] = calendar.timegm(datetime.datetime.strptime(tweet._json['created_at'], "%a %b %d %H:%M:%S +0000 %Y").timetuple())
                         tweet._json['retrieved_on'] = calendar.timegm(datetime.datetime.now().timetuple())
                         if (tweet._json['created_utc'] >= start and tweet._json['created_utc'] < end):
                             tweets.append(tweet._json)
@@ -215,7 +215,8 @@ class TweepyRetriever():
                         tweets_data = tweepy.Cursor(api.search, query, lang="en", until=end, max_id=last_retrieved_id-1).items(100)
                 except tweepy.error.TweepError as e:
                     if e.response.status_code == 429:
-                        print("Twitter API rate limit reached.") # TODO: remove
+                        #TODO: remove when better api is configured
+                        print("Twitter API rate limit reached.")
                         rate_limit_reached = True
                     tweets_retrieved=False
                     break

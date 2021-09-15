@@ -24,22 +24,24 @@ CURRENT_WORKSPACE = '../Current_Workspace'
 
 #Module Specific Variables
 ##Filtering
-##first n indexes need to align to TOKENIZER_APPROACH_LIST and must be 0 to n-1
 TOKEN_TEXT_IDX = 0
-TOKEN_NLTK_PORTERSTEM_IDX = 1
-TOKEN_SPACY_LEMMA_IDX = 2
+TOKEN_STEM_IDX = 1
+TOKEN_LEMMA_IDX = 2
 TOKEN_POS_IDX = 3
 TOKEN_SPACY_STOPWORD_IDX = 4
 TOKEN_TEXT_TFIDF_IDX = 5
 TOKEN_STEM_TFIDF_IDX = 6
 TOKEN_LEMMA_TFIDF_IDX = 7
 TOKEN_ENTRIES = 'entries'
+TOKEN_WORDS = 'words'
+TOKEN_POS = 'pos'
 TOKEN_NUM_WORDS = 'num_of_words'
 TOKEN_PER_WORDS = 'per_of_words'
 TOKEN_NUM_DOCS = 'num_of_docs'
 TOKEN_PER_DOCS = 'per_of_docs'
+TOKEN_SPACY_STOPWORD = 'spacy_stopword'
 TOKEN_REMOVE_FLG = 'removed_flg'
-TOKEN_TFIDF = 'tfidf'
+TOKEN_TFIDF = 'tfidf_range'
 FILTER_RULE_ANY = '<ANY>'
 FILTER_RULE_REMOVE = 'remove'
 FILTER_RULE_INCLUDE = 'include'
