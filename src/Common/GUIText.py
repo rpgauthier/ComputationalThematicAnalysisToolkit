@@ -379,6 +379,9 @@ class Samples(Main):
     DELETE_CONFIRMATION_WARNING = "Are you sure you want to delete this sample?"\
                                   "\nWARNING this action cannot be undone."
 
+    CONFIRM_DELETE_TOPICS = "Are you sure you want to delete the selected topics?"\
+                            "\nWARNING this action cannot be undone."
+
     MERGE_TOPIC_LABEL = "Merge Topics"
     MERGE_TOPIC_SHORTHELP = "Create a new Merged Topic from selected Topics"
     SPLIT_TOPIC_LABEL = "Split Topics"

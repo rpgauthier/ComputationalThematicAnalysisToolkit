@@ -770,14 +770,15 @@ class TopicSamplePanel(AbstractSamplePanel):
                             for topic_key in node.parts_dict:
                                 doc_topic_prob = max(doc_topic_prob, row_dict[topic_key])
                             row.append((node.key, doc_topic_prob,))
+            self.sample.ApplyDocumentCutoff()
             self.topiclist_panel.topic_list_model.Cleared()
             self.topiclist_panel.topic_list_ctrl.Expander(None)
             self.topiclist_panel.topic_list_ctrl.UnselectAll()
             self.ChangeSelections()
+            self.parts_panel.ChangeSelectedParts(self.selected_parts)
+            self.parts_panel.OnChangeDocumentNumber(None)
             #self.visualization_panel.Refresh(self.selected_parts)
             self.DrawLDAPlot(self.selected_parts)
-            self.parts_panel.parts_model.Cleared()
-            self.parts_panel.parts_ctrl.Expander(None)
             
         logger.info("Finished")
     
@@ -825,18 +826,18 @@ class TopicSamplePanel(AbstractSamplePanel):
                             for topic_key in node.parts_dict:
                                 doc_topic_prob = max(doc_topic_prob, row_dict[topic_key])
                             row.append((node.key, doc_topic_prob,))
+            self.sample.ApplyDocumentCutoff()
             self.topiclist_panel.topic_list_model.Cleared()
             self.topiclist_panel.topic_list_ctrl.Expander(None)
             self.topiclist_panel.topic_list_ctrl.UnselectAll()
             self.ChangeSelections()
+            self.parts_panel.ChangeSelectedParts(self.selected_parts)
+            self.parts_panel.OnChangeDocumentNumber(None)
             #self.visualization_panel.Refresh(self.selected_parts)
             self.DrawLDAPlot(self.selected_parts)
-            self.parts_panel.parts_model.Cleared()
-            self.parts_panel.parts_ctrl.Expander(None)
             
         logger.info("Finished")
 
-    # TODO: recalculate number of unknown documents when a topic is removed
     def OnRemoveTopics(self, event):
         logger = logging.getLogger(__name__+"TopicSamplePanel["+str(self.sample.key)+"].OnRemoveTopics")
         logger.info("Starting")
@@ -855,6 +856,13 @@ class TopicSamplePanel(AbstractSamplePanel):
                     old_mergedparts.append(node)
                 for part_key in node.parts_dict:
                     nodes.append(node.parts_dict[part_key])
+
+        #confirmation
+        if wx.MessageBox(GUIText.CONFIRM_DELETE_TOPICS,
+                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
+            logger.info("Finished - Cancelled")
+            return
+
         if len(nodes) > 0:
             for node in nodes:
                 del node.parent.parts_dict[node.key]
@@ -870,13 +878,14 @@ class TopicSamplePanel(AbstractSamplePanel):
                             for topic_key in node.parts_dict:
                                 doc_topic_prob = max(doc_topic_prob, row_dict[topic_key])
                             self.sample.document_topic_prob[row][node.key] = doc_topic_prob
+            self.sample.ApplyDocumentCutoff()
             self.topiclist_panel.topic_list_model.Cleared()
             self.topiclist_panel.topic_list_ctrl.Expander(None)
             self.ChangeSelections()
+            self.parts_panel.ChangeSelectedParts(self.selected_parts)
+            self.parts_panel.OnChangeDocumentNumber(None)
             #self.visualization_panel.Refresh(self.selected_parts)
             self.DrawLDAPlot(self.selected_parts)
-            self.parts_panel.parts_model.Cleared()
-            self.parts_panel.parts_ctrl.Expander(None)
             
         logger.info("Finished")
 
@@ -909,10 +918,10 @@ class TopicSamplePanel(AbstractSamplePanel):
 
         #figure out what topics have been selected
         self.ChangeSelections()
+        self.parts_panel.ChangeSelectedParts(self.selected_parts)
         #update the data and visualizations of selected topics
         #self.visualization_panel.DrawLDAPlots(self.selected_parts)
         self.DrawLDAPlot(self.selected_parts)
-        self.parts_panel.ChangeSelectedParts(self.selected_parts)
         
         self.Thaw()
         logger.info("Finished")
