@@ -379,10 +379,15 @@ class Samples(Main):
     DELETE_CONFIRMATION_WARNING = "Are you sure you want to delete this sample?"\
                                   "\nWARNING this action cannot be undone."
 
+    CONFIRM_DELETE_TOPICS = "Are you sure you want to delete the selected topics?"\
+                            "\nWARNING this action cannot be undone."
+
     MERGE_TOPIC_LABEL = "Merge Topics"
     MERGE_TOPIC_SHORTHELP = "Create a new Merged Topic from selected Topics"
     SPLIT_TOPIC_LABEL = "Split Topics"
     SPLIT_TOPIC_SHORTHELP = "Remove selected topics from their Merged Topic"
+    REMOVE_TOPIC_LABEL = "Remove Topics"
+    REMOVE_TOPIC_SHORTHELP = "Remove selected topics from the model"
     PROBABILITY_CUTOFF_LABEL = "Probability Cutoff: "
     PROBABILITY_CUTOFF_TOOLTIP = "Include documents in a topic when the probability of the topic being present in the document is greater or equal to the cutoff"
 
