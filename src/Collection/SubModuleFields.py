@@ -11,21 +11,22 @@ import Common.CustomEvents as CustomEvents
 import Common.Objects.Datasets as Datasets
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
 import Common.Objects.Threads.Datasets as DatasetsThreads
+import Common.Database as Database
 
 class FieldsDialog(wx.Dialog):
-    def __init__(self, parent, title, dataset, fields, size=wx.DefaultSize):
+    def __init__(self, parent, title, dataset, fields, metadata_fields=False, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".FieldsDialog["+str(dataset.key)+"].__init__")
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=title, size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
         sizer = wx.BoxSizer()
 
-        self.fields_panel = FieldsPanel(self, dataset, fields, size=self.GetSize())
+        self.fields_panel = FieldsPanel(self, dataset, fields, metadata_fields=metadata_fields,  size=self.GetSize())
         sizer.Add(self.fields_panel, 1, wx.EXPAND)
         self.SetSizer(sizer)
         logger.info("Finished")
 
 class FieldsPanel(wx.Panel):
-    def __init__(self, parent, dataset, fields, size=wx.DefaultSize):
+    def __init__(self, parent, dataset, fields, metadata_fields=False, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".FieldsNotebook.__init__")
         logger.info("Starting")
         wx.Panel.__init__(self, parent, size=size)
@@ -34,6 +35,7 @@ class FieldsPanel(wx.Panel):
 
         self.dataset = dataset
         self.fields = fields
+        self.metadata_fields = metadata_fields
         self.tokenization_thread = None
 
         avaliable_panel = wx.lib.scrolledpanel.ScrolledPanel(splitter)
@@ -120,17 +122,20 @@ class FieldsPanel(wx.Panel):
     def OnRemoveFields(self, event):
         logger = logging.getLogger(__name__+".FieldsNotebook.OnRemoveFields")
         logger.info("Starting")
+        main_frame = self.GetGrandParent().GetTopLevelParent()
         performed_flag = False
+        db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
 
         def FieldRemover(field):
             item = self.chosen_fields_model.ObjectToItem(field)
             parent_item = self.chosen_fields_model.GetParent(item)
             self.chosen_fields_model.ItemDeleted(parent_item, item)
+            if not self.metadata_fields:
+                db_conn.DeleteField(self.dataset.key, field.key)
             field.DestroyObject()
             nonlocal performed_flag
             performed_flag = True
 
-        main_frame = self.GetGrandParent().GetTopLevelParent()
         main_frame.CreateProgressDialog(GUIText.REMOVING_FIELDS_BUSY_LABEL,
                                         warning=GUIText.SIZE_WARNING_MSG,
                                         freeze=True)
@@ -143,7 +148,12 @@ class FieldsPanel(wx.Panel):
                     FieldRemover(node)
             if performed_flag:
                 main_frame = self.GetGrandParent().GetTopLevelParent()
-                self.dataset.last_changed_dt = datetime.now()
+                #recalculate tfidf scores for remaining stored tokens
+                db_conn.UpdateStringTokensTFIDF(self.dataset.key)
+                counts = db_conn.GetStringTokensCounts(self.dataset.key)
+                self.dataset.total_docs = counts['documents']
+                self.dataset.total_tokens = counts['tokens']
+                self.dataset.total_uniquetokens = counts['unique_tokens']
                 main_frame.DatasetsUpdated()
         finally:
             main_frame.CloseProgressDialog(thaw=True)

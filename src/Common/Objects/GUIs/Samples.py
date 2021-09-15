@@ -1,6 +1,7 @@
 import logging
 import copy
 from datetime import datetime
+from sys import setprofile
 
 import pandas as pd
 
@@ -14,9 +15,11 @@ from Common.GUIText import Filtering, Samples as GUIText
 from Common.GUIText import Filtering as FilteringGUIText
 from Common.CustomPlots import ChordPlotPanel#, pyLDAvisPanel, TreemapPlotPlanel, NetworkPlotPlanel
 import Common.Constants as Constants
+import Common.Database as Database
 import Common.CustomEvents as CustomEvents
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
 import Common.Objects.Samples as Samples
+import Common.Objects.Threads.Samples as SamplesThreads
 import Common.Objects.DataViews.Samples as SamplesDataViews
 
 class SampleCreatePanel(wx.Panel):
@@ -24,6 +27,8 @@ class SampleCreatePanel(wx.Panel):
         logger = logging.getLogger(__name__+".SampleCreatePanel.__init__")
         logger.info("Starting")
         wx.Panel.__init__(self, parent, size=size)
+        
+        self.capture_thread = None
 
         label_font = wx.Font(Constants.LABEL_SIZE, Constants.LABEL_FAMILY, Constants.LABEL_STYLE, Constants.LABEL_WEIGHT, underline=Constants.LABEL_UNDERLINE)
 
@@ -36,7 +41,7 @@ class SampleCreatePanel(wx.Panel):
         generic_sizer.Add(create_random_sizer)
         create_random_button = wx.Button(self, label=GUIText.RANDOM_LABEL)
         create_random_button.SetToolTip(GUIText.CREATE_RANDOM_TOOLTIP)
-        self.Bind(wx.EVT_BUTTON, lambda event: self.OnCreateSample(event, 'Random'), create_random_button)
+        self.Bind(wx.EVT_BUTTON, lambda event: self.OnStartCreateSample(event, 'Random'), create_random_button)
         create_random_sizer.Add(create_random_button, 0, wx.ALL, 5)
         create_random_description = wx.StaticText(self, label=GUIText.RANDOM_DESC)
         create_random_sizer.Add(create_random_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
@@ -52,13 +57,14 @@ class SampleCreatePanel(wx.Panel):
         topicmodel_sizer.Add(description_sizer, 0, wx.ALL, 5)
         topicmodelling_description = wx.StaticText(self, label=GUIText.TOPICMODEL_SECTION_DESC)
         description_sizer.Add(topicmodelling_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        #topicmodelling_link = wx.adv.HyperlinkCtrl(self, label="", url=GUIText.TOPICMODEL_SECTION_LINK)#TODO choose approriate reference/s
+        #TODO choose approriate reference/s
+        #topicmodelling_link = wx.adv.HyperlinkCtrl(self, label="", url=GUIText.TOPICMODEL_SECTION_LINK)
         #description_sizer.Add(topicmodelling_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         create_lda_sizer = wx.BoxSizer(wx.HORIZONTAL)
         topicmodel_sizer.Add(create_lda_sizer)
         create_lda_button = wx.Button(self, label=GUIText.LDA_LABEL)
         create_lda_button.SetToolTip(GUIText.CREATE_LDA_TOOLTIP)
-        self.Bind(wx.EVT_BUTTON, lambda event: self.OnCreateSample(event, 'LDA'), create_lda_button)
+        self.Bind(wx.EVT_BUTTON, lambda event: self.OnStartCreateSample(event, 'LDA'), create_lda_button)
         create_lda_sizer.Add(create_lda_button, 0, wx.ALL, 5)
         create_lda_description = wx.StaticText(self, label=GUIText.LDA_DESC)
         create_lda_sizer.Add(create_lda_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
@@ -68,7 +74,7 @@ class SampleCreatePanel(wx.Panel):
         topicmodel_sizer.Add(create_biterm_sizer)
         create_biterm_button = wx.Button(self, label=GUIText.BITERM_LABEL)
         create_biterm_button.SetToolTip(GUIText.CREATE_BITERM_TOOLTIP)
-        self.Bind(wx.EVT_BUTTON, lambda event: self.OnCreateSample(event, 'Biterm'), create_biterm_button)
+        self.Bind(wx.EVT_BUTTON, lambda event: self.OnStartCreateSample(event, 'Biterm'), create_biterm_button)
         create_biterm_sizer.Add(create_biterm_button, 0, wx.ALL, 5)
         create_biterm_description = wx.StaticText(self, label=GUIText.BITERM_DESC)
         create_biterm_sizer.Add(create_biterm_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
@@ -78,19 +84,25 @@ class SampleCreatePanel(wx.Panel):
         topicmodel_sizer.Add(create_nmf_sizer)
         create_nmf_button = wx.Button(self, label=GUIText.NMF_LABEL)
         create_nmf_button.SetToolTip(GUIText.CREATE_NMF_TOOLTIP)
-        self.Bind(wx.EVT_BUTTON, lambda event: self.OnCreateSample(event, 'NMF'), create_nmf_button)
+        self.Bind(wx.EVT_BUTTON, lambda event: self.OnStartCreateSample(event, 'NMF'), create_nmf_button)
         create_nmf_sizer.Add(create_nmf_button, 0, wx.ALL, 5)
-        create_nmf_description = wx.StaticText(self, label=GUIText.NMF_DESC) # TODO: check description is ok
+        #TODO: check description is ok
+        create_nmf_description = wx.StaticText(self, label=GUIText.NMF_DESC)
         create_nmf_sizer.Add(create_nmf_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        create_nmf_link = wx.adv.HyperlinkCtrl(self, label="4", url=GUIText.NMF_URL) # TODO: check URL is ok
+        #TODO: check URL is ok
+        create_nmf_link = wx.adv.HyperlinkCtrl(self, label="4", url=GUIText.NMF_URL) 
         create_nmf_sizer.Add(create_nmf_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+
+        
+        #actions for different gui element's triggers
+        CustomEvents.CAPTURE_EVT_RESULT(self, self.OnFinishCreateSample)
 
         self.SetSizer(sizer)
         self.Layout()
         logger.info("Finished")
     
-    def OnCreateSample(self, event, model_type):
-        logger = logging.getLogger(__name__+".SampleCreatePanel.OnCreateSample")
+    def OnStartCreateSample(self, event, model_type):
+        logger = logging.getLogger(__name__+".SampleCreatePanel.OnStartCreateSample")
         logger.info("Starting")
         parent_notebook = self.GetParent()
         main_frame = wx.GetApp().GetTopWindow()
@@ -114,7 +126,7 @@ class SampleCreatePanel(wx.Panel):
                     main_frame.PulseProgressDialog(GUIText.GENERATING_RANDOM_SUBLABEL+str(name))
                     dataset_key = model_parameters['dataset_key']
                     dataset = main_frame.datasets[dataset_key]
-                    model_parameters['metadataset'] = copy.deepcopy(dataset.metadata)
+                    model_parameters['document_keys'] = list(dataset.data.keys())
                     new_sample = Samples.RandomSample(name, dataset_key, model_parameters)
                     new_sample.Generate(dataset)
                     new_sample_panel = RandomSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())
@@ -133,117 +145,111 @@ class SampleCreatePanel(wx.Panel):
                     model_parameters = create_dialog.model_parameters
                     name = model_parameters['name']
                     main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_SUBLABEL+str(name))
-                    dataset_key = model_parameters['dataset_key']
-                    dataset = main_frame.datasets[dataset_key]
-                    model_parameters['metadataset'] = copy.deepcopy(dataset.metadata)
-                    model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG2)
-                    new_sample = Samples.LDASample(name, dataset_key, model_parameters)
-                    new_sample.applied_filter_rules = copy.deepcopy(dataset.filter_rules)
-                    new_sample.tokenization_choice = dataset.tokenization_choice
-                    new_sample.tokenization_package_versions = dataset.tokenization_package_versions
-                    new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
-                    main_frame.samples[new_sample.key] = new_sample
-                    new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG3)
-                    parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
-                    parent_notebook.sample_panels[new_sample.key] = new_sample_panel
-                    main_frame.CloseProgressDialog(message=GUIText.GENERATED_LDA_COMPLETED_PART1,
-                                                   thaw=False)
+                    self.capture_thread = SamplesThreads.CaptureThread(self,
+                                                                        main_frame,
+                                                                        model_parameters,
+                                                                        model_type)
                 else:
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
                     main_frame.multiprocessing_inprogress_flag = False
-                self.Thaw()
+                    self.Thaw()
         elif model_type == 'Biterm':
             with BitermModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
                     model_parameters = create_dialog.model_parameters
                     name = model_parameters['name']
                     main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_SUBLABEL+str(name))
-                    dataset_key = model_parameters['dataset_key']
-                    dataset = main_frame.datasets[dataset_key]
-                    model_parameters['metadataset'] = copy.deepcopy(dataset.metadata)
-                    model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG2)
-                    new_sample = Samples.BitermSample(name, dataset_key, model_parameters)
-                    new_sample.applied_filter_rules = copy.deepcopy(dataset.filter_rules)
-                    new_sample.tokenization_choice = dataset.tokenization_choice
-                    new_sample.tokenization_package_versions = dataset.tokenization_package_versions
-                    new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
-                    main_frame.samples[new_sample.key] = new_sample
-                    new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG3)
-                    parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
-                    parent_notebook.sample_panels[new_sample.key] = new_sample_panel
-                    main_frame.CloseProgressDialog(message=GUIText.GENERATED_BITERM_COMPLETED_PART1,
-                                                   thaw=False)
+                    self.capture_thread = SamplesThreads.CaptureThread(self,
+                                                                        main_frame,
+                                                                        model_parameters,
+                                                                        model_type)
                 else:
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
-                self.Thaw()
+                    self.Thaw()
         elif model_type == 'NMF':
             with NMFModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
                     model_parameters = create_dialog.model_parameters
                     name = model_parameters['name']
                     main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_SUBLABEL+str(name))
-                    dataset_key = model_parameters['dataset_key']
-                    dataset = main_frame.datasets[dataset_key]
-                    metadataset = dataset.metadata
-                    model_parameters['metadataset'] = copy.deepcopy(metadataset)
-                    model_parameters['tokensets'] = self.CaptureTokens(dataset_key)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_MSG2)
-                    new_sample = Samples.NMFSample(name, dataset_key, model_parameters)
-                    new_sample.applied_filter_rules = copy.deepcopy(dataset.filter_rules)
-                    new_sample.tokenization_choice = dataset.tokenization_choice
-                    new_sample.tokenization_package_versions = dataset.tokenization_package_versions
-                    new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
-                    main_frame.samples[new_sample.key] = new_sample
-                    new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_MSG3)
-                    parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
-                    parent_notebook.sample_panels[new_sample.key] = new_sample_panel
-                    main_frame.CloseProgressDialog(message=GUIText.GENERATED_NMF_COMPLETED_PART1,
-                                                   thaw=False)
+                    self.capture_thread = SamplesThreads.CaptureThread(self,
+                                                                        main_frame,
+                                                                        model_parameters,
+                                                                        model_type)
                 else:
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
-                self.Thaw()
+                    self.Thaw()
         else:
             main_frame.PulseProgressDialog(GUIText.TYPE_UNKNOWN_ERROR)
             main_frame.CloseProgressDialog(thaw=False)
             self.Thaw()
         logger.info("Finished")
 
-    #get a moment in time snap shot of the token set that includes each specified field
-    #snapshot is needed to generate ml samples
-    def CaptureTokens(self, dataset_key):
-        logger = logging.getLogger(__name__+".SampleCreatePanel.CaptureTokens")
+    def OnFinishCreateSample(self, event):
+        logger = logging.getLogger(__name__+".SampleCreatePanel.OnFinishSample")
         logger.info("Starting")
-        token_dict = {}
+        parent_notebook = self.GetParent()
         main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.GENERATING_PREPARING_MSG)
-        fields = {}
+
+        self.capture_thread.join()
+        self.capture_thread = None
+
+        model_type = event.model_type
+        model_parameters = event.model_parameters
+        name = model_parameters['name']
+        dataset_key = model_parameters['dataset_key']
         dataset = main_frame.datasets[dataset_key]
-        for field_name in dataset.chosen_fields:
-            fields[(dataset_key,), field_name] = dataset.chosen_fields[field_name]
+        fields_list = event.field_list
         
-        word_idx = dataset.tokenization_choice
-        tokenset_df = dataset.words_df.loc[~dataset.words_df[Constants.TOKEN_REMOVE_FLG]]
-
-        all_columns = set(tokenset_df.columns)
-        list_columns = {'field_key', 'key', 'order', 'tfidf'}
-        nonlist_columns = list(all_columns - list_columns)
-        tokenset_df = tokenset_df.set_index(nonlist_columns).apply(pd.Series.explode).reset_index()
-
-        tokenset_df.sort_values(by=['order'], inplace=True, ascending=False)
-        tokenset_df = tokenset_df.groupby('key').agg(tokens=(word_idx, lambda x: list(x)))
-        tokenset_df = tokenset_df['tokens']
-
-        token_dict = tokenset_df.to_dict()
-
-        #seperate from source by making a deepcopy
-        main_frame.PulseProgressDialog(GUIText.AFTERFILTERING_LABEL1+str(dataset.total_docs_remaining)+GUIText.AFTERFILTERING_LABEL2+str(dataset.total_docs)+GUIText.AFTERFILTERING_LABEL3)
+        if model_type == 'LDA':
+            main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG2)
+            new_sample = Samples.LDASample(name, dataset_key, model_parameters)
+            new_sample.fields_list = fields_list
+            new_sample.applied_filter_rules = copy.deepcopy(dataset.filter_rules)
+            new_sample.tokenization_choice = dataset.tokenization_choice
+            new_sample.tokenization_package_versions = dataset.tokenization_package_versions
+            new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
+            main_frame.samples[new_sample.key] = new_sample
+            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
+            main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG3)
+            parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
+            parent_notebook.sample_panels[new_sample.key] = new_sample_panel
+            main_frame.CloseProgressDialog(message=GUIText.GENERATED_LDA_COMPLETED_PART1,
+                                            thaw=False)
+            self.Thaw()
+        elif model_type == 'Biterm':
+            main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG2)
+            new_sample = Samples.BitermSample(name, dataset_key, model_parameters)
+            new_sample.fields_list = fields_list
+            new_sample.applied_filter_rules = copy.deepcopy(dataset.filter_rules)
+            new_sample.tokenization_choice = dataset.tokenization_choice
+            new_sample.tokenization_package_versions = dataset.tokenization_package_versions
+            new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
+            main_frame.samples[new_sample.key] = new_sample
+            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
+            main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG3)
+            parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
+            parent_notebook.sample_panels[new_sample.key] = new_sample_panel
+            main_frame.CloseProgressDialog(message=GUIText.GENERATED_BITERM_COMPLETED_PART1,
+                                            thaw=False)
+            self.Thaw()
+        elif model_type == 'NMF':
+            main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_MSG2)
+            new_sample = Samples.NMFSample(name, dataset_key, model_parameters)
+            new_sample.fields_list = fields_list
+            new_sample.applied_filter_rules = copy.deepcopy(dataset.filter_rules)
+            new_sample.tokenization_choice = dataset.tokenization_choice
+            new_sample.tokenization_package_versions = dataset.tokenization_package_versions
+            new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
+            main_frame.samples[new_sample.key] = new_sample
+            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
+            main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_MSG3)
+            parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
+            parent_notebook.sample_panels[new_sample.key] = new_sample_panel
+            main_frame.CloseProgressDialog(message=GUIText.GENERATED_NMF_COMPLETED_PART1,
+                                            thaw=False)
+            self.Thaw()
         logger.info("Finished")
-        return token_dict
 
 class AbstractSamplePanel(wx.Panel):
     '''general class for features all model panels should have'''
@@ -258,6 +264,15 @@ class AbstractSamplePanel(wx.Panel):
 
         self.menu = wx.Menu()
         self.menu_menuitem = None
+        logger.info("Finished")
+
+    def DatasetsUpdated(self):
+        logger = logging.getLogger(__name__+".AbstractSamplePanel["+self.sample.key+"].DatasetsUpdated")
+        logger.info("Starting")
+        self.Freeze()
+        if self.parts_panel != None:
+            self.parts_panel.DatasetsUpdated()
+        self.Thaw()
         logger.info("Finished")
 
     def DocumentsUpdated(self):
@@ -287,7 +302,7 @@ class PartPanel(wx.Panel):
         self.parts = {}
         self.parts.update(parts)
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
 
         controls_sizer = wx.BoxSizer()
         sample_label = wx.StaticText(self, label=GUIText.SAMPLE_REQUEST)
@@ -310,7 +325,7 @@ class PartPanel(wx.Panel):
         toolbar.Realize()
         controls_sizer.Add(toolbar, 0, wx.ALL, 5)
 
-        sizer.Add(controls_sizer, 0, wx.ALL, 5)
+        self.sizer.Add(controls_sizer, 0, wx.ALL, 5)
         
         self.parts_model = SamplesDataViews.PartsViewModel(self.sample, self.dataset)
         self.parts_ctrl = SamplesDataViews.PartsViewCtrl(self, self.parts_model)
@@ -319,9 +334,9 @@ class PartPanel(wx.Panel):
         columns = self.parts_ctrl.GetColumns()
         for column in reversed(columns):
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
-        sizer.Add(self.parts_ctrl, 1, wx.EXPAND, 5)
+        self.sizer.Add(self.parts_ctrl, 1, wx.EXPAND, 5)
 
-        self.SetSizer(sizer)
+        self.SetSizer(self.sizer)
 
         logger.info("Finished")
 
@@ -385,9 +400,25 @@ class PartPanel(wx.Panel):
         self.parts_ctrl.Expander(None)
         logger.info("Finished")
 
+    def DatasetsUpdated(self):
+        logger = logging.getLogger(__name__+".PartPanel["+str(self.sample.key)+"].DatasetsUpdated")
+        logger.info("Starting")
+        new_parts_model = SamplesDataViews.PartsViewModel(self.sample, self.dataset)
+        new_parts_ctrl = SamplesDataViews.PartsViewCtrl(self, new_parts_model)
+        self.sizer.Replace(self.parts_ctrl, new_parts_ctrl)
+        self.Layout()
+        self.parts_ctrl.Destroy()
+        self.parts_model = new_parts_model
+        self.parts_ctrl = new_parts_ctrl
+        self.DocumentsUpdated()
+        logger.info("Finished")
+
     def DocumentsUpdated(self):
+        logger = logging.getLogger(__name__+".PartPanel["+str(self.sample.key)+"].DocumentsUpdated")
+        logger.info("Starting")
         self.parts_model.Cleared()
         self.parts_ctrl.Expander(None)
+        logger.info("Finished")
 
     #Module Control commands
     def Load(self, saved_data):
@@ -991,7 +1022,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         logger.info("Finished")
         return saved_data
 
-#TODO reactivate and test
+#TODO reactivate and test to allow plugins (reviewer suggestion)
 class TopicVisualizationsNotebook(FNB.FlatNotebook):
     def __init__(self, parent, sample):
         logger = logging.getLogger(__name__+".TopicVisualizationsNotebook["+str(sample.key)+"].__init__")
@@ -1002,7 +1033,9 @@ class TopicVisualizationsNotebook(FNB.FlatNotebook):
         self.chordplot_panel = ChordPlotPanel(self)
         self.AddPage(self.chordplot_panel, "Chord Plot")
 
-        #TODO replace these or augment to handle unknown topic
+        #TODO choose:
+        # 1) augment to handle unknown topic 
+        # 2) consider if it is ok to ignore unknown topics
         #self.pyLDAvis_panel = pyLDAvisPanel(self)
         #self.AddPage(self.pyLDAvis_panel, "pyLDAvis")#self.wordnetworkgraph_panel = NetworkPlotPlanel(self)
         #self.AddPage(self.wordnetworkgraph_panel, "Word Network Graph")

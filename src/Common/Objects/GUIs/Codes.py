@@ -96,7 +96,9 @@ class DocumentListPanel(wx.Panel):
         logger.info("Starting")
         wx.Panel.__init__(self, parent)
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.dataset_key = dataset_key
+
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
 
         controls_sizer = wx.BoxSizer()
         actions_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, self, label=GUIText.ACTIONS)
@@ -147,19 +149,19 @@ class DocumentListPanel(wx.Panel):
         view_sizer.Add(view_toolbar)
         controls_sizer.Add(view_sizer, 0, wx.ALL, 5)
 
-        sizer.Add(controls_sizer, 0, wx.ALL, 5)
+        self.sizer.Add(controls_sizer, 0, wx.ALL, 5)
         
         #single dataset mode
         main_frame = wx.GetApp().GetTopWindow()
-        self.documents_model = CodesDataViews.DocumentViewModel(main_frame.datasets[dataset_key], main_frame.samples)
+        self.documents_model = CodesDataViews.DocumentViewModel(main_frame.datasets[self.dataset_key], main_frame.samples)
         self.documents_model.samples_filter.append('dataset')
         self.documents_ctrl = CodesDataViews.DocumentViewCtrl(self, self.documents_model)
-        sizer.Add(self.documents_ctrl, 1, wx.EXPAND)
+        self.sizer.Add(self.documents_ctrl, 1, wx.EXPAND)
 
         self.documents_model.Cleared()
         self.documents_ctrl.Expander(None)
 
-        self.SetSizer(sizer)
+        self.SetSizer(self.sizer)
 
         logger.info("Finished")    
 
@@ -171,6 +173,7 @@ class DocumentListPanel(wx.Panel):
             if hasattr(node, "usefulness_flag"):
                 node.usefulness_flag = None
                 self.documents_model.ItemChanged(item)
+            
         logger.info("Finished")
 
     def OnUseful(self, event):
@@ -256,10 +259,24 @@ class DocumentListPanel(wx.Panel):
         self.OnSearch(event)
         logger.info("Finished")
 
+    def DatasetsUpdated(self):
+        logger = logging.getLogger(__name__+".DocumentListPanel.DatasetsUpdated")
+        logger.info("Starting")
+        self.Freeze()
+        main_frame = wx.GetApp().GetTopWindow()
+        new_documents_model = CodesDataViews.DocumentViewModel(main_frame.datasets[self.dataset_key], main_frame.samples)
+        new_documents_model.samples_filter.extend(self.documents_model.samples_filter)
+        new_documents_ctrl = CodesDataViews.DocumentViewCtrl(self, new_documents_model)
+        self.sizer.Replace(self.documents_ctrl, new_documents_ctrl)
+        self.documents_ctrl.Destroy()
+        self.documents_model = new_documents_model
+        self.documents_ctrl = new_documents_ctrl
+        self.Layout()
+        self.Thaw()
+        self.DocumentsUpdated()
+        logger.info("Finished")
 
     def DocumentsUpdated(self):
-        '''Triggered by any function from this module or sub modules.
-        updates the datasets to perform a global refresh'''
         logger = logging.getLogger(__name__+".DocumentListPanel.DocumentsUpdated")
         logger.info("Starting")
 
@@ -328,37 +345,40 @@ class DocumentPanel(wx.Panel):
         field_ctrl.Bind(wx.EVT_TEXT_URL, self.OnURL)
 
         for field_name in document.parent.metadata_fields:
-            field_data = document.parent.data[document.key][field_name]
-            if isinstance(field_data, list):
-                for entry in field_data:
+            if field_name in document.parent.data[document.key]:
+                field_data = document.parent.data[document.key][field_name]
+                field_ctrl.WriteText('------'+str(field_name)+'------\n')
+                if isinstance(field_data, list):
+                    for entry in field_data:
+                        if document.parent.metadata_fields[field_name].fieldtype == 'url':
+                            field_ctrl.BeginStyle(urlStyle)
+                            field_ctrl.BeginURL(entry)
+                            field_ctrl.WriteText(entry)
+                            field_ctrl.EndURL()
+                            field_ctrl.EndStyle()
+                            field_ctrl.WriteText('\n------------\n')
+                        elif document.parent.metadata_fields[field_name].fieldtype == 'UTC-timestamp':
+                            value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
+                            field_ctrl.WriteText(value_str+' UTC\n------------\n')
+                        else:
+                            field_ctrl.WriteText(str(entry)+'\n------------\n')
+                else:
                     if document.parent.metadata_fields[field_name].fieldtype == 'url':
                         field_ctrl.BeginStyle(urlStyle)
-                        field_ctrl.BeginURL(entry)
-                        field_ctrl.WriteText(entry)
+                        field_ctrl.BeginURL(field_data)
+                        field_ctrl.WriteText(field_data)
                         field_ctrl.EndURL()
                         field_ctrl.EndStyle()
                         field_ctrl.WriteText('\n------------\n')
                     elif document.parent.metadata_fields[field_name].fieldtype == 'UTC-timestamp':
-                        value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
+                        value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
                         field_ctrl.WriteText(value_str+' UTC\n------------\n')
                     else:
-                        field_ctrl.WriteText(str(entry)+'\n------------\n')
-            else:
-                if document.parent.metadata_fields[field_name].fieldtype == 'url':
-                    field_ctrl.BeginStyle(urlStyle)
-                    field_ctrl.BeginURL(field_data)
-                    field_ctrl.WriteText(field_data)
-                    field_ctrl.EndURL()
-                    field_ctrl.EndStyle()
-                    field_ctrl.WriteText('\n------------\n')
-                elif document.parent.metadata_fields[field_name].fieldtype == 'UTC-timestamp':
-                    value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
-                    field_ctrl.WriteText(value_str+' UTC\n------------\n')
-                else:
-                    field_ctrl.WriteText(str(field_data)+'\n------------\n')
+                        field_ctrl.WriteText(str(field_data)+'\n------------\n')
         for field_name in document.parent.chosen_fields:
-            if field_name not in document.parent.metadata_fields:
+            if field_name not in document.parent.metadata_fields and field_name in document.parent.data[document.key]:
                 field_data = document.parent.data[document.key][field_name]
+                field_ctrl.WriteText('------'+str(field_name)+'------\n')
                 if isinstance(field_data, list):
                     for entry in field_data:
                         if document.parent.chosen_fields[field_name].fieldtype == 'url':

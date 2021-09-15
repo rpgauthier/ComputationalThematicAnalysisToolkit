@@ -3,6 +3,7 @@ import csv
 import os.path
 import tweepy
 import json
+import chardet
 from numpy import source
 import pytz
 
@@ -15,6 +16,7 @@ import wx.dataview as dv
 import Common.Constants as Constants
 from Common.GUIText import Collection as GUIText
 import Common.CustomEvents as CustomEvents
+import Common.Database as Database
 import Collection.CollectionThreads as CollectionThreads
 
 class AbstractRetrieverDialog(wx.Dialog):
@@ -27,6 +29,7 @@ class AbstractRetrieverDialog(wx.Dialog):
                 dataset_key = event.data['dataset_key']
                 if dataset_key in main_frame.datasets:
                     main_frame.datasets[dataset_key].DestroyObject()
+                    Database.DatabaseConnection(main_frame.current_workspace.name).DeleteDataset(dataset_key)
                 main_frame.datasets[dataset_key] = event.data['dataset']
             elif 'datasets' in event.data:
                 for dataset_key in event.data['datasets']:
@@ -596,7 +599,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         else:
             included_fields_sizer.ShowItems(False)
 
-        # TODO: defaults to tweet type for now, could add more (like with reddit) if needed
+        #TODO: defaults to tweet type for now, could add more (like with reddit) if needed
         self.OnDatasetTypeChosen(None)
 
         #Retriever button to collect the requested data
@@ -678,7 +681,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
                 status_flag = False 
         except tweepy.error.TweepError as e:
             if e.api_code == 220:
-                # TODO: once user auth is implemented, verify user credentials are sufficient (input for valid user credentials still need to be added)
+                #TODO: once user auth is implemented, verify user credentials are sufficient (input for valid user credentials still need to be added)
                 pass
                 # wx.MessageBox(GUIText.INSUFFICIENT_CREDENTIALS_ERROR,
                 #             GUIText.ERROR, wx.OK | wx.ICON_ERROR)
@@ -878,10 +881,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         metadata_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
         metadata_fields_sizer.Add(metadata_first_sizer, 1, wx.EXPAND)
         metadata_fields_sizer.Add(metadata_combined_sizer, 1, wx.EXPAND)
-        if main_frame.adjustable_metadata_mode:
-            sizer.Add(metadata_fields_sizer, 1, wx.EXPAND|wx.ALL, 5)
-        else:
-            metadata_fields_sizer.ShowItems(False)
+        sizer.Add(metadata_fields_sizer, 1, wx.EXPAND|wx.ALL, 5)
 
         included_first_label = wx.StaticText(self, label=GUIText.INCLUDEDFIELDS)
         self.included_first_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
@@ -939,7 +939,9 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         filename = self.filename_ctrl.GetPath()
 
         if os.path.isfile(filename):
-            with open(filename, mode='r') as infile:
+            with open(filename, 'rb') as infile:
+                encoding_result = chardet.detect(infile.read(100000))
+            with open(filename, mode='r', encoding=encoding_result['encoding']) as infile:
                 reader = csv.reader(infile)
                 header_row = next(reader)
                 self.id_field_ctrl.Clear()

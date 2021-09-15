@@ -16,6 +16,21 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import Common.CustomEvents as CustomEvents
 import Common.Objects.Utilities.Samples as SamplesUtilities
 
+class CaptureThread(Thread):
+    def __init__(self, notify_window, main_frame, model_paramaters, model_type):
+        Thread.__init__(self)
+        self._notify_window = notify_window
+        self.main_frame = main_frame
+        self.model_parameters = model_paramaters
+        self.model_type = model_type
+        self.start()
+    
+    def run(self):
+        dataset_key = self.model_parameters['dataset_key']
+        self.model_parameters['tokensets'], field_list = SamplesUtilities.CaptureTokens(dataset_key, self.main_frame)
+        wx.PostEvent(self._notify_window, CustomEvents.CaptureResultEvent(self.model_type, self.model_parameters, field_list))
+
+
 class LDATrainingThread(Thread):
     """LDATrainingThread Class."""
     def __init__(self, notify_window, current_workspace_path, key, tokensets, num_topics, num_passes, alpha, eta):
@@ -96,7 +111,6 @@ class BitermTrainingThread(Thread):
     def __init__(self, notify_window, current_workspace_path, key, tokensets, num_topics, num_passes):
         """Init Worker Thread Class."""
         Thread.__init__(self)
-        self.daemon = True
         self._notify_window = notify_window
         self.current_workspace_path = current_workspace_path
         self.key = key
@@ -105,7 +119,7 @@ class BitermTrainingThread(Thread):
         self.num_passes = num_passes
         self.start()
 
-    #TODO needs to be moved to a process as the thread is stalling the main GUI
+    #TODO moved to a process if the thread is stalling the main GUI
     def run(self):
         '''Generates an Biterm model'''
         logger = logging.getLogger(__name__+"BitermTrainingThread["+str(self.key)+"].run")
@@ -160,7 +174,6 @@ class NMFTrainingThread(Thread):
     def __init__(self, notify_window, current_workspace_path, key, tokensets, num_topics):
         """Init Worker Thread Class."""
         Thread.__init__(self)
-        self.daemon = True
         self._notify_window = notify_window
         self.current_workspace_path = current_workspace_path
         self.key = key
@@ -168,6 +181,7 @@ class NMFTrainingThread(Thread):
         self.num_topics = num_topics
         self.start()
 
+    #TODO moved to a process if the thread is stalling the main GUI
     def run(self):
         '''Generates an NMF model'''
         logger = logging.getLogger(__name__+"NMFTrainingThread["+str(self.key)+"].run")

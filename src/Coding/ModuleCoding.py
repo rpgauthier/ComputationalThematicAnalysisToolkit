@@ -16,7 +16,7 @@ import Common.Objects.DataViews.Codes as CodesDataViews
 import Common.Objects.GUIs.Codes as CodesGUIs
 import Common.Objects.Utilities.Codes as CodesUtilities
 
-#TODO: 1) add ability to highlight what data was selected when checking a code. instructions on what was selected would need to be embeded in dataset>document
+#TODO add ability to highlight what data was selected when checking a code. instructions on what was selected would need to be embeded in dataset>document
 
 class CodingNotebook(FNB.FlatNotebook):
     '''Manages the Coding Module'''
@@ -147,8 +147,6 @@ class CodingNotebook(FNB.FlatNotebook):
         logger.info("Finished")
     
     def DatasetsUpdated(self):
-        '''Triggered by any function from this module or sub modules.
-        updates the datasets to perform a global refresh'''
         logger = logging.getLogger(__name__+".CodingPanel.DatasetsUpdated")
         logger.info("Starting")
         #sets time that dataset was updated to flag for saving
@@ -193,8 +191,6 @@ class CodingNotebook(FNB.FlatNotebook):
         logger.info("Finished")
 
     def DocumentsUpdated(self):
-        '''Triggered by any function from this module or sub modules.
-        updates the datasets to perform a global refresh'''
         logger = logging.getLogger(__name__+".CodingPanel.DocumentsUpdated")
         logger.info("Starting")
         for dataset_key in self.coding_datasets_panels:
@@ -208,6 +204,27 @@ class CodingNotebook(FNB.FlatNotebook):
         self.Freeze()
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.PulseProgressDialog(GUIText.LOAD_BUSY_MSG_CONFIG)
+        #remove any datasets that were present
+        for dataset_key in list(self.coding_datasets_panels.keys()):
+            idx = self.GetPageIndex(self.coding_datasets_panels[dataset_key])
+            self.DeletePage(idx)
+            del self.coding_datasets_panels[dataset_key]
+        if len(main_frame.datasets) > 0:
+            #hide default coding page
+            idx = self.GetPageIndex(self.codes_panel)
+            if idx >= 0:
+                self.RemovePage(idx)
+                self.codes_panel.Hide()
+            # add any datasets
+            for dataset_key in main_frame.datasets:
+                self.coding_datasets_panels[dataset_key] = CodingDatasetPanel(self, dataset_key, size=self.GetSize())
+                self.AddPage(self.coding_datasets_panels[dataset_key], str(dataset_key))
+        else:
+            #Show the coding panel
+            idx = self.GetPageIndex(self.codes_panel)
+            if idx == -1:
+                self.codes_panel.Show()
+                self.AddPage(self.codes_panel, GUIText.CODES)
         if 'notes' in saved_data:
             self.notes_panel.Load(saved_data['notes'])
         self.Thaw()
@@ -291,14 +308,12 @@ class CodingDatasetPanel(wx.Panel):
         logger.info("Finished")
 
     def DatasetsUpdated(self):
-        #Triggered by any function from this module or sub modules.
-        #updates the datasets to perform a global refresh
         logger = logging.getLogger(__name__+".CodingDatasetPanel.DatasetsUpdated")
         logger.info("Starting")
         #sets time that dataset was updated to flag for saving
         #trigger updates of any submodules that use the datasets for rendering
         self.Freeze()
-        self.documentlist_panel.DocumentsUpdated()
+        self.documentlist_panel.DatasetsUpdated()
         bottom_window = self.splitter.GetWindow2()
         if bottom_window is not self.default_document_panel:
             self.default_document_panel.Show()

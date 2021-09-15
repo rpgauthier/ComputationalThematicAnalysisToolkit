@@ -13,14 +13,14 @@ import Common.Notes as Notes
 import Common.Objects.Datasets as Datasets
 import Common.Objects.Threads.Datasets as DatasetsThreads
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
+import Common.Database as Database
 import Collection.SubModuleFields as SubModuleFields
 
 class DataNotebook(FNB.FlatNotebook):
-    def __init__(self, parent, grouped_dataset=None, size=wx.DefaultSize):
+    def __init__(self, parent, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".DatasetDataNotebook.__init__")
         logger.info("Starting")
         FNB.FlatNotebook.__init__(self, parent, agwStyle=Constants.FNB_STYLE, size=size)
-        self.dataset = grouped_dataset
 
         #create dictionary to hold instances of dataset data panels for each field avaliable
         self.dataset_data_tabs = {}
@@ -34,25 +34,22 @@ class DataNotebook(FNB.FlatNotebook):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         dataset_data_tab_keys = list(self.dataset_data_tabs.keys())
-        
+        self.Freeze()
         for key in dataset_data_tab_keys:
             index = self.GetPageIndex(self.dataset_data_tabs[key])
             if index is not wx.NOT_FOUND:
                 self.DeletePage(index)
             del self.dataset_data_tabs[key]
-        if self.dataset != None:
-            current_parent = self.dataset
-        else:
-            current_parent = main_frame
-        for key in current_parent.datasets:
+        for key in main_frame.datasets:
             main_frame.PulseProgressDialog(GUIText.REFRESHING_DATASETS_BUSY_MSG+str(key))
             if key in self.dataset_data_tabs:
                 self.dataset_data_tabs[key].Update()
             else:
-                if isinstance(current_parent.datasets[key], Datasets.Dataset):
-                    if len(current_parent.datasets[key].data) > 0:
-                        self.dataset_data_tabs[key] = DatasetDataPanel(self, current_parent.datasets[key], self.GetSize())
+                if isinstance(main_frame.datasets[key], Datasets.Dataset):
+                    if len(main_frame.datasets[key].data) > 0:
+                        self.dataset_data_tabs[key] = DatasetDataPanel(self, main_frame.datasets[key], self.GetSize())
                         self.AddPage(self.dataset_data_tabs[key], str(key))
+        self.Thaw()
         logger.info("Finished")
     
     def DocumentsUpdated(self):
@@ -157,6 +154,7 @@ class DatasetDetailsDialog(wx.Dialog):
                         elif node.parent is not None:
                             node.parent.datasets[new_key] = node
                             del node.parent.datasets[old_key]
+                        Database.DatabaseConnection(main_frame.current_workspace.name).UpdateDatasetKey(old_key, new_key)
                         main_frame.DatasetKeyChange(old_key, new_key)
                         updated_flag = True
                 language_index = self.language_ctrl.GetSelection()
@@ -164,7 +162,7 @@ class DatasetDetailsDialog(wx.Dialog):
                     main_frame.PulseProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_PREPARING_MSG)
                     node.language = Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]
                     main_frame.multiprocessing_inprogress_flag = True
-                    self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, node)
+                    self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, node, True)
                     tokenizing_flag = True
         finally:
             if not tokenizing_flag:
@@ -315,18 +313,28 @@ class DatasetPanel(wx.Panel):
         self.SetSizer(self.sizer)
         self.Layout()
 
+        CustomEvents.EVT_PROGRESS(self, self.OnProgress)
+        CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnTokenizerEnd)
+
     def OnCustomizeMetadataFields(self, event):
         logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeMetadataFields")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
-        SubModuleFields.FieldsDialog(main_frame, str(self.dataset.key)+" "+GUIText.CUSTOMIZE_METADATAFIELDS, self.dataset, self.dataset.metadata_fields).Show()
+        SubModuleFields.FieldsDialog(parent=main_frame,
+                                     title=str(self.dataset.key)+" "+GUIText.CUSTOMIZE_METADATAFIELDS,
+                                     dataset=self.dataset,
+                                     fields=self.dataset.metadata_fields,
+                                     metadata_fields=True).Show()
         logger.info("Finished")
 
     def OnCustomizeIncludedFields(self, event):
         logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeIncludedFields")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
-        SubModuleFields.FieldsDialog(main_frame, str(self.dataset.key)+" "+GUIText.CUSTOMIZE_INCLUDEDFIELDS, self.dataset, self.dataset.chosen_fields).Show()
+        SubModuleFields.FieldsDialog(parent=main_frame,
+                                     title=str(self.dataset.key)+" "+GUIText.CUSTOMIZE_INCLUDEDFIELDS,
+                                     dataset=self.dataset,
+                                     fields=self.dataset.chosen_fields).Show()
         logger.info("Finished")
 
     def OnChangeDatasetKey(self, event):
@@ -359,6 +367,7 @@ class DatasetPanel(wx.Panel):
                         elif node.parent is not None:
                             node.parent.datasets[new_key] = node
                             del node.parent.datasets[old_key]
+                        Database.DatabaseConnection(main_frame.current_workspace.name).UpdateDatasetKey(old_key, new_key)
                         main_frame.DatasetKeyChange(old_key, new_key)
                         main_frame.DatasetsUpdated()
         finally:
@@ -380,7 +389,23 @@ class DatasetPanel(wx.Panel):
             main_frame.PulseProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_PREPARING_MSG)
             node.language = Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]
             main_frame.multiprocessing_inprogress_flag = True
-            self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, node)
+            self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, node, rerun=True)
+        logger.info("Finished")
+
+        
+    def OnProgress(self, event):
+        main_frame = wx.GetApp().GetTopWindow()
+        main_frame.PulseProgressDialog(event.data)
+
+    def OnTokenizerEnd(self, event):
+        logger = logging.getLogger(__name__+".DatasetDetailsDialog.OnTokenizerEnd")
+        logger.info("Starting")
+        self.tokenization_thread.join()
+        self.tokenization_thread = None
+        main_frame = wx.GetApp().GetTopWindow()
+        main_frame.DatasetsUpdated()
+        main_frame.CloseProgressDialog(thaw=True)
+        main_frame.multiprocessing_inprogress_flag = False
         logger.info("Finished")
 
 class DatasetDataPanel(wx.Panel):

@@ -251,6 +251,8 @@ class Datasets(Common):
     TOKENIZING_BUSY_COMPLETED_FIELD_MSG1 = "Completed tokenizing "
     TOKENIZING_BUSY_COMPLETED_FIELD_MSG2 = " of "
     TOKENIZING_BUSY_COMPLETED_FIELD_MSG3 = " for field: "
+    TOKENIZING_BUSY_STARTING_TFIDF_MSG = "Starting to calculate TFIDF values"
+    TOKENIZING_BUSY_COMPLETED_TFIDF_MSG = "Completed to calculating TFIDF values"
 
     CHANGING_NAME_BUSY_LABEL = "Changing Name"
     CHANGING_NAME_BUSY_PREPARING_MSG = "Preparing to Update Dataset Name\n"
@@ -534,20 +536,12 @@ class Collection(Main, Datasets):
     LOAD_BUSY_MSG_CONFIG = "Loading Data Collection Configurations"
     SAVE_BUSY_MSG_CONFIG ="Saving Data Collection Configurations"
 
-#relies on Datasets, Main, and Common being imported by models
+#depends on Datasets, Main, and Common
 class Filtering(Main, Datasets):
     FILTERING_NOTES_LABEL = "Data Cleaning & Filtering Notes"
 
     FILTERING_PREPARING_MSG = "Datasets are being prepared for Data Cleaning & Filtering"
-    #DATASETS_NAME_EXISTS_WARNING = " already exists in Data Cleaning and Filtering Module."\
-    #                               "\nIf you proceed with importing, the existing data will be replaced."\
-    #                               "\nAre you sure you want to proceed with importing?"
-    #DATASETS_DELETE_TOOLTIP = "Selected datasets will be removed"
-    #DATASETS_DELETE_CONFIRMATION_WARNING = "\nWARNING this action cannot be undone."
-    #DATASETS_DELETE_GROUPED_ERROR1 = "Cannot delete dataset: "
-    #DATASETS_DELETE_GROUPED_ERROR2 = "\nThis dataset is part of a group due to data preperation approach."\
-    #                                 "\nPlease consider removing the group and preparing other datasets in previous module."
-
+    
     DATASETS_LABEL = "Datasets"
     INSPECT_LABEL = "Inspect Data"
     FILTERS_LABEL = "Filter Tokens"
@@ -638,14 +632,11 @@ class Filtering(Main, Datasets):
     FILTERS_IMPORT_SPACY = "Import spaCy stopwords"
     FILTERS_IMPORT_SPACY_TOOLTIP = "Append spaCy stop words to removal list"
 
-    FILTERS_REFRESH_BUSY_LABEL = "Refreshing Filter for Dataset: "
-    FILTERS_REFRESH_BUSY_MSG = "Refreshing Filter for Dataset: "
-    
-    FILTERS_RELOAD_BUSY_LABEL = "Reloading Filter for Dataset: "
-    FILTERS_RELOAD_BUSY_MSG = "Reloading Filter for Dataset: "
+    FILTERS_APPLYING_RULES_BUSY_LABEL = "Applying Rules"
+    FILTERS_APPLYING_RULES_BUSY_MSG = "Applying Filter Rules to Dataset: "
 
-    FILTERS_DISPLAY_BUSY_LABEL = "Displaying Filter for Dataset: "
-    FILTERS_DISPLAY_BUSY_MSG = "Displaying Filter for Dataset: "
+    FILTERS_DISPLAY_STRINGS_BUSY_MSG1 = "Displaying "
+    FILTERS_DISPLAY_STRINGS_BUSY_MSG2 = "Strings for Dataset: "
 
     IMPACT_LABEL = "Impact"
 

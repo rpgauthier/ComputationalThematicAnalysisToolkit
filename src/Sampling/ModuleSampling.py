@@ -79,10 +79,11 @@ class SamplingNotebook(FNB.FlatNotebook):
                         self.SetPageText(selection, new_key)
                         main_frame.SampleKeyChange(old_key, new_key)
                         main_frame.SamplesUpdated()
+                        #TODO hook this up to allow toggle of sample specific actions
                         #sample_panel.menu_menuitem.SetItemLabel(new_key)
         logger.info("Finished")
 
-    #TODO hook this up so that it can toggle a specified sample
+    #TODO hook this up so that users can toggle a specified sample vis the view menu
     def OnToggleSample(self, event):
         logger = logging.getLogger(__name__+".SamplingNotebook.OnToggleTokenFilters")
         logger.info("Starting")
@@ -136,7 +137,6 @@ class SamplingNotebook(FNB.FlatNotebook):
                     self.menu.Remove(sample_panel.menu_menuitem)
                 if index is not wx.NOT_FOUND:
                     self.DeletePage(index)
-        main_frame = wx.GetApp().GetTopWindow()
         for key in main_frame.samples:
             if key not in self.sample_panels:
                 sample = main_frame.samples[key]
@@ -155,12 +155,24 @@ class SamplingNotebook(FNB.FlatNotebook):
                 if new_sample_panel is not None:
                     self.InsertPage(len(self.sample_panels), new_sample_panel, str(new_sample_panel.sample.key), select=True)
                     self.sample_panels[key] = new_sample_panel
-                    #TODO new_sample_panel.menu_menuitem = self.menu.AppendSubMenu(new_sample_panel.menu, str(sample_key))
+                    #TODO hook this up to allow toggling sample in view menu
+                    #new_sample_panel.menu_menuitem = self.menu.AppendSubMenu(new_sample_panel.menu, str(sample_key))
+                    #TODO hook this up to allow sample specific actions 
+                    #new_sample_panel.menu_menuitem = self.menu.AppendSubMenu(new_sample_panel.menu, str(sample_key))
+
+    def DatasetsUpdated(self):
+        logger = logging.getLogger(__name__+".SamplingNotebook.DatasetsUpdated")
+        logger.info("Starting")
+        self.Freeze()
+        for key in self.sample_panels:
+            self.sample_panels[key].DatasetsUpdated()
+        self.Thaw()
+        logger.info("Finished")
+
 
     def DocumentsUpdated(self):
         logger = logging.getLogger(__name__+".SamplingNotebook.DatasetsUpdated")
         logger.info("Starting")
-        #trigger refresh of submodules that depend on dataset
         self.Freeze()
         for key in self.sample_panels:
             self.sample_panels[key].DocumentsUpdated()
@@ -183,6 +195,39 @@ class SamplingNotebook(FNB.FlatNotebook):
     def Load(self, saved_data):
         logger = logging.getLogger(__name__+".SamplingNotebook.Load")
         logger.info("Starting")
+        main_frame = wx.GetApp().GetTopWindow()
+        #remove all previous samples
+        for key in list(self.sample_panels.keys()):
+            #remove review_panel and menu
+            sample_panel = self.sample_panels[key]
+            del self.sample_panels[key]
+            index = self.GetPageIndex(sample_panel)
+            if sample_panel.menu_menuitem is not None:
+                self.menu.Remove(sample_panel.menu_menuitem)
+            if index is not wx.NOT_FOUND:
+                self.DeletePage(index)
+        #Add all loaded samples
+        for key in main_frame.samples:
+            sample = main_frame.samples[key]
+            new_sample_panel = None
+            if sample.sample_type == "Random":
+                new_sample_panel = SamplesGUIs.RandomSamplePanel(self, main_frame.samples[key], main_frame.datasets[main_frame.samples[key].dataset_key], size=self.GetSize())
+            elif sample.sample_type == "LDA":
+                new_sample_panel = SamplesGUIs.TopicSamplePanel(self, main_frame.samples[key], main_frame.datasets[main_frame.samples[key].dataset_key], size=self.GetSize())
+                new_sample_panel.Load({})
+            elif sample.sample_type == "Biterm":
+                new_sample_panel = SamplesGUIs.TopicSamplePanel(self, main_frame.samples[key], main_frame.datasets[main_frame.samples[key].dataset_key], size=self.GetSize())
+                new_sample_panel.Load({})
+            elif sample.sample_type == "NMF":
+                new_sample_panel = SamplesGUIs.TopicSamplePanel(self, main_frame.samples[key], main_frame.datasets[main_frame.samples[key].dataset_key], size=self.GetSize())
+                new_sample_panel.Load({})
+            if new_sample_panel is not None:
+                self.InsertPage(len(self.sample_panels), new_sample_panel, str(new_sample_panel.sample.key), select=True)
+                self.sample_panels[key] = new_sample_panel
+                #TODO hook this up to allow toggling sample in view menu
+                #new_sample_panel.menu_menuitem = self.menu.AppendSubMenu(new_sample_panel.menu, str(sample_key))
+                #TODO hook this up to allow sample specific actions 
+                #new_sample_panel.menu_menuitem = self.menu.AppendSubMenu(new_sample_panel.menu, str(sample_key))
 
         if 'notes' in saved_data:
             self.notes_panel.Load(saved_data['notes'])

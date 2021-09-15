@@ -2,6 +2,8 @@ import logging
 import json
 import csv
 import calendar
+import chardet
+import pandas as pd
 from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
 import dateparser
@@ -152,7 +154,7 @@ class RetrieveRedditDatasetThread(Thread):
         if status_flag:
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list)
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -288,14 +290,14 @@ class RetrieveTwitterDatasetThread(Thread):
         error_msg = ""
 
         # tweepy auth
-        # TODO: user-level auth
+        #TODO: user-level auth
         consumer_key = self.consumer_key
         consumer_secret = self.consumer_secret
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-        api = tweepy.API(auth) # TODO: create auth object in dialog and just pass in auth object
+        api = tweepy.API(auth) #TODO: create auth object in dialog and just pass in auth object
 
         if self.dataset_type == "tweet":
-            # TODO: only update if called with twitter api flag? otherwise just import instead (like with reddit)
+            #TODO: only update if called with twitter api flag? otherwise just import instead (like with reddit)
             if True: # twitter_api_flag
                 try:
                     wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_TWITTER_TWEETS_MSG))
@@ -306,7 +308,7 @@ class RetrieveTwitterDatasetThread(Thread):
             if status_flag:
                 # wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BEGINNING_MSG))
 
-                # # TODO: get data from files?
+                #TODO: get data from files?
                 # tweets = tweepy.Cursor(api.search, self.query).items(10)
 
                 # wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_TWITTER_MSG))
@@ -324,7 +326,7 @@ class RetrieveTwitterDatasetThread(Thread):
                     tweets_data[key]['id'] = tweet['id']
                     tweets_data[key]["url"] = "https://twitter.com/" + tweet['user']['screen_name'] + "/status/" + tweet['id_str']
                     tweets_data[key]['created_utc'] = tweet['created_utc']
-                    # TODO: is 'title' needed if tweets don't have titles?
+                    #TODO: is 'title' needed if tweets don't have titles?
                     if 'title' in tweet:
                         tweets_data[key]['title'] = tweet['title']
                     else:
@@ -355,7 +357,7 @@ class RetrieveTwitterDatasetThread(Thread):
         if status_flag:
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list)
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -546,7 +548,7 @@ class RetrieveCSVDatasetThread(Thread):
             #save as a document dataset
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list)
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -600,7 +602,7 @@ class RetrieveCSVDatasetThread(Thread):
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 for new_dataset_key in data:
-                    datasets[new_dataset_key] = DatasetsUtilities.CreateDataset(new_dataset_key, retrieval_details, data[new_dataset_key], self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list)
+                    datasets[new_dataset_key] = DatasetsUtilities.CreateDataset(new_dataset_key, retrieval_details, data[new_dataset_key], self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
                     DatasetsUtilities.TokenizeDataset(datasets[new_dataset_key], self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -622,13 +624,20 @@ class RetrieveCSVDatasetThread(Thread):
         logger = logging.getLogger(__name__+".RetrieveCSVDatasetThread.ImportDataFiles["+filename+"]")
         logger.info("Starting")
 
-        file_data = []
-        with open(filename, mode='r') as infile:
-            reader = csv.reader(infile)
-            header_row = next(reader)
-            for row in reader:
-                data_row = {header_row[i]: row[i] for i in range(len(header_row))}
-                file_data.append(data_row)
+        with open(filename, 'rb') as infile:
+            encoding_result = chardet.detect(infile.read(100000))
+
+        filedata_df = pd.read_csv(filename, encoding=encoding_result['encoding'], keep_default_na=False, dtype='unicode')
+
+        filedata = filedata_df.to_dict('records')
+
+        #filedata = []
+        #with open(filename, mode='r') as infile:
+        #    reader = csv.reader(infile)
+        #    header_row = next(reader)
+        #    for row in reader:
+        #        data_row = {header_row[i]: row[i] for i in range(len(header_row))}
+        #        filedata.append(data_row)
 
         logger.info("Finished")
-        return file_data
+        return filedata

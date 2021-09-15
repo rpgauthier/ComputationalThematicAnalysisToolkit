@@ -3,13 +3,16 @@ import os.path
 import tarfile
 from threading import Thread
 import shutil
+from datetime import datetime
 
 import wx
 import pickle
 
+import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
 from Common.GUIText import Main as GUIText
 import Common.Objects.Datasets as Datasets
+import Common.Database as Database
 
 # Thread class that executes processing
 class SaveThread(Thread):
@@ -102,8 +105,50 @@ class LoadThread(Thread):
         # also make the GUI thread responsible for calling this
         self.start()
 
+    def UpgradeWorkspace(self, result):
+        #upgrade workspace
+        for dataset_key in result['datasets']:
+            self.UpgradeDataset(result['datasets'][dataset_key])
+        
+        #upgrade samples
+        for sample_key in result['samples']:
+            self.UpgradeSample(result['samples'][sample_key], result['datasets'][result['samples'][sample_key].dataset_key])
+
+        #create database for token based operations
+        if not os.path.isfile(self.current_workspace_path+"\\workspace_sqlite3.db"):
+            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent("Converting Workspace to Use Database"))
+            db_conn = Database.DatabaseConnection(self.current_workspace_path)
+            db_conn.Create()
+            for dataset_key in result['datasets']:
+                word_idx = result['datasets'][dataset_key].tokenization_choice
+                if word_idx == Constants.TOKEN_TEXT_IDX:
+                    db_conn.InsertDataset(dataset_key, 'text')
+                elif word_idx == Constants.TOKEN_STEM_IDX:
+                    db_conn.InsertDataset(dataset_key, 'stem')
+                elif word_idx == Constants.TOKEN_STEM_IDX:
+                    db_conn.InsertDataset(dataset_key, 'lemma')
+                db_conn.InsertDocuments(dataset_key, result['datasets'][dataset_key].data.keys())
+                for field_key in result['datasets'][dataset_key].chosen_fields:
+                    db_conn.InsertField(dataset_key, field_key)
+                    if result['datasets'][dataset_key].chosen_fields[field_key].fieldtype == "string":
+                        db_conn.InsertStringTokens(dataset_key, field_key, result['datasets'][dataset_key].chosen_fields[field_key].tokenset)
+                        result['datasets'][dataset_key].chosen_fields[field_key].tokenset = None
+                db_conn.UpdateStringTokensTFIDF(dataset_key)
+                db_conn.ApplyDatasetRules(dataset_key, result['datasets'][dataset_key].filter_rules)
+                included_counts = db_conn.GetStringTokensCounts(dataset_key)
+                result['datasets'][dataset_key].total_docs = included_counts['documents']
+                result['datasets'][dataset_key].total_tokens = included_counts['tokens']
+                result['datasets'][dataset_key].total_uniquetokens = included_counts['unique_tokens']    
+                included_counts = db_conn.GetIncludedStringTokensCounts(dataset_key)
+                result['datasets'][dataset_key].total_docs_remaining = included_counts['documents']
+                result['datasets'][dataset_key].total_tokens_remaining = included_counts['tokens']
+                result['datasets'][dataset_key].total_uniquetokens_remaining = included_counts['unique_tokens']
+                result['datasets'][dataset_key].last_changed_dt = datetime.now()
+
     def UpgradeDataset(self, dataset):
+        #convert metdata fields list to dict of objects
         if hasattr(dataset, "_metadata_fields_list"):
+            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent("Upgrading Dataset: " + str(dataset.key)+" to have customizable metadata"))
             dataset.metadata_fields = {}
             for field_name, field_info in dataset._metadata_fields_list:
                 new_field = Datasets.Field(dataset,
@@ -112,11 +157,41 @@ class LoadThread(Thread):
                                         field_info['desc'],
                                         field_info['type'])
                 dataset.metadata_fields[field_name] = new_field
-
             del dataset._metadata_fields_list
-        
+            dataset.last_changed_dt = datetime.now()
+
+        #update variables names
+        if hasattr(dataset, '_total_unique_tokens'):
+            dataset._total_uniquetokens = dataset._total_unique_tokens
+            dataset.last_changed_dt = datetime.now()
+        if hasattr(dataset, '_total_unique_tokens_remaining'):
+            dataset._total_uniquetokens_remaining = dataset._total_unique_tokens_remaining
+            dataset.last_changed_dt = datetime.now()
+
+        #update rules
+        for idx, rule in enumerate(dataset.filter_rules):
+            if isinstance(rule[3], tuple):
+                if rule[3][0] == Constants.FILTER_TFIDF_REMOVE or rule[3][0] == Constants.FILTER_TFIDF_INCLUDE:
+                    new_rule = (rule[0], rule[1], rule[2], (rule[3][0], rule[3][1], rule[3][2]*100 ))
+                    dataset.filter_rules[idx] = new_rule
+
+        #cleanup no longer needed attributes
         if hasattr(dataset, "_metadata"):
             del dataset._metadata
+            dataset.last_changed_dt = datetime.now()
+        if hasattr(dataset, '_words_df'):
+            del dataset._words_df
+            dataset.last_changed_dt = datetime.now()
+        
+    
+    def UpgradeSample(self, sample, dataset):
+        if not hasattr(sample, "_field_list"):
+            sample._fields_list = list(dataset.chosen_fields.keys())
+            sample.last_changed_dt = datetime.now()
+        
+        if hasattr(sample, 'metadataset_key_list'):
+            sample.document_keys = sample.metadataset_key_list
+            sample.last_changed_dt = datetime.now()
 
     def run(self):
         logger = logging.getLogger(__name__+".LoadThread.run")
@@ -139,7 +214,6 @@ class LoadThread(Thread):
                     if os.path.isfile(self.current_workspace_path+"/Datasets/"+dataset_filename):
                         with open(self.current_workspace_path+"/Datasets/"+dataset_filename, 'rb') as infile:
                             result['datasets'][key] = pickle.load(infile)
-                            self.UpgradeDataset(result['datasets'][key])
 
             result['samples'] = {}
             if 'samples' in result['config']:
@@ -155,6 +229,8 @@ class LoadThread(Thread):
             if "codes" in result['config']:
                 with open(self.current_workspace_path+"/codes.pk", 'rb') as infile:
                     result['codes'] = pickle.load(infile)
+        
+            self.UpgradeWorkspace(result)
 
         except (FileNotFoundError):
             wx.LogError(GUIText.LOAD_FAILURE + self.save_path)

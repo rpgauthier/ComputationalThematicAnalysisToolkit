@@ -64,6 +64,8 @@ class ReportingPanel(wx.Panel):
         self.Freeze()
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.PulseProgressDialog(GUIText.LOAD_BUSY_MSG_CONFIG)
+        self.quotations_model.Cleared()
+        self.quotations_ctrl.Expander(None)
         if 'notes' in saved_data:
             self.notes_panel.Load(saved_data['notes'])
         self.Thaw()
