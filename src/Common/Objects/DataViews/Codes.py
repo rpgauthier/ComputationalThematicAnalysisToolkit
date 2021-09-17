@@ -897,10 +897,10 @@ class DocumentViewModel(dv.PyDataViewModel):
 
         self.data_column_names.clear()
         self.data_column_types.clear()
-        for field_name in self.dataset_data.chosen_fields:
+        for field_name in self.dataset_data.included_fields:
             if field_name not in self.metadata_column_names and field_name not in self.data_column_names:
                 self.data_column_names.append(field_name)
-                self.data_column_types.append(self.dataset_data.chosen_fields[field_name].fieldtype)
+                self.data_column_types.append(self.dataset_data.included_fields[field_name].fieldtype)
 
         self.column_names.clear()
         self.column_names.extend([GUIText.NOTES, GUIText.CODES])

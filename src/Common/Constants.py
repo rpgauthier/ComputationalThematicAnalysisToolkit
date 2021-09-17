@@ -53,8 +53,8 @@ FILTER_TFIDF_UPPER = ' in the upper  '
 ###Token Filters
 TOKENIZER_APPROACH_LISTS = {'eng-sm': ['raw text', 'nltk_PorterStemmer', 'spacy_lemmentizer'],
                             'eng-trf': ['raw text', 'nltk_PorterStemmer', 'spacy_lemmentizer'],
-                            'fre-sm': ['raw text', '<no stemmer avaliable>', 'spacy_lemmentizer'],
-                            'fre-trf': ['raw text', '<no stemmer avaliable>', 'spacy_lemmentizer'],
+                            'fre-sm': ['raw text', '<no stemmer available>', 'spacy_lemmentizer'],
+                            'fre-trf': ['raw text', '<no stemmer available>', 'spacy_lemmentizer'],
                             }
 AVALIABLE_DATASET_LANGUAGES1 = ['eng-sm', 'eng-trf', 'fre-sm']
 AVALIABLE_DATASET_LANGUAGES2 = ['English-Efficent', 'English-Accurate', 'French']
@@ -63,8 +63,8 @@ AVALIABLE_DATASET_LANGUAGES2 = ['English-Efficent', 'English-Accurate', 'French'
 TWITTER_DIALOG_SIZE = wx.Size(350, -1)
 OPTIONS_DIALOG_SIZE = wx.Size(350, 300)
 
-#definition of fields avaliable for use from the retrievers
-avaliable_fields = {
+#definition of fields available for use from the retrievers
+available_fields = {
     ('Reddit', 'submission',): {
         'id': {
             'desc': "the unique Reddit Submission id (may not be unique across other sources/types",

@@ -58,6 +58,7 @@ class FilteringNotebook(FNB.FlatNotebook):
         for key in main_frame.datasets:
             if key in self.filters:
                 self.filters[key].ApplyFilterRulesStart()
+                self.filters[key].rules_panel.DisplayFilterRules(main_frame.datasets[key].filter_rules)
             else:
                 self.filters[key] = FilterPanel(self, main_frame.datasets[key].name, main_frame.datasets[key], size=self.GetSize())
                 self.filters[key].ApplyFilterRulesStart()
@@ -178,7 +179,7 @@ class FilterPanel(wx.Panel):
                 pos = self.included_words_panel.words_list.GetCellValue(row, 1)
                 self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, pos, Constants.FILTER_RULE_REMOVE))
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.ApplyFilterRulesStart()
+            self.ApplyLatestFilterRuleStart()
         logger.info("Finished")
 
     def OnReaddEntry(self, event):
@@ -191,7 +192,7 @@ class FilterPanel(wx.Panel):
                 pos = self.removed_words_panel.words_list.GetCellValue(row, 1)
                 self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, pos, Constants.FILTER_RULE_INCLUDE))
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.ApplyFilterRulesStart()
+            self.ApplyLatestFilterRuleStart()
         logger.info("Finished")
 
     def OnRemoveWord(self, event):
@@ -203,7 +204,7 @@ class FilterPanel(wx.Panel):
                 word = self.included_words_panel.words_list.GetCellValue(row, 0)
                 self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.ApplyFilterRulesStart()
+            self.ApplyLatestFilterRuleStart()
         logger.info("Finished")
 
     def OnReaddWord(self, event):
@@ -215,7 +216,7 @@ class FilterPanel(wx.Panel):
                 word = self.removed_words_panel.words_list.GetCellValue(row, 0)
                 self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_INCLUDE))
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.ApplyFilterRulesStart()
+            self.ApplyLatestFilterRuleStart()
         logger.info("Finished")
 
     def OnRemovePOS(self, event):
@@ -227,7 +228,7 @@ class FilterPanel(wx.Panel):
                 pos = self.included_words_panel.words_list.GetCellValue(row, 1)
                 self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, pos, Constants.FILTER_RULE_REMOVE))
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.ApplyFilterRulesStart()
+            self.ApplyLatestFilterRuleStart()
         logger.info("Finished")
 
     def OnReaddPOS(self, event):
@@ -239,7 +240,7 @@ class FilterPanel(wx.Panel):
                 pos = self.removed_words_panel.words_list.GetCellValue(row, 1)
                 self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, pos, Constants.FILTER_RULE_INCLUDE))
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.ApplyFilterRulesStart()
+            self.ApplyLatestFilterRuleStart()
         logger.info("Finished")
     
     def OnRemoveSpacyAutoStopword(self, event):
@@ -247,7 +248,7 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS))
         self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-        self.ApplyFilterRulesStart()
+        self.ApplyLatestFilterRuleStart()
         logger.info("Finished")
     
     def OnCreateCountFilter(self, event):
@@ -262,7 +263,7 @@ class FilterPanel(wx.Panel):
                         create_dialog.number,)
                 self.dataset.AddFilterRule((create_dialog.field, create_dialog.word, create_dialog.pos, rule))
                 self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-                self.ApplyFilterRulesStart()
+                self.ApplyLatestFilterRuleStart()
         logger.info("Finished")
     
     def OnCreateTfidfFilter(self, event):
@@ -275,9 +276,8 @@ class FilterPanel(wx.Panel):
                         create_dialog.rank,)
                 self.dataset.AddFilterRule((create_dialog.field, create_dialog.word, create_dialog.pos, rule))
                 self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-                self.ApplyFilterRulesStart()
+                self.ApplyLatestFilterRuleStart()
         logger.info("Finished")
-
 
     def OnRemoveRule(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnRemoveRule")
@@ -297,36 +297,80 @@ class FilterPanel(wx.Panel):
     def OnMoveRuleUp(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnMoveRuleUp")
         logger.info("Starting")
-        flag = False
+        changecompleted_flag = False
+        refreshneeded_flag = False
         for item in reversed(self.rules_panel.rules_list.GetSelections()):
             row = self.rules_panel.rules_list.ItemToRow(item)
             index = self.rules_panel.rules_list.GetValue(row, 0)
             if index < len(self.dataset.filter_rules):
                 self.dataset.filter_rules[index], self.dataset.filter_rules[index-1] = self.dataset.filter_rules[index-1], self.dataset.filter_rules[index]
                 self.dataset.last_changed_dt = datetime.now()
-                flag = True
+                changecompleted_flag = True
+                action1 = self.dataset.filter_rules[index][3]
+                if isinstance(action1, tuple):
+                    action1 = action1[0]
+                    if action1 == Constants.FILTER_TFIDF_REMOVE:
+                        action1 = Constants.FILTER_RULE_REMOVE
+                    elif action1 == Constants.FILTER_TFIDF_INCLUDE:
+                        action1 = Constants.FILTER_RULE_INCLUDE
+                elif action1 == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
+                    action1 = Constants.FILTER_RULE_REMOVE
+                action2 = self.dataset.filter_rules[index-1][3]
+                if isinstance(action2, tuple):
+                    action2 = action2[0]
+                    if action2 == Constants.FILTER_TFIDF_REMOVE:
+                        action2 = Constants.FILTER_RULE_REMOVE
+                    elif action2 == Constants.FILTER_TFIDF_INCLUDE:
+                        action2 = Constants.FILTER_RULE_INCLUDE
+                elif action2 == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
+                    action2 = Constants.FILTER_RULE_REMOVE
+                if action1 != action2:
+                    refreshneeded_flag = True
             else:
                 break
-        if flag:
+        if changecompleted_flag:
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+        if refreshneeded_flag:
             self.ApplyFilterRulesStart()
         logger.info("Finished")
     
     def OnMoveRuleDown(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnMoveRuleDown")
         logger.info("Starting")
-        flag = False
+        changecompleted_flag = False
+        refreshneeded_flag = False
         for item in self.rules_panel.rules_list.GetSelections():
             row = self.rules_panel.rules_list.ItemToRow(item)
             index = self.rules_panel.rules_list.GetValue(row, 0)
             if index > 1:
                 self.dataset.filter_rules[index-2], self.dataset.filter_rules[index-1] = self.dataset.filter_rules[index-1], self.dataset.filter_rules[index-2]
                 self.dataset.last_changed_dt = datetime.now()
-                flag = True
+                changecompleted_flag = True
+                action1 = self.dataset.filter_rules[index-2][3]
+                if isinstance(action1, tuple):
+                    action1 = action1[0]
+                    if action1 == Constants.FILTER_TFIDF_REMOVE:
+                        action1 = Constants.FILTER_RULE_REMOVE
+                    elif action1 == Constants.FILTER_TFIDF_INCLUDE:
+                        action1 = Constants.FILTER_RULE_INCLUDE
+                elif action1 == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
+                    action1 = Constants.FILTER_RULE_REMOVE
+                action2 = self.dataset.filter_rules[index-1][3]
+                if isinstance(action2, tuple):
+                    action2 = action2[0]
+                    if action2 == Constants.FILTER_TFIDF_REMOVE:
+                        action2 = Constants.FILTER_RULE_REMOVE
+                    elif action2 == Constants.FILTER_TFIDF_INCLUDE:
+                        action2 = Constants.FILTER_RULE_INCLUDE
+                elif action2 == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
+                    action2 = Constants.FILTER_RULE_REMOVE
+                if action1 != action2:
+                    refreshneeded_flag = True
             else:
                 break
-        if flag:
+        if changecompleted_flag:
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+        if refreshneeded_flag:
             self.ApplyFilterRulesStart()
         logger.info("Finished")
 
@@ -425,6 +469,19 @@ class FilterPanel(wx.Panel):
         self.thread = FilteringThreads.ApplyFilterRulesThread(self, self.dataset, main_frame.current_workspace.name)
         logger.info("Finished")
 
+    #special function for situations where a single new rule is added and thus can be applied upon existing filtering
+    def ApplyLatestFilterRuleStart(self):
+        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].ApplyFilterRulesStart")
+        logger.info("Starting")
+        main_frame = wx.GetApp().GetTopWindow()
+        self.Freeze()
+        main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
+                                        warning=GUIText.SIZE_WARNING_MSG,
+                                        freeze=False)
+        main_frame.PulseProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_MSG+str(self.name))
+        self.thread = FilteringThreads.ApplyFilterLatestRuleThread(self, self.dataset, main_frame.current_workspace.name)
+        logger.info("Finished")
+
     def OnApplyFilterRulesEnd(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnApplyFilterRulesEnd")
         logger.info("Starting")
@@ -462,7 +519,7 @@ class FilterPanel(wx.Panel):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].Load")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.LOAD_FIELD_BUSY_MSG+str(self.name))
+        main_frame.PulseProgressDialog(GUIText.LOAD_FILTERING_BUSY_MSG+str(self.name))
 
         self.rules_panel.tokenization_choice.SetSelection(self.dataset.tokenization_choice)
 
@@ -490,7 +547,7 @@ class FilterPanel(wx.Panel):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].Save")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.SAVE_FIELD_BUSY_MSG+str(self.name))
+        main_frame.PulseProgressDialog(GUIText.SAVE_FILTERING_BUSY_MSG+str(self.name))
         saved_data = {}
         saved_data['included_search_word'] = self.included_words_panel.word_searchctrl.GetValue()
         saved_data['included_search_pos'] = self.included_words_panel.pos_searchctrl.GetValue()
@@ -819,7 +876,7 @@ class CreateCountFilterDialog(wx.Dialog):
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=GUIText.FILTERS_CREATE_COUNT_RULE)
 
-        field_options = list(dataset.chosen_fields.keys())
+        field_options = list(dataset.included_fields.keys())
         field_options.insert(0, "")
         action_options = [Constants.FILTER_RULE_REMOVE,
                           Constants.FILTER_RULE_INCLUDE]
@@ -930,7 +987,7 @@ class CreateTfidfFilterDialog(wx.Dialog):
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=GUIText.FILTERS_CREATE_TFIDF_RULE)
 
-        field_options = list(dataset.chosen_fields.keys())
+        field_options = list(dataset.included_fields.keys())
         field_options.insert(0, "")
         action_options1 = [Constants.FILTER_TFIDF_REMOVE,
                            Constants.FILTER_TFIDF_INCLUDE]

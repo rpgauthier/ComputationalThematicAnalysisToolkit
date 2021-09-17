@@ -103,28 +103,29 @@ class DatabaseConnection():
                                                         AS
                                                         SELECT
                                                             dataset_id,
-                                                            CASE (SELECT datasets.token_type FROM datasets WHERE datasets.id = dataset_id)
+                                                            CASE token_type
                                                                 WHEN 'stem' THEN stem
                                                                 WHEN 'lemma' THEN lemma
                                                                 ELSE text
                                                                 END words,
                                                             pos,
-                                                            COUNT(CASE (SELECT datasets.token_type FROM datasets WHERE datasets.id = dataset_id)
+                                                            COUNT(CASE token_type
                                                                   WHEN 'stem' THEN stem
                                                                   WHEN 'lemma' THEN lemma
                                                                   ELSE text
                                                                   END),
                                                             COUNT(DISTINCT document_id),
                                                             spacy_stopword,
-                                                            CASE (SELECT datasets.token_type FROM datasets WHERE datasets.id = dataset_id)
+                                                            CASE token_type
                                                                 WHEN 'stem' THEN ROUND(MIN(stem_tfidf),4) ||' - '|| ROUND(MAX(stem_tfidf),4)
                                                                 WHEN 'lemma' THEN ROUND(MIN(lemma_tfidf),4) ||' - '|| ROUND(MAX(lemma_tfidf),4)
                                                                 ELSE ROUND(MIN(text_tfidf),4) ||' - '|| ROUND(MAX(text_tfidf),4)
                                                                 END tfidf_range
                                                         FROM string_tokens
+                                                        JOIN datasets ON string_tokens.dataset_id = datasets.id
                                                         WHERE included = 1
                                                         GROUP BY dataset_id,
-                                                                 CASE (SELECT datasets.token_type FROM datasets WHERE datasets.id = dataset_id)
+                                                                 CASE token_type
                                                                     WHEN 'stem' THEN stem
                                                                     WHEN 'lemma' THEN lemma
                                                                     ELSE text
@@ -144,28 +145,29 @@ class DatabaseConnection():
                                                         AS
                                                         SELECT
                                                             dataset_id,
-                                                            CASE (SELECT datasets.token_type FROM datasets WHERE datasets.id = dataset_id)
+                                                            CASE token_type
                                                                 WHEN 'stem' THEN stem
                                                                 WHEN 'lemma' THEN lemma
                                                                 ELSE text
                                                                 END words,
                                                             pos,
-                                                            COUNT(CASE (SELECT datasets.token_type FROM datasets WHERE datasets.id = dataset_id)
+                                                            COUNT(CASE token_type
                                                                   WHEN 'stem' THEN stem
                                                                   WHEN 'lemma' THEN lemma
                                                                   ELSE text
                                                                   END),
                                                             COUNT(DISTINCT document_id),
                                                             spacy_stopword,
-                                                            CASE (SELECT datasets.token_type FROM datasets WHERE datasets.id = dataset_id)
+                                                            CASE token_type
                                                                 WHEN 'stem' THEN ROUND(MIN(stem_tfidf),4) ||' - '|| ROUND(MAX(stem_tfidf),4)
                                                                 WHEN 'lemma' THEN ROUND(MIN(lemma_tfidf),4) ||' - '|| ROUND(MAX(lemma_tfidf),4)
                                                                 ELSE ROUND(MIN(text_tfidf),4) ||' - '|| ROUND(MAX(text_tfidf),4)
                                                                 END tfidf_range
                                                         FROM string_tokens
+                                                        JOIN datasets ON string_tokens.dataset_id = datasets.id
                                                         WHERE included = 0
                                                         GROUP BY dataset_id,
-                                                                 CASE (SELECT datasets.token_type FROM datasets WHERE datasets.id = dataset_id)
+                                                                 CASE token_type
                                                                     WHEN 'stem' THEN stem
                                                                     WHEN 'lemma' THEN lemma
                                                                     ELSE text
@@ -271,18 +273,14 @@ class DatabaseConnection():
         logger.info("Starting")
         try:
             c = self.__conn.cursor()
-            sql_select_datasetid = """SELECT id
-                                      FROM datasets 
-                                      WHERE dataset_key = ?
-                                      """
-            c.execute(sql_select_datasetid, (str(dataset_key),))
-            dataset_id = c.fetchone()[0]
             sql_update_fieldposition = """UPDATE fields
                                           SET position = ?
-                                          WHERE dataset_id = ?
+                                          WHERE dataset_id = (SELECT id
+                                                              FROM datasets 
+                                                              WHERE dataset_key = ?)
                                           AND field_key = ?
                                         """
-            c.execute(sql_update_fieldposition, (dataset_id, str(field_key), position,))
+            c.execute(sql_update_fieldposition, (position, str(dataset_key), str(field_key),))
             self.__conn.commit()
             c.close()
         except sqlite3.Error as e:
@@ -294,17 +292,13 @@ class DatabaseConnection():
         logger.info("Starting")
         try:
             c = self.__conn.cursor()
-            sql_select_datasetid = """SELECT id
-                                      FROM datasets 
-                                      WHERE dataset_key = ?
-                                      """
-            c.execute(sql_select_datasetid, (str(dataset_key),))
-            dataset_id = c.fetchone()[0]
             sql_delete_field = """DELETE FROM fields
-                                  WHERE dataset_id = ?
+                                  WHERE dataset_id = (SELECT id
+                                                      FROM datasets 
+                                                      WHERE dataset_key = ?)
                                   AND field_key = ?
                                   """
-            c.execute(sql_delete_field, (dataset_id, str(field_key),))
+            c.execute(sql_delete_field, (str(dataset_key), str(field_key),))
             self.__conn.commit()
             c.close()
         except sqlite3.Error as e:
@@ -317,18 +311,14 @@ class DatabaseConnection():
         value = False
         try:
             c = self.__conn.cursor()
-            sql_select_datasetid = """SELECT id
-                                      FROM datasets 
-                                      WHERE dataset_key = ?
-                                      """
-            c.execute(sql_select_datasetid, (str(dataset_key),))
-            dataset_id = c.fetchone()[0]
             sql_fieldexists_query = """SELECT 1
                                        FROM fields
-                                       WHERE dataset_id = ?
+                                       WHERE dataset_id = (SELECT id
+                                                           FROM datasets 
+                                                           WHERE dataset_key = ?)
                                        and field_key = ?
                                         """
-            c.execute(sql_fieldexists_query, (dataset_id, str(field_key),))
+            c.execute(sql_fieldexists_query, (str(dataset_key), str(field_key),))
             if c.fetchone() != None:
                 value= True
             c.close()
@@ -351,12 +341,14 @@ class DatabaseConnection():
                                       """
             c.execute(sql_select_datasetid, (str(dataset_key),))
             dataset_id = c.fetchone()[0]
+            parameters = []
             for document_key in document_keys:
-                sql_insert_tokens = """INSERT INTO documents (
-                                            dataset_id,
-                                            document_key
-                                            ) values (?, ?)"""
-                c.execute(sql_insert_tokens, (dataset_id, str(document_key),))
+                parameters.append((dataset_id, str(document_key),))
+            sql_insert_tokens = """INSERT INTO documents (
+                                          dataset_id,
+                                          document_key
+                                          ) values (?, ?)"""
+            c.executemany(sql_insert_tokens, parameters)
             c.execute("COMMIT")
             c.close()
         except sqlite3.Error as e:
@@ -386,6 +378,11 @@ class DatabaseConnection():
                                     """
             c.execute(sql_select_fieldid, (dataset_id, str(field_key),))
             field_id = c.fetchone()[0]
+            sql_select_documentid = """SELECT id
+                                       FROM documents 
+                                       WHERE dataset_id = ?
+                                       AND document_key = ?
+                                       """
             sql_insert_tokens = """INSERT INTO string_tokens (
                                         dataset_id,
                                         field_id,
@@ -399,15 +396,12 @@ class DatabaseConnection():
                                         ) values (?,?,?,?,?,?,?,?,?)"""
             c.execute("BEGIN")
             for doc_key in tokens:
-                sql_select_documentid = """SELECT id
-                                        FROM documents 
-                                        WHERE dataset_id = ?
-                                        AND document_key = ?
-                                        """
                 c.execute(sql_select_documentid, (dataset_id, str(doc_key),))
                 document_id = c.fetchone()[0]
+                parameters = []
                 for t in tokens[doc_key]:
-                    c.execute(sql_insert_tokens, (dataset_id, field_id, document_id, t[0], t[1], t[2], t[3], t[4], t[5],))
+                    parameters.append((dataset_id, field_id, document_id, t[0], t[1], t[2], t[3], t[4], t[5],))
+                c.executemany(sql_insert_tokens, parameters)
             c.execute("COMMIT")
             c.close()
         except sqlite3.Error as e:
@@ -415,7 +409,8 @@ class DatabaseConnection():
         finally:
             self.__conn.isolation_level = old_isolation_level
         logger.info("Finished")
-    
+
+    #TODO explore is combining could speed up processing
     def UpdateStringTokensTFIDF(self, dataset_key):
         logger = logging.getLogger(__name__+".UpdateStringTokensTFIDF")
         logger.info("Starting")
@@ -532,27 +527,26 @@ class DatabaseConnection():
             logger.exception("sql failed with error")
         logger.info("Finished")
 
+    #TODO check if additional indexes are needed to optimize filtering performance
     def ApplyDatasetRules(self, dataset_key, rules):
-        logger = logging.getLogger(__name__+".ApplyRulesToStringTokens")
+        logger = logging.getLogger(__name__+".ApplyDatasetRules")
         logger.info("Starting")
         try:
             c = self.__conn.cursor()
             sql_select_dataset = """SELECT id, token_type
-                                      FROM datasets 
-                                      WHERE dataset_key = ?
-                                      """
+                                    FROM datasets 
+                                    WHERE dataset_key = ?
+                                    """
             c.execute(sql_select_dataset, (str(dataset_key),))
             result = c.fetchone()
             dataset_id = result[0]
             token_type = result[1]
-
             
-            query_totalwordcount_sql = """SELECT COUNT(*)
+            query_totalwordcount_sql = """SELECT COUNT(*),
                                           FROM string_tokens
                                           WHERE dataset_id = ?
                                           """
-            
-            query_totaldoccount_sql = """SELECT COUNT(DISTINCT document_id)
+            query_totaldoccount_sql = """SELECT 
                                          FROM string_tokens
                                          WHERE dataset_id = ?
                                          """
@@ -571,10 +565,10 @@ class DatabaseConnection():
                                                                                  WHEN 'lemma' THEN lemma_tfidf
                                                                                  ELSE text_tfidf
                                                                                  END ASC
-                                                                       ) as per_rank
+                                                    ) AS per_rank
                                              FROM string_tokens
                                              WHERE dataset_id = ?
-                                            ) as ranktable
+                                            ) AS ranktable
                                        WHERE ranktable.id = string_tokens.id
                                        AND per_rank < ?
                                        """
@@ -587,16 +581,16 @@ class DatabaseConnection():
                                                                                  WHEN 'lemma' THEN lemma_tfidf
                                                                                  ELSE text_tfidf
                                                                                  END DESC
-                                                                       ) as per_rank
+                                                    ) AS per_rank
                                              FROM string_tokens
                                              WHERE dataset_id = ?
-                                            ) as ranktable
+                                            ) AS ranktable
                                        WHERE ranktable.id = string_tokens.id
                                        AND per_rank < ?
                                        """
 
             #special code needed for number filters
-            
+            #TODO move subquery into a temporary view that can be reused?
             update_count_sql1 = """UPDATE string_tokens
                                    SET included = ?
                                    FROM (
@@ -614,7 +608,7 @@ class DatabaseConnection():
                                                 ELSE text
                                                 END word,
                                                 pos,
-                                                COUNT(*) as count
+                                                COUNT(*) AS count
                                          FROM string_tokens
                                          WHERE dataset_id = ?
                                          """
@@ -624,19 +618,19 @@ class DatabaseConnection():
                                                ELSE text
                                                END word,
                                                pos,
-                                               COUNT(DISTINCT document_id) as count
+                                               COUNT(DISTINCT document_id) AS count
                                         FROM string_tokens
                                         WHERE dataset_id = ?
                                         """
-            update_count_sql2 = """) as counttable
-                                       WHERE dataset_id = ?
-                                       AND counttable.word = CASE ?
-                                                             WHEN 'stem' THEN stem
-                                                             WHEN 'lemma' THEN lemma
-                                                             ELSE text
-                                                             END
-                                       AND counttable.pos = string_tokens.pos
-                                       AND counttable.count"""
+            update_count_sql2 = """) AS counttable
+                                   WHERE dataset_id = ?
+                                   AND counttable.word = CASE ?
+                                                         WHEN 'stem' THEN stem
+                                                         WHEN 'lemma' THEN lemma
+                                                         ELSE text
+                                                         END
+                                   AND counttable.pos = string_tokens.pos
+                                   AND counttable.count"""
 
             #number filter symbol
             gt_sql = """ > ?
@@ -773,6 +767,247 @@ class DatabaseConnection():
         except sqlite3.Error as e:
             logger.exception("sql failed with error")
         logger.info("Finished")
+    
+    #TODO check if additional indexes are needed to optimize filtering performance
+    def ApplyDatasetRule(self, dataset_key, rule):
+        logger = logging.getLogger(__name__+".ApplyDatasetRule")
+        logger.info("Starting")
+        try:
+            c = self.__conn.cursor()
+            sql_select_dataset = """SELECT id, token_type
+                                      FROM datasets 
+                                      WHERE dataset_key = ?
+                                      """
+            c.execute(sql_select_dataset, (str(dataset_key),))
+            result = c.fetchone()
+            dataset_id = result[0]
+            token_type = result[1]
+            
+            query_totalwordcount_sql = """SELECT COUNT(*)
+                                          FROM string_tokens
+                                          WHERE dataset_id = ?
+                                          """
+            
+            query_totaldoccount_sql = """SELECT COUNT(DISTINCT document_id)
+                                         FROM string_tokens
+                                         WHERE dataset_id = ?
+                                         """
+
+            update_sql = """UPDATE string_tokens
+                              SET included = ?
+                              WHERE dataset_id = ?
+                              """
+
+            #special code needed to figure out tfidf positions
+            update_tfidflower_sql = """UPDATE string_tokens
+                                       SET included = ?
+                                       FROM (SELECT id, 
+                                                    PERCENT_RANK() OVER(ORDER BY CASE ?
+                                                                                 WHEN 'stem' THEN stem_tfidf
+                                                                                 WHEN 'lemma' THEN lemma_tfidf
+                                                                                 ELSE text_tfidf
+                                                                                 END ASC
+                                                                       ) AS per_rank
+                                             FROM string_tokens
+                                             WHERE dataset_id = ?
+                                            ) AS ranktable
+                                       WHERE ranktable.id = string_tokens.id
+                                       AND per_rank < ?
+                                       """
+            
+            update_tfidfupper_sql = """UPDATE string_tokens
+                                       SET included = ?
+                                       FROM (SELECT id, 
+                                                    PERCENT_RANK() OVER(ORDER BY CASE ?
+                                                                                 WHEN 'stem' THEN stem_tfidf
+                                                                                 WHEN 'lemma' THEN lemma_tfidf
+                                                                                 ELSE text_tfidf
+                                                                                 END DESC
+                                                                       ) AS per_rank
+                                             FROM string_tokens
+                                             WHERE dataset_id = ?
+                                            ) AS ranktable
+                                       WHERE ranktable.id = string_tokens.id
+                                       AND per_rank < ?
+                                       """
+
+            #special code needed for number filters
+            #TODO move subquery into a temporary view that can be reused?
+            update_count_sql1 = """UPDATE string_tokens
+                                   SET included = ?
+                                   FROM (
+                                   """
+            subquery_count_sql2 = """GROUP BY CASE ?
+                                              WHEN 'stem' THEN stem
+                                              WHEN 'lemma' THEN lemma
+                                              ELSE text
+                                              END,
+                                              pos
+                                     """
+            subquery_wordcount_sql1 = """SELECT CASE ?
+                                                WHEN 'stem' THEN stem
+                                                WHEN 'lemma' THEN lemma
+                                                ELSE text
+                                                END word,
+                                                pos,
+                                                COUNT(*) AS count
+                                         FROM string_tokens
+                                         WHERE dataset_id = ?
+                                         """
+            subquery_doccount_sql1 = """SELECT CASE ?
+                                               WHEN 'stem' THEN stem
+                                               WHEN 'lemma' THEN lemma
+                                               ELSE text
+                                               END word,
+                                               pos,
+                                               COUNT(DISTINCT document_id) AS count
+                                        FROM string_tokens
+                                        WHERE dataset_id = ?
+                                        """
+            update_count_sql2 = """) as counttable
+                                       WHERE dataset_id = ?
+                                       AND counttable.word = CASE ?
+                                                             WHEN 'stem' THEN stem
+                                                             WHEN 'lemma' THEN lemma
+                                                             ELSE text
+                                                             END
+                                       AND counttable.pos = string_tokens.pos
+                                       AND counttable.count"""
+
+            #number filter symbol
+            gt_sql = """ > ?
+                        """
+            gteq_sql = """ >= ?
+                        """
+            eq_sql = """ = ?
+                        """
+            lteq_sql = """ <= ?
+                        """
+            lt_sql = """ < ?
+                        """
+            
+            #stopword filter
+            stopwords_sql = """AND spacy_stopword = 1
+                               """
+
+            #string filters
+            word_sql = """AND CASE ?
+                            WHEN 'stem' THEN stem
+                            WHEN 'lemma' THEN lemma
+                            ELSE text
+                            END = ?
+                            """
+            pos_sql = """AND pos = ?
+                         """
+            field_sql = """AND field_id = (SELECT id
+                                           FROM fields
+                                           WHERE fields.dataset_id = dataset_id
+                                           AND field_key = ?)
+                           """
+
+            #apply rule
+            field = rule[0]
+            word = rule[1]
+            pos = rule[2]
+            action = rule[3]
+            sql_filters = ""
+            sql_filters_parameters = []
+            if word != Constants.FILTER_RULE_ANY:
+                sql_filters = sql_filters + word_sql
+                sql_filters_parameters.append(token_type)
+                sql_filters_parameters.append(word)
+            if pos != Constants.FILTER_RULE_ANY:
+                sql_filters = sql_filters + pos_sql
+                sql_filters_parameters.append(pos)
+            if field != Constants.FILTER_RULE_ANY:
+                sql_filters = sql_filters + field_sql
+                sql_filters_parameters.append(str(field))
+
+            sql = ""
+            sql_parameters = []
+            if action == Constants.FILTER_RULE_REMOVE:
+                sql = update_sql
+                sql_parameters.append(0)
+                sql_parameters.append(dataset_id)
+            elif action == Constants.FILTER_RULE_INCLUDE:
+                sql = update_sql
+                sql_parameters.append(1)
+                sql_parameters.append(dataset_id)
+            elif action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
+                sql = update_sql + stopwords_sql
+                sql_parameters.append(0)
+                sql_parameters.append(dataset_id)
+            elif isinstance(action, tuple):
+                if action[0] == Constants.FILTER_TFIDF_REMOVE:
+                    sql_parameters.append(0)
+                    sql_parameters.append(token_type)
+                    sql_parameters.append(dataset_id)
+                    sql_parameters.append(action[2]/100)
+                    if action[1] == Constants.FILTER_TFIDF_LOWER:
+                        sql = update_tfidflower_sql
+                    elif action[1] == Constants.FILTER_TFIDF_UPPER:
+                        sql = update_tfidfupper_sql
+                elif action[0] == Constants.FILTER_TFIDF_INCLUDE:
+                    sql_parameters.append(1)
+                    sql_parameters.append(token_type)
+                    sql_parameters.append(dataset_id)
+                    sql_parameters.append(action[2]/100)
+                    if action[1] == Constants.FILTER_TFIDF_LOWER:
+                        sql = update_tfidflower_sql
+                    elif action[1] == Constants.FILTER_TFIDF_UPPER:
+                        sql = update_tfidfupper_sql
+                elif action[0] == Constants.FILTER_RULE_REMOVE or action[0] == Constants.FILTER_RULE_INCLUDE:
+                    if action[0] == Constants.FILTER_RULE_REMOVE:
+                        sql_parameters.append(0)
+                    else:
+                        sql_parameters.append(1)
+                    sql_parameters.append(token_type)
+                    sql_parameters.append(dataset_id)
+                    sql_parameters = sql_parameters + sql_filters_parameters
+                    sql_parameters.append(token_type)
+                    sql_parameters.append(dataset_id)
+                    sql_parameters.append(token_type)
+
+                    if action[1] == Constants.TOKEN_NUM_WORDS:
+                        sql = update_count_sql1+subquery_wordcount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
+                        sql_parameters.append(action[3])
+                    elif action[1] == Constants.TOKEN_PER_WORDS:
+                        sql = update_count_sql1+subquery_wordcount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
+                        c.execute(query_totalwordcount_sql, (dataset_id,))
+                        total_words = c.fetchone()[0]
+                        sql_parameters.append(action[3]/100*total_words)
+                    elif action[1] == Constants.TOKEN_NUM_DOCS:
+                        sql = update_count_sql1+subquery_doccount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
+                        sql_parameters.append(action[3])
+                    elif action[1] == Constants.TOKEN_PER_DOCS:
+                        sql = update_count_sql1+subquery_doccount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
+                        c.execute(query_totaldoccount_sql, (dataset_id,))
+                        total_docs = c.fetchone()[0]
+                        sql_parameters.append(action[3]/100*total_docs)
+
+                    if action[2] == ">":
+                        sql = sql + gt_sql
+                    elif action[2] == ">=":
+                        sql = sql + gteq_sql
+                    elif action[2] == "=":
+                        sql = sql + eq_sql
+                    elif action[2] == "<=":
+                        sql = sql + lteq_sql
+                    elif action[2] == "<":
+                        sql = sql + lt_sql
+
+            #execute the rule
+            sql = sql+sql_filters
+            sql_parameters = sql_parameters + sql_filters_parameters
+            c.execute(sql, sql_parameters)
+
+            #commit after every rule to make sure operations are applied in order
+            self.__conn.commit()
+
+            c.close()
+        except sqlite3.Error as e:
+            logger.exception("sql failed with error")
+        logger.info("Finished")
 
     def GetStringTokensCounts(self, dataset_key):
         logger = logging.getLogger(__name__+".GetStringTokensCounts")
@@ -780,40 +1015,30 @@ class DatabaseConnection():
         counts={}
         try:
             c = self.__conn.cursor()
-            sql_select_datasetid = """SELECT id
+            sql_select_datasetid = """SELECT id, token_type
                                       FROM datasets 
                                       WHERE dataset_key = ?
                                       """
             c.execute(sql_select_datasetid, (str(dataset_key),))
-            dataset_id = c.fetchone()[0]
+            result = c.fetchone()
+            dataset_id = result[0]
+            token_type = result[1]
 
-            sql_tokencount_query = """SELECT COUNT(*)
+            sql_tokencount_query = """SELECT COUNT(*),
+                                             CASE ?
+                                                  WHEN 'stem' THEN COUNT(DISTINCT stem)
+                                                  WHEN 'lemma' THEN COUNT(DISTINCT lemma)
+                                                  ELSE COUNT(DISTINCT text)
+                                                  END,
+                                             COUNT(DISTINCT document_id)   
                                       FROM string_tokens
                                       WHERE dataset_id = ?
                                       """
-            c.execute(sql_tokencount_query, (dataset_id,))
+            c.execute(sql_tokencount_query, (token_type, dataset_id,))
             cur_result = c.fetchone()
             counts['tokens'] = cur_result[0]
-
-            sql_uniquetokencount_query = """SELECT CASE (SELECT datasets.token_type FROM datasets WHERE datasets.id = dataset_id)
-                                                        WHEN 'stem' THEN COUNT(DISTINCT stem)
-                                                        WHEN 'lemma' THEN COUNT(DISTINCT lemma)
-                                                        ELSE COUNT(DISTINCT text)
-                                                        END         
-                                            FROM string_tokens
-                                            WHERE dataset_id = ?
-                                            """
-            c.execute(sql_uniquetokencount_query, (dataset_id,))
-            cur_result = c.fetchone()
-            counts['unique_tokens'] = cur_result[0]
-
-            sql_documentcount_query = """SELECT COUNT(DISTINCT document_id)
-                                         FROM string_tokens
-                                         WHERE dataset_id = ?
-                                         """
-            c.execute(sql_documentcount_query, (dataset_id,))
-            cur_result = c.fetchone()
-            counts['documents'] = cur_result[0]
+            counts['unique_tokens'] = cur_result[1]
+            counts['documents'] = cur_result[2]
 
             c.close()
         except sqlite3.Error as e:
@@ -821,49 +1046,38 @@ class DatabaseConnection():
         logger.info("Finished")
         return counts
 
+    #TODO need to optimize this retrieval
     def GetIncludedStringTokensCounts(self, dataset_key):
         logger = logging.getLogger(__name__+".GetIncludedStringTokensCounts")
         logger.info("Starting")
         counts={}
         try:
             c = self.__conn.cursor()
-            sql_select_datasetid = """SELECT id
+            sql_select_datasetid = """SELECT id, token_type
                                       FROM datasets 
                                       WHERE dataset_key = ?
                                       """
             c.execute(sql_select_datasetid, (str(dataset_key),))
-            dataset_id = c.fetchone()[0]
+            result = c.fetchone()
+            dataset_id = result[0]
+            token_type = result[1]
 
-            sql_tokencount_query = """SELECT COUNT(*)
+            sql_tokencount_query = """SELECT COUNT(*),
+                                             CASE ?
+                                                  WHEN 'stem' THEN COUNT(DISTINCT stem)
+                                                  WHEN 'lemma' THEN COUNT(DISTINCT lemma)
+                                                  ELSE COUNT(DISTINCT text)
+                                                  END,
+                                             COUNT(DISTINCT document_id)   
                                       FROM string_tokens
                                       WHERE dataset_id = ?
                                       AND included = 1
                                       """
-            c.execute(sql_tokencount_query, (str(dataset_id),))
+            c.execute(sql_tokencount_query, (token_type, dataset_id,))
             cur_result = c.fetchone()
             counts['tokens'] = cur_result[0]
-
-            sql_uniquetokencount_query = """SELECT CASE (SELECT datasets.token_type FROM datasets WHERE datasets.id = dataset_id)
-                                                        WHEN 'stem' THEN COUNT(DISTINCT stem)
-                                                        WHEN 'lemma' THEN COUNT(DISTINCT lemma)
-                                                        ELSE COUNT(DISTINCT text)
-                                                        END         
-                                            FROM string_tokens
-                                            WHERE dataset_id = ?
-                                            AND included = 1
-                                            """
-            c.execute(sql_uniquetokencount_query, (dataset_id,))
-            cur_result = c.fetchone()
-            counts['unique_tokens'] = cur_result[0]
-
-            sql_documentcount_query = """SELECT COUNT(DISTINCT document_id)
-                                         FROM string_tokens
-                                         WHERE dataset_id = ?
-                                         AND included = 1
-                                         """
-            c.execute(sql_documentcount_query, (dataset_id,))
-            cur_result = c.fetchone()
-            counts['documents'] = cur_result[0]
+            counts['unique_tokens'] = cur_result[1]
+            counts['documents'] = cur_result[2]
 
             c.close()
         except sqlite3.Error as e:
@@ -883,14 +1097,14 @@ class DatabaseConnection():
             c.execute(sql_select_datasetid, (str(dataset_key),))
             dataset_id = c.fetchone()[0]
             c.close()
-            df = pd.read_sql("""SELECT 
-                                words,
-                                pos,
-                                num_of_words,
-                                num_of_docs,
-                                spacy_stopword,
-                                tfidf_range
-                                FROM string_tokens_included_view WHERE dataset_id = ?""", self.__conn, params=(dataset_id,))
+            df = pd.read_sql("""SELECT words,
+                                       pos,
+                                       num_of_words,
+                                       num_of_docs,
+                                       spacy_stopword,
+                                       tfidf_range
+                                FROM string_tokens_included_view
+                                WHERE dataset_id = ?""", self.__conn, params=(dataset_id,))
             df['spacy_stopword'] = df['spacy_stopword'].astype(bool)
         except sqlite3.Error as e:
             logger.exception("sql failed with error")
@@ -909,14 +1123,14 @@ class DatabaseConnection():
             c.execute(sql_select_datasetid, (str(dataset_key),))
             dataset_id = c.fetchone()[0]
             c.close()
-            df = pd.read_sql("""SELECT 
-                                words,
-                                pos,
-                                num_of_words,
-                                num_of_docs,
-                                spacy_stopword,
-                                tfidf_range
-                                FROM string_tokens_removed_view WHERE dataset_id = ?""", self.__conn, params=(dataset_id,))
+            df = pd.read_sql("""SELECT words,
+                                       pos,
+                                       num_of_words,
+                                       num_of_docs,
+                                       spacy_stopword,
+                                       tfidf_range
+                                FROM string_tokens_removed_view
+                                WHERE dataset_id = ?""", self.__conn, params=(dataset_id,))
             df['spacy_stopword'] = df['spacy_stopword'].astype(bool)
         except sqlite3.Error as e:
             logger.exception("sql failed with error")
@@ -929,12 +1143,19 @@ class DatabaseConnection():
         tokens_dict = {}
         try:
             c = self.__conn.cursor()
+            sql_select_datasetid = """SELECT id, token_type
+                                      FROM datasets 
+                                      WHERE dataset_key = ?
+                                      """
+            c.execute(sql_select_datasetid, (str(dataset_key),))
+            result = c.fetchone()
+            dataset_id = result[0]
+            token_type = result[1]
+
             sql_select_documenttokens = """SELECT document_key,
                                                  GROUP_CONCAT(word, " ") 
                                            FROM (SELECT document_key,
-                                                        CASE (SELECT datasets.token_type 
-                                                              FROM datasets
-                                                              WHERE datasets.id = string_tokens.dataset_id)
+                                                        CASE ?
                                                         WHEN 'stem' THEN stem
                                                         WHEN 'lemma' THEN lemma
                                                         ELSE text
@@ -943,16 +1164,14 @@ class DatabaseConnection():
                                                  LEFT JOIN  documents ON
                                                     string_tokens.document_id = documents.id
                                                  WHERE included = 1
-                                                 AND string_tokens.dataset_id = (SELECT id
-                                                                                 FROM datasets 
-                                                                                 WHERE dataset_key = ?)
+                                                 AND string_tokens.dataset_id = ?
                                                  ORDER BY string_tokens.document_id ASC,
                                                           string_tokens.field_id ASC,
                                                           string_tokens.position ASC)
                                            GROUP BY document_key
                                            """
             tokens_dict = {}
-            c.execute(sql_select_documenttokens, (str(dataset_key),))
+            c.execute(sql_select_documenttokens, (token_type, dataset_id,))
             for row in c.fetchall():
                 tokens_dict[eval(row[0])] = row[1].split()
             c.close()

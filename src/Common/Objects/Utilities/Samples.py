@@ -24,21 +24,21 @@ def CaptureTokens(dataset_key, main_frame):
     token_dict = Database.DatabaseConnection(main_frame.current_workspace.name).GetDocumentsTokensFromStringTokens(dataset.key)
 
     #Non-strings are stored in field objects
-    field_list = list(main_frame.datasets[dataset_key].chosen_fields.keys())
-    for field_key in main_frame.datasets[dataset_key].chosen_fields:
-        if main_frame.datasets[dataset_key].chosen_fields[field_key].fieldtype != 'string':
-            for doc_key in main_frame.datasets[dataset_key].chosen_fields[field_key].tokenset:
-                if isinstance(main_frame.datasets[dataset_key].chosen_fields[field_key].tokenset[doc_key], list) and not isinstance(main_frame.datasets[dataset_key].chosen_fields[field_key].tokenset[doc_key], str):
-                    for token in main_frame.datasets[dataset_key].chosen_fields[field_key].tokenset[doc_key]:
-                        if main_frame.datasets[dataset_key].chosen_fields[field_key].fieldtype == 'UTC-timestamp' and token != '':
+    field_list = list(main_frame.datasets[dataset_key].included_fields.keys())
+    for field_key in main_frame.datasets[dataset_key].included_fields:
+        if main_frame.datasets[dataset_key].included_fields[field_key].fieldtype != 'string':
+            for doc_key in main_frame.datasets[dataset_key].included_fields[field_key].tokenset:
+                if isinstance(main_frame.datasets[dataset_key].included_fields[field_key].tokenset[doc_key], list) and not isinstance(main_frame.datasets[dataset_key].included_fields[field_key].tokenset[doc_key], str):
+                    for token in main_frame.datasets[dataset_key].included_fields[field_key].tokenset[doc_key]:
+                        if main_frame.datasets[dataset_key].included_fields[field_key].fieldtype == 'UTC-timestamp' and token != '':
                             token_dict[doc_key].append(str(field_key) + "-" + str(datetime.utcfromtimestamp(token).strftime(Constants.DATETIME_FORMAT))+'UTC')
                         else:
                             token_dict[doc_key].append(str(field_key) + "-" + str(token))
                 else:
-                    if main_frame.datasets[dataset_key].chosen_fields[field_key].fieldtype == 'UTC-timestamp':
-                            token_dict[doc_key].append(str(field_key) + "-" + str(datetime.utcfromtimestamp(main_frame.datasets[dataset_key].chosen_fields[field_key].tokenset[doc_key]).strftime(Constants.DATETIME_FORMAT))+'UTC')
+                    if main_frame.datasets[dataset_key].included_fields[field_key].fieldtype == 'UTC-timestamp':
+                            token_dict[doc_key].append(str(field_key) + "-" + str(datetime.utcfromtimestamp(main_frame.datasets[dataset_key].included_fields[field_key].tokenset[doc_key]).strftime(Constants.DATETIME_FORMAT))+'UTC')
                     else:
-                        token_dict[doc_key].append(str(field_key) + "-" + str(main_frame.datasets[dataset_key].chosen_fields[field_key].tokenset[doc_key]))
+                        token_dict[doc_key].append(str(field_key) + "-" + str(main_frame.datasets[dataset_key].included_fields[field_key].tokenset[doc_key]))
 
 
     main_frame.PulseProgressDialog(GUIText.AFTERFILTERING_LABEL1+str(dataset.total_docs_remaining)+GUIText.AFTERFILTERING_LABEL2+str(dataset.total_docs)+GUIText.AFTERFILTERING_LABEL3)

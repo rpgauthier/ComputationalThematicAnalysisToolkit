@@ -739,16 +739,16 @@ class MainFrame(wx.Frame):
         for code in dataset_codes:
             code.GetConnections(self.datasets, self.samples)
             code.AddConnection(self.datasets[new_key])
-        for field_key in self.datasets[new_key].avaliable_fields:
-            field_codes = self.datasets[new_key].avaliable_fields[field_key].GetCodeConnections(self.codes)
+        for field_key in self.datasets[new_key].available_fields:
+            field_codes = self.datasets[new_key].available_fields[field_key].GetCodeConnections(self.codes)
             for code in field_codes:
                 code.GetConnections(self.datasets, self.samples)
-                code.AddConnection(self.datasets[new_key].avaliable_fields[field_key])
-        for field_key in self.datasets[new_key].chosen_fields:
-            field_codes = self.datasets[new_key].chosen_fields[field_key].GetCodeConnections(self.codes)
+                code.AddConnection(self.datasets[new_key].available_fields[field_key])
+        for field_key in self.datasets[new_key].included_fields:
+            field_codes = self.datasets[new_key].included_fields[field_key].GetCodeConnections(self.codes)
             for code in field_codes:
                 code.GetConnections(self.datasets, self.samples)
-                code.AddConnection(self.datasets[new_key].chosen_fields[field_key])
+                code.AddConnection(self.datasets[new_key].included_fields[field_key])
         for document_key in self.datasets[new_key].documents:
             document_codes = self.datasets[new_key].documents[document_key].GetCodeConnections(self.codes)
             for code in document_codes:

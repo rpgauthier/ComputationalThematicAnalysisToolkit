@@ -20,6 +20,7 @@ class SaveThread(Thread):
     def __init__(self, notify_window, save_path, current_workspace_path, config_data, datasets, samples, codes, notes_text, last_load_dt):
         """Init Worker Thread Class."""
         Thread.__init__(self)
+        self.daemon = True
         self._notify_window = notify_window
         self.save_path = save_path
         self.current_workspace_path = current_workspace_path
@@ -81,7 +82,7 @@ class SaveThread(Thread):
             with open(self.current_workspace_path+"/codes.pk", 'wb') as outfile:
                 pickle.dump(self.codes, outfile)
 
-            with tarfile.open(self.save_path, 'w|bz2') as tar_file:
+            with tarfile.open(self.save_path, 'w|gz') as tar_file:
                 tar_file.add(self.current_workspace_path, arcname='.')
 
             with open(self.save_path + "_notes.txt", 'w') as text_file:
@@ -128,11 +129,11 @@ class LoadThread(Thread):
                 elif word_idx == Constants.TOKEN_STEM_IDX:
                     db_conn.InsertDataset(dataset_key, 'lemma')
                 db_conn.InsertDocuments(dataset_key, result['datasets'][dataset_key].data.keys())
-                for field_key in result['datasets'][dataset_key].chosen_fields:
+                for field_key in result['datasets'][dataset_key].included_fields:
                     db_conn.InsertField(dataset_key, field_key)
-                    if result['datasets'][dataset_key].chosen_fields[field_key].fieldtype == "string":
-                        db_conn.InsertStringTokens(dataset_key, field_key, result['datasets'][dataset_key].chosen_fields[field_key].tokenset)
-                        result['datasets'][dataset_key].chosen_fields[field_key].tokenset = None
+                    if result['datasets'][dataset_key].included_fields[field_key].fieldtype == "string":
+                        db_conn.InsertStringTokens(dataset_key, field_key, result['datasets'][dataset_key].included_fields[field_key].tokenset)
+                        result['datasets'][dataset_key].included_fields[field_key].tokenset = None
                 db_conn.UpdateStringTokensTFIDF(dataset_key)
                 db_conn.ApplyDatasetRules(dataset_key, result['datasets'][dataset_key].filter_rules)
                 included_counts = db_conn.GetStringTokensCounts(dataset_key)
@@ -158,6 +159,7 @@ class LoadThread(Thread):
                                         field_info['type'])
                 dataset.metadata_fields[field_name] = new_field
             del dataset._metadata_fields_list
+            #update rules
             dataset.last_changed_dt = datetime.now()
 
         #update variables names
@@ -167,26 +169,30 @@ class LoadThread(Thread):
         if hasattr(dataset, '_total_unique_tokens_remaining'):
             dataset._total_uniquetokens_remaining = dataset._total_unique_tokens_remaining
             dataset.last_changed_dt = datetime.now()
+        if hasattr(dataset, 'avaliable_fields'):
+            dataset.available_fields = dataset.avaliable_fields
+            dataset.last_changed_dt = datetime.now()
+        if hasattr(dataset, 'chosen_fields'):
+            dataset.included_fields = dataset.chosen_fields
+            dataset.last_changed_dt = datetime.now()
 
-        #update rules
-        for idx, rule in enumerate(dataset.filter_rules):
-            if isinstance(rule[3], tuple):
-                if rule[3][0] == Constants.FILTER_TFIDF_REMOVE or rule[3][0] == Constants.FILTER_TFIDF_INCLUDE:
-                    new_rule = (rule[0], rule[1], rule[2], (rule[3][0], rule[3][1], rule[3][2]*100 ))
-                    dataset.filter_rules[idx] = new_rule
-
-        #cleanup no longer needed attributes
+        #cleanup attributes changed by switching to database
         if hasattr(dataset, "_metadata"):
             del dataset._metadata
             dataset.last_changed_dt = datetime.now()
         if hasattr(dataset, '_words_df'):
             del dataset._words_df
+            for idx, rule in enumerate(dataset.filter_rules):
+                if isinstance(rule[3], tuple):
+                    if rule[3][0] == Constants.FILTER_TFIDF_REMOVE or rule[3][0] == Constants.FILTER_TFIDF_INCLUDE:
+                        new_rule = (rule[0], rule[1], rule[2], (rule[3][0], rule[3][1], rule[3][2]*100 ))
+                        dataset.filter_rules[idx] = new_rule
             dataset.last_changed_dt = datetime.now()
         
     
     def UpgradeSample(self, sample, dataset):
         if not hasattr(sample, "_field_list"):
-            sample._fields_list = list(dataset.chosen_fields.keys())
+            sample._fields_list = list(dataset.included_fields.keys())
             sample.last_changed_dt = datetime.now()
         
         if hasattr(sample, 'metadataset_key_list'):

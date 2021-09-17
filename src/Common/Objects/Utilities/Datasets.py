@@ -11,7 +11,7 @@ import Common.Objects.Datasets as Datasets
 import Common.Database as Database
 from Common.GUIText import Datasets as GUIText
 
-def CreateDataset(dataset_key, retrieval_details, data, avaliable_fields_list, metadata_fields_list, included_fields_list, main_frame):
+def CreateDataset(dataset_key, retrieval_details, data, available_fields_list, metadata_fields_list, included_fields_list, main_frame):
     dataset = Datasets.Dataset(dataset_key,
                                dataset_key[0],
                                dataset_key[1],
@@ -33,20 +33,20 @@ def CreateDataset(dataset_key, retrieval_details, data, avaliable_fields_list, m
                                    field_info['desc'],
                                    field_info['type'])
         dataset.metadata_fields[field_name] = new_field
-    for field_name, field_info in avaliable_fields_list:
+    for field_name, field_info in available_fields_list:
         new_field = Datasets.Field(dataset,
                                    field_name,
                                    dataset,
                                    field_info['desc'],
                                    field_info['type'])
-        dataset.avaliable_fields[field_name] = new_field
+        dataset.available_fields[field_name] = new_field
     for field_name, field_info in included_fields_list:
         new_field = Datasets.Field(dataset,
                                    field_name,
                                    dataset,
                                    field_info['desc'],
                                    field_info['type'])
-        dataset.chosen_fields[field_name] = new_field
+        dataset.included_fields[field_name] = new_field
     return dataset
 
 def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
@@ -57,12 +57,11 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
 
     def TokenizationController(field, field_data):
         logger.info("Preparing Processes for dataset[%s], field[%s], for %s documents", str(dataset.key), str(field.key), str(len(field_data)))
-        wx.PostEvent(notify_window, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_STARTING_FIELD_MSG+str(field.key)))
+        nonlocal main_frame
+        wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_STARTING_FIELD_MSG+str(field.key)))
         results = []
 
         total = len(field_data)
-        nonlocal main_frame
-        
         full_data_list = list(field_data.items())
         split_data_lists = []
         if total > main_frame.pool_num:
@@ -89,7 +88,7 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
             count = count+len(data_list)
         
         completed = 0
-        wx.PostEvent(notify_window, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
+        wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
                                                                +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG2+str(len(results))\
                                                                +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(field.key)))
         if not db_conn.CheckIfFieldExists(dataset.key, field.key):
@@ -102,7 +101,7 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
             db_conn.InsertStringTokens(dataset.key, field.key, new_tokensets)
             completed += 1
             logger.info("%s %s", str(field.key), completed)
-            wx.PostEvent(notify_window, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
+            wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
                                                                    +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG2+str(len(results))\
                                                                    +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(field.key)))
 
@@ -135,28 +134,28 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
             field.tokenset = field_data
 
     stringfield_count = 0
-    for chosen_field_key in dataset.chosen_fields:
+    for included_field_key in dataset.included_fields:
         has_data = False
-        if dataset.chosen_fields[chosen_field_key].fieldtype == 'string':
+        if dataset.included_fields[included_field_key].fieldtype == 'string':
             if rerun:
-                db_conn.DeleteField(dataset.key, chosen_field_key)
+                db_conn.DeleteField(dataset.key, included_field_key)
             else:
-                has_data = db_conn.CheckIfFieldExists(dataset.key, chosen_field_key)
+                has_data = db_conn.CheckIfFieldExists(dataset.key, included_field_key)
             if not has_data:
-                FieldTokenizer(dataset.chosen_fields[chosen_field_key])
+                FieldTokenizer(dataset.included_fields[included_field_key])
                 stringfield_count = stringfield_count + 1
-        elif dataset.chosen_fields[chosen_field_key].tokenset == None or rerun:
-            FieldTokenizer(dataset.chosen_fields[chosen_field_key])
+        elif dataset.included_fields[included_field_key].tokenset == None or rerun:
+            FieldTokenizer(dataset.included_fields[included_field_key])
 
     #calculate tfidf scores for all stored string tokens if any changes occured
     if stringfield_count > 0:
-        wx.PostEvent(notify_window, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_STARTING_TFIDF_MSG))
+        wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_STARTING_TFIDF_MSG))
         db_conn.UpdateStringTokensTFIDF(dataset.key)
         counts = db_conn.GetStringTokensCounts(dataset.key)
         dataset.total_docs = counts['documents']
         dataset.total_tokens = counts['tokens']
         dataset.total_uniquetokens = counts['unique_tokens']
-        wx.PostEvent(notify_window, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_TFIDF_MSG))
+        wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_TFIDF_MSG))
             
     logger.info("Finished")
 

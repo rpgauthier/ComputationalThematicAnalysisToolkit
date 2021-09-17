@@ -22,7 +22,7 @@ import Collection.TwitterDataRetriever as twr
 
 class RetrieveRedditDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, subreddit, start_date, end_date, replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type, avaliable_fields_list, metadata_fields_list, included_fields_list):
+    def __init__(self, notify_window, main_frame, dataset_name, subreddit, start_date, end_date, replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type, available_fields_list, metadata_fields_list, included_fields_list):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self.daemon = True
@@ -36,7 +36,7 @@ class RetrieveRedditDatasetThread(Thread):
         self.subreddit = subreddit
         self.start_date = start_date
         self.end_date = end_date
-        self.avaliable_fields_list = avaliable_fields_list
+        self.available_fields_list = available_fields_list
         self.metadata_fields_list = metadata_fields_list
         self.included_fields_list = included_fields_list
         self.start()
@@ -58,25 +58,25 @@ class RetrieveRedditDatasetThread(Thread):
         dataset = None
         error_msg = ""
         if self.replace_archive_flg:
-            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_REMOVE_SUBREDDIT_ARCHIVE_MSG + self.subreddit))
+            wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_REMOVE_SUBREDDIT_ARCHIVE_MSG + self.subreddit))
             rdr.DeleteFiles(self.subreddit)
         if self.dataset_type == "discussion":
             if self.pushshift_flg:
                 try:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_MSG))
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_MSG))
                     self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_COMMENTS_MSG))
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_COMMENTS_MSG))
                     self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
                 except RuntimeError:
                     status_flag = False
                     error_msg = GUIText.RETRIEVAL_FAILED_ERROR
             if status_flag:
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_SUBMISSION_MSG))
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_SUBMISSION_MSG))
                 submission_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_COMMENT_MSG))
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_COMMENT_MSG))
                 comment_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
                 #convert data to discussion
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_DISCUSSION_MSG))
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_DISCUSSION_MSG))
                 discussion_data = {}
                 for submission in submission_data:
                     key = ("Reddit", "discussion", submission['id'])
@@ -112,16 +112,16 @@ class RetrieveRedditDatasetThread(Thread):
         elif self.dataset_type == "submission":
             if self.pushshift_flg:
                 try:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_MSG))
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_MSG))
                     self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
                 except RuntimeError:
                     status_flag = False
                     error_msg = GUIText.RETRIEVAL_FAILED_ERROR
             if status_flag:
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_SUBMISSION_MSG))
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_SUBMISSION_MSG))
                 raw_submission_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
                 submission_data = {}
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_SUBMISSION_MSG))
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_SUBMISSION_MSG))
                 for submission in raw_submission_data:
                     key = ("Reddit", "submission", submission["id"])
                     submission_data[key] = submission
@@ -132,16 +132,16 @@ class RetrieveRedditDatasetThread(Thread):
         elif self.dataset_type == "comment":
             if self.pushshift_flg:
                 try:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_COMMENTS_MSG))
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_COMMENTS_MSG))
                     self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
                 except RuntimeError:
                     status_flag = False
                     error_msg = GUIText.RETRIEVAL_FAILED_ERROR
             if status_flag:
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_COMMENT_MSG))
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_COMMENT_MSG))
                 raw_comment_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
                 comment_data = {}
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_COMMENT_MSG))
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_COMMENT_MSG))
                 for comment in raw_comment_data:
                     key = ("Reddit", "comment", comment["id"])
                     comment_data[key] = comment
@@ -153,8 +153,8 @@ class RetrieveRedditDatasetThread(Thread):
                 data = comment_data
         if status_flag:
             if len(data) > 0:
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -185,14 +185,14 @@ class RetrieveRedditDatasetThread(Thread):
                 months_tocheck.append(month)
         #retireve data of months that have not been downloaded
         for month in months_notfound:
-            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_ALL_MSG+str(month)))
+            wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_ALL_MSG+str(month)))
             try:
                 rdr.RetrieveMonth(subreddit, month, prefix)
             except RuntimeError as error:
                 errors.append(error)
         #check the exiting months of data for any missing data
         for month in months_tocheck:
-            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_NEW_MSG+str(month)))
+            wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_NEW_MSG+str(month)))
             try:
                 rdr.UpdateRetrievedMonth(subreddit, month, dict_monthfiles[month], prefix)
             except RuntimeError as error:
@@ -215,7 +215,7 @@ class RetrieveRedditDatasetThread(Thread):
             if len(files) > 1:
                 #retrieve only needed data from first file
                 with open(files[0], 'r') as infile:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[0])))
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[0])))
                     temp_data = json.load(infile)
                     temp_data.pop(0)
                     for entry in temp_data:
@@ -225,7 +225,7 @@ class RetrieveRedditDatasetThread(Thread):
                 if len(files) > 2:
                     #retrieve all data from middle files
                     for filename in files[1:(len(files)-2)]:
-                        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(filename)))
+                        wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(filename)))
                         with open(filename, 'r') as infile:
                             new_data = json.load(infile)
                             new_data.pop(0)
@@ -233,7 +233,7 @@ class RetrieveRedditDatasetThread(Thread):
 
                 #retrieve only needed data from last file
                 with open(files[(len(files)-1)], 'r') as infile:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[(len(files)-1)])))
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[(len(files)-1)])))
                     temp_data = json.load(infile)
                     temp_data.pop(0)
                     for entry in temp_data:
@@ -241,7 +241,7 @@ class RetrieveRedditDatasetThread(Thread):
                                                                    "%Y-%m-%d") + relativedelta(days=1)).timetuple()):
                             data.append(entry)
             else:
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[0])))
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[0])))
                 with open(files[0], 'r') as infile:
                     temp_data = json.load(infile)
                     temp_data.pop(0)
@@ -256,7 +256,7 @@ class RetrieveRedditDatasetThread(Thread):
 
 class RetrieveTwitterDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, keys, query, start_date, end_date, dataset_type, avaliable_fields_list, metadata_fields_list, included_fields_list):
+    def __init__(self, notify_window, main_frame, dataset_name, keys, query, start_date, end_date, dataset_type, available_fields_list, metadata_fields_list, included_fields_list):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
@@ -268,7 +268,7 @@ class RetrieveTwitterDatasetThread(Thread):
         self.start_date = start_date
         self.end_date = end_date
         self.dataset_type = dataset_type
-        self.avaliable_fields_list = avaliable_fields_list
+        self.available_fields_list = available_fields_list
         self.metadata_fields_list = metadata_fields_list
         self.included_fields_list = included_fields_list
         # This starts the thread running on creation, but you could
@@ -300,22 +300,22 @@ class RetrieveTwitterDatasetThread(Thread):
             #TODO: only update if called with twitter api flag? otherwise just import instead (like with reddit)
             if True: # twitter_api_flag
                 try:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_TWITTER_TWEETS_MSG))
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_TWITTER_TWEETS_MSG))
                     self.UpdateDataFiles(auth, self.dataset_name, self.query, self.start_date, self.end_date, "TW_") #TODO: TW == twitter, maybe TD? Twitter Document?
                 except RuntimeError:
                     status_flag = False
                     error_msg = GUIText.RETRIEVAL_FAILED_ERROR
             if status_flag:
-                # wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BEGINNING_MSG))
+                # wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BEGINNING_MSG))
 
                 #TODO: get data from files?
                 # tweets = tweepy.Cursor(api.search, self.query).items(10)
 
-                # wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_TWITTER_MSG))
+                # wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_TWITTER_MSG))
 
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_TWITTER_TWEET_MSG))
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_TWITTER_TWEET_MSG))
                 tweets = self.ImportDataFiles(self.dataset_name, self.query, self.start_date, self.end_date, "TW_")
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_TWITTER_MSG))
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_TWITTER_MSG))
                 
                 tweets_data = {}
                 for tweet in tweets:
@@ -357,7 +357,7 @@ class RetrieveTwitterDatasetThread(Thread):
         if status_flag:
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -390,21 +390,21 @@ class RetrieveTwitterDatasetThread(Thread):
         rate_limit_reached = False
         #retireve data of months that have not been downloaded
         for month in months_notfound:
-            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_ALL_MSG+str(month)))
+            wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_ALL_MSG+str(month)))
             try:
                 rate_limit_reached = twr.RetrieveMonth(auth, name, query, month, end_date, prefix)
                 if rate_limit_reached:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.TWITTER_RATE_LIMIT_REACHED_MSG))
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.TWITTER_RATE_LIMIT_REACHED_MSG))
                     break
             except RuntimeError as error:
                 errors.append(error)
         #check the exiting months of data for any missing data
         for month in months_tocheck:
-            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_NEW_MSG+str(month)))
+            wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_NEW_MSG+str(month)))
             try:
                 rate_limit_reached = twr.UpdateRetrievedMonth(auth, name, query, month, end_date, dict_monthfiles[month], prefix)
                 if rate_limit_reached:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.TWITTER_RATE_LIMIT_REACHED_MSG))
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.TWITTER_RATE_LIMIT_REACHED_MSG))
                     break
             except RuntimeError as error:
                 errors.append(error)
@@ -426,7 +426,7 @@ class RetrieveTwitterDatasetThread(Thread):
             if len(files) > 1:
                 #retrieve only needed data from first file
                 with open(files[0], 'r') as infile:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[0])))
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[0])))
                     temp_data = json.load(infile)
                     temp_data.pop(0)
                     for entry in temp_data:
@@ -435,7 +435,7 @@ class RetrieveTwitterDatasetThread(Thread):
                 if len(files) > 2:
                     #retrieve all data from middle files
                     for filename in files[1:(len(files)-2)]:
-                        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(filename)))
+                        wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(filename)))
                         with open(filename, 'r') as infile:
                             new_data = json.load(infile)
                             new_data.pop(0)
@@ -443,14 +443,14 @@ class RetrieveTwitterDatasetThread(Thread):
 
                 #retrieve only needed data from last file
                 with open(files[(len(files)-1)], 'r') as infile:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[(len(files)-1)])))
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[(len(files)-1)])))
                     temp_data = json.load(infile)
                     temp_data.pop(0)
                     for entry in temp_data:
                         if entry['created_utc'] < calendar.timegm((datetime.strptime(end_date, "%Y-%m-%d") + relativedelta(days=1)).timetuple()):
                             data.append(entry)
             else:
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[0])))
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG+str(files[0])))
                 with open(files[0], 'r') as infile:
                     temp_data = json.load(infile)
                     temp_data.pop(0)
@@ -463,7 +463,7 @@ class RetrieveTwitterDatasetThread(Thread):
 
 class RetrieveCSVDatasetThread(Thread):
     """Retrieve CSV Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, dataset_field, dataset_type, id_field, url_field, datetime_field, datetime_tz, avaliable_fields_list, metadata_fields_list, included_fields_list, combined_fields_list, filename):
+    def __init__(self, notify_window, main_frame, dataset_name, dataset_field, dataset_type, id_field, url_field, datetime_field, datetime_tz, available_fields_list, metadata_fields_list, included_fields_list, combined_fields_list, filename):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self.daemon = True
@@ -476,7 +476,7 @@ class RetrieveCSVDatasetThread(Thread):
         self.url_field = url_field
         self.datetime_field = datetime_field
         self.datetime_tz = datetime_tz
-        self.avaliable_fields_list = avaliable_fields_list
+        self.available_fields_list = available_fields_list
         self.metadata_fields_list = metadata_fields_list
         self.included_fields_list = included_fields_list
         self.combined_fields_list = combined_fields_list
@@ -496,10 +496,10 @@ class RetrieveCSVDatasetThread(Thread):
         error_msg = ""
         status_flag = True
         
-        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG + self.filename))
+        wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_FILE_MSG + self.filename))
         file_data = self.ImportDataFiles(self.filename)
         #convert the data into toolkit's dataset format
-        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_CSV_MSG))
+        wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_CSV_MSG))
 
         if self.dataset_field == "":
             dataset_key = (self.dataset_name, "CSV", self.dataset_type)
@@ -547,8 +547,8 @@ class RetrieveCSVDatasetThread(Thread):
                 row_num = row_num + 1
             #save as a document dataset
             if len(data) > 0:
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -600,9 +600,9 @@ class RetrieveCSVDatasetThread(Thread):
                 row_num = row_num + 1
             #save as a document dataset
             if len(data) > 0:
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 for new_dataset_key in data:
-                    datasets[new_dataset_key] = DatasetsUtilities.CreateDataset(new_dataset_key, retrieval_details, data[new_dataset_key], self.avaliable_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
+                    datasets[new_dataset_key] = DatasetsUtilities.CreateDataset(new_dataset_key, retrieval_details, data[new_dataset_key], self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
                     DatasetsUtilities.TokenizeDataset(datasets[new_dataset_key], self._notify_window, self.main_frame)
             else:
                 status_flag = False

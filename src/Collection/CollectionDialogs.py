@@ -52,10 +52,6 @@ class AbstractRetrieverDialog(wx.Dialog):
         main_frame.CloseProgressDialog(thaw=True)
         logger.info("Finished")
 
-    def OnProgress(self, event):
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(event.data)
-
     # given a sizer, disables all child elements
     def DisableSizer(self, parent_sizer):
         for child_sizer in parent_sizer.GetChildren():
@@ -124,7 +120,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=GUIText.RETRIEVE_REDDIT_LABEL, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         self.retrieval_thread = None
-        self.avaliable_fields = {}
+        self.available_fields = {}
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         
@@ -229,7 +225,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         else:
             metadata_fields_sizer.ShowItems(False)
 
-        included_fields_label = wx.StaticText(self, label=GUIText.INCLUDEDFIELDS)
+        included_fields_label = wx.StaticText(self, label=GUIText.INCLUDEDFIELDS+":")
         self.included_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
         self.included_fields_ctrl.AppendColumn(GUIText.FIELD)
         self.included_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
@@ -261,7 +257,6 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.OnDatasetTypeChosen(None)
 
         ok_button.Bind(wx.EVT_BUTTON, self.OnRetrieveStart)
-        CustomEvents.EVT_PROGRESS(self, self.OnProgress)
         CustomEvents.RETRIEVE_EVT_RESULT(self, self.OnRetrieveEnd)
 
         logger.info("Finished")
@@ -277,17 +272,17 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         elif dataset_type == GUIText.REDDIT_COMMENTS:
             dataset_type = 'comment'
 
-        self.avaliable_fields = Constants.avaliable_fields[('Reddit', dataset_type,)]
+        self.available_fields = Constants.available_fields[('Reddit', dataset_type,)]
 
         self.metadata_fields_ctrl.DeleteAllItems()
         self.included_fields_ctrl.DeleteAllItems()
         idx = 0
-        for key in self.avaliable_fields:
-            self.metadata_fields_ctrl.Append([key, self.avaliable_fields[key]['desc'], self.avaliable_fields[key]['type']])
-            if self.avaliable_fields[key]['metadata_default']:
+        for key in self.available_fields:
+            self.metadata_fields_ctrl.Append([key, self.available_fields[key]['desc'], self.available_fields[key]['type']])
+            if self.available_fields[key]['metadata_default']:
                 self.metadata_fields_ctrl.CheckItem(idx)
-            self.included_fields_ctrl.Append([key, self.avaliable_fields[key]['desc'], self.avaliable_fields[key]['type']])
-            if self.avaliable_fields[key]['included_default']:
+            self.included_fields_ctrl.Append([key, self.available_fields[key]['desc'], self.available_fields[key]['type']])
+            if self.available_fields[key]['included_default']:
                 self.included_fields_ctrl.CheckItem(idx)
             idx = idx+1
 
@@ -394,7 +389,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         while item != -1:
             if self.metadata_fields_ctrl.IsItemChecked(item):
                 field_name = self.metadata_fields_ctrl.GetItemText(item, 0)
-                metadata_fields_list.append((field_name, self.avaliable_fields[field_name],))
+                metadata_fields_list.append((field_name, self.available_fields[field_name],))
             item = self.metadata_fields_ctrl.GetNextItem(item)
         
         included_fields_list = []
@@ -402,7 +397,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         while item != -1:
             if self.included_fields_ctrl.IsItemChecked(item):
                 field_name = self.included_fields_ctrl.GetItemText(item, 0)
-                included_fields_list.append((field_name, self.avaliable_fields[field_name],))
+                included_fields_list.append((field_name, self.available_fields[field_name],))
             item = self.included_fields_ctrl.GetNextItem(item)
 
         if status_flag:
@@ -414,7 +409,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
             self.retrieval_thread = CollectionThreads.RetrieveRedditDatasetThread(self, main_frame, name, subreddit, start_date, end_date,
                                                                                   replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type,
-                                                                                  list(self.avaliable_fields.items()), metadata_fields_list, included_fields_list)
+                                                                                  list(self.available_fields.items()), metadata_fields_list, included_fields_list)
         logger.info("Finished")
 
 class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
@@ -425,7 +420,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.retrieval_thread = None
         self.keys_filename = "../twitter_keys.json"
         self.keys = {}
-        self.avaliable_fields = {}
+        self.available_fields = {}
         self.dataset_type = "tweet"
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -584,7 +579,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         else:
             metadata_fields_sizer.ShowItems(False)
 
-        included_fields_label = wx.StaticText(self, label=GUIText.INCLUDEDFIELDS)
+        included_fields_label = wx.StaticText(self, label=GUIText.INCLUDEDFIELDS+":")
         self.included_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
         self.included_fields_ctrl.AppendColumn(GUIText.FIELD)
         self.included_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
@@ -615,7 +610,6 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.Fit()
 
         ok_button.Bind(wx.EVT_BUTTON, self.OnRetrieveStart)
-        CustomEvents.EVT_PROGRESS(self, self.OnProgress)
         CustomEvents.RETRIEVE_EVT_RESULT(self, self.OnRetrieveEnd)
 
         logger.info("Finished")
@@ -625,17 +619,17 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         logger.info("Starting")
         dataset_type = self.dataset_type
 
-        self.avaliable_fields = Constants.avaliable_fields[('Twitter', dataset_type,)]
+        self.available_fields = Constants.available_fields[('Twitter', dataset_type,)]
 
         self.metadata_fields_ctrl.DeleteAllItems()
         self.included_fields_ctrl.DeleteAllItems()
         idx = 0
-        for key in self.avaliable_fields:
-            self.metadata_fields_ctrl.Append([key, self.avaliable_fields[key]['desc'], self.avaliable_fields[key]['type']])
-            if self.avaliable_fields[key]['metadata_default']:
+        for key in self.available_fields:
+            self.metadata_fields_ctrl.Append([key, self.available_fields[key]['desc'], self.available_fields[key]['type']])
+            if self.available_fields[key]['metadata_default']:
                 self.metadata_fields_ctrl.CheckItem(idx)
-            self.included_fields_ctrl.Append([key, self.avaliable_fields[key]['desc'], self.avaliable_fields[key]['type']])
-            if self.avaliable_fields[key]['included_default']:
+            self.included_fields_ctrl.Append([key, self.available_fields[key]['desc'], self.available_fields[key]['type']])
+            if self.available_fields[key]['included_default']:
                 self.included_fields_ctrl.CheckItem(idx)
             idx = idx+1
 
@@ -774,7 +768,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         while item != -1:
             if self.metadata_fields_ctrl.IsItemChecked(item):
                 field_name = self.metadata_fields_ctrl.GetItemText(item, 0)
-                metadata_fields_list.append((field_name, self.avaliable_fields[field_name],))
+                metadata_fields_list.append((field_name, self.available_fields[field_name],))
             item = self.metadata_fields_ctrl.GetNextItem(item)
         
         included_fields_list = []
@@ -782,7 +776,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         while item != -1:
             if self.included_fields_ctrl.IsItemChecked(item):
                 field_name = self.included_fields_ctrl.GetItemText(item, 0)
-                included_fields_list.append((field_name, self.avaliable_fields[field_name],))
+                included_fields_list.append((field_name, self.available_fields[field_name],))
             item = self.included_fields_ctrl.GetNextItem(item)
 
         if status_flag:
@@ -797,7 +791,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
             self.retrieval_thread = CollectionThreads.RetrieveTwitterDatasetThread(self, main_frame, name, keys, query, start_date, end_date, self.dataset_type,
-                                                                                    list(self.avaliable_fields.items()), metadata_fields_list, included_fields_list)
+                                                                                    list(self.available_fields.items()), metadata_fields_list, included_fields_list)
         logger.info("Finished")
 
 class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
@@ -806,7 +800,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=GUIText.RETRIEVE_CSV_LABEL, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         self.retrieval_thread = None
-        self.avaliable_fields = {}
+        self.available_fields = {}
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -883,7 +877,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         metadata_fields_sizer.Add(metadata_combined_sizer, 1, wx.EXPAND)
         sizer.Add(metadata_fields_sizer, 1, wx.EXPAND|wx.ALL, 5)
 
-        included_first_label = wx.StaticText(self, label=GUIText.INCLUDEDFIELDS)
+        included_first_label = wx.StaticText(self, label=GUIText.INCLUDEDFIELDS+":")
         self.included_first_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
         self.included_first_ctrl.SetToolTip(GUIText.INCLUDEDFIELDS_TOOLTIP)
         self.included_first_ctrl.EnableCheckBoxes()
@@ -928,7 +922,6 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.Fit()
 
         ok_button.Bind(wx.EVT_BUTTON, self.OnRetrieveStart)
-        CustomEvents.EVT_PROGRESS(self, self.OnProgress)
         CustomEvents.RETRIEVE_EVT_RESULT(self, self.OnRetrieveEnd)
 
         logger.info("Finished")
@@ -954,16 +947,16 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                 self.metadata_combined_ctrl.DeleteAllItems()
                 self.included_first_ctrl.DeleteAllItems()
                 self.included_combined_ctrl.DeleteAllItems()
-                self.avaliable_fields.clear()
+                self.available_fields.clear()
                 main_frame = wx.GetApp().GetTopWindow()
                 if main_frame.multipledatasets_mode:
                     self.dataset_field_ctrl.Clear()
                     self.dataset_field_ctrl.Append("")
                 idx = 0
-                for field_name in Constants.avaliable_fields[('CSV', 'documents',)]:
-                    self.avaliable_fields[field_name] = Constants.avaliable_fields[('CSV', 'documents',)][field_name]
+                for field_name in Constants.available_fields[('CSV', 'documents',)]:
+                    self.available_fields[field_name] = Constants.available_fields[('CSV', 'documents',)][field_name]
                     self.metadata_first_ctrl.Append([field_name])
-                    if self.avaliable_fields[field_name]['metadata_default']:
+                    if self.available_fields[field_name]['metadata_default']:
                         self.metadata_first_ctrl.CheckItem(idx)
                     idx = idx+1
                 for column_name in header_row:
@@ -974,7 +967,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                     self.datetime_field_ctrl.Append(column_name)
                     self.metadata_first_ctrl.Append(["csv."+column_name])
                     self.included_first_ctrl.Append(["csv."+column_name])
-                    self.avaliable_fields["csv."+column_name] = {"desc":"CSV Field", "type":"string"}
+                    self.available_fields["csv."+column_name] = {"desc":"CSV Field", "type":"string"}
                 self.Layout()
                 self.Fit()
         logger.info("Finished")
@@ -1044,7 +1037,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             else:
                 if self.metadata_first_ctrl.IsItemChecked(item_idx):
                     field_name = self.metadata_first_ctrl.GetItemText(item_idx)
-                    metadata_field_list.append((field_name, self.avaliable_fields[field_name],))
+                    metadata_field_list.append((field_name, self.available_fields[field_name],))
         
         item_idx = -1
         while 1:
@@ -1053,10 +1046,10 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                 break
             else:
                 field_name = self.metadata_combined_ctrl.GetItemText(item_idx)    
-                if (field_name, self.avaliable_fields[field_name],) not in combined_list:
+                if (field_name, self.available_fields[field_name],) not in combined_list:
                     combined_list.append(field_name)
                 if self.metadata_combined_ctrl.IsItemChecked(item_idx):
-                    metadata_field_list.append((field_name, self.avaliable_fields[field_name],))
+                    metadata_field_list.append((field_name, self.available_fields[field_name],))
         
         item_idx = -1
         while 1:
@@ -1066,10 +1059,10 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             else:
                 if self.included_first_ctrl.IsItemChecked(item_idx):
                     field_name = self.included_first_ctrl.GetItemText(item_idx)
-                    included_field_list.append((field_name, self.avaliable_fields[field_name],))
+                    included_field_list.append((field_name, self.available_fields[field_name],))
                     if not main_frame.adjustable_metadata_mode:
-                        if (field_name, self.avaliable_fields[field_name],) not in metadata_field_list:
-                            included_field_list.append((field_name, self.avaliable_fields[field_name],))
+                        if (field_name, self.available_fields[field_name],) not in metadata_field_list:
+                            included_field_list.append((field_name, self.available_fields[field_name],))
         
         item_idx = -1
         while 1:
@@ -1078,13 +1071,13 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                 break
             else:
                 field_name = self.included_combined_ctrl.GetItemText(item_idx)
-                if (field_name, self.avaliable_fields[field_name],) not in combined_list:
+                if (field_name, self.available_fields[field_name],) not in combined_list:
                     combined_list.append(field_name)
                 if self.included_combined_ctrl.IsItemChecked(item_idx):
-                    included_field_list.append((field_name, self.avaliable_fields[field_name],))
+                    included_field_list.append((field_name, self.available_fields[field_name],))
                     if not main_frame.adjustable_metadata_mode:
-                        if (field_name, self.avaliable_fields[field_name],) not in metadata_field_list:
-                            metadata_field_list.append((field_name, self.avaliable_fields[field_name],))
+                        if (field_name, self.available_fields[field_name],) not in metadata_field_list:
+                            metadata_field_list.append((field_name, self.available_fields[field_name],))
 
         dataset_source = "CSV"
         if main_frame.multipledatasets_mode:
@@ -1111,7 +1104,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
             self.retrieval_thread = CollectionThreads.RetrieveCSVDatasetThread(self, main_frame, name, dataset_field, dataset_type,
                                                                                id_field, url_field, datetime_field, datetime_tz,
-                                                                               list(self.avaliable_fields.items()), metadata_field_list, included_field_list, combined_list, filename)
+                                                                               list(self.available_fields.items()), metadata_field_list, included_field_list, combined_list, filename)
         logger.info("Finished")
     
 class FieldDropTarget(wx.TextDropTarget):

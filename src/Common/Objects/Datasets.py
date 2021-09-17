@@ -37,9 +37,9 @@ class Dataset(GenericObject):
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, (Constants.FILTER_TFIDF_REMOVE, Constants.FILTER_TFIDF_LOWER, 25.0)))
 
         #objects that have their own last_changed_dt and thus need to be checked dynamically
+        self.available_fields = {}
         self.metadata_fields = {}
-        self.avaliable_fields = {}
-        self.chosen_fields = {}
+        self.included_fields = {}
         self.selected_documents = []
         self.documents = {}
 
@@ -96,8 +96,8 @@ class Dataset(GenericObject):
     @tokenization_choice.setter
     def tokenization_choice(self, value):
         self._tokenization_choice = value
-        for field in self.chosen_fields:
-            self.chosen_fields[field].tokenization_choice = value
+        for field in self.included_fields:
+            self.included_fields[field].tokenization_choice = value
         self.last_changed_dt = datetime.now()
     
     @property
@@ -158,12 +158,12 @@ class Dataset(GenericObject):
 
     @property
     def last_changed_dt(self):
-        for key in self.avaliable_fields:
-            tmp_last_changed_dt = self.avaliable_fields[key].last_changed_dt
+        for key in self.available_fields:
+            tmp_last_changed_dt = self.available_fields[key].last_changed_dt
             if tmp_last_changed_dt > self._last_changed_dt:
                 self._last_changed_dt = tmp_last_changed_dt
-        for key in self.chosen_fields:
-            tmp_last_changed_dt = self.chosen_fields[key].last_changed_dt
+        for key in self.included_fields:
+            tmp_last_changed_dt = self.included_fields[key].last_changed_dt
             if tmp_last_changed_dt > self._last_changed_dt:
                 self._last_changed_dt = tmp_last_changed_dt
         for key in self.documents:
@@ -177,10 +177,10 @@ class Dataset(GenericObject):
     
     def DestroyObject(self):
         #any children Fields
-        for chosen_field_name in list(self.chosen_fields.keys()):
-            self.chosen_fields[chosen_field_name].DestroyObject()
-        for avaliable_field_name in list(self.avaliable_fields.keys()):
-            self.avaliable_fields[avaliable_field_name].DestroyObject()
+        for included_field_name in list(self.included_fields.keys()):
+            self.included_fields[included_field_name].DestroyObject()
+        for available_field_name in list(self.available_fields.keys()):
+            self.available_fields[available_field_name].DestroyObject()
         #any children Documents:
         for document_key in list(self.documents.keys()):
             self.documents[document_key].DestroyObject()
@@ -275,12 +275,12 @@ class Field(GenericObject):
     
     def DestroyObject(self):
         #remove self from Dataset
-        if self in self.dataset.chosen_fields.values():
-            if self.dataset.chosen_fields[self.key] == self:
-                del self.dataset.chosen_fields[self.key]
-        if self in self.dataset.avaliable_fields.values():
-            if self.dataset.avaliable_fields[self.key] == self:
-                del self.dataset.avaliable_fields[self.key]
+        if self in self.dataset.included_fields.values():
+            if self.dataset.included_fields[self.key] == self:
+                del self.dataset.included_fields[self.key]
+        if self in self.dataset.available_fields.values():
+            if self.dataset.available_fields[self.key] == self:
+                del self.dataset.available_fields[self.key]
         if self in self.dataset.metadata_fields.values():
             if self.dataset.metadata_fields[self.key] == self:
                 del self.dataset.metadata_fields[self.key]    
@@ -329,7 +329,7 @@ class Document(GenericObject):
             self.parent = None
 
     #def SetDocumentFields(self):
-    #    for field_key in self.parent.chosen_fields:
+    #    for field_key in self.parent.included_fields:
     #        if field_key in self.parent.data[self.key]:
     #            self.data_dict[field_key] = self.parent.data[self.key][field_key]
     #    self.last_changed_dt = datetime.now()

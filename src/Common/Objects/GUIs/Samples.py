@@ -18,6 +18,7 @@ import Common.Constants as Constants
 import Common.Database as Database
 import Common.CustomEvents as CustomEvents
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
+import Common.Objects.Threads.Datasets as DatasetsThreads
 import Common.Objects.Samples as Samples
 import Common.Objects.Threads.Samples as SamplesThreads
 import Common.Objects.DataViews.Samples as SamplesDataViews
@@ -434,11 +435,12 @@ class PartPanel(wx.Panel):
         return saved_data
 
 class SampleRulesDialog(wx.Dialog):
-    def __init__(self, parent, sample, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER):
-        logger = logging.getLogger(__name__+".RulesPanel["+str(sample.key)+"].__init__")
+    def __init__(self, parent, sample, dataset, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER):
+        logger = logging.getLogger(__name__+".SampleRulesDialog["+str(sample.key)+"].__init__")
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=FilteringGUIText.FILTERS_RULES+": "+repr(sample), style=style, size=wx.Size(600,400))
         self.sample = sample
+        self.dataset = dataset
         
         package_list = list(sample.tokenization_package_versions)
         tokenizer_package = sample.tokenization_package_versions[0]
@@ -447,6 +449,14 @@ class SampleRulesDialog(wx.Dialog):
         package_list[2] = FilteringGUIText.FILTERS_LEMMATIZER + package_list[2]
         
         sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
+        restore_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.RESTORE_RULES,
+                                            bitmap=wx.Bitmap(1, 1),
+                                            shortHelp=GUIText.RESTORE_RULES_TOOLTIP)
+        self.toolbar.Bind(wx.EVT_MENU, self.OnRestore, restore_tool)
+        self.toolbar.Realize()
+        sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
 
         tokenization_sizer = wx.BoxSizer(wx.HORIZONTAL)
         tokenization_package_label1 = wx.StaticText(self, label=FilteringGUIText.FILTERS_TOKENIZER)
@@ -461,14 +471,6 @@ class SampleRulesDialog(wx.Dialog):
         tokenization_sizer.Add(tokenization_label, proportion=0, flag=wx.ALL, border=5)
         sizer.Add(tokenization_sizer, proportion=0, flag=wx.ALL, border=5)
         
-        #self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
-        #tfidffilter_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_CREATE_TFIDF_RULE,
-        #                                        bitmap=wx.Bitmap(1, 1),
-        #                                        shortHelp=GUIText.FILTERS_CREATE_TFIDF_RULE_TOOLTIP)
-        #self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnCreateTfidfFilter, tfidffilter_tool)
-        #self.toolbar.Realize()
-        #sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
-
         self.rules_list = DatasetsDataViews.FilterRuleDataViewListCtrl(self)
         self.DisplayFilterRules(sample.applied_filter_rules)
         sizer.Add(self.rules_list, proportion=1, flag=wx.EXPAND, border=5)
@@ -493,7 +495,108 @@ class SampleRulesDialog(wx.Dialog):
                     action = str(action[0]) + " ("+str(column_options[action[1]])+str(action[2])+str(action[3])+")"
                 
             self.rules_list.AppendItem([i, field, word, pos, str(action)])
-            i += 1        
+            i += 1
+    
+    def OnRestore(self, event):
+        logger = logging.getLogger(__name__+".SampleIncludedFieldsDialog["+str(self.sample.key)+"].OnRestore")
+        logger.info("Starting")
+        main_frame = wx.GetApp().GetTopWindow()
+
+        if wx.MessageBox(GUIText.CONFIRM_RESTORE_RULES,
+                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
+            logger.info("Finished - Cancelled")
+            return
+
+        main_frame.CreateProgressDialog(GUIText.RESTORE_RULES,
+                                        warning=GUIText.SIZE_WARNING_MSG,
+                                        freeze=True)
+        main_frame.PulseProgressDialog(GUIText.RESTORE_BEGINNING_MSG)
+
+        main_frame.PulseProgressDialog(GUIText.RESTORE_REPLACINGRULES_MSG)
+        self.dataset.tokenization_choice = self.sample.tokenization_choice
+        self.dataset.filter_rules.clear()
+        self.dataset.filter_rules.extend(self.sample.applied_filter_rules)
+        main_frame.DatasetsUpdated()
+
+        main_frame.CloseProgressDialog(message=GUIText.RESTORE_COMPLETED_MSG,
+                                       thaw=True)
+        logger.info("Finished")
+
+class SampleIncludedFieldsDialog(wx.Dialog):
+    def __init__(self, parent, sample, dataset, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER):
+        logger = logging.getLogger(__name__+".SampleIncludedFieldsDialog["+str(sample.key)+"].__init__")
+        logger.info("Starting")
+        wx.Dialog.__init__(self, parent, title=FilteringGUIText.INCLUDEDFIELDS+": "+repr(sample), style=style, size=wx.Size(600,400))
+        self.sample = sample
+        self.dataset = dataset
+        self.tokenization_thread = None
+        
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.fields = {}
+        for field_key in self.sample.fields_list:
+            self.fields[field_key] = self.dataset.available_fields[field_key]
+        
+        self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
+        restore_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.RESTORE_INCLUDEDFIELDS,
+                                            bitmap=wx.Bitmap(1, 1),
+                                            shortHelp=GUIText.RESTORE_INCLUDEDFIELDS_TOOLTIP)
+        self.toolbar.Bind(wx.EVT_MENU, self.OnRestoreStart, restore_tool)
+        CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnRestoreFinish)
+        self.toolbar.Realize()
+        sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
+
+        self.included_fields_model = DatasetsDataViews.ChosenFieldsViewModel(self.fields)
+        self.included_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(self, self.included_fields_model)
+        sizer.Add(self.included_fields_ctrl, proportion=1, flag=wx.EXPAND, border=5)
+
+        self.SetSizer(sizer)
+        self.Layout()
+
+        logger.info("Finished")
+    
+    def OnRestoreStart(self, event):
+        logger = logging.getLogger(__name__+".SampleIncludedFieldsDialog["+str(self.sample.key)+"].OnRestoreStart")
+        logger.info("Starting")
+        main_frame = wx.GetApp().GetTopWindow()
+
+        if wx.MessageBox(GUIText.CONFIRM_RESTORE_INCLUDEDFIELDS,
+                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
+            logger.info("Finished - Cancelled")
+            return
+
+        main_frame.CreateProgressDialog(GUIText.RESTORE_RULES,
+                                        warning=GUIText.SIZE_WARNING_MSG,
+                                        freeze=True)
+        main_frame.PulseProgressDialog(GUIText.RESTORE_BEGINNING_MSG)
+
+        db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
+
+        main_frame.PulseProgressDialog(GUIText.RESTORE_REPLACINGFIELDS_MSG)
+        #1) remove from the dataset any currently included fields
+        for field_key in list(self.dataset.included_fields.keys()):
+            if field_key not in self.fields:
+                db_conn.DeleteField(self.dataset.key, field_key)
+            self.dataset.included_fields[field_key].DestroyObject()
+        #2) add to the dataset any fields from sample's field_list that are not included fields dataset
+        for field_key in self.fields:
+            self.dataset.included_fields[field_key] = copy.copy(self.fields[field_key])
+            
+        main_frame.multiprocessing_inprogress_flag = True
+        self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, self.dataset)
+        logger.info("Finished")
+
+    def OnRestoreFinish(self, event):
+        logger = logging.getLogger(__name__+".SampleIncludedFieldsDialog["+str(self.sample.key)+"].OnRestoreFinish")
+        logger.info("Starting")
+        self.tokenization_thread.join()
+        self.tokenization_thread = None
+        main_frame = wx.GetApp().GetTopWindow()
+        main_frame.multiprocessing_inprogress_flag = False
+        main_frame.DatasetsUpdated()
+        main_frame.CloseProgressDialog(message=GUIText.RESTORE_COMPLETED_MSG,
+                                       thaw=True)
+        logger.info("Finished")
 
 class RandomSamplePanel(AbstractSamplePanel):
     '''general class for features RandomSample panels should have'''
@@ -611,7 +714,7 @@ class RandomModelCreateDialog(wx.Dialog):
         else:
             wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('no dataset avaliable')
+            logger.warning('no dataset available')
             status_flag = False
 
         if status_flag:
@@ -658,6 +761,9 @@ class TopicSamplePanel(AbstractSamplePanel):
         rules_button = wx.Button(self, label=FilteringGUIText.FILTERS_RULES)
         rules_button.Bind(wx.EVT_BUTTON, self.OnShowRules)
         details2_sizer.Add(rules_button, 0, wx.ALL, 5)
+        includefields_button = wx.Button(self, label=FilteringGUIText.INCLUDEDFIELDS)
+        includefields_button.Bind(wx.EVT_BUTTON, self.OnShowIncludedFields)
+        details2_sizer.Add(includefields_button, 0, wx.ALL, 5)
         self.sizer.Add(details2_sizer, 0, wx.ALL, 5)
 
 
@@ -700,9 +806,15 @@ class TopicSamplePanel(AbstractSamplePanel):
         logger.info("Finished")
     
     def OnShowRules(self, event):
-        logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].OnChangeTopicWordNum")
+        logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].OnShowRules")
         logger.info("Starting")
-        SampleRulesDialog(self, self.sample).Show()
+        SampleRulesDialog(self, self.sample, self.dataset).Show()
+        logger.info("Finished")
+
+    def OnShowIncludedFields(self, event):
+        logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].OnShowIncludedFields")
+        logger.info("Starting")
+        SampleIncludedFieldsDialog(self, self.sample, self.dataset).Show()
         logger.info("Finished")
     
     def OnChangeTopicWordNum(self, event):
@@ -938,7 +1050,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         self.horizontal_splitter = wx.SplitterWindow(self.vertical_splitter)
         self.horizontal_splitter.SetMinimumPaneSize(20)
 
-        self.topiclist_panel = TopicListPanel(self.horizontal_splitter, self.sample)
+        self.topiclist_panel = TopicListPanel(self.horizontal_splitter, self.sample, self.dataset)
         self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnMergeTopics, self.topiclist_panel.merge_topics_tool)
         self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnSplitTopics, self.topiclist_panel.split_topics_tool)
         self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnRemoveTopics, self.topiclist_panel.remove_topics_tool)
@@ -1104,12 +1216,13 @@ class TopicVisualizationsNotebook(FNB.FlatNotebook):
         self.DrawLDAPlots(selected_parts)
 
 class TopicListPanel(wx.Panel):
-    def __init__(self, parent, sample):
+    def __init__(self, parent, sample, dataset):
         logger = logging.getLogger(__name__+".TopicListPanel["+str(sample.key)+"].__init__")
         logger.info("Starting")
         wx.Panel.__init__(self, parent)
 
         self.sample = sample
+        self.dataset = dataset
 
         topic_list_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -1142,6 +1255,9 @@ class TopicListPanel(wx.Panel):
         rules_button = wx.Button(self, label=FilteringGUIText.FILTERS_RULES)
         rules_button.Bind(wx.EVT_BUTTON, self.OnShowRules)
         details2_sizer.Add(rules_button, 0, wx.ALL, 5)
+        includefields_button = wx.Button(self, label=FilteringGUIText.INCLUDEDFIELDS)
+        includefields_button.Bind(wx.EVT_BUTTON, self.OnShowIncludedFields)
+        details2_sizer.Add(includefields_button, 0, wx.ALL, 5)
         topic_list_sizer.Add(details2_sizer, 0, wx.ALL, 5)
 
         topic_list_label1 = wx.StaticText(self, label=GUIText.WORDS_PER_TOPIC1)
@@ -1192,9 +1308,15 @@ class TopicListPanel(wx.Panel):
         logger.info("Finished")
     
     def OnShowRules(self, event):
-        logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].OnChangeTopicWordNum")
+        logger = logging.getLogger(__name__+".TopicListPanel["+str(self.sample.key)+"].OnShowRules")
         logger.info("Starting")
-        SampleRulesDialog(self, self.sample).Show()
+        SampleRulesDialog(self, self.sample, self.dataset).Show()
+        logger.info("Finished")
+
+    def OnShowIncludedFields(self, event):
+        logger = logging.getLogger(__name__+".TopicListPanel["+str(self.sample.key)+"].OnShowIncludedFields")
+        logger.info("Starting")
+        SampleIncludedFieldsDialog(self, self.sample, self.dataset).Show()
         logger.info("Finished")
 
 class LDAModelCreateDialog(wx.Dialog):
@@ -1219,7 +1341,7 @@ class LDAModelCreateDialog(wx.Dialog):
         self.usable_datasets = []
         main_frame = wx.GetApp().GetTopWindow()
         for dataset in main_frame.datasets.values():
-            if len(dataset.chosen_fields) > 0:
+            if len(dataset.included_fields) > 0:
                 self.usable_datasets.append(dataset.key)
         if len(self.usable_datasets) > 1: 
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
@@ -1297,7 +1419,7 @@ class LDAModelCreateDialog(wx.Dialog):
         else:
             wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('no dataset avaliable')
+            logger.warning('no dataset available')
             status_flag = False
 
         if status_flag:
@@ -1334,7 +1456,7 @@ class BitermModelCreateDialog(wx.Dialog):
         
         main_frame = wx.GetApp().GetTopWindow()
         for dataset in main_frame.datasets.values():
-            if len(dataset.chosen_fields) > 0:
+            if len(dataset.included_fields) > 0:
                 self.usable_datasets.append(dataset.key)
         if len(self.usable_datasets) > 1: 
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
@@ -1412,7 +1534,7 @@ class BitermModelCreateDialog(wx.Dialog):
         else:
             wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('no dataset avaliable')
+            logger.warning('no dataset available')
             status_flag = False
 
         if status_flag:
@@ -1447,7 +1569,7 @@ class NMFModelCreateDialog(wx.Dialog):
         
         main_frame = wx.GetApp().GetTopWindow()
         for dataset in main_frame.datasets.values():
-            if len(dataset.chosen_fields) > 0:
+            if len(dataset.included_fields) > 0:
                 self.usable_datasets.append(dataset.key)
         if len(self.usable_datasets) > 1: 
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
@@ -1517,7 +1639,7 @@ class NMFModelCreateDialog(wx.Dialog):
         else:
             wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('no dataset avaliable')
+            logger.warning('no dataset available')
             status_flag = False
 
         if status_flag:

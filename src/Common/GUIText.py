@@ -191,8 +191,8 @@ class Datasets(Common):
     NAME_EXISTS_ERROR = "Name must be unique"
     RETRIEVAL_FAILED_ERROR = "Retrieval failed for one or more datasets.\nPlease try again later."
     NO_RETRIEVAL_CONNECTION_ERROR = "Unable to Connect to Internet.\nPlease check your network status."
-    NO_DATA_RETRIEVED_ERROR = "No data retrieved.\nPlease trying again later as requested data may not yet be avaliable."
-    NO_DATA_AVALIABLE_ERROR = "No data avaliable.\nPlease try enabling data retrieval."
+    NO_DATA_RETRIEVED_ERROR = "No data retrieved.\nPlease trying again later as requested data may not yet be available."
+    NO_DATA_AVALIABLE_ERROR = "No data available.\nPlease try enabling data retrieval."
 
     REDDIT_ARCHIVED_TOOLTIP = "Use the local subreddit archive to create the dataset."
     REDDIT_UPDATE_PUSHSHIFT_TOOLTIP = "For any part of the period between the start and end dates that the local subreddit archive does not have data,"\
@@ -331,7 +331,7 @@ class Datasets(Common):
     COMBINED_METADATAFIELDS = "Combined Metdata Fields: "
     COMBINED_METADATAFIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
                                       "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
-    INCLUDEDFIELDS = "Included Fields: "
+    INCLUDEDFIELDS = "Included Fields"
     INCLUDEDFIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the CSV file."\
                              "\nIf a field occurs multiple times for the same id, the first occurance will be used."
     COMBINED_INCLUDEDFIELDS = "Combined Included Fields: "
@@ -391,6 +391,19 @@ class Samples(Main):
     PROBABILITY_CUTOFF_LABEL = "Probability Cutoff: "
     PROBABILITY_CUTOFF_TOOLTIP = "Include documents in a topic when the probability of the topic being present in the document is greater or equal to the cutoff"
 
+    RESTORE_RULES = "Restore Rules"
+    RESTORE_RULES_TOOLTIP = "Restores the rules of the dataset back to the version used when this sample was generated."
+    CONFIRM_RESTORE_RULES = "Are you sure that you want to replace all existing filter rules with the rules used when generating this sample."
+    RESTORE_INCLUDEDFIELDS = "Restore Included Fields"
+    RESTORE_INCLUDEDFIELDS_TOOLTIP = "Restores the included fields of the dataset back to the version used when this sample was generated."
+    CONFIRM_RESTORE_INCLUDEDFIELDS = "Are you sure that you want to replace all existing included fields of the dataset with the fields used when generating this sample."
+    RESTORE_BEGINNING_MSG = "Beginning Restore"
+    RESTORE_REPLACINGRULES_MSG = "Replacing Rules"
+    RESTORE_REPLACINGFIELDS_MSG = "Replacing Included Fields"
+    RESTORE_COMPLETED_MSG = "Restore Completed"
+
+
+
     #random model panel
 
     #lda model panel
@@ -421,12 +434,12 @@ class Samples(Main):
     DATASET = Datasets.DATASET
     DATASET_MISSING_ERROR = "Dataset was not chosen." \
                             "\nPlease choose a dataset for the model."
-    DATASET_NOTAVALIABLE_ERROR = "No Data is avaliable." \
+    DATASET_NOTAVALIABLE_ERROR = "No Data is available." \
                             "\nPlease load data into the project before trying to create a model."
     TYPE_UNKNOWN_ERROR = "Failed to create sample due to unknown type."
     AFTERFILTERING_LABEL1 = "After filtering "
     AFTERFILTERING_LABEL2 = " documents remained of the "
-    AFTERFILTERING_LABEL3 = " documents avaliable"
+    AFTERFILTERING_LABEL3 = " documents available"
     
 
     GENERATE_WARNING = "\nWARNING: Do not shut down program or else model will not be created."
@@ -501,13 +514,11 @@ class Collection(Main, Datasets):
 
     FIELDS_LABEL = "Fields"
     FIELDS_AVALIABLE_LABEL = "Avaliable Fields"
-    FIELDS_CHOSEN_LABEL = 'Chosen Fields'
-    FIELDS_ADD_TOOLTIP = "Selected fields will be added to Chosen Fields"
-    FIELDS_REMOVE_TOOLTIP = "Selected fields will be removed from Chosen Fields"
-    FIELDS_EXISTS_ERROR = "Chosen Fields already has field: "
-    FIELDS_MERGE_ERROR = "Can only merge fields and selected fields must be from the same dataset or datasets that are grouped together."
-    FIELDS_REMOVE_DATASET_WARNING = "Are you sure you want to remove all chosen fields and under Dataset: "
-
+    FIELDS_CHOSEN_LABEL = 'Included Fields'
+    FIELDS_ADD_TOOLTIP = "Selected fields will be added to Included Fields"
+    FIELDS_REMOVE_TOOLTIP = "Selected fields will be removed from Included Fields"
+    FIELDS_EXISTS_ERROR = "Included Fields already has field: "
+    
     GROUPING_BUSY_LABEL = "Grouping Datasets"
     GROUPING_BUSY_PREPARING_MSG = "Preparing to Group Selected Datasets"
     GROUPING_BUSY_CREATING_MSG = "Creating new Grouped Dataset: "
@@ -647,8 +658,8 @@ class Filtering(Main, Datasets):
     LOAD_BUSY_MSG_CONFIG = "Loading Data Cleaning & Filtering Configurations"
     SAVE_BUSY_MSG_CONFIG ="Saving Data Cleaning & Filtering Configurations"
 
-    LOAD_FIELD_BUSY_MSG = "Loading field: "
-    SAVE_FIELD_BUSY_MSG = "Saving field: "
+    LOAD_FILTERING_BUSY_MSG = "Loading Data Cleaning & Filtering for dataset: "
+    SAVE_FILTERING_BUSY_MSG = "Saving Data Cleaning & Filtering for dataset: "
 
 class Sampling(Samples):
     SAMPLE_NAME = "Name of Sample:"

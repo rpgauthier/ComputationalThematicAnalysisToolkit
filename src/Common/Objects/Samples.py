@@ -765,7 +765,7 @@ class ModelPart(Part):
         else:
             sample_key = self.parent.key
 
-        #cannot have more documents than what is avaliable
+        #cannot have more documents than what is available
         if document_num > len(self.part_data):
             document_num = len(self.part_data)
         #shrink if appropriate

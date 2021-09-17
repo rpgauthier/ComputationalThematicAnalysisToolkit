@@ -52,8 +52,8 @@ class DatasetsViewModel(dv.PyDataViewModel):
         # item and make DV items for each of it's child objects.
         node = self.ItemToObject(parent)
         if isinstance(node, Datasets.Dataset):
-            for chosen_field_name in node.chosen_fields:
-                children.append(self.ObjectToItem(node.chosen_fields[chosen_field_name]))
+            for included_field_name in node.included_fields:
+                children.append(self.ObjectToItem(node.included_fields[included_field_name]))
             return len(children)
         return 0
 
@@ -249,10 +249,10 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
                 self.metadata_col_types.append(self.dataset.metadata_fields[field_name].fieldtype)
     
         #CODE to collect approriate fields based on what has been chosen to be included and/or merged
-        for field_name in self.dataset.chosen_fields:
+        for field_name in self.dataset.included_fields:
             if field_name not in self.metadata_column_names and field_name not in self.data_column_names:
                 self.data_column_names.append(field_name)
-                self.data_col_types.append(self.dataset.chosen_fields[field_name].fieldtype)
+                self.data_col_types.append(self.dataset.included_fields[field_name].fieldtype)
 
     def GetColLabelValue(self, col):
         name = ""
@@ -567,7 +567,7 @@ class DatasetsDataGrid(wx.grid.Grid):
 
 # This model acts as a bridge between the FieldViewCtrl and the dataset and
 # organizes it hierarchically using Dataset, Field objects.
-# it provides data for displaying avaliable fields for a particular Dataset
+# it provides data for displaying available fields for a particular Dataset
 # This model provides these data columns:
 #   0. Name:   string
 #   1. Source:  string
@@ -589,8 +589,8 @@ class AvaliableFieldsViewModel(dv.PyDataViewModel):
         # item, so we'll use the genre objects as its children and they will
         # end up being the collection of visible roots in our tree.
         if not parent:
-            for field_name in self.dataset.avaliable_fields:
-                children.append(self.ObjectToItem(self.dataset.avaliable_fields[field_name]))
+            for field_name in self.dataset.available_fields:
+                children.append(self.ObjectToItem(self.dataset.available_fields[field_name]))
             return len(children)
         return 0
 

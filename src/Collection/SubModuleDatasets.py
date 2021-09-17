@@ -114,7 +114,7 @@ class DatasetsListPanel(wx.Panel):
             SubModuleFields.FieldsDialog(parent=self,
                                          title=str(node.key)+" "+GUIText.CUSTOMIZE_INCLUDEDFIELDS,
                                          dataset=node,
-                                         fields=node.chosen_fields).Show()
+                                         fields=node.included_fields).Show()
         logger.info("Finished")
 
     def OnAccessDetails(self, event):
@@ -249,7 +249,6 @@ class DatasetDetailsPanel(wx.Panel):
 
         self.ChangeDataset(self.dataset)
 
-        CustomEvents.EVT_PROGRESS(self, self.OnProgress)
         CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnTokenizerEnd)
 
         logger.info("Finished")
@@ -337,10 +336,6 @@ class DatasetDetailsPanel(wx.Panel):
         self.Layout()
         logger.info("Finished")
 
-    def OnProgress(self, event):
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(event.data)
-    
     def OnTokenizerEnd(self, event):
         logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnTokenizerEnd")
         logger.info("Starting")

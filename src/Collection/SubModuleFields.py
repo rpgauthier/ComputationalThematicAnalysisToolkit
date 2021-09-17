@@ -38,21 +38,21 @@ class FieldsPanel(wx.Panel):
         self.metadata_fields = metadata_fields
         self.tokenization_thread = None
 
-        avaliable_panel = wx.lib.scrolledpanel.ScrolledPanel(splitter)
-        avaliable_sizer = wx.BoxSizer(wx.VERTICAL)
-        avaliable_toolbar = wx.ToolBar(avaliable_panel, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-        add_tool = avaliable_toolbar.AddTool(wx.ID_ANY, label=GUIText.ADD, bitmap=wx.Bitmap(1, 1),
+        available_panel = wx.lib.scrolledpanel.ScrolledPanel(splitter)
+        available_sizer = wx.BoxSizer(wx.VERTICAL)
+        available_toolbar = wx.ToolBar(available_panel, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
+        add_tool = available_toolbar.AddTool(wx.ID_ANY, label=GUIText.ADD, bitmap=wx.Bitmap(1, 1),
                                              shortHelp=GUIText.FIELDS_ADD_TOOLTIP)
-        avaliable_toolbar.Bind(wx.EVT_MENU, self.OnAddFields, add_tool)
+        available_toolbar.Bind(wx.EVT_MENU, self.OnAddFields, add_tool)
 
-        avaliable_toolbar.Realize()
-        avaliable_sizer.Add(avaliable_toolbar, proportion=0, flag=wx.ALL, border=5)
+        available_toolbar.Realize()
+        available_sizer.Add(available_toolbar, proportion=0, flag=wx.ALL, border=5)
 
-        self.avaliable_fields_model = DatasetsDataViews.AvaliableFieldsViewModel(dataset)
-        self.avaliable_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(avaliable_panel, self.avaliable_fields_model)
-        avaliable_sizer.Add(self.avaliable_fields_ctrl, proportion=1, flag=wx.EXPAND, border=5)
-        avaliable_panel.SetSizer(avaliable_sizer)
-        avaliable_panel.SetupScrolling()
+        self.available_fields_model = DatasetsDataViews.AvaliableFieldsViewModel(dataset)
+        self.available_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(available_panel, self.available_fields_model)
+        available_sizer.Add(self.available_fields_ctrl, proportion=1, flag=wx.EXPAND, border=5)
+        available_panel.SetSizer(available_sizer)
+        available_panel.SetupScrolling()
 
         chosen_panel = wx.lib.scrolledpanel.ScrolledPanel(splitter)
         chosen_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -62,21 +62,20 @@ class FieldsPanel(wx.Panel):
         chosen_toolbar.Bind(wx.EVT_MENU, self.OnRemoveFields, remove_tool)
         chosen_toolbar.Realize()
         chosen_sizer.Add(chosen_toolbar, proportion=0, flag=wx.ALL, border=5)
-        self.chosen_fields_model = DatasetsDataViews.ChosenFieldsViewModel(fields)
-        self.chosen_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(chosen_panel, self.chosen_fields_model)
-        chosen_sizer.Add(self.chosen_fields_ctrl, proportion=1, flag=wx.EXPAND, border=5)
+        self.included_fields_model = DatasetsDataViews.ChosenFieldsViewModel(fields)
+        self.included_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(chosen_panel, self.included_fields_model)
+        chosen_sizer.Add(self.included_fields_ctrl, proportion=1, flag=wx.EXPAND, border=5)
         chosen_panel.SetSizer(chosen_sizer)
         chosen_panel.SetupScrolling()
 
         splitter.SetMinimumPaneSize(20)
-        splitter.SplitVertically(avaliable_panel, chosen_panel)
+        splitter.SplitVertically(available_panel, chosen_panel)
         splitter.SetSashPosition(int(self.GetSize().GetWidth()/2))
         
         sizer = wx.BoxSizer()
         sizer.Add(splitter, proportion=1, flag=wx.EXPAND|wx.ALL, border=5)
         self.SetSizer(sizer)
 
-        CustomEvents.EVT_PROGRESS(self, self.OnProgress)
         CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnTokenizerEnd)
         
         logger.info("Finished")
@@ -106,8 +105,8 @@ class FieldsPanel(wx.Panel):
                                         warning=GUIText.SIZE_WARNING_MSG,
                                         freeze=True)
         main_frame.PulseProgressDialog(GUIText.ADDING_FIELDS_BUSY_PREPARING_MSG)
-        for item in self.avaliable_fields_ctrl.GetSelections():
-            node = self.avaliable_fields_model.ItemToObject(item)
+        for item in self.available_fields_ctrl.GetSelections():
+            node = self.available_fields_model.ItemToObject(item)
             main_frame.PulseProgressDialog(GUIText.ADDING_FIELDS_BUSY_MSG+str(node.key))
             if isinstance(node, Datasets.Field):
                 FieldAdder(node)
@@ -127,9 +126,9 @@ class FieldsPanel(wx.Panel):
         db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
 
         def FieldRemover(field):
-            item = self.chosen_fields_model.ObjectToItem(field)
-            parent_item = self.chosen_fields_model.GetParent(item)
-            self.chosen_fields_model.ItemDeleted(parent_item, item)
+            item = self.included_fields_model.ObjectToItem(field)
+            parent_item = self.included_fields_model.GetParent(item)
+            self.included_fields_model.ItemDeleted(parent_item, item)
             if not self.metadata_fields:
                 db_conn.DeleteField(self.dataset.key, field.key)
             field.DestroyObject()
@@ -141,8 +140,8 @@ class FieldsPanel(wx.Panel):
                                         freeze=True)
         try:
             main_frame.PulseProgressDialog(GUIText.REMOVING_FIELDS_BUSY_PREPARING_MSG)
-            for item in self.chosen_fields_ctrl.GetSelections():
-                node = self.chosen_fields_model.ItemToObject(item)
+            for item in self.included_fields_ctrl.GetSelections():
+                node = self.included_fields_model.ItemToObject(item)
                 main_frame.PulseProgressDialog(GUIText.REMOVING_FIELDS_BUSY_MSG+str(node.key))
                 if isinstance(node, Datasets.Field):
                     FieldRemover(node)
@@ -161,17 +160,13 @@ class FieldsPanel(wx.Panel):
             self.GetTopLevelParent().SetFocus()
         logger.info("Finished")
 
-    def OnProgress(self, event):
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(event.data)
-
     def OnTokenizerEnd(self, event):
         logger = logging.getLogger(__name__+".FieldsNotebook.OnAddFieldsEnd")
         logger.info("Starting")
         self.tokenization_thread.join()
         self.tokenization_thread = None
-        self.chosen_fields_model.Cleared()
-        self.chosen_fields_ctrl.Expander(None)
+        self.included_fields_model.Cleared()
+        self.included_fields_ctrl.Expander(None)
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.DatasetsUpdated()
         main_frame.CloseProgressDialog(thaw=True)

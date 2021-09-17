@@ -375,33 +375,33 @@ class DocumentPanel(wx.Panel):
                         field_ctrl.WriteText(value_str+' UTC\n------------\n')
                     else:
                         field_ctrl.WriteText(str(field_data)+'\n------------\n')
-        for field_name in document.parent.chosen_fields:
+        for field_name in document.parent.included_fields:
             if field_name not in document.parent.metadata_fields and field_name in document.parent.data[document.key]:
                 field_data = document.parent.data[document.key][field_name]
                 field_ctrl.WriteText('------'+str(field_name)+'------\n')
                 if isinstance(field_data, list):
                     for entry in field_data:
-                        if document.parent.chosen_fields[field_name].fieldtype == 'url':
+                        if document.parent.included_fields[field_name].fieldtype == 'url':
                             field_ctrl.BeginStyle(urlStyle)
                             field_ctrl.BeginURL(entry)
                             field_ctrl.WriteText(entry)
                             field_ctrl.EndURL()
                             field_ctrl.EndStyle()
                             field_ctrl.WriteText('\n------------\n')
-                        elif document.parent.chosen_fields[field_name].fieldtype == 'UTC-timestamp':
+                        elif document.parent.included_fields[field_name].fieldtype == 'UTC-timestamp':
                             value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
                             field_ctrl.WriteText(value_str+' UTC\n------------\n')
                         else:
                             field_ctrl.WriteText(str(entry)+'\n------------\n')
                 else:
-                    if document.parent.chosen_fields[field_name].fieldtype == 'url':
+                    if document.parent.included_fields[field_name].fieldtype == 'url':
                         field_ctrl.BeginStyle(urlStyle)
                         field_ctrl.BeginURL(field_data)
                         field_ctrl.WriteText(field_data)
                         field_ctrl.EndURL()
                         field_ctrl.EndStyle()
                         field_ctrl.WriteText('\n------------\n')
-                    elif document.parent.chosen_fields[field_name].fieldtype == 'UTC-timestamp':
+                    elif document.parent.included_fields[field_name].fieldtype == 'UTC-timestamp':
                         value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
                         field_ctrl.WriteText(value_str+' UTC\n------------\n')
                     else:

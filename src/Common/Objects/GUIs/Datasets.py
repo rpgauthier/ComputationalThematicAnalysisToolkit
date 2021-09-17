@@ -22,7 +22,7 @@ class DataNotebook(FNB.FlatNotebook):
         logger.info("Starting")
         FNB.FlatNotebook.__init__(self, parent, agwStyle=Constants.FNB_STYLE, size=size)
 
-        #create dictionary to hold instances of dataset data panels for each field avaliable
+        #create dictionary to hold instances of dataset data panels for each field available
         self.dataset_data_tabs = {}
 
         self.menu = wx.Menu()
@@ -112,7 +112,6 @@ class DatasetDetailsDialog(wx.Dialog):
         self.Layout()
         self.Fit()
 
-        CustomEvents.EVT_PROGRESS(self, self.OnProgress)
         CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnTokenizerEnd)
         logger.info("Finished")
     
@@ -172,10 +171,6 @@ class DatasetDetailsDialog(wx.Dialog):
                 self.Close()
         logger.info("Finished")
     
-    def OnProgress(self, event):
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(event.data)
-
     def OnTokenizerEnd(self, event):
         logger = logging.getLogger(__name__+".DatasetDetailsDialog.OnTokenizerEnd")
         logger.info("Starting")
@@ -313,7 +308,6 @@ class DatasetPanel(wx.Panel):
         self.SetSizer(self.sizer)
         self.Layout()
 
-        CustomEvents.EVT_PROGRESS(self, self.OnProgress)
         CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnTokenizerEnd)
 
     def OnCustomizeMetadataFields(self, event):
@@ -334,7 +328,7 @@ class DatasetPanel(wx.Panel):
         SubModuleFields.FieldsDialog(parent=main_frame,
                                      title=str(self.dataset.key)+" "+GUIText.CUSTOMIZE_INCLUDEDFIELDS,
                                      dataset=self.dataset,
-                                     fields=self.dataset.chosen_fields).Show()
+                                     fields=self.dataset.included_fields).Show()
         logger.info("Finished")
 
     def OnChangeDatasetKey(self, event):
@@ -393,10 +387,6 @@ class DatasetPanel(wx.Panel):
         logger.info("Finished")
 
         
-    def OnProgress(self, event):
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(event.data)
-
     def OnTokenizerEnd(self, event):
         logger = logging.getLogger(__name__+".DatasetDetailsDialog.OnTokenizerEnd")
         logger.info("Starting")

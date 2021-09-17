@@ -86,14 +86,14 @@ class Code(GenericObject):
                             break
                     elif isinstance(current_parent, Datasets.Dataset):
                         if key[0] ==  Datasets.Field:
-                            if key[1] in current_parent.avaliable_fields:
-                                current_parent = current_parent.avaliable_fields[key[1]]
+                            if key[1] in current_parent.available_fields:
+                                current_parent = current_parent.available_fields[key[1]]
                             else:
                                 current_parent = None
                                 break
                         elif key[0] ==  Datasets.Field:
-                            if key[1] in current_parent.chosen_fields:
-                                current_parent = current_parent.chosen_fields[key[1]]
+                            if key[1] in current_parent.included_fields:
+                                current_parent = current_parent.included_fields[key[1]]
                             else:
                                 current_parent = None
                                 break
