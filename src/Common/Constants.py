@@ -57,7 +57,7 @@ TOKENIZER_APPROACH_LISTS = {'eng-sm': ['raw text', 'nltk_PorterStemmer', 'spacy_
                             'fre-trf': ['raw text', '<no stemmer available>', 'spacy_lemmentizer'],
                             }
 AVALIABLE_DATASET_LANGUAGES1 = ['eng-sm', 'fre-sm'] #removed eng-trf and fre-trf due to difficulties with preparing installations -- Sept 21, 2021
-AVALIABLE_DATASET_LANGUAGES2 = ['English-Efficent', 'English-Accurate', 'French']
+AVALIABLE_DATASET_LANGUAGES2 = ['English', 'French']
 
 # dialogs
 TWITTER_DIALOG_SIZE = wx.Size(350, -1)

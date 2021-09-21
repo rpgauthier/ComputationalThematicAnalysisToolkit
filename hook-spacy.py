@@ -47,7 +47,6 @@ hiddenimports += ['srsly.msgpack.util']
 
 from PyInstaller.utils.hooks import collect_data_files
 datas += collect_data_files("en_core_web_sm")
-datas += collect_data_files("en_core_web_trf")
 datas += collect_data_files("fr_core_news_sm")
 
 # This hook file is a bit of a hack - really, all of the libraries should be in seperate hook files. (Eg hook-blis.py with the blis part of the hook)

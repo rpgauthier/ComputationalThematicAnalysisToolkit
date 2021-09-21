@@ -18,7 +18,7 @@ LicenseFile=C:\Users\Robert Gauthier\Documents\School\PHD_Studies\Autobiographic
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-OutputBaseFilename=mysetup
+OutputBaseFilename=Toolkit_Setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
