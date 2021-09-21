@@ -5,7 +5,6 @@ from datetime import datetime
 
 import jsonpickle
 import nltk
-import spacy
 import spacy.lang.en.stop_words
 import pandas as pd
 
@@ -379,7 +378,7 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         nltk_stopwords = set(nltk.corpus.stopwords.words('english'))
         for word in nltk_stopwords:
-            self.dataset.AddFilterRule((word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
+            self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
         self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
         self.ApplyFilterRulesStart()
         logger.info("Finished")
@@ -389,7 +388,7 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         spacy_stopwords = spacy.lang.en.stop_words.STOP_WORDS
         for word in spacy_stopwords:
-            self.dataset.AddFilterRule((word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
+            self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
         self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
         self.ApplyFilterRulesStart()
         logger.info("Finished")

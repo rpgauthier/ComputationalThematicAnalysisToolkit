@@ -1,6 +1,10 @@
 import logging
 
 import spacy
+import en_core_web_sm
+import en_core_web_trf
+import fr_core_news_sm
+
 import nltk
 from math import log
 
@@ -176,21 +180,21 @@ def TokenizationWorker(data_list, field_key, label, language):
         package_versions.append(spacy.__name__ +" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
     elif language == 'fre-sm':
         #less accurate but faster model
-        nlp = spacy.load('fr_core_news_sm')
+        nlp = fr_core_news_sm.load()
         stemmer = nltk.stem.snowball.FrenchStemmer()
         package_versions.append(spacy.__name__+" "+spacy.__version__+" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
         package_versions.append(nltk.__name__ +" "+nltk.__version__+" snowball.FrenchStemmer")
         package_versions.append(spacy.__name__ +" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
     elif language == 'eng-trf':
         #more accurate but slower model
-        nlp = spacy.load("en_core_web_trf")
+        nlp = en_core_web_trf.load()
         stemmer = nltk.stem.snowball.EnglishStemmer()
         package_versions.append(spacy.__name__+" "+spacy.__version__+" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
         package_versions.append(nltk.__name__ +" "+nltk.__version__+" snowball.EnglishStemmer")
         package_versions.append(spacy.__name__ +" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
     elif language == 'eng-sm':
         #less accurate but faster model
-        nlp = spacy.load('en_core_web_sm')
+        nlp = en_core_web_sm.load()
         stemmer = nltk.stem.snowball.EnglishStemmer()
         package_versions.append(spacy.__name__+" "+spacy.__version__+" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
         package_versions.append(nltk.__name__ +" "+nltk.__version__+" snowball.EnglishStemmer")

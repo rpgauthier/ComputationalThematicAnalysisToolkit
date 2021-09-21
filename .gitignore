@@ -6,3 +6,5 @@ Saved_Workspaces/
 .vscode/
 **/__pycache__
 twitter_keys.json
+build/
+dist/
