@@ -2,7 +2,7 @@ import logging
 
 import spacy
 import en_core_web_sm
-import en_core_web_trf
+#import en_core_web_trf
 import fr_core_news_sm
 
 import nltk
@@ -172,7 +172,7 @@ def TokenizationWorker(data_list, field_key, label, language):
     spacy.prefer_gpu()
     if language == 'fre-trf':
         # tried to updated to use more accurate model
-        # but not able to install on python 3.9 on Feb 23 2021
+        # but not able to install on python 3.9 on Sept 21, 2021
         nlp = spacy.load("fr_dep_news_trf")
         stemmer = nltk.stem.snowball.FrenchStemmer()
         package_versions.append(spacy.__name__+" "+spacy.__version__+" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
@@ -187,7 +187,8 @@ def TokenizationWorker(data_list, field_key, label, language):
         package_versions.append(spacy.__name__ +" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
     elif language == 'eng-trf':
         #more accurate but slower model
-        nlp = en_core_web_trf.load()
+        # but not able to work with pyinstaller on python 3.9 on Sept 21, 2021
+        nlp = spacy.load("en_core_web_trf")
         stemmer = nltk.stem.snowball.EnglishStemmer()
         package_versions.append(spacy.__name__+" "+spacy.__version__+" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
         package_versions.append(nltk.__name__ +" "+nltk.__version__+" snowball.EnglishStemmer")
