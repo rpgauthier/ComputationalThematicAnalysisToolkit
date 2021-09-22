@@ -173,6 +173,14 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         dataset_type_sizer.Add(self.dataset_type_choice)
         sizer.Add(dataset_type_sizer, 0, wx.ALL, 5)
 
+        language_label = wx.StaticText(self, label=GUIText.LANGUAGE+":")
+        self.language_ctrl = wx.Choice(self, choices=Constants.AVALIABLE_DATASET_LANGUAGES2)
+        self.language_ctrl.Select(0)
+        language_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        language_sizer.Add(language_label, 0, wx.ALIGN_CENTRE_VERTICAL)
+        language_sizer.Add(self.language_ctrl)
+        sizer.Add(language_sizer, 0, wx.ALL, 5)
+
         #control the subsource of where data is retrieved from
         self.archived_radioctrl = wx.RadioButton(self, label=GUIText.REDDIT_ARCHIVED, style=wx.RB_GROUP)
         self.archived_radioctrl.SetToolTip(GUIText.REDDIT_ARCHIVED_TOOLTIP)
@@ -311,6 +319,9 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('No subreddit entered')
             status_flag = False
+        
+        language = Constants.AVALIABLE_DATASET_LANGUAGES1[self.language_ctrl.GetSelection()]
+
         if not self.ethics_community1_ctrl.IsChecked():
             wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY1,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
@@ -407,7 +418,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.Disable()
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
-            self.retrieval_thread = CollectionThreads.RetrieveRedditDatasetThread(self, main_frame, name, subreddit, start_date, end_date,
+            self.retrieval_thread = CollectionThreads.RetrieveRedditDatasetThread(self, main_frame, name, language, subreddit, start_date, end_date,
                                                                                   replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type,
                                                                                   list(self.available_fields.items()), metadata_fields_list, included_fields_list)
         logger.info("Finished")
@@ -427,6 +438,14 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         sizer.SetMinSize(Constants.TWITTER_DIALOG_SIZE)
         
         main_frame = wx.GetApp().GetTopWindow()
+        if main_frame.multipledatasets_mode:
+            name_label = wx.StaticText(self, label=GUIText.NAME + ": ")
+            self.name_ctrl = wx.TextCtrl(self)
+            self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
+            name_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            name_sizer.Add(name_label)
+            name_sizer.Add(self.name_ctrl)
+            sizer.Add(name_sizer, 0, wx.ALL, 5)
 
         # get saved keys, if any
         if os.path.isfile(self.keys_filename):
@@ -434,13 +453,22 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
                 self.keys = json.load(infile)
 
         # ethics/terms of use
-        self.ethics_checkbox_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_TWITTER)
-        self.ethics_hyperlink_ctrl = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.ETHICS_TWITTER_URL)
-
-        ethics_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        ethics_sizer.Add(self.ethics_checkbox_ctrl)
-        ethics_sizer.Add(self.ethics_hyperlink_ctrl)
-        sizer.Add(ethics_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1)
+        self.ethics_community2_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY2)
+        self.ethics_research_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_RESEARCH)
+        self.ethics_institution_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_INSTITUTION)
+        self.ethics_twitter_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_TWITTER)
+        self.ethics_twitter_url = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.ETHICS_TWITTER_URL)
+        ethics_sizer = wx.BoxSizer(wx.VERTICAL)
+        ethics_sizer.Add(self.ethics_community1_ctrl)
+        ethics_sizer.Add(self.ethics_community2_ctrl)
+        ethics_sizer.Add(self.ethics_research_ctrl)
+        ethics_sizer.Add(self.ethics_institution_ctrl)
+        ethics_twitter_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        ethics_twitter_sizer.Add(self.ethics_twitter_ctrl)
+        ethics_twitter_sizer.Add(self.ethics_twitter_url)
+        ethics_sizer.Add(ethics_twitter_sizer)
+        sizer.Add(ethics_sizer, 0, wx.ALL, 5)
 
         consumer_key_label = wx.StaticText(self, label=GUIText.CONSUMER_KEY + ": ")
         self.consumer_key_ctrl = wx.TextCtrl(self)
@@ -535,6 +563,14 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         # retweets checkbox
         self.include_retweets_ctrl = wx.CheckBox(self, label=GUIText.INCLUDE_RETWEETS)
         sizer.Add(self.include_retweets_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+
+        language_label = wx.StaticText(self, label=GUIText.LANGUAGE+":")
+        self.language_ctrl = wx.Choice(self, choices=Constants.AVALIABLE_DATASET_LANGUAGES2)
+        self.language_ctrl.Select(0)
+        language_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        language_sizer.Add(language_label, 0, wx.ALIGN_CENTRE_VERTICAL)
+        language_sizer.Add(self.language_ctrl)
+        sizer.Add(language_sizer, 0, wx.ALL, 5)
 
         # dates
         date_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -644,6 +680,40 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         status_flag = True
         main_frame = wx.GetApp().GetTopWindow()
         keys = {}
+
+        if main_frame.multipledatasets_mode:
+            name = self.name_ctrl.GetValue()
+            if name == "":
+                wx.MessageBox(GUIText.NAME_MISSING_ERROR,
+                            GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                logger.warning('No name entered')
+                status_flag = False
+
+        if not self.ethics_community1_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY1,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
+        if not self.ethics_community2_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY2,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
+        if not self.ethics_research_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_RESEARCH,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
+        if not self.ethics_institution_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_INSTITUTION,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
+        if not self.ethics_twitter_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_TWITTER,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
         
         keys['consumer_key'] = self.consumer_key_ctrl.GetValue()
         if keys['consumer_key'] == "":
@@ -657,11 +727,8 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('No consumer secret entered')
             status_flag = False
-        if not self.ethics_checkbox_ctrl.IsChecked():
-            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_TWITTER,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('Ethics not checked')
-            status_flag = False
+
+        language = Constants.AVALIABLE_DATASET_LANGUAGES1[self.language_ctrl.GetSelection()]
 
         auth = tweepy.OAuthHandler(keys['consumer_key'], keys['consumer_secret'])
         api = tweepy.API(auth)
@@ -742,7 +809,8 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         query = query.strip() # trim whitespace
         logger.info("Query: "+query)
 
-        name = query
+        if not main_frame.multipledatasets_mode:
+            name = query
 
         start_date = str(self.start_date_ctrl.GetValue().Format("%Y-%m-%d"))
         end_date = str(self.end_date_ctrl.GetValue().Format("%Y-%m-%d"))
@@ -790,7 +858,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.Disable()
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
-            self.retrieval_thread = CollectionThreads.RetrieveTwitterDatasetThread(self, main_frame, name, keys, query, start_date, end_date, self.dataset_type,
+            self.retrieval_thread = CollectionThreads.RetrieveTwitterDatasetThread(self, main_frame, name, language, keys, query, start_date, end_date, self.dataset_type,
                                                                                     list(self.available_fields.items()), metadata_fields_list, included_fields_list)
         logger.info("Finished")
 
@@ -811,7 +879,6 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         name_sizer.Add(name_label)
         name_sizer.Add(self.name_ctrl)
         sizer.Add(name_sizer, 0, wx.ALL, 5)
-        
 
         filename_label = wx.StaticText(self, label=GUIText.FILENAME + ": ")
         self.filename_ctrl = wx.FilePickerCtrl(self, wildcard="CSV files (*.csv)|*.csv")
@@ -821,6 +888,26 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         filename_sizer.Add(self.filename_ctrl)
         self.filename_ctrl.Bind(wx.EVT_FILEPICKER_CHANGED, self.OnFilenameChosen)
         sizer.Add(filename_sizer, 0, wx.ALL, 5)
+
+        # ethics/terms of use
+        self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1)
+        self.ethics_community2_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY2)
+        self.ethics_research_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_RESEARCH)
+        self.ethics_institution_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_INSTITUTION)
+        ethics_sizer = wx.BoxSizer(wx.VERTICAL)
+        ethics_sizer.Add(self.ethics_community1_ctrl)
+        ethics_sizer.Add(self.ethics_community2_ctrl)
+        ethics_sizer.Add(self.ethics_research_ctrl)
+        ethics_sizer.Add(self.ethics_institution_ctrl)
+        sizer.Add(ethics_sizer, 0, wx.ALL, 5)
+
+        language_label = wx.StaticText(self, label=GUIText.LANGUAGE+":")
+        self.language_ctrl = wx.Choice(self, choices=Constants.AVALIABLE_DATASET_LANGUAGES2)
+        self.language_ctrl.Select(0)
+        language_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        language_sizer.Add(language_label, 0, wx.ALIGN_CENTRE_VERTICAL)
+        language_sizer.Add(self.language_ctrl)
+        sizer.Add(language_sizer, 0, wx.ALL, 5)
 
         main_frame = wx.GetApp().GetTopWindow()
         if main_frame.multipledatasets_mode:
@@ -1007,6 +1094,29 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             logger.warning('No id field chosen')
             status_flag = False
         
+        if not self.ethics_community1_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY1,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
+        if not self.ethics_community2_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY2,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
+        if not self.ethics_research_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_RESEARCH,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
+        if not self.ethics_institution_ctrl.IsChecked():
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_INSTITUTION,
+                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            logger.warning('Ethics not checked')
+            status_flag = False
+
+        language = Constants.AVALIABLE_DATASET_LANGUAGES1[self.language_ctrl.GetSelection()]
+
         datetime_field = self.datetime_field_ctrl.GetStringSelection()
         datetime_tz = self.datetime_tz_ctrl.GetStringSelection()
         if datetime_field != '':
@@ -1102,7 +1212,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.Disable()
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
-            self.retrieval_thread = CollectionThreads.RetrieveCSVDatasetThread(self, main_frame, name, dataset_field, dataset_type,
+            self.retrieval_thread = CollectionThreads.RetrieveCSVDatasetThread(self, main_frame, name, language, dataset_field, dataset_type,
                                                                                id_field, url_field, datetime_field, datetime_tz,
                                                                                list(self.available_fields.items()), metadata_field_list, included_field_list, combined_list, filename)
         logger.info("Finished")

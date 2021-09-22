@@ -8,7 +8,7 @@ import Common.Objects.Samples as Samples
 #Object classes to facilitate controlling datasets
 class Dataset(GenericObject):
     '''instances of Datasets.'''
-    def __init__(self, key, name, dataset_source, dataset_type, retrieval_details):
+    def __init__(self, key, name, dataset_source, dataset_type, language, retrieval_details):
         logger = logging.getLogger(__name__+".Dataset["+str(key)+"].__init__")
         logger.info("Starting")
         GenericObject.__init__(self, key, name=name)
@@ -18,7 +18,7 @@ class Dataset(GenericObject):
         self._dataset_type = dataset_type
         self._retrieval_details = retrieval_details
         self._data = {}
-        self._language = "eng-sm"
+        self._language = language
         self._tokenization_choice = 0
         self._tokenization_package_versions = None
         self._total_docs = 0

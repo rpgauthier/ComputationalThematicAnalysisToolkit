@@ -15,11 +15,12 @@ import Common.Objects.Datasets as Datasets
 import Common.Database as Database
 from Common.GUIText import Datasets as GUIText
 
-def CreateDataset(dataset_key, retrieval_details, data, available_fields_list, metadata_fields_list, included_fields_list, main_frame):
+def CreateDataset(dataset_key, language, retrieval_details, data, available_fields_list, metadata_fields_list, included_fields_list, main_frame):
     dataset = Datasets.Dataset(dataset_key,
                                dataset_key[0],
                                dataset_key[1],
                                dataset_key[2],
+                               language,
                                retrieval_details)
 
     db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)

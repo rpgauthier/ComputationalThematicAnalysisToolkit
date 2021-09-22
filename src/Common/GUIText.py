@@ -1,3 +1,7 @@
+#TODO program needs to be adjusted allow french localization via either:
+# 1) hot swapping GUIText's classes with French Equivilents
+# 2) rework to use wx.localization
+
 class Common:
     #Common text used everywhere
     WARNING = "Warning"

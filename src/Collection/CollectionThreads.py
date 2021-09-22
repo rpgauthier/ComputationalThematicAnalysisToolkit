@@ -22,13 +22,14 @@ import Collection.TwitterDataRetriever as twr
 
 class RetrieveRedditDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, subreddit, start_date, end_date, replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type, available_fields_list, metadata_fields_list, included_fields_list):
+    def __init__(self, notify_window, main_frame, dataset_name, language, subreddit, start_date, end_date, replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type, available_fields_list, metadata_fields_list, included_fields_list):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self.daemon = True
         self._notify_window = notify_window
         self.main_frame = main_frame
         self.dataset_name = dataset_name
+        self.language = language
         self.dataset_type = dataset_type
         self.replace_archive_flg = replace_archive_flg
         self.pushshift_flg = pushshift_flg
@@ -154,7 +155,7 @@ class RetrieveRedditDatasetThread(Thread):
         if status_flag:
             if len(data) > 0:
                 wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, self.language, retrieval_details, data, self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -256,12 +257,13 @@ class RetrieveRedditDatasetThread(Thread):
 
 class RetrieveTwitterDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, keys, query, start_date, end_date, dataset_type, available_fields_list, metadata_fields_list, included_fields_list):
+    def __init__(self, notify_window, main_frame, dataset_name, language, keys, query, start_date, end_date, dataset_type, available_fields_list, metadata_fields_list, included_fields_list):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
         self.main_frame = main_frame
         self.dataset_name = dataset_name
+        self.language = language
         self.consumer_key = keys['consumer_key']
         self.consumer_secret = keys['consumer_secret']
         self.query = query
@@ -357,7 +359,7 @@ class RetrieveTwitterDatasetThread(Thread):
         if status_flag:
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, self.language, retrieval_details, data, self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -463,13 +465,14 @@ class RetrieveTwitterDatasetThread(Thread):
 
 class RetrieveCSVDatasetThread(Thread):
     """Retrieve CSV Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, dataset_field, dataset_type, id_field, url_field, datetime_field, datetime_tz, available_fields_list, metadata_fields_list, included_fields_list, combined_fields_list, filename):
+    def __init__(self, notify_window, main_frame, dataset_name, language, dataset_field, dataset_type, id_field, url_field, datetime_field, datetime_tz, available_fields_list, metadata_fields_list, included_fields_list, combined_fields_list, filename):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self.daemon = True
         self._notify_window = notify_window
         self.main_frame = main_frame
         self.dataset_name = dataset_name
+        self.language = language
         self.dataset_field = dataset_field
         self.dataset_type = dataset_type
         self.id_field = id_field
@@ -548,7 +551,7 @@ class RetrieveCSVDatasetThread(Thread):
             #save as a document dataset
             if len(data) > 0:
                 wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, retrieval_details, data, self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, self.language, retrieval_details, data, self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -602,7 +605,7 @@ class RetrieveCSVDatasetThread(Thread):
             if len(data) > 0:
                 wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 for new_dataset_key in data:
-                    datasets[new_dataset_key] = DatasetsUtilities.CreateDataset(new_dataset_key, retrieval_details, data[new_dataset_key], self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
+                    datasets[new_dataset_key] = DatasetsUtilities.CreateDataset(new_dataset_key, self.language, retrieval_details, data[new_dataset_key], self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
                     DatasetsUtilities.TokenizeDataset(datasets[new_dataset_key], self._notify_window, self.main_frame)
             else:
                 status_flag = False

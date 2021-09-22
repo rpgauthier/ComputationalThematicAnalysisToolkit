@@ -1,5 +1,4 @@
 '''Main Program for MachineThematicAnalysisToolkit'''
-from Common.Objects.Datasets import Document
 import logging
 from logging.handlers import RotatingFileHandler
 import os.path
@@ -671,13 +670,16 @@ class MainFrame(wx.Frame):
                 cancel_flag = True
 
         if not cancel_flag:
-            if wx.MessageBox(GUIText.CLOSE_WARNING,
-                            GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
+            res = wx.MessageBox(GUIText.CLOSE_WARNING,
+                            GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL, self)
+            if res == wx.YES:
                 self.closing = True
                 self.PulseProgressDialog(text=GUIText.SAVE_BUSY_LABEL)
                 self.OnSaveStart(None)
-            else:
+            elif res == wx.NO:
                 self.OnCloseEnd(event)
+            else:
+                self.CloseProgressDialog(GUIText.CANCELED, thaw=True)
         else:
             self.CloseProgressDialog(GUIText.CANCELED, thaw=True)
 
