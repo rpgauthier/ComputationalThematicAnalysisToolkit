@@ -315,10 +315,10 @@ class DatasetPanel(wx.Panel):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         SubModuleFields.FieldsDialog(parent=main_frame,
-                                     title=str(self.dataset.key)+" "+GUIText.CUSTOMIZE_METADATAFIELDS,
-                                     dataset=self.dataset,
-                                     fields=self.dataset.metadata_fields,
-                                     metadata_fields=True).Show()
+                                    title=str(self.dataset.key)+" "+GUIText.CUSTOMIZE_METADATAFIELDS,
+                                    dataset=self.dataset,
+                                    fields=self.dataset.metadata_fields,
+                                    metadata_fields=True).Show()
         logger.info("Finished")
 
     def OnCustomizeIncludedFields(self, event):

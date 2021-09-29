@@ -114,6 +114,10 @@ class LoadThread(Thread):
         #upgrade samples
         for sample_key in result['samples']:
             self.UpgradeSample(result['samples'][sample_key], result['datasets'][result['samples'][sample_key].dataset_key])
+        
+        #upgrade codes
+        for code_key in result['codes']:
+            self.UpgradeCode(result['codes'][code_key])
 
         #create database for token based operations
         if not os.path.isfile(self.current_workspace_path+"\\workspace_sqlite3.db"):
@@ -198,6 +202,14 @@ class LoadThread(Thread):
         if hasattr(sample, 'metadataset_key_list'):
             sample.document_keys = sample.metadataset_key_list
             sample.last_changed_dt = datetime.now()
+
+    def UpgradeCode(self, code):
+        if not hasattr(code, "doc_positions"):
+            code.doc_positions = {}
+            code.last_changed_dt = datetime.now()
+        if not hasattr(code, "_colour_rgb"):
+            code._colour_rgb = (0,0,0,)
+            code.last_changed_dt = datetime.now()
 
     def run(self):
         logger = logging.getLogger(__name__+".LoadThread.run")

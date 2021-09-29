@@ -315,6 +315,7 @@ class LDASample(TopicSample):
         self.training_thread = None
         self.dictionary = None
         self.corpus = None
+        self.model = None
         logger.info("Finished")
 
     def __repr__(self):
@@ -413,6 +414,7 @@ class BitermSample(TopicSample):
         self.training_thread = None
         self.transformed_texts = None
         self.vocab = None
+        self.model = None
         logger.info("Finished")
 
     def __repr__(self):
@@ -506,8 +508,9 @@ class NMFSample(TopicSample):
         #these need to be removed before pickling during saving due to threading and use of multiple processes
         #see __getstate__ for removal and Load and Reload for readdition
         self.training_thread = None
+        self.vectorizer = None
         self.transformed_texts = None
-        self.vocab = None
+        self.model = None
         logger.info("Finished")
 
     def __getstate__(self):

@@ -10,9 +10,13 @@ class Code(GenericObject):
         logger = logging.getLogger(__name__+".Code["+str(key)+"].__init__")
         logger.info("Starting")
         GenericObject.__init__(self, key, name=key)
-
+        
+        self._colour_rgb = (0,0,0,)
+        
         self.subcodes = {}
         self.connections = []
+        self.doc_positions = {}
+
         self.quotations = []
     
     @property
@@ -32,6 +36,14 @@ class Code(GenericObject):
         self._name = value
         self._key = value
         self._last_changed_dt = datetime.now()
+    
+    @property
+    def colour_rgb(self):
+        return self._colour_rgb
+    @colour_rgb.setter
+    def colour_rgb(self, value):
+        self._colour_rgb = value
+        self._last_changed_dt = datetime.now()
 
     @property
     def last_changed_dt(self):
@@ -47,6 +59,20 @@ class Code(GenericObject):
     @last_changed_dt.setter
     def last_changed_dt(self, value):
         self._last_changed_dt = value
+    
+    def GetAncestors(self):
+        ancestors = []
+        if self.parent != None:
+            ancestors.append(self.parent)
+            ancestors.extend(self.parent.GetAncestors())
+        return ancestors
+    
+    def GetDescendants(self):
+        descendants = []
+        for subcode in self.subcodes.values():
+            descendants.append(subcode)
+            descendants.extend(subcode.GetDescendants())
+        return descendants
 
     def AddConnection(self, obj):
         obj_module = getattr(obj, '__module__', None)

@@ -116,6 +116,14 @@ class CodesViewModel(dv.PyDataViewModel):
                 wx.MessageBox(GUIText.RENAME_CODE_NOTUNIQUE_ERROR,
                               GUIText.ERROR, wx.OK | wx.ICON_ERROR)
         return True
+    
+    def GetAttr(self, item, col, attr):
+        res = super().GetAttr(item, col, attr)
+        node = self.ItemToObject(item)
+        if isinstance(node, Codes.Code):
+            color = wx.Colour(node.colour_rgb[0], node.colour_rgb[1], node.colour_rgb[2] )
+            attr.SetColour(color)
+        return res
 
 #this view enables displaying of fields for different datasets
 class CodesViewCtrl(dv.DataViewCtrl):
@@ -170,16 +178,23 @@ class CodesViewCtrl(dv.DataViewCtrl):
 
     def OnDrag(self, event):
         item = event.GetItem()
-        self.drag_node = self.GetModel().ItemToObject(item)
-        key = self.drag_node.key
-        obj = wx.TextDataObject()
-        obj.SetText(key)
-        event.SetDataObject(obj)
+        if item:
+            self.drag_node = self.GetModel().ItemToObject(item)
+            key = self.drag_node.key
+            obj = wx.TextDataObject()
+            obj.SetText(key)
+            event.SetDataObject(obj)
     
     def OnDropPossible(self, event):
         item = event.GetItem()
         if not item.IsOk():
-            return
+            return True
+        else:
+            node = self.GetModel().ItemToObject(item)
+            if node == self.drag_node:
+                return False
+            else:
+                return True
 
     def OnDrop(self, event):
         item = event.GetItem()
@@ -187,12 +202,13 @@ class CodesViewCtrl(dv.DataViewCtrl):
         model = self.GetModel()
         if item.IsOk():
             node = model.ItemToObject(item)
-            if self.drag_node.parent is not None:
-                del self.drag_node.parent.subcodes[self.drag_node.key]
-            else:
-                del main_frame.codes[self.drag_node.key]
-            node.subcodes[self.drag_node.key] = self.drag_node
-            self.drag_node.parent = node
+            if node != self.drag_node and node not in self.drag_node.GetDescendants():
+                if self.drag_node.parent is not None:
+                    del self.drag_node.parent.subcodes[self.drag_node.key]
+                else:
+                    del main_frame.codes[self.drag_node.key]
+                node.subcodes[self.drag_node.key] = self.drag_node
+                self.drag_node.parent = node
         else:
             if self.drag_node.parent is not None:
                 del self.drag_node.parent.subcodes[self.drag_node.key]
@@ -208,21 +224,24 @@ class CodesViewCtrl(dv.DataViewCtrl):
         logger = logging.getLogger(__name__+".ObjectCodesViewCtrl.OnOpen")
         logger.info("Starting")
         item = event.GetItem()
-        model = self.GetModel()
-        node = model.ItemToObject(item)
-        main_frame = wx.GetApp().GetTopWindow()
-        CodesGUIs.CodeConnectionsDialog(main_frame, node, size=wx.Size(400,400)).Show()
+        if item:
+            model = self.GetModel()
+            node = model.ItemToObject(item)
+            main_frame = wx.GetApp().GetTopWindow()
+            CodesGUIs.CodeConnectionsDialog(main_frame, node, size=wx.Size(400,400)).Show()
         logger.info("Finished")
 
     def OnShowPopup(self, event):
         menu = wx.Menu()
-        copy_menuitem = menu.Append(wx.ID_COPY,
-                                    GUIText.COPY)
+        copy_menuitem = menu.Append(wx.ID_COPY, GUIText.COPY)
         self.Bind(wx.EVT_MENU, self.OnCopyItems, copy_menuitem)
         if isinstance(self.GetModel(), CodesViewModel):
+            self.selected_item = event.GetItem()
+            if self.selected_item:
+                change_colour_menuitem = menu.Append(wx.ID_ANY, GUIText.CHANGE_COLOUR)
+                self.Bind(wx.EVT_MENU, self.OnChangeColour, change_colour_menuitem) 
             add_code_menuitem = menu.Append(wx.ID_ADD, GUIText.ADD_NEW_CODE)
             self.Bind(wx.EVT_MENU, self.OnAddCode, add_code_menuitem)
-            self.selected_item = event.GetItem()
             if self.selected_item:
                 add_code_menuitem = menu.Append(wx.ID_ANY, GUIText.ADD_NEW_SUBCODE)
                 self.Bind(wx.EVT_MENU, self.OnAddSubCode, add_code_menuitem)
@@ -238,7 +257,7 @@ class CodesViewCtrl(dv.DataViewCtrl):
             name = model.GetValue(item, 0)
             notes = model.GetValue(item, 1)
             num_connections = model.GetValue(item, 2)
-            selected_items.append('\t'.join([name, notes, num_connections]).strip())
+            selected_items.append('\t'.join([name, notes, str(num_connections)]).strip())
         clipdata = wx.TextDataObject()
         clipdata.SetText("\n".join(selected_items))
         wx.TheClipboard.Open()
@@ -344,6 +363,30 @@ class CodesViewCtrl(dv.DataViewCtrl):
         model.Cleared()
         self.Expander(None)
         main_frame.CodesUpdated()
+        logger.info("Finished")
+
+    def OnChangeColour(self, event):
+        logger = logging.getLogger(__name__+".CodesViewCtrl.OnChangeColour")
+        logger.info("Starting")
+
+        model = self.GetModel() 
+        item = self.selected_item
+        node = model.ItemToObject(item)
+
+        cur_colour = wx.Colour(node.colour_rgb[0], node.colour_rgb[1], node.colour_rgb[2])
+
+        cur_colour_data = wx.ColourData()
+        cur_colour_data.SetColour(cur_colour)
+
+        colour_dlg = wx.ColourDialog(self, cur_colour_data)
+        
+        if colour_dlg.ShowModal() == wx.ID_OK:
+            new_colour_data = colour_dlg.GetColourData()
+            new_colour = new_colour_data.GetColour()
+            node.colour_rgb = (new_colour.Red(), new_colour.Green(), new_colour.Blue(),)
+            main_frame = wx.GetApp().GetTopWindow()
+            main_frame.CodesUpdated()
+            self.UnselectAll()
         logger.info("Finished")
 
 # This model acts as a bridge between the ObjectCodesViewCtrl and the codes of an object.
@@ -477,7 +520,13 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
     def OnDropPossible(self, event):
         item = event.GetItem()
         if not item.IsOk():
-            return
+            return True
+        else:
+            node = self.GetModel().ItemToObject(item)
+            if node == self.drag_node:
+                return False
+            else:
+                return True
 
     def OnDrop(self, event):
         item = event.GetItem()
@@ -485,12 +534,13 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         model = self.GetModel()
         if item.IsOk():
             node = model.ItemToObject(item)
-            if self.drag_node.parent is not None:
-                del self.drag_node.parent.subcodes[self.drag_node.key]
-            else:
-                del main_frame.codes[self.drag_node.key]
-            node.subcodes[self.drag_node.key] = self.drag_node
-            self.drag_node.parent = node
+            if node != self.drag_node and node not in self.drag_node.GetDescendants():
+                if self.drag_node.parent is not None:
+                    del self.drag_node.parent.subcodes[self.drag_node.key]
+                else:
+                    del main_frame.codes[self.drag_node.key]
+                node.subcodes[self.drag_node.key] = self.drag_node
+                self.drag_node.parent = node
         else:
             if self.drag_node.parent is not None:
                 del self.drag_node.parent.subcodes[self.drag_node.key]
@@ -501,6 +551,7 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         self.drag_node = None
         model.Cleared()
         self.Expander(None)
+        wx.PostEvent(self.GetEventHandler(), dv.DataViewEvent(dv.EVT_DATAVIEW_SELECTION_CHANGED.typeId, self, dv.DataViewItem()))
 
     def OnOpen(self, event):
         logger = logging.getLogger(__name__+".ObjectCodesViewCtrl.OnOpen")
@@ -514,13 +565,15 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
 
     def OnShowPopup(self, event):
         menu = wx.Menu()
-        copy_menuitem = menu.Append(wx.ID_COPY,
-                                    GUIText.COPY)
+        copy_menuitem = menu.Append(wx.ID_COPY, GUIText.COPY)
         self.Bind(wx.EVT_MENU, self.OnCopyItems, copy_menuitem)
-        if isinstance(self.GetModel(), ObjectCodesViewModel):
+        if isinstance(self.GetModel(), CodesViewModel):
+            self.selected_item = event.GetItem()
+            if self.selected_item:
+                change_colour_menuitem = menu.Append(wx.ID_ANY, GUIText.CHANGE_COLOUR)
+                self.Bind(wx.EVT_MENU, self.OnChangeColour, change_colour_menuitem) 
             add_code_menuitem = menu.Append(wx.ID_ADD, GUIText.ADD_NEW_CODE)
             self.Bind(wx.EVT_MENU, self.OnAddCode, add_code_menuitem)
-            self.selected_item = event.GetItem()
             if self.selected_item:
                 add_code_menuitem = menu.Append(wx.ID_ANY, GUIText.ADD_NEW_SUBCODE)
                 self.Bind(wx.EVT_MENU, self.OnAddSubCode, add_code_menuitem)
@@ -646,6 +699,32 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         model.Cleared()
         self.Expander(None)
         main_frame.CodesUpdated()
+        logger.info("Finished")
+        wx.PostEvent(self.GetEventHandler(), dv.DataViewEvent(dv.EVT_DATAVIEW_SELECTION_CHANGED.typeId, self, dv.DataViewItem()))
+
+    def OnChangeColour(self, event):
+        logger = logging.getLogger(__name__+".CodesViewCtrl.OnChangeColour")
+        logger.info("Starting")
+
+        model = self.GetModel() 
+        item = self.selected_item
+        node = model.ItemToObject(item)
+
+        cur_colour = wx.Colour(node.colour_rgb[0], node.colour_rgb[1], node.colour_rgb[2])
+
+        cur_colour_data = wx.ColourData()
+        cur_colour_data.SetColour(cur_colour)
+
+        colour_dlg = wx.ColourDialog(self, cur_colour_data)
+        
+        if colour_dlg.ShowModal() == wx.ID_OK:
+            new_colour_data = colour_dlg.GetColourData()
+            new_colour = new_colour_data.GetColour()
+            node.colour_rgb = (new_colour.Red(), new_colour.Green(), new_colour.Blue(),)
+            main_frame = wx.GetApp().GetTopWindow()
+            main_frame.CodesUpdated()
+            self.UnselectAll()
+            wx.PostEvent(self.GetEventHandler(), dv.DataViewEvent(dv.EVT_DATAVIEW_SELECTION_CHANGED.typeId, self, dv.DataViewItem()))
         logger.info("Finished")
 
 # This model acts as a bridge between the CodeConnectionsViewCtrl and the codes.

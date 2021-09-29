@@ -227,6 +227,8 @@ class CodingNotebook(FNB.FlatNotebook):
                 self.AddPage(self.codes_panel, GUIText.CODES)
         if 'notes' in saved_data:
             self.notes_panel.Load(saved_data['notes'])
+        
+        self.DocumentsUpdated()
         self.Thaw()
         logger.info("Finished")
 

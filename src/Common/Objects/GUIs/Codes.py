@@ -1,10 +1,13 @@
+import functools
 import logging
+from os import startfile
 import webbrowser
 from datetime import datetime
 
 import wx
 import wx.adv
 import wx.richtext
+import wx.dataview as dv
 
 from Common.GUIText import Coding as GUIText
 import Common.Constants as Constants
@@ -325,6 +328,8 @@ class DocumentPanel(wx.Panel):
         wx.Panel.__init__(self, parent, size=size)
 
         self.document = document
+        self.cur_position = None
+        self.field_positions = {}
 
         frame_sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(frame_sizer)
@@ -337,76 +342,83 @@ class DocumentPanel(wx.Panel):
         data_panel = wx.ScrolledWindow(top_frame_splitter, style=wx.TAB_TRAVERSAL|wx.HSCROLL|wx.VSCROLL|wx.SUNKEN_BORDER)
         data_panel_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        field_ctrl = wx.richtext.RichTextCtrl(data_panel, value="", style=wx.richtext.RE_READONLY)
-        data_panel_sizer.Add(field_ctrl, 1, wx.EXPAND|wx.ALL, 5)
+        self.field_ctrl = wx.richtext.RichTextCtrl(data_panel, value="", style=wx.richtext.RE_READONLY)
+        data_panel_sizer.Add(self.field_ctrl, 1, wx.EXPAND|wx.ALL, 5)
         urlStyle = wx.richtext.RichTextAttr()
-        urlStyle.SetTextColour(wx.BLUE)
         urlStyle.SetFontUnderlined(True)
-        field_ctrl.Bind(wx.EVT_TEXT_URL, self.OnURL)
+        self.field_ctrl.Bind(wx.EVT_TEXT_URL, self.OnURL)
 
+        self.field_ctrl.BeginSuppressUndo()
+
+        cur_pos = 0
         for field_name in document.parent.metadata_fields:
             if field_name in document.parent.data[document.key]:
                 field_data = document.parent.data[document.key][field_name]
-                field_ctrl.WriteText('------'+str(field_name)+'------\n')
+                self.field_ctrl.WriteText('------'+str(field_name)+'------\n')
                 if isinstance(field_data, list):
                     for entry in field_data:
                         if document.parent.metadata_fields[field_name].fieldtype == 'url':
-                            field_ctrl.BeginStyle(urlStyle)
-                            field_ctrl.BeginURL(entry)
-                            field_ctrl.WriteText(entry)
-                            field_ctrl.EndURL()
-                            field_ctrl.EndStyle()
-                            field_ctrl.WriteText('\n------------\n')
+                            self.field_ctrl.BeginStyle(urlStyle)
+                            self.field_ctrl.BeginURL(entry)
+                            self.field_ctrl.WriteText(entry)
+                            self.field_ctrl.EndURL()
+                            self.field_ctrl.EndStyle()
+                            self.field_ctrl.WriteText('\n------------\n')
                         elif document.parent.metadata_fields[field_name].fieldtype == 'UTC-timestamp':
                             value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
-                            field_ctrl.WriteText(value_str+' UTC\n------------\n')
+                            self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
                         else:
-                            field_ctrl.WriteText(str(entry)+'\n------------\n')
+                            self.field_ctrl.WriteText(str(entry)+'\n------------\n')
                 else:
                     if document.parent.metadata_fields[field_name].fieldtype == 'url':
-                        field_ctrl.BeginStyle(urlStyle)
-                        field_ctrl.BeginURL(field_data)
-                        field_ctrl.WriteText(field_data)
-                        field_ctrl.EndURL()
-                        field_ctrl.EndStyle()
-                        field_ctrl.WriteText('\n------------\n')
+                        self.field_ctrl.BeginStyle(urlStyle)
+                        self.field_ctrl.BeginURL(field_data)
+                        self.field_ctrl.WriteText(field_data)
+                        self.field_ctrl.EndURL()
+                        self.field_ctrl.EndStyle()
+                        self.field_ctrl.WriteText('\n------------\n')
                     elif document.parent.metadata_fields[field_name].fieldtype == 'UTC-timestamp':
                         value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
-                        field_ctrl.WriteText(value_str+' UTC\n------------\n')
+                        self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
                     else:
-                        field_ctrl.WriteText(str(field_data)+'\n------------\n')
+                        self.field_ctrl.WriteText(str(field_data)+'\n------------\n')
+            self.field_positions[field_name] = (cur_pos, self.field_ctrl.GetInsertionPoint()-1)
+            cur_pos = self.field_ctrl.GetInsertionPoint()
         for field_name in document.parent.included_fields:
             if field_name not in document.parent.metadata_fields and field_name in document.parent.data[document.key]:
                 field_data = document.parent.data[document.key][field_name]
-                field_ctrl.WriteText('------'+str(field_name)+'------\n')
+                self.field_ctrl.WriteText('------'+str(field_name)+'------\n')
                 if isinstance(field_data, list):
                     for entry in field_data:
                         if document.parent.included_fields[field_name].fieldtype == 'url':
-                            field_ctrl.BeginStyle(urlStyle)
-                            field_ctrl.BeginURL(entry)
-                            field_ctrl.WriteText(entry)
-                            field_ctrl.EndURL()
-                            field_ctrl.EndStyle()
-                            field_ctrl.WriteText('\n------------\n')
+                            self.field_ctrl.BeginStyle(urlStyle)
+                            self.field_ctrl.BeginURL(entry)
+                            self.field_ctrl.WriteText(entry)
+                            self.field_ctrl.EndURL()
+                            self.field_ctrl.EndStyle()
+                            self.field_ctrl.WriteText('\n------------\n')
                         elif document.parent.included_fields[field_name].fieldtype == 'UTC-timestamp':
                             value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
-                            field_ctrl.WriteText(value_str+' UTC\n------------\n')
+                            self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
                         else:
-                            field_ctrl.WriteText(str(entry)+'\n------------\n')
+                            self.field_ctrl.WriteText(str(entry)+'\n------------\n')
                 else:
                     if document.parent.included_fields[field_name].fieldtype == 'url':
-                        field_ctrl.BeginStyle(urlStyle)
-                        field_ctrl.BeginURL(field_data)
-                        field_ctrl.WriteText(field_data)
-                        field_ctrl.EndURL()
-                        field_ctrl.EndStyle()
-                        field_ctrl.WriteText('\n------------\n')
+                        self.field_ctrl.BeginStyle(urlStyle)
+                        self.field_ctrl.BeginURL(field_data)
+                        self.field_ctrl.WriteText(field_data)
+                        self.field_ctrl.EndURL()
+                        self.field_ctrl.EndStyle()
+                        self.field_ctrl.WriteText('\n------------\n')
                     elif document.parent.included_fields[field_name].fieldtype == 'UTC-timestamp':
                         value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
-                        field_ctrl.WriteText(value_str+' UTC\n------------\n')
+                        self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
                     else:
-                        field_ctrl.WriteText(str(field_data)+'\n------------\n')
+                        self.field_ctrl.WriteText(str(field_data)+'\n------------\n')
+                self.field_positions[field_name] = (cur_pos, self.field_ctrl.GetInsertionPoint()-1)
+                cur_pos = self.field_ctrl.GetInsertionPoint()
         data_panel.SetSizer(data_panel_sizer)
+        self.field_ctrl.Bind(wx.richtext.EVT_RICHTEXT_RIGHT_CLICK, self.OnShowPopup)
 
         codes_panel = wx.Panel(top_frame_splitter, style=wx.TAB_TRAVERSAL|wx.SUNKEN_BORDER)
         codes_panel_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -415,6 +427,8 @@ class DocumentPanel(wx.Panel):
         self.codes_ctrl = CodesDataViews.ObjectCodesViewCtrl(codes_panel, self.codes_model)
         codes_panel_sizer.Add(self.codes_ctrl, 1, wx.ALL|wx.EXPAND, 5)
         codes_panel.SetSizer(codes_panel_sizer)
+
+        self.Bind(dv.EVT_DATAVIEW_SELECTION_CHANGED, self.OnShowCode, self.codes_ctrl)
 
         edit_panel = wx.Panel(frame_splitter, style=wx.TAB_TRAVERSAL|wx.SUNKEN_BORDER)
         edit_panel_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -454,6 +468,7 @@ class DocumentPanel(wx.Panel):
         data_panel.EnableScrolling(True, True)
 
         self.Layout()
+        self.OnShowCode(None)
     
     def OnURL(self, event):
         logger = logging.getLogger(__name__+".DocumentPanel["+str(self.document.key)+"].OnURL")
@@ -476,8 +491,113 @@ class DocumentPanel(wx.Panel):
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.DocumentsUpdated()
     
+    def OnShowCode(self, event):
+        base_attr = wx.TextAttr()
+        base_attr.SetFlags(wx.TEXT_ATTR_TEXT_COLOUR)
+        base_attr.SetTextColour(wx.Colour(0, 0, 0))
+        self.field_ctrl.SelectAll()
+        self.field_ctrl.SetStyle(self.field_ctrl.GetSelectionRange(), base_attr)
+        self.field_ctrl.SelectNone()
+
+        codes = []
+        code_connections = self.document.GetCodeConnections(self.codes_model.codes)
+        count = 0
+        for item in self.codes_ctrl.GetSelections():
+            code = self.codes_model.ItemToObject(item)
+            if code in code_connections:
+                codes.append(code)
+            count = count + 1
+        if count == 0:
+            codes = code_connections
+        
+        for code in codes:
+            if self.document.key in code.doc_positions:
+                new_attr = wx.TextAttr()
+                new_attr.SetFlags(wx.TEXT_ATTR_TEXT_COLOUR)
+                new_attr.SetTextColour(wx.Colour(code.colour_rgb[0], code.colour_rgb[1], code.colour_rgb[2]))
+                for position in code.doc_positions[self.document.key]:
+                    if position[0] in self.field_positions:
+                        start = position[1] + self.field_positions[position[0]][0]
+                        end = position[2] + self.field_positions[position[0]][0]
+                        self.field_ctrl.SetStyle(start, end, new_attr)
+
+    def ForwardEvent(self, evt):
+        # The RichTextCtrl can handle menu and update events for undo,
+        # redo, cut, copy, paste, delete, and select all, so just
+        # forward the event to it.
+        self.field_ctrl.ProcessEvent(evt)
+
+
+    def OnShowPopup(self, event):
+        self.cur_position = event.GetPosition()
+        
+        menu = wx.Menu()
+        copy_menuitem = menu.Append(wx.ID_COPY, GUIText.COPY)
+        self.Bind(wx.EVT_MENU, self.ForwardEvent, copy_menuitem)
+        menu.AppendSeparator()
+        
+        cur_selection = self.field_ctrl.GetSelectionRange()
+        if cur_selection.Contains(self.cur_position):
+            for code in self.document.GetCodeConnections(self.codes_model.codes):
+                select_menuitem = menu.Append(wx.ID_ANY, GUIText.SELECT + " " + code.name)
+                self.Bind(wx.EVT_MENU, functools.partial(self.OnSelect, code), select_menuitem)
+
+        relative_field = None
+        relative_position = None
+        for field_key, field_position in self.field_positions.items():
+            if field_position[0] <= self.cur_position <= field_position[1]:
+                relative_field = field_key
+                relative_position = self.cur_position - field_position[0]
+                break
+        for code in self.document.GetCodeConnections(self.codes_model.codes):
+            if self.document.key in code.doc_positions:
+                for position in code.doc_positions[self.document.key]:
+                    if position[0] == relative_field and position[1] <= relative_position <= position[2]:
+                        remove_menuitem = menu.Append(wx.ID_ANY, GUIText.REMOVE + " " + code.name)
+                        self.Bind(wx.EVT_MENU, functools.partial(self.OnRemove, code), remove_menuitem)
+                        break
+
+        self.PopupMenu(menu)
+
+    def OnSelect(self, code, event):
+        r = self.field_ctrl.GetSelectionRange()
+        cur_selection = (r.GetStart(), r.GetEnd(),)
+        for field_key, field_position in self.field_positions.items():
+            include = False
+            if field_position[0] <= cur_selection[0] <= field_position[1]:
+                start = cur_selection[0] - field_position[0]
+                include = True
+            else:
+                start = 0
+            if cur_selection[0] <= field_position[1] <= cur_selection[1]:
+                end = field_position[1] - field_position[0]
+                include = True
+            else:
+                end = cur_selection[1] - field_position[0]
+            if include:
+                code.doc_positions[self.document.key].append((field_key, start, end,))
+        self.field_ctrl.SelectNone()
+        self.OnShowCode(None)
+        
+
+    def OnRemove(self, code, event):
+        if self.document.key in code.doc_positions:
+            relative_field = None
+            relative_position = None
+            for field_key, field_position in self.field_positions.items():
+                if field_position[0] <= self.cur_position <= field_position[1]:
+                    relative_field = field_key
+                    relative_position = self.cur_position - field_position[0]
+                    break
+            for position in reversed(code.doc_positions[self.document.key]):
+                if position[0] == relative_field and position[1] <= relative_position <= position[2]:
+                    code.doc_positions[self.document.key].remove(position)
+        self.field_ctrl.SelectNone()
+        self.OnShowCode(None)
+    
     def DocumentUpdated(self):
         self.codes_model.Cleared()
+        self.OnShowCode(None)
         self.codes_ctrl.Expander(None)
         self.notes_panel.Unbind(wx.EVT_TEXT)
         self.notes_panel.SetNote(self.document.notes)

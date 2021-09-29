@@ -20,6 +20,7 @@ class Common:
     CANCEL = "Cancel"
 
     ADD = "Add"
+    SELECT = "Select"
     REMOVE = "Remove"
     READD = "Readd"
 
@@ -691,6 +692,7 @@ class Coding(Main):
     NEW_SUBCODE_TOOLTIP = ""
     DELETE_CODES = "Delete Codes"
     CONFIRM_DELETE_CODES = "Are you sure you want to delete selected codes?"
+    CHANGE_COLOUR = "Change Colour"
 
     NEW_CODE_NOTUNIQUE_ERROR = "New code has the same name as an existing code.\nCodes must have unique names."
     NEW_CODE_BLANK_ERROR = "New code name is blank.\nCodes must have a unique name."
