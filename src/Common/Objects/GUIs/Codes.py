@@ -1,6 +1,5 @@
 import functools
 import logging
-from os import startfile
 import webbrowser
 from datetime import datetime
 

@@ -81,7 +81,7 @@ class DatasetsViewModel(dv.PyDataViewModel):
             mapper = { 0 : node.key,
                        1 : "",
                        2 : "",
-                       3 : "",
+                       3 : 0,
                        4 : node.created_dt.strftime("%Y-%m-%d, %H:%M:%S")
                        }
             return mapper[col]
