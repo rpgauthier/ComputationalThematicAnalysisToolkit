@@ -25,7 +25,6 @@ class RetrieveRedditDatasetThread(Thread):
     def __init__(self, notify_window, main_frame, dataset_name, language, subreddit, start_date, end_date, replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type, available_fields_list, metadata_fields_list, included_fields_list):
         """Init Worker Thread Class."""
         Thread.__init__(self)
-        self.daemon = True
         self._notify_window = notify_window
         self.main_frame = main_frame
         self.dataset_name = dataset_name
@@ -468,7 +467,6 @@ class RetrieveCSVDatasetThread(Thread):
     def __init__(self, notify_window, main_frame, dataset_name, language, dataset_field, dataset_type, id_field, url_field, datetime_field, datetime_tz, available_fields_list, metadata_fields_list, included_fields_list, combined_fields_list, filename):
         """Init Worker Thread Class."""
         Thread.__init__(self)
-        self.daemon = True
         self._notify_window = notify_window
         self.main_frame = main_frame
         self.dataset_name = dataset_name

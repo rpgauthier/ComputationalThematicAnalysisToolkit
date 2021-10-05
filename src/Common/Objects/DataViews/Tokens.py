@@ -4,18 +4,36 @@ import wx
 import wx.grid
 
 from Common.GUIText import Filtering as GUIText
+import Common.Database as Database
 
+#TODO finish changing to us database as source of virtual table
 class TokenGridTable(wx.grid.GridTableBase):
-    def __init__(self, token_df):
+    def __init__(self, dataset, word_type):
+        self.dataset = dataset
+        self.word_type = word_type
+        main_frame = wx.GetApp().GetTopWindow()
+        
+        self.word_search_term = ""
+        self.pos_search_term = ""
+        self.sort_col = GUIText.FILTERS_NUM_WORDS
+        self.sort_ascending = False
+
+        db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
+        if self.word_type == "Included":
+            self.data = db_conn.GetIncludedStringTokens(self.dataset.key, self.word_search_term, self.pos_search_term, self.sort_col, self.sort_ascending)
+        else:
+            self.data = db_conn.GetRemovedStringTokens(self.dataset.key, self.word_search_term, self.pos_search_term, self.sort_col, self.sort_ascending)
+
         wx.grid.GridTableBase.__init__(self)
-        self.token_df = token_df
-        self._rows = len(self.token_df)
+        self._rows = self.GetNumberRows()
         self.col_names = [GUIText.FILTERS_WORDS,
                           GUIText.FILTERS_POS,
                           GUIText.FILTERS_NUM_WORDS,
                           GUIText.FILTERS_NUM_DOCS,
                           GUIText.FILTERS_SPACY_AUTO_STOPWORDS,
-                          GUIText.FILTERS_TFIDF]
+                          GUIText.FILTERS_TFIDF_MIN,
+                          GUIText.FILTERS_TFIDF_MAX]
+
         self._cols = len(self.col_names)
 
     def GetColLabelValue(self, col):
@@ -27,7 +45,7 @@ class TokenGridTable(wx.grid.GridTableBase):
 
     def GetNumberRows(self):
         """Return the number of rows in the grid"""
-        return len(self.token_df)
+        return len(self.data)
 
     def GetNumberCols(self):
         """Return the number of columns in the grid"""
@@ -39,18 +57,31 @@ class TokenGridTable(wx.grid.GridTableBase):
 
     def GetValue(self, row, col):
         """Return the value of a cell"""
+        row_data = self.data[row]
         if self.col_names[col] == GUIText.FILTERS_NUM_WORDS:
-            return str(self.token_df.iloc[row][self.col_names[col]]) +" (" +str(self.token_df.iloc[row][GUIText.FILTERS_PER_WORDS])+"%)"
+            return str(row_data[col]) +" (" +str(row_data[col]/self.dataset.total_tokens)+"%)"
         elif self.col_names[col] == GUIText.FILTERS_NUM_DOCS:
-            return str(self.token_df.iloc[row][self.col_names[col]]) +" (" +str(self.token_df.iloc[row][GUIText.FILTERS_PER_DOCS])+"%)"
+            return str(row_data[col]) +" (" +str(row_data[col]/self.dataset.total_docs)+"%)"
+        elif self.col_names[col] == GUIText.FILTERS_SPACY_AUTO_STOPWORDS:
+            if row_data[col] == 0:
+                return str(False)
+            else:
+                return str(True)
         else:
-            return str(self.token_df.iloc[row][self.col_names[col]])
+            return str(row_data[col])
 
     def SetValue(self, row, col, value):
         """Set the value of a cell"""
         pass
 
     def ResetView(self, grid):
+        main_frame = wx.GetApp().GetTopWindow()
+        db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
+        if self.word_type == "Included":
+            self.data = db_conn.GetIncludedStringTokens(self.dataset.key, self.word_search_term, self.pos_search_term, self.sort_col, self.sort_ascending)
+        else:
+            self.data = db_conn.GetRemovedStringTokens(self.dataset.key, self.word_search_term, self.pos_search_term, self.sort_col, self.sort_ascending)
+
         grid.BeginBatch()
         for current, new, delmsg, addmsg in [
             (self._rows, self.GetNumberRows(), wx.grid.GRIDTABLE_NOTIFY_ROWS_DELETED,
@@ -68,10 +99,6 @@ class TokenGridTable(wx.grid.GridTableBase):
         grid.EndBatch()
         self._rows = self.GetNumberRows()
         self._cols = self.GetNumberCols()
-        # XXX
-        # Okay, this is really stupid, we need to "jiggle" the size
-        # to get the scrollbars to recalibrate when the underlying
-        # grid changes.
         h,w = grid.GetSize()
         grid.SetSize((h+1, w))
         grid.SetSize((h, w))
@@ -84,12 +111,11 @@ class TokenGridTable(wx.grid.GridTableBase):
         grid.ProcessTableMessage(msg)
 
 class TokenGrid(wx.grid.Grid):
-    def __init__(self, parent, tokens_df, size=wx.DefaultSize):
+    def __init__(self, parent, dataset, word_type, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".TokenGrid.__init__")
         logger.info("Starting")
         wx.grid.Grid.__init__(self, parent, size=size)
-        self.tokens_df = tokens_df
-        self.gridtable = TokenGridTable(tokens_df)
+        self.gridtable = TokenGridTable(dataset, word_type)
         self.SetTable(self.gridtable, takeOwnership=True)
         self.EnableEditing(False)
         self.UseNativeColHeader(True)
@@ -109,21 +135,23 @@ class TokenGrid(wx.grid.Grid):
         col = event.GetCol()
         col_string = self.gridtable.GetColTupleValue(event.GetCol())
         if col == self.GetSortingColumn():
+            self.gridtable.sort_col = col_string
             if self.IsSortOrderAscending():
-                self.gridtable.token_df.sort_values(by=[col_string], inplace=True)
+                self.gridtable.sort_ascending = True
             else:
-                self.gridtable.token_df.sort_values(by=[col_string], ascending=False, inplace=True)
+                self.gridtable.sort_ascending = False
         else:
             self.SetSortingColumn(col)
-            self.gridtable.token_df.sort_values(by=[col_string], inplace=True)
+            self.gridtable.sort_col = col_string
+            self.gridtable.sort_ascending = True
+        self.gridtable.ResetView(self)
         logger.info("Finish")
 
-    def Update(self, tokens_df):
+    def Update(self, word_search_term, pos_search_term):
         logger = logging.getLogger(__name__+".TokenGrid.Update")
         logger.info("Starting")
-        self.tokens_df = tokens_df
-        self.gridtable = TokenGridTable(tokens_df)
-        self.SetTable(self.gridtable, takeOwnership=True)
+        self.gridtable.word_search_term = word_search_term
+        self.gridtable.pos_search_term = pos_search_term
         self.gridtable.ResetView(self)
         for i in range(0, len(self.gridtable.col_names)):
             self.SetColLabelValue(i, self.gridtable.GetColLabelValue(i))

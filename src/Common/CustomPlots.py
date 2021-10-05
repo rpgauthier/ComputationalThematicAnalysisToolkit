@@ -1,5 +1,8 @@
 '''For Plotting visualizations with wx'''
 import logging
+import os
+import string
+from os import path
 
 from wordcloud import WordCloud
 import squarify
@@ -103,8 +106,16 @@ class NetworkPlotPlanel(wx.Panel):
 
         if word_cloud_freq != None:
             parent_wordcloudimages = {}
+        
+            d = os.getcwd()
+            font_path = path.join(d, 'Fonts/Symbola.ttf')
+            normal_word = r"(?:\w[\w']+)"
+            ascii_art = r"(?:[{punctuation}][{punctuation}]+)".format(punctuation=string.punctuation)
+            emoji = r"(?:[^\s])(?<![\w{ascii_printable}])".format(ascii_printable=string.printable)
+            regexp = r"{normal_word}|{ascii_art}|{emoji}".format(normal_word=normal_word, ascii_art=ascii_art, emoji=emoji)
+        
             for parent in parent_nodes:
-                wordcloud = WordCloud().fit_words(word_cloud_freq[parent])
+                wordcloud = WordCloud(font_path=font_path, regexp=regexp).fit_words(word_cloud_freq[parent])
                 parent_wordcloudimages[parent] = wordcloud.to_image()
 
         self.figure.clf()
@@ -225,7 +236,15 @@ class WordCloudPlotPlanel(wx.Panel):
         self.figure.clf()
         axis = self.figure.add_subplot(111)
         axis.axis("off")
-        wordcloud = WordCloud().fit_words(dict(word_frequencies))
+
+        d = os.getcwd()
+        font_path = path.join(d, 'Fonts/Symbola.ttf')
+        normal_word = r"(?:\w[\w']+)"
+        ascii_art = r"(?:[{punctuation}][{punctuation}]+)".format(punctuation=string.punctuation)
+        emoji = r"(?:[^\s])(?<![\w{ascii_printable}])".format(ascii_printable=string.printable)
+        regexp = r"{normal_word}|{ascii_art}|{emoji}".format(normal_word=normal_word, ascii_art=ascii_art, emoji=emoji)
+
+        wordcloud = WordCloud(font_path=font_path, regexp=regexp).fit_words(dict(word_frequencies))
         axis.imshow(wordcloud)
         self.canvas.draw()
         logger.info("Finished")
@@ -319,12 +338,20 @@ class ChordPlotPanel(wx.Panel):
 
         if word_cloud_freq != None:
             parent_wordcloudimages = []
+
+            d = os.getcwd()
+            font_path = path.join(d, 'Fonts/Symbola.ttf')
+            normal_word = r"(?:\w[\w']+)"
+            ascii_art = r"(?:[{punctuation}][{punctuation}]+)".format(punctuation=string.punctuation)
+            emoji = r"(?:[^\s])(?<![\w{ascii_printable}])".format(ascii_printable=string.printable)
+            regexp = r"{normal_word}|{ascii_art}|{emoji}".format(normal_word=normal_word, ascii_art=ascii_art, emoji=emoji)
+
             for part_key in parts:
                 if len(word_cloud_freq[part_key]) > 0:
                     for word in word_cloud_freq[part_key]:
                         if word_cloud_freq[part_key][word] == 0:
                             word_cloud_freq[part_key][word] = 10**-15
-                    wordcloud = WordCloud(background_color='white').fit_words(word_cloud_freq[part_key])
+                    wordcloud = WordCloud(background_color='white', font_path=font_path, regexp=regexp, prefer_horizontal=1).fit_words(word_cloud_freq[part_key])
                     parent_wordcloudimages.append(wordcloud.to_image())
                 else:
                     parent_wordcloudimages.append(None)

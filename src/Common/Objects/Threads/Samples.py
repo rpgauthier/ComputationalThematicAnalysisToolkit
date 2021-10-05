@@ -111,6 +111,7 @@ class BitermTrainingThread(Thread):
     def __init__(self, notify_window, current_workspace_path, key, tokensets, num_topics, num_passes):
         """Init Worker Thread Class."""
         Thread.__init__(self)
+        self.daemon = True
         self._notify_window = notify_window
         self.current_workspace_path = current_workspace_path
         self.key = key
@@ -174,6 +175,7 @@ class NMFTrainingThread(Thread):
     def __init__(self, notify_window, current_workspace_path, key, tokensets, num_topics):
         """Init Worker Thread Class."""
         Thread.__init__(self)
+        self.daemon = True
         self._notify_window = notify_window
         self.current_workspace_path = current_workspace_path
         self.key = key

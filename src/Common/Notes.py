@@ -50,6 +50,7 @@ class NotesPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.rich_text_ctrl = wx.richtext.RichTextCtrl(self)
+        self.rich_text_ctrl.BeginSuppressUndo()
         toolbar = NoteToolBar(self)
 
         sizer.Add(toolbar, 0, wx.EXPAND|wx.ALL, 6)
@@ -69,11 +70,19 @@ class NotesPanel(wx.Panel):
         self.Bind(wx.EVT_TOOL, self.OnCut, id=wx.ID_CUT)
         self.Bind(wx.EVT_TOOL, self.OnUndo, id=wx.ID_UNDO)
         self.Bind(wx.EVT_TOOL, self.OnRedo, id=wx.ID_REDO)
+        #TODO figure out why undo and redo crash application on coding tab
+        #error captured in windows event viewer but doesnt explain what is occuring
+        #need to test if this error is being caused by two richtextctrls in the same frame
+        self.Bind(wx.EVT_MENU, self.OnUndo, id=wx.ID_UNDO)
+        self.Bind(wx.EVT_MENU, self.OnRedo, id=wx.ID_REDO)
+
 
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('B'), wx.ID_BOLD),
                                          (wx.ACCEL_CTRL, ord('I'), wx.ID_ITALIC),
                                          (wx.ACCEL_CTRL, ord('U'), wx.ID_UNDERLINE)])
         self.SetAcceleratorTable(accel_tbl)
+
+        self.rich_text_ctrl.EndSuppressUndo()
 
     def OnBold(self, event):
         self.rich_text_ctrl.ApplyBoldToSelection()
@@ -171,6 +180,8 @@ class NotesPanel(wx.Panel):
         self.rich_text_ctrl.Refresh()
 
     def GetNote(self):
+        self.rich_text_ctrl.Undo
+        self.rich_text_ctrl.BeginSuppressUndo()
         if self.rich_text_ctrl.IsEmpty():
             content = ""
         else:
@@ -180,6 +191,7 @@ class NotesPanel(wx.Panel):
             handler.SaveFile(buffer, out)
             out.seek(0)
             content = out.read()
+        self.rich_text_ctrl.EndSuppressUndo()
         return content
 
     ##Save and Load Functions
@@ -215,42 +227,42 @@ class NoteToolBar(wx.ToolBar):
     def __init__(self, *args, **kwds):
         kwds["style"] = wx.TB_FLAT
         wx.ToolBar.__init__(self, *args, **kwds)
-        self.AddTool(wx.ID_CUT, GUIText.CUT, wx.ArtProvider.GetBitmap(wx.ART_CUT, wx.ART_TOOLBAR),
+        self.cut_tool = self.AddTool(wx.ID_CUT, GUIText.CUT, wx.ArtProvider.GetBitmap(wx.ART_CUT, wx.ART_TOOLBAR),
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.CUT, "")
-        self.AddTool(wx.ID_COPY, GUIText.COPY, wx.ArtProvider.GetBitmap(wx.ART_COPY, wx.ART_TOOLBAR),
+        self.copy_tool = self.AddTool(wx.ID_COPY, GUIText.COPY, wx.ArtProvider.GetBitmap(wx.ART_COPY, wx.ART_TOOLBAR),
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.COPY, "")
-        self.AddTool(wx.ID_PASTE, GUIText.PASTE, wx.ArtProvider.GetBitmap(wx.ART_PASTE, wx.ART_TOOLBAR),
+        self.paste_tool = self.AddTool(wx.ID_PASTE, GUIText.PASTE, wx.ArtProvider.GetBitmap(wx.ART_PASTE, wx.ART_TOOLBAR),
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.PASTE, "")
         self.AddSeparator()
-        self.AddTool(wx.ID_UNDO, GUIText.UNDO, wx.ArtProvider.GetBitmap(wx.ART_UNDO, wx.ART_TOOLBAR),
+        self.undo_tool = self.AddTool(wx.ID_UNDO, GUIText.UNDO, wx.ArtProvider.GetBitmap(wx.ART_UNDO, wx.ART_TOOLBAR),
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.UNDO, "")
-        self.AddTool(wx.ID_REDO, GUIText.REDO, wx.ArtProvider.GetBitmap(wx.ART_REDO, wx.ART_TOOLBAR),
+        self.redo_tool = self.AddTool(wx.ID_REDO, GUIText.REDO, wx.ArtProvider.GetBitmap(wx.ART_REDO, wx.ART_TOOLBAR),
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.REDO, "")
         self.AddSeparator()
         bmp = wx.Bitmap("Images/bold.bmp", wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
         bold_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
-        self.AddTool(wx.ID_BOLD, GUIText.BOLD, bold_bmp,
+        self.bold_tool = self.AddTool(wx.ID_BOLD, GUIText.BOLD, bold_bmp,
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.BOLD, "")
         bmp = wx.Bitmap("Images/italic.bmp", wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
         italic_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
-        self.AddTool(wx.ID_ITALIC, GUIText.ITALIC, italic_bmp,
+        self.italic_tool = self.AddTool(wx.ID_ITALIC, GUIText.ITALIC, italic_bmp,
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.ITALIC, "")
         bmp = wx.Bitmap("Images/underline.bmp", wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
         underline_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
-        self.AddTool(wx.ID_UNDERLINE, GUIText.UNDERLINE, underline_bmp,
+        self.underline_tool = self.AddTool(wx.ID_UNDERLINE, GUIText.UNDERLINE, underline_bmp,
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.UNDERLINE, "")
         bmp = wx.Bitmap("Images/strikethrough.bmp", wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
         strikethrough_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
-        self.AddTool(wx.ID_STRIKETHROUGH, GUIText.STRIKETHROUGH, strikethrough_bmp,
+        self.strikethrough_tool = self.AddTool(wx.ID_STRIKETHROUGH, GUIText.STRIKETHROUGH, strikethrough_bmp,
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.STRIKETHROUGH, "")
         bmp = wx.Bitmap("Images/font.bmp", wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
         font_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
-        self.AddTool(wx.ID_SELECT_FONT, GUIText.FONT, font_bmp,
+        self.font_tool = self.AddTool(wx.ID_SELECT_FONT, GUIText.FONT, font_bmp,
                      wx.NullBitmap, wx.ITEM_NORMAL, GUIText.FONT, "")
 
         bmp = wx.Bitmap("Images/increasefontsize.bmp", wx.BITMAP_TYPE_ANY)

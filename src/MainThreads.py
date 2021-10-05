@@ -4,6 +4,7 @@ import tarfile
 from threading import Thread
 import shutil
 from datetime import datetime
+from packaging import version
 
 import wx
 import pickle
@@ -20,7 +21,6 @@ class SaveThread(Thread):
     def __init__(self, notify_window, save_path, current_workspace_path, config_data, datasets, samples, codes, notes_text, last_load_dt):
         """Init Worker Thread Class."""
         Thread.__init__(self)
-        self.daemon = True
         self._notify_window = notify_window
         self.save_path = save_path
         self.current_workspace_path = current_workspace_path
@@ -39,6 +39,7 @@ class SaveThread(Thread):
         logger.info("Starting")
         result = {}
         try:
+            self.config_data['version'] = Constants.CUR_VER
             with open(self.current_workspace_path+"/config.pk", 'wb') as outfile:
                 pickle.dump(self.config_data, outfile)
 
@@ -106,111 +107,6 @@ class LoadThread(Thread):
         # also make the GUI thread responsible for calling this
         self.start()
 
-    def UpgradeWorkspace(self, result):
-        #upgrade workspace
-        for dataset_key in result['datasets']:
-            self.UpgradeDataset(result['datasets'][dataset_key])
-        
-        #upgrade samples
-        for sample_key in result['samples']:
-            self.UpgradeSample(result['samples'][sample_key], result['datasets'][result['samples'][sample_key].dataset_key])
-        
-        #upgrade codes
-        for code_key in result['codes']:
-            self.UpgradeCode(result['codes'][code_key])
-
-        #create database for token based operations
-        if not os.path.isfile(self.current_workspace_path+"\\workspace_sqlite3.db"):
-            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent("Converting Workspace to Use Database"))
-            db_conn = Database.DatabaseConnection(self.current_workspace_path)
-            db_conn.Create()
-            for dataset_key in result['datasets']:
-                word_idx = result['datasets'][dataset_key].tokenization_choice
-                if word_idx == Constants.TOKEN_TEXT_IDX:
-                    db_conn.InsertDataset(dataset_key, 'text')
-                elif word_idx == Constants.TOKEN_STEM_IDX:
-                    db_conn.InsertDataset(dataset_key, 'stem')
-                elif word_idx == Constants.TOKEN_STEM_IDX:
-                    db_conn.InsertDataset(dataset_key, 'lemma')
-                db_conn.InsertDocuments(dataset_key, result['datasets'][dataset_key].data.keys())
-                for field_key in result['datasets'][dataset_key].included_fields:
-                    db_conn.InsertField(dataset_key, field_key)
-                    if result['datasets'][dataset_key].included_fields[field_key].fieldtype == "string":
-                        db_conn.InsertStringTokens(dataset_key, field_key, result['datasets'][dataset_key].included_fields[field_key].tokenset)
-                        result['datasets'][dataset_key].included_fields[field_key].tokenset = None
-                db_conn.UpdateStringTokensTFIDF(dataset_key)
-                db_conn.ApplyDatasetRules(dataset_key, result['datasets'][dataset_key].filter_rules)
-                included_counts = db_conn.GetStringTokensCounts(dataset_key)
-                result['datasets'][dataset_key].total_docs = included_counts['documents']
-                result['datasets'][dataset_key].total_tokens = included_counts['tokens']
-                result['datasets'][dataset_key].total_uniquetokens = included_counts['unique_tokens']    
-                included_counts = db_conn.GetIncludedStringTokensCounts(dataset_key)
-                result['datasets'][dataset_key].total_docs_remaining = included_counts['documents']
-                result['datasets'][dataset_key].total_tokens_remaining = included_counts['tokens']
-                result['datasets'][dataset_key].total_uniquetokens_remaining = included_counts['unique_tokens']
-                result['datasets'][dataset_key].last_changed_dt = datetime.now()
-
-    def UpgradeDataset(self, dataset):
-        #convert metdata fields list to dict of objects
-        if hasattr(dataset, "_metadata_fields_list"):
-            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent("Upgrading Dataset: " + str(dataset.key)+" to have customizable metadata"))
-            dataset.metadata_fields = {}
-            for field_name, field_info in dataset._metadata_fields_list:
-                new_field = Datasets.Field(dataset,
-                                        field_name,
-                                        dataset,
-                                        field_info['desc'],
-                                        field_info['type'])
-                dataset.metadata_fields[field_name] = new_field
-            del dataset._metadata_fields_list
-            #update rules
-            dataset.last_changed_dt = datetime.now()
-
-        #update variables names
-        if hasattr(dataset, '_total_unique_tokens'):
-            dataset._total_uniquetokens = dataset._total_unique_tokens
-            dataset.last_changed_dt = datetime.now()
-        if hasattr(dataset, '_total_unique_tokens_remaining'):
-            dataset._total_uniquetokens_remaining = dataset._total_unique_tokens_remaining
-            dataset.last_changed_dt = datetime.now()
-        if hasattr(dataset, 'avaliable_fields'):
-            dataset.available_fields = dataset.avaliable_fields
-            dataset.last_changed_dt = datetime.now()
-        if hasattr(dataset, 'chosen_fields'):
-            dataset.included_fields = dataset.chosen_fields
-            dataset.last_changed_dt = datetime.now()
-
-        #cleanup attributes changed by switching to database
-        if hasattr(dataset, "_metadata"):
-            del dataset._metadata
-            dataset.last_changed_dt = datetime.now()
-        if hasattr(dataset, '_words_df'):
-            del dataset._words_df
-            for idx, rule in enumerate(dataset.filter_rules):
-                if isinstance(rule[3], tuple):
-                    if rule[3][0] == Constants.FILTER_TFIDF_REMOVE or rule[3][0] == Constants.FILTER_TFIDF_INCLUDE:
-                        new_rule = (rule[0], rule[1], rule[2], (rule[3][0], rule[3][1], rule[3][2]*100 ))
-                        dataset.filter_rules[idx] = new_rule
-            dataset.last_changed_dt = datetime.now()
-        
-    
-    def UpgradeSample(self, sample, dataset):
-        if not hasattr(sample, "_field_list"):
-            sample._fields_list = list(dataset.included_fields.keys())
-            sample.last_changed_dt = datetime.now()
-        
-        if hasattr(sample, 'metadataset_key_list'):
-            sample.document_keys = sample.metadataset_key_list
-            sample.last_changed_dt = datetime.now()
-
-    def UpgradeCode(self, code):
-        if not hasattr(code, "doc_positions"):
-            code.doc_positions = {}
-            code.last_changed_dt = datetime.now()
-        if not hasattr(code, "_colour_rgb"):
-            code._colour_rgb = (0,0,0,)
-            code.last_changed_dt = datetime.now()
-
     def run(self):
         logger = logging.getLogger(__name__+".LoadThread.run")
         logger.info("Starting")
@@ -248,7 +144,14 @@ class LoadThread(Thread):
                 with open(self.current_workspace_path+"/codes.pk", 'rb') as infile:
                     result['codes'] = pickle.load(infile)
         
-            self.UpgradeWorkspace(result)
+            
+            if 'version' in result['config']:
+                ver = version.parse(result['config']['version'])
+            else:
+                ver = version.parse('0.0.0')
+
+            if ver <  version.parse(Constants.CUR_VER):
+                self.UpgradeWorkspace(result, ver)
 
         except (FileNotFoundError):
             wx.LogError(GUIText.LOAD_FAILURE + self.save_path)
@@ -257,3 +160,132 @@ class LoadThread(Thread):
         logger.info("Finished")
         wx.PostEvent(self._notify_window, CustomEvents.LoadResultEvent(result))
 
+    def UpgradeWorkspace(self, result, ver):
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_WORKSPACE + Constants.CUR_VER))
+        #upgrade datasets
+        for dataset_key in result['datasets']:
+            self.UpgradeDataset(result['datasets'][dataset_key], ver)
+        #upgrade database
+        self.UpgradeDatabase(result, ver)
+        #upgrade samples
+        for sample_key in result['samples']:
+            self.UpgradeSample(result['samples'][sample_key], result['datasets'][result['samples'][sample_key].dataset_key], ver)
+        #upgrade codes
+        for code_key in result['codes']:
+            self.UpgradeCode(result['codes'][code_key], ver)
+
+    def UpgradeDataset(self, dataset, ver):
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATASETS))
+        if ver < version.parse('0.8.1'):
+            #convert metdata fields list to dict of objects
+            if hasattr(dataset, "_metadata_fields_list"):
+                dataset.metadata_fields = {}
+                for field_name, field_info in dataset._metadata_fields_list:
+                    new_field = Datasets.Field(dataset,
+                                            field_name,
+                                            dataset,
+                                            field_info['desc'],
+                                            field_info['type'])
+                    dataset.metadata_fields[field_name] = new_field
+                del dataset._metadata_fields_list
+                #update rules
+                dataset.last_changed_dt = datetime.now()
+
+            #update variables names
+            if hasattr(dataset, '_total_unique_tokens'):
+                dataset._total_uniquetokens = dataset._total_unique_tokens
+                dataset.last_changed_dt = datetime.now()
+            if hasattr(dataset, '_total_unique_tokens_remaining'):
+                dataset._total_uniquetokens_remaining = dataset._total_unique_tokens_remaining
+                dataset.last_changed_dt = datetime.now()
+            if hasattr(dataset, 'avaliable_fields'):
+                dataset.available_fields = dataset.avaliable_fields
+                dataset.last_changed_dt = datetime.now()
+            if hasattr(dataset, 'chosen_fields'):
+                dataset.included_fields = dataset.chosen_fields
+                dataset.last_changed_dt = datetime.now()
+
+            #cleanup attributes changed by switching to database
+            if hasattr(dataset, "_metadata"):
+                del dataset._metadata
+                dataset.last_changed_dt = datetime.now()
+            if hasattr(dataset, '_words_df'):
+                del dataset._words_df
+                for idx, rule in enumerate(dataset.filter_rules):
+                    if isinstance(rule[3], tuple):
+                        if rule[3][0] == Constants.FILTER_TFIDF_REMOVE or rule[3][0] == Constants.FILTER_TFIDF_INCLUDE:
+                            new_rule = (rule[0], rule[1], rule[2], (rule[3][0], rule[3][1], rule[3][2]*100 ))
+                            dataset.filter_rules[idx] = new_rule
+                dataset.last_changed_dt = datetime.now()
+
+    def UpgradeDatabase(self, result, ver):
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATABASE))
+        if ver < version.parse('0.8.1'):
+            db_conn = Database.DatabaseConnection(self.current_workspace_path)
+            #create database for token based operations
+            if not os.path.isfile(self.current_workspace_path+"\\workspace_sqlite3.db"):
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATABASE_CREATE))
+                db_conn.Create()
+                for dataset_key in result['datasets']:
+                    word_idx = result['datasets'][dataset_key].tokenization_choice
+                    if word_idx == Constants.TOKEN_TEXT_IDX:
+                        db_conn.InsertDataset(dataset_key, 'text')
+                    elif word_idx == Constants.TOKEN_STEM_IDX:
+                        db_conn.InsertDataset(dataset_key, 'stem')
+                    elif word_idx == Constants.TOKEN_STEM_IDX:
+                        db_conn.InsertDataset(dataset_key, 'lemma')
+                    db_conn.InsertDocuments(dataset_key, result['datasets'][dataset_key].data.keys())
+                    for field_key in result['datasets'][dataset_key].included_fields:
+                        db_conn.InsertField(dataset_key, field_key)
+                        if result['datasets'][dataset_key].included_fields[field_key].fieldtype == "string":
+                            db_conn.InsertStringTokens(dataset_key, field_key, result['datasets'][dataset_key].included_fields[field_key].tokenset)
+                            result['datasets'][dataset_key].included_fields[field_key].tokenset = None
+                    db_conn.UpdateStringTokensTFIDF(dataset_key)
+                    db_conn.ApplyDatasetRules(dataset_key, result['datasets'][dataset_key].filter_rules)
+                    db_conn.RefreshStringTokensIncluded(dataset_key)
+                    db_conn.RefreshStringTokensRemoved(dataset_key)
+                    included_counts = db_conn.GetStringTokensCounts(dataset_key)
+                    result['datasets'][dataset_key].total_docs = included_counts['documents']
+                    result['datasets'][dataset_key].total_tokens = included_counts['tokens']
+                    result['datasets'][dataset_key].total_uniquetokens = included_counts['unique_tokens']    
+                    included_counts = db_conn.GetIncludedStringTokensCounts(dataset_key)
+                    result['datasets'][dataset_key].total_docs_remaining = included_counts['documents']
+                    result['datasets'][dataset_key].total_tokens_remaining = included_counts['tokens']
+                    result['datasets'][dataset_key].total_uniquetokens_remaining = included_counts['unique_tokens']
+                    result['datasets'][dataset_key].last_changed_dt = datetime.now()
+            else:
+                db_conn = Database.DatabaseConnection(self.current_workspace_path)
+                db_conn.Upgrade()
+                for dataset_key in result['datasets']:
+                    db_conn.UpdateStringTokensTFIDF(dataset_key)
+                    db_conn.ApplyDatasetRules(dataset_key, result['datasets'][dataset_key].filter_rules)    
+                    db_conn.RefreshStringTokensIncluded(dataset_key)
+                    db_conn.RefreshStringTokensRemoved(dataset_key)
+                    included_counts = db_conn.GetIncludedStringTokensCounts(dataset_key)
+                    result['datasets'][dataset_key].total_docs_remaining = included_counts['documents']
+                    result['datasets'][dataset_key].total_tokens_remaining = included_counts['tokens']
+                    result['datasets'][dataset_key].total_uniquetokens_remaining = included_counts['unique_tokens']
+                    result['datasets'][dataset_key].last_changed_dt = datetime.now()
+
+    def UpgradeSample(self, sample, dataset, ver):
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_SAMPLES))
+        if ver < version.parse('0.8.1'):
+            if not hasattr(sample, "_field_list"):
+                sample._fields_list = list(dataset.included_fields.keys())
+                sample.last_changed_dt = datetime.now()
+            
+            if hasattr(sample, 'metadataset_key_list'):
+                sample.document_keys = sample.metadataset_key_list
+                sample.last_changed_dt = datetime.now()
+
+    def UpgradeCode(self, code, ver):
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_CODES))
+        if ver < version.parse('0.8.1'):
+            if not hasattr(code, "doc_positions"):
+                code.doc_positions = {}
+                code.last_changed_dt = datetime.now()
+            if not hasattr(code, "_colour_rgb"):
+                code._colour_rgb = (0,0,0,)
+                code.last_changed_dt = datetime.now()
+
+    

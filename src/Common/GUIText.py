@@ -128,6 +128,13 @@ class Main(Common):
     SAVE_BUSY_MSG_DATASETS = "Saving Dataset: "
     SAVE_BUSY_MSG_SAMPLES = "Saving Sample: "
 
+    UPGRADE_BUSY_MSG_WORKSPACE = "Upgrading Workspace to ver: "
+    UPGRADE_BUSY_MSG_DATASETS = "Upgrading Datasets"
+    UPGRADE_BUSY_MSG_DATABASE = "Upgrading Database"
+    UPGRADE_BUSY_MSG_DATABASE_CREATE = "Converting Workspace to Use Database"
+    UPGRADE_BUSY_MSG_SAMPLES = "Upgrading Samples"
+    UPGRADE_BUSY_MSG_CODES = "Upgrading Codes"
+
     SHUTDOWN_BUSY_LABEL = "Shutting Down Application"
     SHUTDOWN_BUSY_POOL = "Shutting down Process Pool"
     
@@ -578,6 +585,9 @@ class Filtering(Main, Datasets):
     FILTERS_NUM_UNIQUEWORDS = "# of Unique Words"
 
     FILTERS_SPACY_AUTO_STOPWORDS = "Spacy Auto Stop Words"
+    FILTERS_TFIDF_MAX = "TF-IDF Max"
+    FILTERS_TFIDF_MIN = "TF-IDF Min"
+
     FILTERS_TFIDF = "TFIDF Range"
     FILTERS_ANY = '<ANY>'
     FILTERS_REMOVE = 'Remove'
@@ -652,8 +662,10 @@ class Filtering(Main, Datasets):
     FILTERS_IMPORT_SPACY_TOOLTIP = "Append spaCy stop words to removal list"
 
     FILTERS_APPLYING_RULES_BUSY_LABEL = "Applying Rules"
-    FILTERS_APPLYING_RULES_BUSY_MSG = "Applying Filter Rules to Dataset: "
-
+    FILTERS_APPLYING_RULES_BUSY_MSG = "Applying Filter Rules"
+    FILTERS_CHANGING_TOKENIZATION_BUSY_LABEL = "Changing Tokenization Method"
+    FILTERS_UPDATING_COUNTS = "Updating Impact Counts"
+    
     FILTERS_DISPLAY_STRINGS_BUSY_MSG1 = "Displaying "
     FILTERS_DISPLAY_STRINGS_BUSY_MSG2 = "Strings for Dataset: "
 

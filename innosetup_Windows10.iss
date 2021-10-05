@@ -18,7 +18,7 @@ LicenseFile=C:\Users\Robert Gauthier\Documents\School\PHD_Studies\Autobiographic
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-OutputBaseFilename=Toolkit_Setup
+OutputBaseFilename=Toolkit_Setup_Windows10_x64
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern

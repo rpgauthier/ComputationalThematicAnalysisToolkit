@@ -87,6 +87,18 @@ class RetrieveResultEvent(wx.PyEvent):
         self.SetEventType(RETRIEVE_EVT_RESULT_ID)
         self.data = data
 
+CHANGE_TOKENIZATION_CHOICE_EVT_RESULT_ID = wx.NewIdRef()
+def CHANGE_TOKENIZATION_CHOICE_EVT_RESULT(win, func):
+    """Define Result Event."""
+    win.Connect(-1, -1, CHANGE_TOKENIZATION_CHOICE_EVT_RESULT_ID, func)
+class ChangeTokenizationResultEvent(wx.PyEvent):
+    """Simple event to carry arbitrary result data."""
+    def __init__(self, data):
+        """Init Result Event."""
+        wx.PyEvent.__init__(self)
+        self.SetEventType(CHANGE_TOKENIZATION_CHOICE_EVT_RESULT_ID)
+        self.data = data
+
 APPLY_FILTER_RULES_EVT_RESULT_ID = wx.NewIdRef()
 def APPLY_FILTER_RULES_EVT_RESULT(win, func):
     """Define Result Event."""

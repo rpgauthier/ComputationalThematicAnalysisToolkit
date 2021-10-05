@@ -11,7 +11,6 @@ class TokenizerThread(Thread):
     def __init__(self, notify_window, main_frame, dataset, rerun=False):
         """Init Worker Thread Class."""
         Thread.__init__(self)
-        self.daemon = True
         self._notify_window = notify_window
         self.main_frame = main_frame
         self.dataset = dataset

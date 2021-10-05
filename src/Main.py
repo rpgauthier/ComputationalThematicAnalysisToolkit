@@ -683,7 +683,7 @@ class MainFrame(wx.Frame):
         else:
             self.CloseProgressDialog(GUIText.CANCELED, thaw=True)
 
-        logger.info("\nFinished")
+        logger.info("Finished")
 
     def OnCloseEnd(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnCloseEnd")
