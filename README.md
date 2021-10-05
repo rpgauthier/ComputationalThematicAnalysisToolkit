@@ -1,30 +1,46 @@
-# TAME
+# Computational Thematic Analysis Toolkit
 
-## NEED TO BE INSTALLED using pip on windows or equalivilent on OSX
-- python 3.9
+## Installation Instructions
 
-- pip install gensim
-- pip install bitermplus
-- pip install matplotlib
-- pip install nltk
-- pip install numpy
-- pip install pandas
+To Access most resent version 0.8.1: 
+
+Installers avaliable for Windows 10 x64 and OSX 
+
+## To Modify or Build using pip on windows or equalivilent on OSX
+Download or Fork repository
+Open src folder in an IDE (tested in VS Code)
+
+### Build Commands
+Windows:
+1) pyinstaller pyinstaller-Windows10x64.spec --additional-hooks-dir=.'
+2) innosetup_Windows10x64.iss
+OSX: <TBD>
+
+### Needed applications
+python 3.9
+Inno Setup Compiler
+
+### Needed Packages
+- pip install -U pip setuptools wheel
 - pip install python-dateutil
+- pip install dateparser
 - pip install requests
-- pip install spacy
-- pip install squarify
-- pip install wordcloud
 - pip install wxPython
 - pip install jsonpickle
-- pip install networkx
-- pip install -U pip setuptools wheel
-- pip install -U spacy
+- pip install numpy
+- pip install pandas
+- pip install spacy
 - pip install sentencepiece
+- pip install nltk
+- pip install gensim
+- pip install bitermplus
 - pip install sklearn
-- pip install dateparser
+- pip install matplotlib
+- pip install networkx
+- pip install squarify
+- pip install wordcloud
+- pip install pyinstaller
 
-## NEED TO BE RUN
-- python -m spacy download fr_core_news_sm
-- python -m spacy download en_core_web_trf
-- python -m spacy download en_core_web_sm
-- #NOT WORKING: python -m spacy download fr_dep_news_trf
+### Additional Steps
+1) python -m spacy download fr_core_news_sm
+2) python -m spacy download en_core_web_sm

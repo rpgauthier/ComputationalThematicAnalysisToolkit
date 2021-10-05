@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-# pyinstaller pyinstaller-Windows10.spec --additional-hooks-dir=.'
+# pyinstaller pyinstaller-Windows10x64.spec --additional-hooks-dir=.'
 
 import sys
 sys.setrecursionlimit(5000)

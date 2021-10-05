@@ -6,7 +6,7 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{8C273F29-5012-4F2E-8241-2A9EF5E4E9DB}
 AppName=Computational Thematic Anlaysis Toolkit
-AppVersion=0.8.0
+AppVersion=0.8.1
 ;AppVerName=Computational Thematic Anlaysis Toolkit 0.8.0
 AppPublisher=Robert P Gauthier
 AppPublisherURL=https://github.com/rpgauthier/ComputationalThematicAnalysisToolkit
@@ -14,11 +14,11 @@ AppSupportURL=https://github.com/rpgauthier/ComputationalThematicAnalysisToolkit
 AppUpdatesURL=https://github.com/rpgauthier/ComputationalThematicAnalysisToolkit
 DefaultDirName={autopf}\Computational Thematic Anlaysis Toolkit
 DisableProgramGroupPage=yes
-LicenseFile=C:\Users\Robert Gauthier\Documents\School\PHD_Studies\Autobiographical Design\ComputationalThematicAnalysisToolkit\LICENSE
+LicenseFile={#SourcePath}\LICENSE
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-OutputBaseFilename=Toolkit_Setup_Windows10_x64
+OutputBaseFilename=Toolkit_Setup_Windows10x64
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -29,8 +29,15 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
+[Dirs]
+Name: "{app}\bin"
+Name: "{app}\Data"; Flags: uninsneveruninstall
+Name: "{app}\Logs"; Flags: uninsneveruninstall
+Name: "{app}\Current_Workspace"; Flags: uninsneveruninstall
+Name: "{app}\Saved_Workspaces"; Flags: uninsneveruninstall
+
 [Files]
-Source: "C:\Users\Robert Gauthier\Documents\School\PHD_Studies\Autobiographical Design\ComputationalThematicAnalysisToolkit\dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\bin\*"; DestDir: "{app}\bin"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

@@ -1352,7 +1352,7 @@ class DatabaseConnection():
                                            GROUP BY document_key
                                            """
             tokens_dict = {}
-            c.execute(sql_select_documenttokens, {'dataset_id':dataset_id, 'token_type':token_type}})
+            c.execute(sql_select_documenttokens, {'dataset_id':dataset_id, 'token_type':token_type})
             for row in c.fetchall():
                 tokens_dict[eval(row[0])] = row[1].split()
             c.close()

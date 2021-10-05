@@ -59,9 +59,9 @@ class TokenGridTable(wx.grid.GridTableBase):
         """Return the value of a cell"""
         row_data = self.data[row]
         if self.col_names[col] == GUIText.FILTERS_NUM_WORDS:
-            return str(row_data[col]) +" (" +str(row_data[col]/self.dataset.total_tokens)+"%)"
+            return str(row_data[col]) +" (" +str(round((row_data[col]/self.dataset.total_tokens)*100, 4))+"%)"
         elif self.col_names[col] == GUIText.FILTERS_NUM_DOCS:
-            return str(row_data[col]) +" (" +str(row_data[col]/self.dataset.total_docs)+"%)"
+            return str(row_data[col]) +" (" +str(round((row_data[col]/self.dataset.total_docs)*100, 4))+"%)"
         elif self.col_names[col] == GUIText.FILTERS_SPACY_AUTO_STOPWORDS:
             if row_data[col] == 0:
                 return str(False)
