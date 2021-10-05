@@ -13,7 +13,7 @@ import External.wxPython.flatnotebook_fix as FNB
 
 from Common.GUIText import Filtering, Samples as GUIText
 from Common.GUIText import Filtering as FilteringGUIText
-from Common.CustomPlots import ChordPlotPanel#, pyLDAvisPanel, TreemapPlotPlanel, NetworkPlotPlanel
+from Common.CustomPlots import ChordPlotPanel#, TMPlotPanel, TreemapPlotPlanel, NetworkPlotPlanel
 import Common.Constants as Constants
 import Common.Database as Database
 import Common.CustomEvents as CustomEvents
@@ -1157,8 +1157,8 @@ class TopicVisualizationsNotebook(FNB.FlatNotebook):
         #TODO choose:
         # 1) augment to handle unknown topic 
         # 2) consider if it is ok to ignore unknown topics
-        #self.pyLDAvis_panel = pyLDAvisPanel(self)
-        #self.AddPage(self.pyLDAvis_panel, "pyLDAvis")#self.wordnetworkgraph_panel = NetworkPlotPlanel(self)
+        #self.tmplot_panel = TMPlotPanel(self)
+        #self.AddPage(self.tmplot_panel, "TMPlot")#self.wordnetworkgraph_panel = NetworkPlotPlanel(self)
         #self.AddPage(self.wordnetworkgraph_panel, "Word Network Graph")
         #self.wordcloudnetworkgraph_panel = NetworkPlotPlanel(self)
         #self.AddPage(self.wordcloudnetworkgraph_panel, "WordCloud Network Graph")

@@ -7,7 +7,6 @@
 AppId={{8C273F29-5012-4F2E-8241-2A9EF5E4E9DB}
 AppName=Computational Thematic Anlaysis Toolkit
 AppVersion=0.8.1
-;AppVerName=Computational Thematic Anlaysis Toolkit 0.8.0
 AppPublisher=Robert P Gauthier
 AppPublisherURL=https://github.com/rpgauthier/ComputationalThematicAnalysisToolkit
 AppSupportURL=https://github.com/rpgauthier/ComputationalThematicAnalysisToolkit

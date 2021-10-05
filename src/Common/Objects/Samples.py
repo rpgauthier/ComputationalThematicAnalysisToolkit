@@ -909,14 +909,14 @@ class NMFTopicPart(TopicPart):
             self.word_list.clear()
             if isinstance(self.parent, ModelMergedPart):
                 #TODO: test that this works when self.parent is a ModelMergedPart
-                components_df = pd.DataFrame(self.parent.parent.model.components_, columns=self.parent.parent.vectorizer.get_feature_names())
+                components_df = pd.DataFrame(self.parent.parent.model.components_, columns=self.parent.parent.vectorizer.get_feature_names_out())
                 topic = components_df.iloc[self.key-1]
                 word_prob_list = topic.nlargest(value)
                 word_list = word_prob_list.index.tolist()
                 prob_list = word_prob_list.tolist()
                 self.word_list = list(zip(word_list, prob_list))
             else:
-                components_df = pd.DataFrame(self.parent.model.components_, columns=self.parent.vectorizer.get_feature_names())
+                components_df = pd.DataFrame(self.parent.model.components_, columns=self.parent.vectorizer.get_feature_names_out())
                 topic = components_df.iloc[self.key-1]
                 word_prob_list = topic.nlargest(value)
                 word_list = word_prob_list.index.tolist()

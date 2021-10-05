@@ -152,7 +152,7 @@ class BitermTrainingThread(Thread):
         logger.info("Starting Generation of BTM")
         biterms = btm.get_biterms(docs_vec)
 
-        model = btm.BTM(X, vocab, T=self.num_topics, W=vocab.size, M=20, alpha=50/8, beta=0.01)
+        model = btm.BTM(X, vocab, T=self.num_topics, M=20, alpha=50/8, beta=0.01)
         p_zd = model.fit_transform(docs_vec, biterms, iterations=self.num_passes, verbose=False)
         with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/btm.pk', 'wb') as outfile:
             pickle.dump(model, outfile)
@@ -217,7 +217,7 @@ class NMFTrainingThread(Thread):
         with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/tfidf_vectorizer.pk', 'wb') as outfile:
            pickle.dump(tfidf_vectorizer, outfile)
 
-        topics = tfidf_vectorizer.get_feature_names()
+        topics = tfidf_vectorizer.get_feature_names_out()
         topic_pr = model.transform(tfidf)
         probs = topic_pr / topic_pr.sum(axis=1, keepdims=True)
 

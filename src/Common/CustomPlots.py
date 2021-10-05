@@ -12,7 +12,7 @@ mpl.use('WXAgg')
 import networkx as nx
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as NavigationToolbar
-import pyLDAvis
+#import tmplot
 from External.mpl_chord_diagram import chord_diagram
 #from External.matplotlib_zoom import simp_zoom
 import pandas as pd
@@ -250,9 +250,10 @@ class WordCloudPlotPlanel(wx.Panel):
         logger.info("Finished")
 
 
-class pyLDAvisPanel(wx.Panel):
+#TODO replace pyLDAvis with tmplot
+class TMPlotPanel(wx.Panel):
     def __init__(self, parent):
-        logger = logging.getLogger(__name__+".pyLDAvisPanel.__init__")
+        logger = logging.getLogger(__name__+".TMPlotPanel.__init__")
         logger.info("Starting")
         wx.Panel.__init__(self, parent, style=wx.SUNKEN_BORDER)
 
@@ -267,15 +268,15 @@ class pyLDAvisPanel(wx.Panel):
         logger.info("Finished")
     
     def Render(self, path, dictionary, corpus, lda):
-        logger = logging.getLogger(__name__+"pyLDAvisPanel.__init__")
+        logger = logging.getLogger(__name__+"TMPlotPanel.__init__")
         logger.info("Starting")
 
-        data = pyLDAvis.gensim.prepare(lda, corpus, dictionary, sort_topics=False)
+        #data = pyLDAvis.gensim.prepare(lda, corpus, dictionary, sort_topics=False)
         try:
-            html = pyLDAvis.prepared_data_to_html(data)
-            html_file = open(path+"/pyLDAvis.html","w")
-            html_file.write(html)
-            html_file.close()
+            #html = pyLDAvis.prepared_data_to_html(data)
+            #html_file = open(path+"/pyLDAvis.html","w")
+            #html_file.write(html)
+            #html_file.close()
 
             self.browser.LoadURL(path+"/pyLDAvis.html")
         except TypeError:
