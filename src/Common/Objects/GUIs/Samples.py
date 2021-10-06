@@ -612,7 +612,7 @@ class RandomSamplePanel(AbstractSamplePanel):
         type_label = wx.StaticText(self, label=GUIText.SAMPLE_TYPE+": "+str(sample.sample_type))
         details_sizer.Add(type_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details_sizer.AddSpacer(10)
-        if main_frame.multipledatasets_mode:
+        if main_frame.options_dict['multipledatasets_mode']:
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(sample.dataset_key))
             details_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer.AddSpacer(10)
@@ -740,7 +740,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         type_label = wx.StaticText(self, label=GUIText.SAMPLE_TYPE+": "+str(sample.sample_type))
         details1_sizer.Add(type_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details1_sizer.AddSpacer(10)
-        if main_frame.multipledatasets_mode:
+        if main_frame.options_dict['multipledatasets_mode']:
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(sample.dataset_key))
             details1_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details1_sizer.AddSpacer(10)
@@ -1231,7 +1231,7 @@ class TopicListPanel(wx.Panel):
         type_label = wx.StaticText(self, label=GUIText.SAMPLE_TYPE+": "+str(self.sample.sample_type))
         details1_sizer.Add(type_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details1_sizer.AddSpacer(10)
-        if main_frame.multipledatasets_mode:
+        if main_frame.options_dict['multipledatasets_mode']:
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(self.sample.dataset_key))
             details1_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details1_sizer.AddSpacer(10)

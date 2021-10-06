@@ -8,20 +8,20 @@ import datetime
 import calendar
 import time
 import os
-
 import requests
-
 from dateutil.relativedelta import relativedelta
+
+import Common.Constants as Constants
 
 def DeleteFiles(sub):
     logger = logging.getLogger(__name__+".FilesAvaliable["+sub+"]")
     logger.info("Starting")
-    path = '../Data/Reddit/'+sub+'/'
+    path = os.path.join(Constants.DATA_PATH, 'Reddit', sub)
     if os.path.exists(path):
         # r=root, d=directories, f = files
         for r, d, f in os.walk(path):
             for filename in f:
-                os.remove(os.path.join(path+filename))
+                os.remove(os.path.join(path, filename))
     logger.info("Finished")
 
 def FilesAvaliable(sub, start_date, end_date, prefix):
@@ -38,11 +38,10 @@ def FilesAvaliable(sub, start_date, end_date, prefix):
 
     files = []
     #data location
-    if not os.path.exists('../Data'):
-        os.makedirs('../Data')
-    if not os.path.exists('../Data/Reddit'):
-        os.makedirs('../Data/Reddit')    
-    path = '../Data/Reddit/'+sub+'/'
+    path = os.path.join(Constants.DATA_PATH, 'Reddit')
+    if not os.path.exists(path):
+        os.makedirs(path)    
+    path = os.path.join(Constants.DATA_PATH, 'Reddit', sub)
     if not os.path.exists(path):
         os.makedirs(path)
     # r=root, d=directories, f = files
@@ -55,6 +54,7 @@ def FilesAvaliable(sub, start_date, end_date, prefix):
     for month in months:
         found = False
         for f in files:
+
             if  prefix+month in f:
                 dict_monthfiles[month] = f
                 found = True
@@ -102,7 +102,8 @@ def RetrieveMonth(sub, month, prefix):
                             data.append(entry)
                             break
         data.insert(0, id_dict)
-        with open('../Data/Reddit/'+sub+'/'+prefix+month+'.json', 'w') as outfile:
+        file_path = os.path.join(Constants.DATA_PATH, 'Reddit', sub, prefix+month+'.json')
+        with open(file_path, 'w') as outfile:
             json.dump(data, outfile)
     logger.info("Finished")
 
@@ -153,7 +154,8 @@ def UpdateRetrievedMonth(sub, month, file, prefix):
                             data.append(entry)
                             break
         data.insert(0, id_dict)
-        with open('../Data/Reddit/'+sub+'/'+prefix+month+'.json', 'w') as outfile:
+        file_path = os.path.join(Constants.DATA_PATH, 'Reddit', sub, prefix+month+'.json')
+        with open(file_path, 'w') as outfile:
             json.dump(data, outfile)
     logger.info("Finished")
 

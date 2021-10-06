@@ -8,8 +8,7 @@ sys.setrecursionlimit(5000)
 block_cipher = None
 
 
-a = Analysis(['src\\Main.py'],
-             pathex=['C:\\Users\\Robert Gauthier\\Documents\\School\\PHD_Studies\\Autobiographical Design\\ComputationalThematicAnalysisToolkit'],
+a = Analysis(['src/Main.py'],
              binaries=[],
              datas=[('src/Images/*', 'Images'), ('src/Fonts/*', 'Fonts'), ('C:/Program Files/Python39/Lib/site-packages/wordcloud/stopwords', 'wordcloud' ), ('C:/Program Files/Python39/Lib/site-packages/wordcloud/DroidSansMono.ttf', 'wordcloud' )],
              hiddenimports=['sklearn.utils._weight_vector', 'wx._xml', 'PIL.ImageFont'],

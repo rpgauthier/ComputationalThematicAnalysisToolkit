@@ -1,13 +1,12 @@
 '''Main Program for MachineThematicAnalysisToolkit'''
 import logging
 from logging.handlers import RotatingFileHandler
-import os.path
+import os
 import tempfile
 from threading import *
 import multiprocessing
 import psutil
 from datetime import datetime
-import json
 
 import wx
 import wx.lib.agw.labelbook as LB
@@ -48,9 +47,7 @@ class MainFrame(wx.Frame):
         self.samples = {}
         self.codes = {}
         self.save_path = ''
-        if not os.path.exists(Constants.CURRENT_WORKSPACE):
-            os.mkdir(Constants.CURRENT_WORKSPACE)
-        self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
+        self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
         Database.DatabaseConnection(self.current_workspace.name).Create()
         
         self.last_load_dt = datetime.now()
@@ -59,10 +56,10 @@ class MainFrame(wx.Frame):
         self.progress_dialog_references = 0
         self.closing = False
 
-        #Program's Modes
-        self.multipledatasets_mode = False
-        self.adjustable_metadata_mode = False
-        self.adjustable_includedfields_mode = False
+        #Workspace's Options
+        self.options_dict = {'multipledatasets_mode': False,
+                             'adjustable_metadata_mode': False,
+                             'adjustable_includedfields_mode': False}
 
         #frame and notebook for notes to make accessible when moving between modules
         self.notes_frame = wx.Frame(self,
@@ -446,7 +443,7 @@ class MainFrame(wx.Frame):
 
             self.save_path = ''
             self.current_workspace.cleanup()
-            self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
+            self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
             Database.DatabaseConnection(self.current_workspace.name).Create()
         
             self.last_load_dt = datetime.now()
@@ -478,11 +475,9 @@ class MainFrame(wx.Frame):
         if wx.MessageBox(GUIText.LOAD_WARNING,
                          GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
             #ask the user what workspace to open
-            base_path = os.path.dirname(__file__)
-            dir_name = os.path.abspath(os.path.join(base_path, '..', 'Saved_Workspaces'))
             with wx.FileDialog(self,
                             message=GUIText.LOAD_REQUEST,
-                            defaultDir=dir_name,
+                            defaultDir=Constants.SAVED_WORKSPACES_PATH,
                             style=wx.DD_DEFAULT_STYLE|wx.FD_FILE_MUST_EXIST|wx.FD_OPEN,
                             wildcard="*.mta") as file_dialog:
                 if file_dialog.ShowModal() == wx.ID_OK:
@@ -508,7 +503,7 @@ class MainFrame(wx.Frame):
                     self.codes.clear()
 
                     self.current_workspace.cleanup()
-                    self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE)
+                    self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
 
                     self.last_load_dt = datetime.now()
                     self.load_thread = MainThreads.LoadThread(self, self.save_path, self.current_workspace.name)
@@ -525,8 +520,6 @@ class MainFrame(wx.Frame):
         self.samples.update(event.data['samples'])
         self.codes.update(event.data['codes'])
 
-        self.multipledatasets_mode = saved_data['multipledatasets_mode']
-        
         self.toggle_collection_menuitem.Check(check=saved_data['collection_check'])
         self.OnToggleCollection(None)
         self.collection_module.Load(saved_data['collection_module'])
@@ -556,12 +549,9 @@ class MainFrame(wx.Frame):
         self.notes_panel.Load(saved_data['notes'])
 
         mode_changed = False
-        if self.adjustable_metadata_mode != saved_data['adjustable_metadata_mode']:
+        if self.options_dict['multipledatasets_mode'] != saved_data['options']['multipledatasets_mode']:
             mode_changed = True
-            self.adjustable_metadata_mode = saved_data['adjustable_metadata_mode'] 
-        if self.adjustable_includedfields_mode != saved_data['adjustable_includedfields_mode']:
-            mode_changed = True
-            self.adjustable_includedfields_mode = saved_data['adjustable_includedfields_mode']
+        self.options_dict = saved_data['options']
         if mode_changed:
             self.ModeChange()
 
@@ -574,12 +564,10 @@ class MainFrame(wx.Frame):
         '''Menu Function for creating new save of data'''
         logger = logging.getLogger(__name__+".MainFrame.OnSaveAs")
         logger.info("Starting")
-        base_path = os.path.dirname(__file__)
-        dir_name = os.path.abspath(os.path.join(base_path, '..', 'Saved_Workspaces'))
 
         with wx.FileDialog(self,
                           message=GUIText.SAVE_AS_REQUEST,
-                          defaultDir=dir_name,
+                          defaultDir=Constants.SAVED_WORKSPACES_PATH,
                           style=wx.DD_DEFAULT_STYLE|wx.FD_SAVE,
                           wildcard="*.mta") as file_dialog:
             if file_dialog.ShowModal() == wx.ID_OK:
@@ -627,9 +615,7 @@ class MainFrame(wx.Frame):
             config_data['notes_check'] = self.toggle_notes_menuitem.IsChecked()
             config_data['notes'] = self.notes_panel.Save()
             config_data['datasets'] = list(self.datasets.keys())
-            config_data['multipledatasets_mode'] = self.multipledatasets_mode
-            config_data['adjustable_metadata_mode'] = self.adjustable_metadata_mode
-            config_data['adjustable_includedfields_mode'] = self.adjustable_includedfields_mode
+            config_data['options'] = self.options_dict
             config_data['samples'] = list(self.samples.keys())
             config_data['codes'] = True
             config_data['collection_module'] = self.collection_module.Save()
@@ -868,35 +854,27 @@ class CustomProgressDialog(wx.Dialog):
 class OptionsDialog(wx.Dialog):
     def __init__(self, parent, size=Constants.OPTIONS_DIALOG_SIZE):
         wx.Dialog.__init__(self, parent, title=GUIText.OPTIONS_LABEL, size=size, style=wx.DEFAULT_DIALOG_STYLE)
-        self.Bind(wx.EVT_CLOSE, self.SaveData)
-
-        self.twitter_keys_filename = "../twitter_keys.json"
-        self.twitter_keys = {}
-        # get saved keys, if any
-        if os.path.isfile(self.twitter_keys_filename):
-            with open(self.twitter_keys_filename, mode='r') as infile:
-                self.twitter_keys = json.load(infile)
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(sizer)
 
         main_frame = wx.GetApp().GetTopWindow()
+        
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(sizer)
 
         advanced_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.OPTIONS_ADVANCED_MODES)
         sizer.Add(advanced_sizer, 0, wx.ALL, 5)
 
         self.multipledatasets_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_MULTIPLEDATASETS)
-        self.multipledatasets_ctrl.SetValue(main_frame.multipledatasets_mode)
+        self.multipledatasets_ctrl.SetValue(main_frame.options_dict['multipledatasets_mode'])
         self.multipledatasets_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeMultipleDatasetMode)
         advanced_sizer.Add(self.multipledatasets_ctrl, 0, wx.ALL, 5)
 
         self.adjustable_metadata_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_ADJUSTABLE_METADATA)
-        self.adjustable_metadata_ctrl.SetValue(main_frame.adjustable_metadata_mode)
+        self.adjustable_metadata_ctrl.SetValue(main_frame.options_dict['adjustable_metadata_mode'])
         self.adjustable_metadata_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeAdjustableMetadataMode)
         advanced_sizer.Add(self.adjustable_metadata_ctrl, 0, wx.ALL, 5)
 
         self.adjustable_includedfields_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_ADJUSTABLE_INCLUDEDFIELDS)
-        self.adjustable_includedfields_ctrl.SetValue(main_frame.adjustable_includedfields_mode)
+        self.adjustable_includedfields_ctrl.SetValue(main_frame.options_dict['adjustable_includedfields_mode'])
         self.adjustable_includedfields_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeAdjustableIncludedFieldsMode)
         advanced_sizer.Add(self.adjustable_includedfields_ctrl, 0, wx.ALL, 5)
 
@@ -905,8 +883,9 @@ class OptionsDialog(wx.Dialog):
 
         twitter_consumer_key_label = wx.StaticText(self, label=GUIText.CONSUMER_KEY + ": ")
         self.twitter_consumer_key_ctrl = wx.TextCtrl(self)
-        if 'consumer_key' in self.twitter_keys:
-            self.twitter_consumer_key_ctrl.SetValue(self.twitter_keys['consumer_key'])
+        if 'twitter_consumer_key' in main_frame.options_dict:
+            self.twitter_consumer_key_ctrl.SetValue(main_frame.options_dict['twitter_consumer_key'])
+        self.adjustable_includedfields_ctrl.Bind(wx.EVT_TEXT_ENTER, self.ChangeTwitterFields)
         twitter_consumer_key_sizer = wx.BoxSizer(wx.HORIZONTAL)
         twitter_consumer_key_sizer.Add(twitter_consumer_key_label)
         twitter_consumer_key_sizer.Add(self.twitter_consumer_key_ctrl, wx.EXPAND)
@@ -914,47 +893,41 @@ class OptionsDialog(wx.Dialog):
     
         twitter_consumer_secret_label = wx.StaticText(self, label=GUIText.CONSUMER_SECRET + ": ")
         self.twitter_consumer_secret_ctrl = wx.TextCtrl(self)
-        if 'consumer_secret' in self.twitter_keys:
-            self.twitter_consumer_secret_ctrl.SetValue(self.twitter_keys['consumer_secret'])
-        twitter_consumer_secret_ctrl = wx.BoxSizer(wx.HORIZONTAL)
-        twitter_consumer_secret_ctrl.Add(twitter_consumer_secret_label)
-        twitter_consumer_secret_ctrl.Add(self.twitter_consumer_secret_ctrl, wx.EXPAND)
-        twitter_sizer.Add(twitter_consumer_secret_ctrl, 0, wx.EXPAND | wx.ALL, 5)
+        if 'twitter_consumer_secret' in main_frame.options_dict:
+            self.twitter_consumer_secret_ctrl.SetValue(main_frame.options_dict['twitter_consumer_secret'])
+        self.adjustable_includedfields_ctrl.Bind(wx.EVT_TEXT_ENTER, self.ChangeTwitterFields)
+        twitter_consumer_secret_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        twitter_consumer_secret_sizer.Add(twitter_consumer_secret_label)
+        twitter_consumer_secret_sizer.Add(self.twitter_consumer_secret_ctrl, wx.EXPAND)
+        twitter_sizer.Add(twitter_consumer_secret_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
     def ChangeMultipleDatasetMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.multipledatasets_ctrl.GetValue()
-        if main_frame.multipledatasets_mode != new_mode:
-            main_frame.multipledatasets_mode = new_mode
+        if main_frame.options_dict['multipledatasets_mode'] != new_mode:
             main_frame.ModeChange()
+        main_frame.options_dict['multipledatasets_mode'] = new_mode
     
     def ChangeAdjustableMetadataMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.adjustable_metadata_ctrl.GetValue()
-        if main_frame.adjustable_metadata_mode != new_mode:
-            main_frame.adjustable_metadata_mode = new_mode
+        main_frame.options_dict['adjustable_metadata_mode'] = new_mode
     
     def ChangeAdjustableIncludedFieldsMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.adjustable_includedfields_ctrl.GetValue()
-        if main_frame.adjustable_includedfields_mode != new_mode:
-            main_frame.adjustable_includedfields_mode = new_mode
+        main_frame.options_dict['adjustable_includedfields_mode'] = new_mode
     
-    def SaveData(self, event):
-        if self.twitter_consumer_key_ctrl.GetValue() != "":
-            self.twitter_keys['consumer_key'] = self.twitter_consumer_key_ctrl.GetValue()
-        if self.twitter_consumer_secret_ctrl.GetValue() != "":
-            self.twitter_keys['consumer_secret'] = self.twitter_consumer_secret_ctrl.GetValue()
-        with open(self.twitter_keys_filename, mode='w') as outfile:
-                json.dump(self.twitter_keys, outfile)
-        self.Destroy()
+    def ChangeTwitterFields(self, event):
+        main_frame = wx.GetApp().GetTopWindow()
+        main_frame.options_dict['twitter_consumer_key'] = self.twitter_consumer_key_ctrl.GetValue()
+        main_frame.options_dict['twitter_consumer_secret'] = self.twitter_consumer_secret_ctrl.GetValue()
         
 def Main():
     '''setup the main tasks for the application'''
-    log_path = "../Logs/MachineThematicAnalysis.log"
+    log_path = os.path.join(Constants.LOG_PATH, "MachineThematicAnalysis.log")
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-    #handler = logging.FileHandler("../Logs/MachineThematicAnalysis.log")
     handler = RotatingFileHandler(log_path, maxBytes=200000, backupCount=200)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)

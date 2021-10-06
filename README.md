@@ -18,8 +18,8 @@ Open src folder in an IDE (tested in VS Code)
 <TBD>
 
 ### Needed applications
-python 3.9
-Inno Setup Compiler
+- python 3.9
+- Inno Setup Compiler - For Windows
 
 ### Needed Packages
 - pip install psutil

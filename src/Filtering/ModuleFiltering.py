@@ -458,7 +458,7 @@ class FilterPanel(wx.Panel):
         if wx.MessageBox(GUIText.FILTERS_IMPORT_CONFIRMATION_REQUEST,
                          GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
             # otherwise ask the user what new file to open
-            with wx.FileDialog(self, GUIText.FILTERS_IMPORT, defaultDir='../Workspaces/',
+            with wx.FileDialog(self, GUIText.FILTERS_IMPORT, defaultDir=Constants.SAVED_WORKSPACES_PATH,
                             wildcard="Rules JSON files (*.rules_json)|*.rules_json",
                             style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
                 # cancel if the user changed their mind
@@ -484,7 +484,7 @@ class FilterPanel(wx.Panel):
     def OnExportFilterRules(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnExportRemovalSettings")
         logger.info("Starting")
-        with wx.FileDialog(self, GUIText.FILTERS_EXPORT, defaultDir='../Workspaces/',
+        with wx.FileDialog(self, GUIText.FILTERS_EXPORT, defaultDir=Constants.SAVED_WORKSPACES_PATH,
                            wildcard="Rules JSON files (*.rules_json)|*.rules_json",
                            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
             # cancel if the user changed their mind

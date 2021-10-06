@@ -304,7 +304,7 @@ class DatasetDetailsPanel(wx.Panel):
         self.dataset = dataset
         self.sizer.Clear(True)
         main_frame = wx.GetApp().GetTopWindow()
-        if main_frame.multipledatasets_mode or dataset is None:
+        if main_frame.options_dict['multipledatasets_mode'] or dataset is None:
             create_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, self, label=GUIText.CREATE)
             toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
             add_reddit_tool = toolbar.AddTool(wx.ID_ANY,

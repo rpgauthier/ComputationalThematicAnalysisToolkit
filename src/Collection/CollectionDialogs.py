@@ -1,17 +1,13 @@
 import logging
-import csv
 import os.path
 import tweepy
-import json
 import chardet
-from numpy import source
 import pytz
+import csv
 
 import wx
 import wx.adv
-from wx.core import DropTarget
 import wx.grid
-import wx.dataview as dv
 
 import Common.Constants as Constants
 from Common.GUIText import Collection as GUIText
@@ -52,68 +48,6 @@ class AbstractRetrieverDialog(wx.Dialog):
         main_frame.CloseProgressDialog(thaw=True)
         logger.info("Finished")
 
-    # given a sizer, disables all child elements
-    def DisableSizer(self, parent_sizer):
-        for child_sizer in parent_sizer.GetChildren():
-            elem = child_sizer.GetWindow()
-            if not elem:
-                try:
-                    # elem is a sizer
-                    sizer = child_sizer.GetSizer()
-                    self.DisableSizer(sizer)
-                except:
-                    # elem is something else, not a widget
-                    pass
-            else:
-                # elem is a widget
-                # disable all widgets
-                if isinstance(elem, wx.adv.HyperlinkCtrl):
-                    elem.SetNormalColour(wx.Colour(127, 127, 127))
-                elem.Disable()
-
-    # given a sizer, enables all child elements
-    def EnableSizer(self, parent_sizer):
-        for child_sizer in parent_sizer.GetChildren():
-            elem = child_sizer.GetWindow()
-            if not elem:
-                try:
-                    # elem is a sizer
-                    sizer = child_sizer.GetSizer()
-                    self.EnableSizer(sizer)
-                except:
-                    # elem is something else, not a widget
-                    pass
-            else:
-                # elem is a widget
-                # enable all widgets
-                if isinstance(elem, wx.adv.HyperlinkCtrl):
-                    elem.SetNormalColour(wx.Colour(wx.BLUE))
-                elem.Enable()
-    
-    # given an options_list_sizer, where each immediate child is an option sizer,
-    # and each option sizer contains a radio button and a corresponding sizer,
-    # returns an array of tuples (radio button + corresponding sizer)
-    def GetOptionsInRadioGroup(self, options_list_sizer):
-        options = []
-        for option in options_list_sizer.GetChildren(): 
-            tuple = []
-            option_sizer = option.GetSizer() # should have 2 elements: a radiobutton and its corresponding sizer
-            tuple.append(option_sizer.GetChildren()[0].GetWindow())
-            tuple.append(option_sizer.GetChildren()[1].GetSizer())
-            options.append(tuple)
-        return options
-
-    # given a sizer containing a list of option sizers
-    # enables option corresponding to selected radiobutton,
-    # and disables the rest of the options            
-    def EnableOnlySelected(self, options_list_sizer):
-        options = self.GetOptionsInRadioGroup(options_list_sizer)
-        for option in options:
-            if option[0].GetValue():
-                self.EnableSizer(option[1])
-            else:
-                self.DisableSizer(option[1])
-
 class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
     def __init__(self, parent):
         logger = logging.getLogger(__name__+".RedditRetrieverDialog.__init__")
@@ -125,7 +59,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         
         main_frame = wx.GetApp().GetTopWindow()
-        if main_frame.multipledatasets_mode:
+        if main_frame.options_dict['multipledatasets_mode']:
             name_label = wx.StaticText(self, label=GUIText.NAME + ": ")
             self.name_ctrl = wx.TextCtrl(self)
             self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
@@ -228,7 +162,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         metadata_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
         metadata_fields_sizer.Add(metadata_fields_label, 0, wx.ALL)
         metadata_fields_sizer.Add(self.metadata_fields_ctrl, 1, wx.EXPAND)
-        if main_frame.adjustable_metadata_mode:
+        if main_frame.options_dict['adjustable_metadata_mode']:
             sizer.Add(metadata_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
         else:
             metadata_fields_sizer.ShowItems(False)
@@ -243,7 +177,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         included_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
         included_fields_sizer.Add(included_fields_label, 0, wx.ALL)
         included_fields_sizer.Add(self.included_fields_ctrl, 1, wx.EXPAND)
-        if main_frame.adjustable_includedfields_mode:
+        if main_frame.options_dict['adjustable_includedfields_mode']:
             sizer.Add(included_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
         else:
             included_fields_sizer.ShowItems(False)
@@ -304,7 +238,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         status_flag = True
         main_frame = wx.GetApp().GetTopWindow()
-        if main_frame.multipledatasets_mode:
+        if main_frame.options_dict['multipledatasets_mode']:
             name = self.name_ctrl.GetValue()
             if name == "":
                 wx.MessageBox(GUIText.NAME_MISSING_ERROR,
@@ -427,10 +361,8 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
     def __init__(self, parent):
         logger = logging.getLogger(__name__+".TwitterRetrieverDialog.__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=GUIText.RETRIEVE_TWITTER_LABEL)
+        wx.Dialog.__init__(self, parent, title=GUIText.RETRIEVE_TWITTER_LABEL, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         self.retrieval_thread = None
-        self.keys_filename = "../twitter_keys.json"
-        self.keys = {}
         self.available_fields = {}
         self.dataset_type = "tweet"
 
@@ -438,7 +370,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         sizer.SetMinSize(Constants.TWITTER_DIALOG_SIZE)
         
         main_frame = wx.GetApp().GetTopWindow()
-        if main_frame.multipledatasets_mode:
+        if main_frame.options_dict['multipledatasets_mode']:
             name_label = wx.StaticText(self, label=GUIText.NAME + ": ")
             self.name_ctrl = wx.TextCtrl(self)
             self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
@@ -446,11 +378,6 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             name_sizer.Add(name_label)
             name_sizer.Add(self.name_ctrl)
             sizer.Add(name_sizer, 0, wx.ALL, 5)
-
-        # get saved keys, if any
-        if os.path.isfile(self.keys_filename):
-            with open(self.keys_filename, mode='r') as infile:
-                self.keys = json.load(infile)
 
         # ethics/terms of use
         self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1)
@@ -472,8 +399,8 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         consumer_key_label = wx.StaticText(self, label=GUIText.CONSUMER_KEY + ": ")
         self.consumer_key_ctrl = wx.TextCtrl(self)
-        if 'consumer_key' in self.keys:
-            self.consumer_key_ctrl.SetValue(self.keys['consumer_key'])
+        if 'twitter_consumer_key' in main_frame.options_dict:
+            self.consumer_key_ctrl.SetValue(main_frame.options_dict['twitter_consumer_key'])
         self.consumer_key_ctrl.SetToolTip(GUIText.CONSUMER_KEY_TOOLTIP)
         consumer_key_sizer = wx.BoxSizer(wx.HORIZONTAL)
         consumer_key_sizer.Add(consumer_key_label)
@@ -482,8 +409,8 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
     
         consumer_secret_label = wx.StaticText(self, label=GUIText.CONSUMER_SECRET + ": ")
         self.consumer_secret_ctrl = wx.TextCtrl(self)
-        if 'consumer_secret' in self.keys:
-            self.consumer_secret_ctrl.SetValue(self.keys['consumer_secret'])
+        if 'twitter_consumer_secret' in main_frame.options_dict:
+            self.consumer_secret_ctrl.SetValue(main_frame.options_dict['twitter_consumer_secret'])
         self.consumer_secret_ctrl.SetToolTip(GUIText.CONSUMER_SECRET_TOOLTIP)
         consumer_secret_sizer = wx.BoxSizer(wx.HORIZONTAL)
         consumer_secret_sizer.Add(consumer_secret_label)
@@ -610,7 +537,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         metadata_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
         metadata_fields_sizer.Add(metadata_fields_label, 0, wx.ALL)
         metadata_fields_sizer.Add(self.metadata_fields_ctrl, 1, wx.EXPAND)
-        if main_frame.adjustable_metadata_mode:
+        if main_frame.options_dict['adjustable_metadata_mode']:
             sizer.Add(metadata_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
         else:
             metadata_fields_sizer.ShowItems(False)
@@ -625,7 +552,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         included_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
         included_fields_sizer.Add(included_fields_label, 0, wx.ALL)
         included_fields_sizer.Add(self.included_fields_ctrl, 1, wx.EXPAND)
-        if main_frame.adjustable_includedfields_mode:
+        if main_frame.options_dict['adjustable_includedfields_mode']:
             sizer.Add(included_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
         else:
             included_fields_sizer.ShowItems(False)
@@ -681,7 +608,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         main_frame = wx.GetApp().GetTopWindow()
         keys = {}
 
-        if main_frame.multipledatasets_mode:
+        if main_frame.options_dict['multipledatasets_mode']:
             name = self.name_ctrl.GetValue()
             if name == "":
                 wx.MessageBox(GUIText.NAME_MISSING_ERROR,
@@ -809,7 +736,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         query = query.strip() # trim whitespace
         logger.info("Query: "+query)
 
-        if not main_frame.multipledatasets_mode:
+        if not main_frame.options_dict['multipledatasets_mode']:
             name = query
 
         start_date = str(self.start_date_ctrl.GetValue().Format("%Y-%m-%d"))
@@ -848,10 +775,6 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             item = self.included_fields_ctrl.GetNextItem(item)
 
         if status_flag:
-            # save keys
-            with open(self.keys_filename, mode='w') as outfile:
-                json.dump(keys, outfile)
-
             main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+query,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
@@ -861,6 +784,70 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.retrieval_thread = CollectionThreads.RetrieveTwitterDatasetThread(self, main_frame, name, language, keys, query, start_date, end_date, self.dataset_type,
                                                                                     list(self.available_fields.items()), metadata_fields_list, included_fields_list)
         logger.info("Finished")
+
+    # given a sizer, disables all child elements
+    def DisableSizer(self, parent_sizer):
+        for child_sizer in parent_sizer.GetChildren():
+            elem = child_sizer.GetWindow()
+            if not elem:
+                try:
+                    # elem is a sizer
+                    sizer = child_sizer.GetSizer()
+                    if sizer != None:
+                        self.DisableSizer(sizer)
+                except:
+                    # elem is something else, not a widget
+                    pass
+            else:
+                # elem is a widget
+                # disable all widgets
+                if isinstance(elem, wx.adv.HyperlinkCtrl):
+                    elem.SetNormalColour(wx.Colour(127, 127, 127))
+                elem.Disable()
+
+    # given a sizer, enables all child elements
+    def EnableSizer(self, parent_sizer):
+        for child_sizer in parent_sizer.GetChildren():
+            elem = child_sizer.GetWindow()
+            if not elem:
+                try:
+                    # elem is a sizer
+                    sizer = child_sizer.GetSizer()
+                    if sizer != None:
+                        self.EnableSizer(sizer)
+                except:
+                    # elem is something else, not a widget
+                    pass
+            else:
+                # elem is a widget
+                # enable all widgets
+                if isinstance(elem, wx.adv.HyperlinkCtrl):
+                    elem.SetNormalColour(wx.Colour(wx.BLUE))
+                elem.Enable()
+    
+    # given an options_list_sizer, where each immediate child is an option sizer,
+    # and each option sizer contains a radio button and a corresponding sizer,
+    # returns an array of tuples (radio button + corresponding sizer)
+    def GetOptionsInRadioGroup(self, options_list_sizer):
+        options = []
+        for option in options_list_sizer.GetChildren(): 
+            tuple = []
+            option_sizer = option.GetSizer() # should have 2 elements: a radiobutton and its corresponding sizer
+            tuple.append(option_sizer.GetChildren()[0].GetWindow())
+            tuple.append(option_sizer.GetChildren()[1].GetSizer())
+            options.append(tuple)
+        return options
+
+    # given a sizer containing a list of option sizers
+    # enables option corresponding to selected radiobutton,
+    # and disables the rest of the options            
+    def EnableOnlySelected(self, options_list_sizer):
+        options = self.GetOptionsInRadioGroup(options_list_sizer)
+        for option in options:
+            if option[0].GetValue():
+                self.EnableSizer(option[1])
+            else:
+                self.DisableSizer(option[1])
 
 class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
     def __init__(self, parent):
@@ -882,7 +869,8 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         filename_label = wx.StaticText(self, label=GUIText.FILENAME + ": ")
         self.filename_ctrl = wx.FilePickerCtrl(self, wildcard="CSV files (*.csv)|*.csv")
-        self.filename_ctrl.SetInitialDirectory('../Data/CSV')
+        path = os.path.join(Constants.DATA_PATH + "CSV")
+        self.filename_ctrl.SetInitialDirectory(path)
         filename_sizer = wx.BoxSizer(wx.HORIZONTAL)
         filename_sizer.Add(filename_label)
         filename_sizer.Add(self.filename_ctrl)
@@ -910,7 +898,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         sizer.Add(language_sizer, 0, wx.ALL, 5)
 
         main_frame = wx.GetApp().GetTopWindow()
-        if main_frame.multipledatasets_mode:
+        if main_frame.options_dict['multipledatasets_mode']:
             dataset_field_label = wx.StaticText(self, label=GUIText.CSV_DATASETFIELD)
             self.dataset_field_ctrl = wx.Choice(self, choices=[])
             self.dataset_field_ctrl.SetToolTip(GUIText.CSV_DATASETFIELD_TOOLTIP)
@@ -1036,7 +1024,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                 self.included_combined_ctrl.DeleteAllItems()
                 self.available_fields.clear()
                 main_frame = wx.GetApp().GetTopWindow()
-                if main_frame.multipledatasets_mode:
+                if main_frame.options_dict['multipledatasets_mode']:
                     self.dataset_field_ctrl.Clear()
                     self.dataset_field_ctrl.Append("")
                 idx = 0
@@ -1047,7 +1035,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                         self.metadata_first_ctrl.CheckItem(idx)
                     idx = idx+1
                 for column_name in header_row:
-                    if main_frame.multipledatasets_mode:
+                    if main_frame.options_dict['multipledatasets_mode']:
                         self.dataset_field_ctrl.Append(column_name)
                     self.id_field_ctrl.Append(column_name)
                     self.url_field_ctrl.Append(column_name)
@@ -1125,12 +1113,12 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
                 logger.warning('No datetime tz chosen')
                 status_flag = False
-            if not main_frame.adjustable_metadata_mode:
+            if not main_frame.options_dict['adjustable_metadata_mode']:
                 idx = self.metadata_first_ctrl.FindItem(-1, "created_utc")
                 self.metadata_first_ctrl.CheckItem(idx, True)
 
         url_field = self.url_field_ctrl.GetStringSelection()
-        if url_field != "" and not main_frame.adjustable_metadata_mode:
+        if url_field != "" and not main_frame.options_dict['adjustable_metadata_mode']:
             idx = self.metadata_first_ctrl.FindItem(-1, "id")
             self.metadata_first_ctrl.CheckItem(idx, False)
             idx = self.metadata_first_ctrl.FindItem(-1, "url")
@@ -1170,7 +1158,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                 if self.included_first_ctrl.IsItemChecked(item_idx):
                     field_name = self.included_first_ctrl.GetItemText(item_idx)
                     included_field_list.append((field_name, self.available_fields[field_name],))
-                    if not main_frame.adjustable_metadata_mode:
+                    if not main_frame.options_dict['adjustable_metadata_mode']:
                         if (field_name, self.available_fields[field_name],) not in metadata_field_list:
                             included_field_list.append((field_name, self.available_fields[field_name],))
         
@@ -1185,12 +1173,12 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                     combined_list.append(field_name)
                 if self.included_combined_ctrl.IsItemChecked(item_idx):
                     included_field_list.append((field_name, self.available_fields[field_name],))
-                    if not main_frame.adjustable_metadata_mode:
+                    if not main_frame.options_dict['adjustable_metadata_mode']:
                         if (field_name, self.available_fields[field_name],) not in metadata_field_list:
                             metadata_field_list.append((field_name, self.available_fields[field_name],))
 
         dataset_source = "CSV"
-        if main_frame.multipledatasets_mode:
+        if main_frame.options_dict['multipledatasets_mode']:
             dataset_field = self.dataset_field_ctrl.GetStringSelection()
         else:
             dataset_field = ""

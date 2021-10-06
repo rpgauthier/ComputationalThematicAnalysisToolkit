@@ -1,8 +1,7 @@
 '''For Plotting visualizations with wx'''
 import logging
-import os
+import os.path
 import string
-from os import path
 
 from wordcloud import WordCloud
 import squarify
@@ -19,6 +18,8 @@ import pandas as pd
 
 import wx
 import wx.html2
+
+import Common.Constants as Constants
 
 class NetworkPlotPlanel(wx.Panel):
     '''Panel for a TreemapPlot'''
@@ -107,8 +108,7 @@ class NetworkPlotPlanel(wx.Panel):
         if word_cloud_freq != None:
             parent_wordcloudimages = {}
         
-            d = os.getcwd()
-            font_path = path.join(d, 'Fonts/Symbola.ttf')
+            font_path = os.path.join(Constants.FONTS_PATH, 'Symbola.ttf')
             normal_word = r"(?:\w[\w']+)"
             ascii_art = r"(?:[{punctuation}][{punctuation}]+)".format(punctuation=string.punctuation)
             emoji = r"(?:[^\s])(?<![\w{ascii_printable}])".format(ascii_printable=string.printable)
@@ -237,8 +237,7 @@ class WordCloudPlotPlanel(wx.Panel):
         axis = self.figure.add_subplot(111)
         axis.axis("off")
 
-        d = os.getcwd()
-        font_path = path.join(d, 'Fonts/Symbola.ttf')
+        font_path = os.path.join(Constants.FONTS_PATH, 'Symbola.ttf')
         normal_word = r"(?:\w[\w']+)"
         ascii_art = r"(?:[{punctuation}][{punctuation}]+)".format(punctuation=string.punctuation)
         emoji = r"(?:[^\s])(?<![\w{ascii_printable}])".format(ascii_printable=string.printable)
@@ -340,8 +339,7 @@ class ChordPlotPanel(wx.Panel):
         if word_cloud_freq != None:
             parent_wordcloudimages = []
 
-            d = os.getcwd()
-            font_path = path.join(d, 'Fonts/Symbola.ttf')
+            font_path = os.path.join(Constants.FONTS_PATH, 'Symbola.ttf')
             normal_word = r"(?:\w[\w']+)"
             ascii_art = r"(?:[{punctuation}][{punctuation}]+)".format(punctuation=string.punctuation)
             emoji = r"(?:[^\s])(?<![\w{ascii_printable}])".format(ascii_printable=string.printable)

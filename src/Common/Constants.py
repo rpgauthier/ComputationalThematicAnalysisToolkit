@@ -1,4 +1,6 @@
 '''Constants for MachineThematicAnalysis Toolkit'''
+import sys
+import os
 import wx
 #import wx.lib.agw.flatnotebook as FNB
 import External.wxPython.flatnotebook_fix as FNB
@@ -18,7 +20,20 @@ LABEL_STYLE = wx.NORMAL
 LABEL_WEIGHT = wx.NORMAL
 LABEL_UNDERLINE = True
 
-CURRENT_WORKSPACE = '../Current_Workspace'
+if getattr(sys, 'frozen', False):
+    # this is a Pyinstaller bundle
+    ROOT_PATH = sys._MEIPASS
+else:
+    # normal python process
+    ROOT_PATH = os.getcwd()
+SAVED_WORKSPACES_PATH = os.path.abspath(os.path.join(ROOT_PATH, '..', 'Saved_Workspaces'))
+CURRENT_WORKSPACE_PATH = os.path.abspath(os.path.join(ROOT_PATH, '..', 'Current_Workspace'))
+DATA_PATH = os.path.abspath(os.path.join(ROOT_PATH, '..', 'Data'))
+LOG_PATH = os.path.abspath(os.path.join(ROOT_PATH, '..', 'Logs'))
+FONTS_PATH = os.path.join(ROOT_PATH, 'Fonts')
+
+
+
 
 #Menu Options
 # removed to use built in id generator wx.ID_ANY

@@ -73,7 +73,7 @@ class CollectionPanel(wx.Panel):
             self.datasetsdata_notebook.Show()
             self.splitter.SplitHorizontally(self.splitter.GetWindow1(), self.datasetsdata_notebook)
             
-            if main_frame.multipledatasets_mode:
+            if main_frame.options_dict['multipledatasets_mode']:
                 sash_height = int(self.GetSize().GetHeight()/6)
             else:
                 sash_height = int(self.datasetdetails_panel.GetBestSize().GetHeight()) + 5
@@ -102,7 +102,7 @@ class CollectionPanel(wx.Panel):
         else:
             selected_panel = self.datasetsdata_notebook.GetPage(index)
             self.datasetdetails_panel.ChangeDataset(selected_panel.dataset)
-        if main_frame.multipledatasets_mode == False:
+        if not main_frame.options_dict['multipledatasets_mode']:
             sash_height = int(self.datasetdetails_panel.GetBestSize().GetHeight()) + 5
             self.splitter.SetSashPosition(sash_height)
             self.Layout()
@@ -130,7 +130,7 @@ class CollectionPanel(wx.Panel):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         old_window = self.splitter.GetWindow1()
-        if main_frame.multipledatasets_mode and old_window != self.datasetslist_panel:
+        if main_frame.options_dict['multipledatasets_mode'] and old_window != self.datasetslist_panel:
             old_window.Hide()
             self.datasetslist_panel.Show()
             self.splitter.ReplaceWindow(old_window, self.datasetslist_panel)

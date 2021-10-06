@@ -4,18 +4,16 @@ from collections import OrderedDict
 import json
 import datetime
 import calendar
-import time
 import os
 import tweepy
-
-import requests
-
 from dateutil.relativedelta import relativedelta
+
+import Common.Constants as Constants
 
 def DeleteFiles(name):
     logger = logging.getLogger(__name__+".FilesAvaliable["+name+"]")
     logger.info("Starting")
-    path = '../Data/Twitter/'+name+'/'
+    path = os.path.join(Constants.DATA_PATH,'Twitter', name)
     if os.path.exists(path):
         # r=root, d=directories, f = files
         for r, d, f in os.walk(path):
@@ -37,11 +35,10 @@ def FilesAvaliable(name, start_date, end_date, prefix):
 
     files = []
     #data location
-    if not os.path.exists('../Data'):
-        os.makedirs('../Data')
-    if not os.path.exists('../Data/Twitter'):
-        os.makedirs('../Data/Twitter')    
-    path = '../Data/Twitter/'+name+'/'
+    path = os.path.join(Constants.DATA_PATH,'Twitter')
+    if not os.path.exists(path):
+        os.makedirs(path) 
+    path = os.path.join(Constants.DATA_PATH,'Twitter', name)
     if not os.path.exists(path):
         os.makedirs(path)
     # r=root, d=directories, f = files
@@ -108,7 +105,8 @@ def RetrieveMonth(auth, name, query, month, end_date, prefix):
                             data.append(entry)
                             break
         data.insert(0, id_dict)
-        with open('../Data/Twitter/'+name+'/'+prefix+month+'.json', 'w') as outfile:
+        file_path = os.path.join(Constants.DATA_PATH,'Twitter', name, prefix+month+'.json')
+        with open(file_path, 'w') as outfile:
             json.dump(data, outfile)
     logger.info("Finished")
     return rate_limit_reached
@@ -167,7 +165,8 @@ def UpdateRetrievedMonth(auth, name, query, month, end_date, file, prefix):
                             data.append(entry)
                             break
         data.insert(0, id_dict)
-        with open('../Data/Twitter/'+name+'/'+prefix+month+'.json', 'w') as outfile:
+        file_path = os.path.join(Constants.DATA_PATH,'Twitter', name, prefix+month+'.json')
+        with open(file_path, 'w') as outfile:
             json.dump(data, outfile)
     logger.info("Finished")
     return rate_limit_reached

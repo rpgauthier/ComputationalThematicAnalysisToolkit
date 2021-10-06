@@ -1736,7 +1736,7 @@ class QuotationsViewCtrl(dv.DataViewCtrl):
         self.SetExpanderColumn(column0)
 
         main_frame = wx.GetApp().GetTopWindow()
-        if main_frame.multipledatasets_mode:
+        if main_frame.options_dict['multipledatasets_mode']:
             text_renderer = dv.DataViewTextRenderer()
             column1 = dv.DataViewColumn(GUIText.DATASET, text_renderer, 1, align=wx.ALIGN_LEFT)
             self.AppendColumn(column1)

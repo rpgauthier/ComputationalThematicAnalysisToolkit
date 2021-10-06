@@ -1,6 +1,5 @@
 import logging
 import pickle
-from threading import main_thread
 from datetime import datetime
 
 import wx
@@ -69,7 +68,7 @@ class CodingNotebook(FNB.FlatNotebook):
         if wx.MessageBox(GUIText.CODES_IMPORT_CONFIRMATION_REQUEST,
                          GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
             # otherwise ask the user what new file to open
-            with wx.FileDialog(self, GUIText.CODES_IMPORT, defaultDir='../Workspaces/',
+            with wx.FileDialog(self, GUIText.CODES_IMPORT, defaultDir=Constants.SAVED_WORKSPACES_PATH,
                             wildcard="Code Pickle files (*.code_pk)|*.code_pk",
                             style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
                 # cancel if the user changed their mind
@@ -129,7 +128,7 @@ class CodingNotebook(FNB.FlatNotebook):
     def OnExportCodes(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnExportRemovalSettings")
         logger.info("Starting")
-        with wx.FileDialog(self, GUIText.CODES_EXPORT, defaultDir='../Workspaces/',
+        with wx.FileDialog(self, GUIText.CODES_EXPORT, defaultDir=Constants.SAVED_WORKSPACES_PATH,
                            wildcard="Code Pickle files (*.code_pk)|*.code_pk",
                            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
             # cancel if the user changed their mind

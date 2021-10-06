@@ -162,6 +162,7 @@ class LoadThread(Thread):
 
     def UpgradeWorkspace(self, result, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_WORKSPACE + Constants.CUR_VER))
+        self.UpgradeConfig(result['config'], ver)
         #upgrade datasets
         for dataset_key in result['datasets']:
             self.UpgradeDataset(result['datasets'][dataset_key], ver)
@@ -173,6 +174,22 @@ class LoadThread(Thread):
         #upgrade codes
         for code_key in result['codes']:
             self.UpgradeCode(result['codes'][code_key], ver)
+
+    def UpgradeConfig(self, config, ver):
+        if ver < version.parse('0.8.1'):
+            config['options'] = {}
+            if 'multipledatasets_mode' in config:
+                config['options']['multipledatasets_mode'] = config['multipledatasets_mode']
+            else:
+                config['options']['multipledatasets_mode'] = False
+            if 'adjustable_metadata_mode' in config:
+                config['options']['adjustable_metadata_mode'] = config['adjustable_metadata_mode']
+            else:
+                config['options']['adjustable_metadata_mode'] = False
+            if 'adjustable_includedfields_mode' in config:
+                config['options']['adjustable_includedfields_mode'] = config['adjustable_includedfields_mode']
+            else:
+                config['options']['adjustable_includedfields_mode'] = False
 
     def UpgradeDataset(self, dataset, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATASETS))
