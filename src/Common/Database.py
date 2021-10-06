@@ -1,13 +1,15 @@
 import logging
 import sqlite3
 import math
+import os.path
 
 import Common.Constants as Constants
 from Common.GUIText import Filtering as GUITextFiltering
 
 class DatabaseConnection():
     def __init__(self, current_workspace_path):
-        self.__conn = sqlite3.connect(current_workspace_path+"\\workspace_sqlite3.db")
+        database_path = os.path.join(current_workspace_path, "workspace_sqlite3.db")
+        self.__conn = sqlite3.connect(database_path)
         self.__conn.execute("PRAGMA foreign_keys=ON")
     
     def __del__(self):

@@ -147,9 +147,9 @@ class CodesViewCtrl(dv.DataViewCtrl):
 
         for i in range(0, len(self.Columns)):
             column = self.Columns[i]
-            column.Sortable = True
-            column.Reorderable = True
-            column.Resizeable = True
+            column.SetSortable(True)
+            column.SetReorderable(True)
+            column.SetResizeable(True)
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
         self.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
@@ -285,6 +285,8 @@ class CodesViewCtrl(dv.DataViewCtrl):
                     main_frame.codes[new_name] = Codes.Code(new_name)
                     model.Cleared()
                     self.Expander(None)
+                    for column in self.GetColumns():
+                        column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
                     main_frame.CodesUpdated()
                     break
                 else:
@@ -319,6 +321,8 @@ class CodesViewCtrl(dv.DataViewCtrl):
                     node.subcodes[new_name].parent = node
                     model.Cleared()
                     self.Expander(None)
+                    for column in self.GetColumns():
+                        column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
                     main_frame.CodesUpdated()
                     break
                 else:
@@ -478,11 +482,11 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         column3 = dv.DataViewColumn(GUIText.REFERENCES, int_renderer, 3, align=wx.ALIGN_LEFT)
         self.AppendColumn(column3)
 
-        for i in range(1, len(self.Columns)):
+        for i in range(0, len(self.Columns)):
             column = self.Columns[i]
-            column.Sortable = True
-            column.Reorderable = True
-            column.Resizeable = True
+            column.SetSortable(True)
+            column.SetReorderable(True)
+            column.SetResizeable(True)
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
         self.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
@@ -557,10 +561,11 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         logger = logging.getLogger(__name__+".ObjectCodesViewCtrl.OnOpen")
         logger.info("Starting")
         item = event.GetItem()
-        model = self.GetModel()
-        node = model.ItemToObject(item)
-        main_frame = wx.GetApp().GetTopWindow()
-        CodesGUIs.CodeConnectionsDialog(main_frame, node, size=wx.Size(400,400)).Show()
+        if item.IsOk():
+            model = self.GetModel()
+            node = model.ItemToObject(item)
+            main_frame = wx.GetApp().GetTopWindow()
+            CodesGUIs.CodeConnectionsDialog(main_frame, node, size=wx.Size(400,400)).Show()
         logger.info("Finished")
 
     def OnShowPopup(self, event):
@@ -569,12 +574,12 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         self.Bind(wx.EVT_MENU, self.OnCopyItems, copy_menuitem)
         if isinstance(self.GetModel(), CodesViewModel):
             self.selected_item = event.GetItem()
-            if self.selected_item:
+            if self.selected_item.IsOk():
                 change_colour_menuitem = menu.Append(wx.ID_ANY, GUIText.CHANGE_COLOUR)
                 self.Bind(wx.EVT_MENU, self.OnChangeColour, change_colour_menuitem) 
             add_code_menuitem = menu.Append(wx.ID_ADD, GUIText.ADD_NEW_CODE)
             self.Bind(wx.EVT_MENU, self.OnAddCode, add_code_menuitem)
-            if self.selected_item:
+            if self.selected_item.IsOk():
                 add_code_menuitem = menu.Append(wx.ID_ANY, GUIText.ADD_NEW_SUBCODE)
                 self.Bind(wx.EVT_MENU, self.OnAddSubCode, add_code_menuitem)
             if self.HasSelection():
@@ -619,6 +624,8 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
                     main_frame.codes[new_name].AddConnection(model.obj)
                     model.Cleared()
                     self.Expander(None)
+                    for column in self.GetColumns():
+                        column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
                     main_frame.CodesUpdated()
                     break
                 else:
@@ -655,6 +662,8 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
                     node.subcodes[new_name].AddConnection(model.obj)
                     model.Cleared()
                     self.Expander(None)
+                    for column in self.GetColumns():
+                        column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
                     main_frame.CodesUpdated()
                     break
                 else:

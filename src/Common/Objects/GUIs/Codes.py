@@ -574,6 +574,8 @@ class DocumentPanel(wx.Panel):
             else:
                 end = cur_selection[1] - field_position[0]
             if include:
+                if self.document.key not in code.doc_positions:
+                    code.doc_positions[self.document.key] = []
                 code.doc_positions[self.document.key].append((field_key, start, end,))
         self.field_ctrl.SelectNone()
         self.OnShowCode(None)
