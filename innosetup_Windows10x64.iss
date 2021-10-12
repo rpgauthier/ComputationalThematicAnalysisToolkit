@@ -30,10 +30,6 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Dirs]
 Name: "{app}\bin"
-Name: "{app}\Data"; Flags: uninsneveruninstall
-Name: "{app}\Logs"; Flags: uninsneveruninstall
-Name: "{app}\Current_Workspace"; Flags: uninsneveruninstall
-Name: "{app}\Saved_Workspaces"; Flags: uninsneveruninstall
 
 [Files]
 Source: "dist\bin\*"; DestDir: "{app}\bin"; Flags: ignoreversion recursesubdirs createallsubdirs

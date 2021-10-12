@@ -12,14 +12,16 @@ Open src folder in an IDE (tested in VS Code)
 
 ### Build Commands
 #### Windows:
-1) pyinstaller pyinstaller-Windows10x64.spec --additional-hooks-dir=.'
-2) innosetup_Windows10x64.iss
+1) pyinstaller pyinstaller-Windows10x64.spec --additional-hooks-dir=.
+2) run & compile innosetup_Windows10x64.iss
 #### OSX:
-<TBD>
+1) python3 -m PyInstaller --windowed --additional-hooks-dir=. pyinstaller-OSX.spec
+2) run & build packages_OSX.pkgproj
 
 ### Needed applications
 - python 3.9
 - Inno Setup Compiler - For Windows
+- packages - For OSX
 
 ### Needed Packages
 - pip install psutil

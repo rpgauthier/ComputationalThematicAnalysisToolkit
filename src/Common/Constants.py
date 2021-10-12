@@ -26,11 +26,24 @@ if getattr(sys, 'frozen', False):
 else:
     # normal python process
     ROOT_PATH = os.getcwd()
-SAVED_WORKSPACES_PATH = os.path.abspath(os.path.join(ROOT_PATH, '..', 'Saved_Workspaces'))
-CURRENT_WORKSPACE_PATH = os.path.abspath(os.path.join(ROOT_PATH, '..', 'Current_Workspace'))
-DATA_PATH = os.path.abspath(os.path.join(ROOT_PATH, '..', 'Data'))
-LOG_PATH = os.path.abspath(os.path.join(ROOT_PATH, '..', 'Logs'))
 FONTS_PATH = os.path.join(ROOT_PATH, 'Fonts')
+IMAGES_PATH = os.path.join(ROOT_PATH, 'Images')
+
+APP_DATA_PATH = os.path.realpath(os.path.expanduser('~/Documents/ComputationalThematicAnalysisToolkit'))
+if not os.path.exists(APP_DATA_PATH):
+    os.makedirs(APP_DATA_PATH)
+SAVED_WORKSPACES_PATH = os.path.realpath(os.path.join(APP_DATA_PATH, 'Saved_Workspaces'))
+if not os.path.exists(SAVED_WORKSPACES_PATH):
+    os.makedirs(SAVED_WORKSPACES_PATH)
+CURRENT_WORKSPACE_PATH = os.path.realpath(os.path.join(APP_DATA_PATH, 'Current_Workspace'))
+if not os.path.exists(CURRENT_WORKSPACE_PATH):
+    os.makedirs(CURRENT_WORKSPACE_PATH)
+DATA_PATH = os.path.realpath(os.path.join(APP_DATA_PATH, 'Data'))
+if not os.path.exists(DATA_PATH):
+    os.makedirs(DATA_PATH)
+LOG_PATH = os.path.realpath(os.path.join(APP_DATA_PATH, 'Logs'))
+if not os.path.exists(LOG_PATH):
+    os.makedirs(LOG_PATH)
 
 
 
