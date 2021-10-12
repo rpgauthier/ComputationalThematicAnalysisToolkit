@@ -959,7 +959,7 @@
 				</dict>
 			</array>
 			<key>NAME</key>
-			<string>Computational Thematic Analysis Toolkit</string>
+			<string>ComputationalThematicAnalysisToolkit_OSX</string>
 			<key>PAYLOAD_ONLY</key>
 			<false/>
 			<key>TREAT_MISSING_PRESENTATION_DOCUMENTS_AS_WARNING</key>
