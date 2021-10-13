@@ -1,8 +1,6 @@
 import logging
 from datetime import datetime
 
-import wx
-
 import Common.Objects.Samples as Samples
 import Common.Objects.Datasets as Datasets
 from Common.GUIText import Samples as GUIText

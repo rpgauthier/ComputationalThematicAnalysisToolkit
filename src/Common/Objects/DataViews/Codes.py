@@ -1,6 +1,4 @@
 import logging
-from re import sub
-from threading import main_thread
 import webbrowser
 from datetime import datetime
 

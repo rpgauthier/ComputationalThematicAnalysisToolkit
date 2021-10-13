@@ -1,6 +1,4 @@
 import logging
-from random import sample
-from re import search
 import webbrowser
 from datetime import datetime
 
@@ -14,8 +12,6 @@ from Common.GUIText import Datasets as GUIText
 from Common.GUIText import Filtering as FilteringGUIText
 import Common.Constants as Constants
 import Common.Objects.Datasets as Datasets
-import Common.Objects.GUIs.Datasets as DatasetsGUIs
-import Common.Objects.Samples as Samples
 import Common.Objects.GUIs.Codes as CodesGUIs
 
 # This model acts as a bridge between the DatasetsViewCtrl and the dataset to

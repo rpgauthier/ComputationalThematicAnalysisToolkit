@@ -9,7 +9,6 @@ import wx.grid
 from Common.GUIText import Datasets as GUIText
 import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
-import Common.Notes as Notes
 import Common.Objects.Datasets as Datasets
 import Common.Objects.Threads.Datasets as DatasetsThreads
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
