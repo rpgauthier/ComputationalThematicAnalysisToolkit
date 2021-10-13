@@ -50,8 +50,8 @@ class SaveThread(Thread):
                 if isinstance(self.datasets[key], Datasets.Dataset):
                     dataset_filename = str(key[0])+"_"+str(key[1])+"_"+str(key[2])+".pk"
                 existing_datasets.append(dataset_filename)
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_DATASETS+str(key)))
                 if self.datasets[key].last_changed_dt > self.last_load_dt:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_DATASETS+str(key)))
                     with open(self.current_workspace_path+"/Datasets/"+dataset_filename, 'wb') as outfile:
                         pickle.dump(self.datasets[key], outfile)
             #remove any datasets that no longer exist

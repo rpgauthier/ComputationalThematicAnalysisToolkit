@@ -5,7 +5,7 @@ Workspaces/
 Saved_Workspaces/
 .vscode/
 **/__pycache__
-twitter_keys.json
 build/
 dist/
 Output/
+.DS_Store

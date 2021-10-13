@@ -2,11 +2,8 @@ import logging
 
 import spacy
 import en_core_web_sm
-#import en_core_web_trf
 import fr_core_news_sm
-
 import nltk
-from math import log
 
 import wx
 
@@ -14,6 +11,7 @@ import Common.CustomEvents as CustomEvents
 import Common.Objects.Datasets as Datasets
 import Common.Database as Database
 from Common.GUIText import Datasets as GUIText
+from Common.GUIText import Filtering as GUITextFiltering
 
 def CreateDataset(dataset_key, language, retrieval_details, data, available_fields_list, metadata_fields_list, included_fields_list, main_frame):
     dataset = Datasets.Dataset(dataset_key,
@@ -161,6 +159,7 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
         dataset.total_tokens = counts['tokens']
         dataset.total_uniquetokens = counts['unique_tokens']
         wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_TFIDF_MSG))
+        ApplyFilterRules(dataset, main_frame)
             
     logger.info("Finished")
 
@@ -223,3 +222,38 @@ def TokenizationWorker(data_list, field_key, label, language):
     logger.info("Finished")
     #return tokensets, rawtext_tokens_df, stem_tokens_df, lemma_tokens_df, package_versions
     return tokensets, package_versions
+
+def ApplyFilterRules(dataset, main_frame):
+    logger = logging.getLogger(__name__+".ApplyFilterRules")
+    logger.info("Starting")
+    db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
+    wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_BUSY_MSG))
+    db_conn.ApplyDatasetRules(dataset.key, dataset.filter_rules)
+    db_conn.RefreshStringTokensIncluded(dataset.key)
+    db_conn.RefreshStringTokensRemoved(dataset.key)
+    wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_UPDATING_COUNTS))
+    included_counts = db_conn.GetIncludedStringTokensCounts(dataset.key)
+    dataset.total_docs_remaining = included_counts['documents']
+    dataset.total_tokens_remaining = included_counts['tokens']
+    dataset.total_uniquetokens_remaining = included_counts['unique_tokens']
+    logger.info("Finished")
+
+
+def ApplyFilterLatestRule(dataset, main_frame):
+    logger = logging.getLogger(__name__+".ApplyFilterRule")
+    logger.info("Starting")
+    if len(dataset.filter_rules) > 0:
+            db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
+
+            wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_BUSY_MSG))
+            db_conn.ApplyDatasetRule(dataset.key, dataset.filter_rules[-1])
+
+            db_conn.RefreshStringTokensIncluded(dataset.key)
+            db_conn.RefreshStringTokensRemoved(dataset.key)
+
+            wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_UPDATING_COUNTS))
+            included_counts = db_conn.GetIncludedStringTokensCounts(dataset.key)
+            dataset.total_docs_remaining = included_counts['documents']
+            dataset.total_tokens_remaining = included_counts['tokens']
+            dataset.total_uniquetokens_remaining = included_counts['unique_tokens']
+    logger.info("Finished")
