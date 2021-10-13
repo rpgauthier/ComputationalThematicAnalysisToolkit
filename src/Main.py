@@ -944,9 +944,9 @@ class OptionsDialog(wx.Dialog):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.multipledatasets_ctrl.GetValue()
         if main_frame.options_dict['multipledatasets_mode'] != new_mode:
+            main_frame.options_dict['multipledatasets_mode'] = new_mode
             main_frame.ModeChange()
-        main_frame.options_dict['multipledatasets_mode'] = new_mode
-    
+        
     def ChangeAdjustableMetadataMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.adjustable_metadata_ctrl.GetValue()

@@ -68,7 +68,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             name_sizer.Add(self.name_ctrl)
             sizer.Add(name_sizer, 0, wx.ALL, 5)
 
-        subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT+": ")
+        subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT)
         self.subreddit_ctrl = wx.TextCtrl(self)
         self.subreddit_ctrl.SetToolTip(GUIText.REDDIT_SUBREDDIT_TOOLTIP)
         subreddit_sizer = wx.BoxSizer(wx.HORIZONTAL)

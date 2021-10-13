@@ -296,7 +296,7 @@ class Datasets(Common):
     UTC = "UTC"
 
     REDDIT_LABEL = "Reddit"
-    REDDIT_SUBREDDIT = "Subreddit"
+    REDDIT_SUBREDDIT = "www.reddit.com/r/"
     REDDIT_SUBREDDIT_TOOLTIP = "Exact case-sensitive spelling of the subreddit for retrieval"
     REDDIT_SUBREDDIT_MISSING_ERROR = "You must enter a Subreddit."
     REDDIT_SUBMISSIONS = "Submissions"
