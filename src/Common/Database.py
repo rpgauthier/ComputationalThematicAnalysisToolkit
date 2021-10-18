@@ -81,10 +81,8 @@ class DatabaseConnection():
 
             sql_create_text_index = """CREATE INDEX IF NOT EXISTS string_tokens_text_index ON string_tokens(dataset_id, text, document_id)"""
             c.execute(sql_create_text_index)
-
             sql_create_stem_index = """CREATE INDEX IF NOT EXISTS string_tokens_stem_index ON string_tokens(dataset_id, stem, document_id)"""
             c.execute(sql_create_stem_index)
-
             sql_create_lemma_index = """CREATE INDEX IF NOT EXISTS string_tokens_lemma_index ON string_tokens(dataset_id, lemma, document_id)"""
             c.execute(sql_create_lemma_index)
 
@@ -142,9 +140,9 @@ class DatabaseConnection():
         try:
             c = self.__conn.cursor()
 
-            self.Create()
             c.execute("""DROP VIEW IF EXISTS string_tokens_included_view""")
             c.execute("""DROP VIEW IF EXISTS string_tokens_removed_view""")
+            self.Create()
             self.__conn.commit()
             c.close()
         except sqlite3.Error:
@@ -557,6 +555,7 @@ class DatabaseConnection():
         update_sql = """UPDATE string_tokens
                         SET included = ?
                         WHERE dataset_id = ?
+                        AND included = ?
                         """
             
 
@@ -583,6 +582,7 @@ class DatabaseConnection():
                                             WHERE dataset_id = ?
                                            ) AS ranktable
                                       WHERE ranktable.id = string_tokens.id
+                                      AND included = ?
                                       AND per_rank < ?
                                       """
         
@@ -599,6 +599,7 @@ class DatabaseConnection():
                                             WHERE dataset_id = ?
                                            ) AS ranktable
                                         WHERE ranktable.id = string_tokens.id
+                                        AND included = ?
                                         AND per_rank < ?
                                         """
 
@@ -623,6 +624,7 @@ class DatabaseConnection():
                                             COUNT(*) AS count
                                     FROM string_tokens
                                     WHERE dataset_id = ?
+                                    AND included = ?
                                     """
         subquery_doccount_sql1 = """SELECT CASE ?
                                         WHEN 'stem' THEN stem
@@ -633,9 +635,11 @@ class DatabaseConnection():
                                         COUNT(DISTINCT document_id) AS count
                                     FROM string_tokens
                                     WHERE dataset_id = ?
+                                    AND included = ?
                                     """
         update_count_sql2 = """) AS counttable
                             WHERE dataset_id = ?
+                            AND included = ?
                             AND counttable.word = CASE ?
                                                     WHEN 'stem' THEN stem
                                                     WHEN 'lemma' THEN lemma
@@ -663,15 +667,18 @@ class DatabaseConnection():
             sql_action = update_sql
             sql_action_parameters.append(0)
             sql_action_parameters.append(dataset_id)
+            sql_action_parameters.append(1)
         elif rule_action == Constants.FILTER_RULE_INCLUDE:
             sql_action = update_sql
             sql_action_parameters.append(1)
             sql_action_parameters.append(dataset_id)
+            sql_action_parameters.append(0)
         elif isinstance(rule_action, tuple):
             if rule_action[0] == Constants.FILTER_TFIDF_REMOVE:
                 sql_action_parameters.append(0)
                 sql_action_parameters.append(token_type)
                 sql_action_parameters.append(dataset_id)
+                sql_action_parameters.append(1)
                 sql_action_parameters.append(rule_action[2]/100)
                 if rule_action[1] == Constants.FILTER_TFIDF_LOWER:
                     sql_action = update_tfidflowerper_sql
@@ -681,6 +688,7 @@ class DatabaseConnection():
                 sql_action_parameters.append(1)
                 sql_action_parameters.append(token_type)
                 sql_action_parameters.append(dataset_id)
+                sql_action_parameters.append(0)
                 sql_action_parameters.append(rule_action[2]/100)
                 if rule_action[1] == Constants.FILTER_TFIDF_LOWER:
                     sql_action = update_tfidflowerper_sql
@@ -689,35 +697,37 @@ class DatabaseConnection():
             elif rule_action[0] == Constants.FILTER_RULE_REMOVE or rule_action[0] == Constants.FILTER_RULE_INCLUDE:
                 if rule_action[0] == Constants.FILTER_RULE_REMOVE:
                     sql_action_parameters.append(0)
+                    apply_to_included = 1
                 else:
                     sql_action_parameters.append(1)
+                    apply_to_included = 0
                 sql_action_parameters.append(token_type)
                 sql_action_parameters.append(dataset_id)
-                sql_parameters = sql_action_parameters + sql_type_filters_parameters
-                sql_parameters.append(token_type)
-                sql_parameters.append(dataset_id)
-                sql_parameters.append(token_type)
+                sql_action_parameters.append(apply_to_included)
+                sql_action_parameters = sql_action_parameters + sql_type_filters_parameters
+                sql_action_parameters.append(token_type)
+                sql_action_parameters.append(dataset_id)
+                sql_action_parameters.append(apply_to_included)
+                sql_action_parameters.append(token_type)
 
                 if rule_action[1] == Constants.TOKEN_NUM_WORDS:
                     sql_action = update_count_sql1+subquery_wordcount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
-                    sql_parameters.append(rule_action[3])
+                    sql_action_parameters.append(rule_action[3])
                 elif rule_action[1] == Constants.TOKEN_PER_WORDS:
                     sql_action = update_count_sql1+subquery_wordcount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
                     #TODO rework to not need seperate sql call
-                    c = self.__conn.cursor()
-                    c.execute(query_totalwordcount_sql, (dataset_id,))
+                    c = self.__conn.execute(query_totalwordcount_sql, (dataset_id,))
                     total_words = c.fetchone()[0]
-                    sql_parameters.append(rule_action[3]/100*total_words)
+                    sql_action_parameters.append(rule_action[3]/100*total_words)
                 elif rule_action[1] == Constants.TOKEN_NUM_DOCS:
                     sql_action = update_count_sql1+subquery_doccount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
-                    sql_parameters.append(rule_action[3])
+                    sql_action_parameters.append(rule_action[3])
                 elif rule_action[1] == Constants.TOKEN_PER_DOCS:
                     sql_action = update_count_sql1+subquery_doccount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
                     #TODO rework to not need seperate sql call
-                    c = self.__conn.cursor()
-                    c.execute(query_totaldoccount_sql, (dataset_id,))
+                    c = self.__conn.execute(query_totaldoccount_sql, (dataset_id,))
                     total_docs = c.fetchone()[0]
-                    sql_parameters.append(rule_action[3]/100*total_docs)
+                    sql_action_parameters.append(rule_action[3]/100*total_docs)
 
                 if rule_action[2] == ">":
                     sql_action = sql_action + gt_sql
