@@ -44,13 +44,10 @@ class ChangeTokenizationChoiceThread(Thread):
 
         wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_BUSY_MSG))
         db_conn.ApplyDatasetRules(self.dataset.key, self.dataset.filter_rules)
-
         db_conn.RefreshStringTokensIncluded(self.dataset.key)
         db_conn.RefreshStringTokensRemoved(self.dataset.key)
-        
-        
+
         wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_UPDATING_COUNTS))
-        db_conn.ApplyDatasetRules(self.dataset.key, self.dataset.filter_rules)
         counts = db_conn.GetStringTokensCounts(self.dataset.key)
         self.dataset.total_docs = counts['documents']
         self.dataset.total_tokens = counts['tokens']

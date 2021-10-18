@@ -31,9 +31,13 @@ else:
 FONTS_PATH = os.path.join(ROOT_PATH, 'Fonts')
 IMAGES_PATH = os.path.join(ROOT_PATH, 'Images')
 
-SAVE_DATA_PATH = os.path.realpath(os.path.expanduser('~/Documents/ComputationalThematicAnalysisToolkit'))
+SAVE_DATA_PATH = os.path.realpath(os.path.expanduser('~/Documents/ComputationalThematicAnalysisToolkit.nosync'))
+old_SAVE_DATA_PATH = os.path.realpath(os.path.expanduser('~/Documents/ComputationalThematicAnalysisToolkit'))
 if not os.path.exists(SAVE_DATA_PATH):
-    os.makedirs(SAVE_DATA_PATH)
+    if os.path.exists(old_SAVE_DATA_PATH):
+        os.rename(old_SAVE_DATA_PATH, SAVE_DATA_PATH)
+    else:
+        os.makedirs(SAVE_DATA_PATH)
 SAVED_WORKSPACES_PATH = os.path.realpath(os.path.join(SAVE_DATA_PATH, 'Saved_Workspaces'))
 if not os.path.exists(SAVED_WORKSPACES_PATH):
     os.makedirs(SAVED_WORKSPACES_PATH)

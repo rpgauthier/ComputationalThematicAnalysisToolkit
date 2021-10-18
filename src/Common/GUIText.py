@@ -129,7 +129,8 @@ class Main(Common):
     SAVE_BUSY_MSG_DATASETS = "Saving Dataset: "
     SAVE_BUSY_MSG_SAMPLES = "Saving Sample: "
 
-    UPGRADE_BUSY_MSG_WORKSPACE = "Upgrading Workspace to ver: "
+    UPGRADE_BUSY_MSG_WORKSPACE1 = "Upgrading Workspace version from  "
+    UPGRADE_BUSY_MSG_WORKSPACE2 = " to "
     UPGRADE_BUSY_MSG_DATASETS = "Upgrading Datasets"
     UPGRADE_BUSY_MSG_DATABASE = "Upgrading Database"
     UPGRADE_BUSY_MSG_DATABASE_CREATE = "Converting Workspace to Use Database"

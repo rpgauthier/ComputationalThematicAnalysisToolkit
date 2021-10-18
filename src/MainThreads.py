@@ -161,7 +161,8 @@ class LoadThread(Thread):
         wx.PostEvent(self._notify_window, CustomEvents.LoadResultEvent(result))
 
     def UpgradeWorkspace(self, result, ver):
-        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_WORKSPACE + Constants.CUR_VER))
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_WORKSPACE1 + str(ver) \
+                                                                     + GUIText.UPGRADE_BUSY_MSG_WORKSPACE2 + Constants.CUR_VER))
         self.UpgradeConfig(result['config'], ver)
         #upgrade datasets
         for dataset_key in result['datasets']:
@@ -238,10 +239,10 @@ class LoadThread(Thread):
     def UpgradeDatabase(self, result, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATABASE))
         if ver < version.parse('0.8.1'):
-            db_conn = Database.DatabaseConnection(self.current_workspace_path)
             #create database for token based operations
             if not os.path.isfile(self.current_workspace_path+"\\workspace_sqlite3.db"):
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATABASE_CREATE))
+                db_conn = Database.DatabaseConnection(self.current_workspace_path)
                 db_conn.Create()
                 for dataset_key in result['datasets']:
                     word_idx = result['datasets'][dataset_key].tokenization_choice
@@ -283,6 +284,10 @@ class LoadThread(Thread):
                     result['datasets'][dataset_key].total_tokens_remaining = included_counts['tokens']
                     result['datasets'][dataset_key].total_uniquetokens_remaining = included_counts['unique_tokens']
                     result['datasets'][dataset_key].last_changed_dt = datetime.now()
+        elif ver < version.parse('0.8.2'):
+            db_conn = Database.DatabaseConnection(self.current_workspace_path)
+            db_conn.Upgrade()
+
 
     def UpgradeSample(self, sample, dataset, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_SAMPLES))
