@@ -3,7 +3,6 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 import tempfile
-from threading import *
 import multiprocessing
 import psutil
 from datetime import datetime
@@ -448,7 +447,7 @@ class MainFrame(wx.Frame):
         
             self.last_load_dt = datetime.now()
 
-            self.DatasetsUpdated()
+            self.DatasetsUpdated(autosave=False)
             self.SamplesUpdated()
             self.DocumentsUpdated()
             #TODO investigate error that occurs when a code is selected when new is clicked
@@ -622,8 +621,8 @@ class MainFrame(wx.Frame):
             config_data['filtering_module'] = self.filtering_module.Save()
             config_data['sampling_module'] = self.sampling_module.Save()
             config_data['coding_module'] = self.coding_module.Save()
-            config_data['reviewing_module'] = self.sampling_module.Save()
-            config_data['reporting_module'] = self.coding_module.Save()
+            config_data['reviewing_module'] = self.reviewing_module.Save()
+            config_data['reporting_module'] = self.reporting_module.Save()
 
             self.save_thread = MainThreads.SaveThread(self, self.save_path, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, notes_text, self.last_load_dt)
 
@@ -638,6 +637,43 @@ class MainFrame(wx.Frame):
 
         if self.closing:
             self.OnCloseEnd(event)
+
+    def AutoSaveStart(self):
+        '''function for auto saving data after completing important operations'''
+        logger = logging.getLogger(__name__+".MainFrame.OnAutoSaveStart")
+        logger.info("Starting")
+        self.CreateProgressDialog(title=GUIText.SAVE_BUSY_LABEL,
+                                  warning=GUIText.SIZE_WARNING_MSG,
+                                  freeze=True)
+        self.PulseProgressDialog(GUIText.AUTO_SAVE_BUSY_MSG)
+
+        self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_FILE + str(Constants.AUTOSAVE_PATH))
+        logger.info("auto saving file: %s", Constants.AUTOSAVE_PATH)
+
+        self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_NOTES)
+        notes_text = self.notes_notebook.Save()
+
+        self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_CONFIG)
+        config_data = {}
+        config_data['collection_check'] = self.toggle_collection_menuitem.IsChecked()
+        config_data['filtering_check'] = self.toggle_filtering_menuitem.IsChecked()
+        config_data['coding_check'] = self.toggle_coding_menuitem.IsChecked()
+        config_data['reviewing_check'] = self.toggle_coding_menuitem.IsChecked()
+        config_data['reporting_check'] = self.toggle_coding_menuitem.IsChecked()
+        config_data['notes_check'] = self.toggle_notes_menuitem.IsChecked()
+        config_data['notes'] = self.notes_panel.Save()
+        config_data['datasets'] = list(self.datasets.keys())
+        config_data['options'] = self.options_dict
+        config_data['samples'] = list(self.samples.keys())
+        config_data['codes'] = True
+        config_data['collection_module'] = self.collection_module.Save()
+        config_data['filtering_module'] = self.filtering_module.Save()
+        config_data['sampling_module'] = self.sampling_module.Save()
+        config_data['coding_module'] = self.coding_module.Save()
+        config_data['reviewing_module'] = self.reviewing_module.Save()
+        config_data['reporting_module'] = self.reporting_module.Save()
+
+        self.save_thread = MainThreads.SaveThread(self, Constants.AUTOSAVE_PATH, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, notes_text, self.last_load_dt)
     
     def OnProgress(self, event):
         self.PulseProgressDialog(event.data)
@@ -764,13 +800,16 @@ class MainFrame(wx.Frame):
                 code.AddConnection(self.samples[new_key].parts_dict[part_key])
         logger.info("Finished")
 
-    def DatasetsUpdated(self):
+    def DatasetsUpdated(self, autosave=True):
         logger = logging.getLogger(__name__+".MainFrame.DatasetsUpdated")
         logger.info("Starting")
         self.collection_module.DatasetsUpdated()
         self.filtering_module.DatasetsUpdated()
         self.sampling_module.DatasetsUpdated()
         self.coding_module.DatasetsUpdated()
+
+        if autosave:
+            self.AutoSaveStart()
         logger.info("Finished")
 
     def DocumentsUpdated(self):
@@ -905,9 +944,9 @@ class OptionsDialog(wx.Dialog):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.multipledatasets_ctrl.GetValue()
         if main_frame.options_dict['multipledatasets_mode'] != new_mode:
+            main_frame.options_dict['multipledatasets_mode'] = new_mode
             main_frame.ModeChange()
-        main_frame.options_dict['multipledatasets_mode'] = new_mode
-    
+        
     def ChangeAdjustableMetadataMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.adjustable_metadata_ctrl.GetValue()

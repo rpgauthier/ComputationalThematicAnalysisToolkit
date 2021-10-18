@@ -1,6 +1,5 @@
 import logging
 import json
-import csv
 import calendar
 import chardet
 import pandas as pd
@@ -13,9 +12,7 @@ import tweepy
 import wx
 
 from Common.GUIText import Datasets as GUIText
-import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
-import Common.Objects.Datasets as Datasets
 import Common.Objects.Utilities.Datasets as DatasetsUtilities
 import Collection.RedditDataRetriever as rdr
 import Collection.TwitterDataRetriever as twr
@@ -631,14 +628,6 @@ class RetrieveCSVDatasetThread(Thread):
         filedata_df = pd.read_csv(filename, encoding=encoding_result['encoding'], keep_default_na=False, dtype='unicode')
 
         filedata = filedata_df.to_dict('records')
-
-        #filedata = []
-        #with open(filename, mode='r') as infile:
-        #    reader = csv.reader(infile)
-        #    header_row = next(reader)
-        #    for row in reader:
-        #        data_row = {header_row[i]: row[i] for i in range(len(header_row))}
-        #        filedata.append(data_row)
 
         logger.info("Finished")
         return filedata

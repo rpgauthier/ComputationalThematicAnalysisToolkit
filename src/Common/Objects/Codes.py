@@ -1,5 +1,5 @@
 import logging
-from datetime import date, datetime
+from datetime import datetime
 
 from Common.Objects.Generic import GenericObject
 import Common.Objects.Datasets as Datasets

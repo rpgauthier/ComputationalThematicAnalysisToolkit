@@ -17,7 +17,7 @@ LicenseFile={#SourcePath}\LICENSE
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-OutputBaseFilename=Toolkit_Setup_Windows10x64
+OutputBaseFilename=ComputationalThematicAnalysisToolkit_Windows10x64
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern

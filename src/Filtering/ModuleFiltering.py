@@ -15,10 +15,9 @@ import wx.lib.scrolledpanel
 import Common.Constants as Constants
 import Common.Objects.DataViews.Tokens as TokenDataViews
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
+import Common.Objects.Threads.Datasets as DatasetsThreads
 import Common.CustomEvents as CustomEvents
 from Common.GUIText import Filtering as GUIText
-import Common.Database as Database
-import Filtering.FilteringThreads as FilteringThreads
 
 class FilteringNotebook(FNB.FlatNotebook):
     def __init__(self, parent, size=wx.DefaultSize):
@@ -54,16 +53,15 @@ class FilteringNotebook(FNB.FlatNotebook):
                 del self.filters[filter_key]
         
         for key in main_frame.datasets:
-            main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
             if key in self.filters:
-                self.filters[key].ApplyFilterRulesStart()
                 self.filters[key].rules_panel.DisplayFilterRules(main_frame.datasets[key].filter_rules)
+                self.filters[key].UpdateImpact()
             else:
                 self.filters[key] = FilterPanel(self, main_frame.datasets[key].name, main_frame.datasets[key], size=self.GetSize())
-                self.filters[key].ApplyFilterRulesStart()
                 self.filters[key].rules_panel.DisplayFilterRules(main_frame.datasets[key].filter_rules)
+                self.filters[key].UpdateImpact()
+
+        
                 self.AddPage(self.filters[key], main_frame.datasets[key].name)
                 self.filters[key].actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filters[key].actions_menu, main_frame.datasets[key].name)
         self.Thaw()
@@ -517,7 +515,7 @@ class FilterPanel(wx.Panel):
                 new_choice = 'stem'
             elif choice == Constants.TOKEN_LEMMA_IDX:
                 new_choice = 'lemma'
-            self.thread = FilteringThreads.ChangeTokenizationChoiceThread(self, main_frame, self.dataset, new_choice)
+            self.thread = DatasetsThreads.ChangeTokenizationChoiceThread(self, main_frame, self.dataset, new_choice)
         logger.info("Finished")
 
     def OnTokenizationChoiceEnd(self, event):
@@ -527,8 +525,6 @@ class FilterPanel(wx.Panel):
         self.thread.join()
         self.thread = None
         
-        self.included_words_panel.UpdateWords()
-        self.removed_words_panel.UpdateWords()
         self.UpdateImpact()
 
         main_frame.CloseProgressDialog(thaw=False)
@@ -540,7 +536,7 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         self.Freeze()
-        self.thread = FilteringThreads.ApplyFilterRulesThread(self, main_frame, self.dataset)
+        self.thread = DatasetsThreads.ApplyFilterRulesThread(self, main_frame, self.dataset)
         logger.info("Finished")
 
     def ApplyLatestFilterRuleStart(self):
@@ -548,7 +544,7 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         self.Freeze()
-        self.thread = FilteringThreads.ApplyFilterLatestRuleThread(self, main_frame, self.dataset)
+        self.thread = DatasetsThreads.ApplyFilterLatestRuleThread(self, main_frame, self.dataset)
         logger.info("Finished")
 
     def OnApplyFilterRulesEnd(self, event):
@@ -558,8 +554,6 @@ class FilterPanel(wx.Panel):
         self.thread.join()
         self.thread = None
         
-        self.included_words_panel.UpdateWords()
-        self.removed_words_panel.UpdateWords()
         self.UpdateImpact()
 
         main_frame.CloseProgressDialog(thaw=False)
@@ -569,6 +563,8 @@ class FilterPanel(wx.Panel):
     def UpdateImpact(self):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].UpdateImpact")
         logger.info("Starting")
+        self.included_words_panel.UpdateWords()
+        self.removed_words_panel.UpdateWords()
         self.impact_panel.document_num_original.SetLabel(str(self.dataset.total_docs))
         self.impact_panel.token_num_original.SetLabel(str(self.dataset.total_tokens))
         self.impact_panel.uniquetoken_num_original.SetLabel(str(self.dataset.total_uniquetokens))
@@ -596,11 +592,7 @@ class FilterPanel(wx.Panel):
         if 'removed_search_pos' in saved_data:
             self.removed_words_panel.pos_searchctrl.SetValue(saved_data['removed_search_pos'])
 
-        self.included_words_panel.UpdateWords()
-        self.removed_words_panel.UpdateWords()
-
         self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-
         self.UpdateImpact()
 
         logger.info("Finished")

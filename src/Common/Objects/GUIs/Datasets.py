@@ -9,7 +9,6 @@ import wx.grid
 from Common.GUIText import Datasets as GUIText
 import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
-import Common.Notes as Notes
 import Common.Objects.Datasets as Datasets
 import Common.Objects.Threads.Datasets as DatasetsThreads
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
@@ -191,12 +190,8 @@ class DatasetPanel(wx.Panel):
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
-        if header:
-            details_sizer1 = wx.BoxSizer(wx.HORIZONTAL)
-            details_sizer2 = wx.BoxSizer(wx.HORIZONTAL)
-        else:
-            details_sizer1 = wx.BoxSizer(wx.VERTICAL)
-            details_sizer2 = wx.BoxSizer(wx.VERTICAL)
+        details_sizer1 = wx.BoxSizer(wx.HORIZONTAL)
+        details_sizer2 = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(details_sizer1, 0, wx.ALL, 5)
         self.sizer.Add(details_sizer2, 0, wx.ALL, 5)
 
@@ -241,8 +236,7 @@ class DatasetPanel(wx.Panel):
         details_sizer2.InsertSpacer(1, 10)
 
         if dataset.dataset_source == 'Reddit':
-            subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT + ": "
-                                            + dataset.retrieval_details['subreddit'])
+            subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT+dataset.retrieval_details['subreddit'])
             if main_frame.options_dict['multipledatasets_mode']:
                 details_sizer2.Insert(0, subreddit_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
                 details_sizer2.InsertSpacer(1, 10)

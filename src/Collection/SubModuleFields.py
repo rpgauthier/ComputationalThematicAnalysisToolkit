@@ -6,7 +6,6 @@ import wx
 import wx.lib.scrolledpanel
 
 from Common.GUIText import Collection as GUIText
-import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
 import Common.Objects.Datasets as Datasets
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
@@ -84,6 +83,7 @@ class FieldsPanel(wx.Panel):
         logger = logging.getLogger(__name__+".FieldsNotebook.OnAddFieldsStart")
         logger.info("Starting")
         tokenize_fields = []
+        performed_flag = False
 
         def FieldAdder(field):
             add_flag = True
@@ -92,18 +92,30 @@ class FieldsPanel(wx.Panel):
                               GUIText.WARNING, wx.OK | wx.ICON_WARNING)
             elif add_flag:
                 new_field = copy.copy(field)
+                new_field.last_changed_dt = datetime.now()
                 self.fields[new_field.key] = new_field
                 nonlocal tokenize_fields
-                tokenize_fields.append(new_field)
+                if not self.metadata_fields:
+                    tokenize_fields.append(new_field)
+                else:
+                    nonlocal performed_flag
+                    performed_flag = True
+
 
         main_frame = wx.GetApp().GetTopWindow()
         if main_frame.multiprocessing_inprogress_flag:
             wx.MessageBox(GUIText.MULTIPROCESSING_WARNING_MSG,
                           GUIText.WARNING, wx.OK | wx.ICON_WARNING)
             return
-        main_frame.CreateProgressDialog(GUIText.ADDING_FIELDS_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=True)
+        if not self.metadata_fields:
+            main_frame.CreateProgressDialog(GUIText.ADDING_INCLUDED_FIELDS_BUSY_LABEL,
+                                            warning=GUIText.SIZE_WARNING_MSG,
+                                            freeze=True)
+        else:
+            main_frame.CreateProgressDialog(GUIText.ADDING_METADATA_FIELDS_BUSY_LABEL,
+                                            warning=GUIText.SIZE_WARNING_MSG,
+                                            freeze=True)
+
         main_frame.PulseProgressDialog(GUIText.ADDING_FIELDS_BUSY_PREPARING_MSG)
         for item in self.available_fields_ctrl.GetSelections():
             node = self.available_fields_model.ItemToObject(item)
@@ -113,6 +125,8 @@ class FieldsPanel(wx.Panel):
         if len(tokenize_fields) > 0:
             main_frame.multiprocessing_inprogress_flag = True
             self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, self.dataset)
+        elif performed_flag:
+            self.OnTokenizerEnd(None)
         else:
             main_frame.CloseProgressDialog(thaw=True)
             self.GetTopLevelParent().Enable()
@@ -123,6 +137,7 @@ class FieldsPanel(wx.Panel):
         logger.info("Starting")
         main_frame = self.GetGrandParent().GetTopLevelParent()
         performed_flag = False
+        tokenize_flag = False
         db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
 
         def FieldRemover(field):
@@ -131,30 +146,34 @@ class FieldsPanel(wx.Panel):
             self.included_fields_model.ItemDeleted(parent_item, item)
             if not self.metadata_fields:
                 db_conn.DeleteField(self.dataset.key, field.key)
+                nonlocal tokenize_flag
+                tokenize_flag = True
+            else:
+                nonlocal performed_flag
+                performed_flag = True
             field.DestroyObject()
-            nonlocal performed_flag
-            performed_flag = True
 
-        main_frame.CreateProgressDialog(GUIText.REMOVING_FIELDS_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=True)
-        try:
-            main_frame.PulseProgressDialog(GUIText.REMOVING_FIELDS_BUSY_PREPARING_MSG)
-            for item in self.included_fields_ctrl.GetSelections():
-                node = self.included_fields_model.ItemToObject(item)
-                main_frame.PulseProgressDialog(GUIText.REMOVING_FIELDS_BUSY_MSG+str(node.key))
-                if isinstance(node, Datasets.Field):
-                    FieldRemover(node)
-            if performed_flag:
-                main_frame = self.GetGrandParent().GetTopLevelParent()
-                #recalculate tfidf scores for remaining stored tokens
-                db_conn.UpdateStringTokensTFIDF(self.dataset.key)
-                counts = db_conn.GetStringTokensCounts(self.dataset.key)
-                self.dataset.total_docs = counts['documents']
-                self.dataset.total_tokens = counts['tokens']
-                self.dataset.total_uniquetokens = counts['unique_tokens']
-                main_frame.DatasetsUpdated()
-        finally:
+        if not self.metadata_fields:    
+            main_frame.CreateProgressDialog(GUIText.REMOVING_INCLUDED_FIELDS_BUSY_LABEL,
+                                            warning=GUIText.SIZE_WARNING_MSG,
+                                            freeze=True)
+        else:
+            main_frame.CreateProgressDialog(GUIText.REMOVING_METADATA_FIELDS_BUSY_LABEL,
+                                            warning=GUIText.SIZE_WARNING_MSG,
+                                            freeze=True)
+        
+        main_frame.PulseProgressDialog(GUIText.REMOVING_FIELDS_BUSY_PREPARING_MSG)
+        for item in self.included_fields_ctrl.GetSelections():
+            node = self.included_fields_model.ItemToObject(item)
+            main_frame.PulseProgressDialog(GUIText.REMOVING_FIELDS_BUSY_MSG+str(node.key))
+            if isinstance(node, Datasets.Field):
+                FieldRemover(node)
+        if tokenize_flag:
+            main_frame.multiprocessing_inprogress_flag = True
+            self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, self.dataset)
+        elif performed_flag:
+            self.OnTokenizerEnd(None)
+        else:
             main_frame.CloseProgressDialog(thaw=True)
             self.GetTopLevelParent().Enable()
             self.GetTopLevelParent().SetFocus()
@@ -163,8 +182,9 @@ class FieldsPanel(wx.Panel):
     def OnTokenizerEnd(self, event):
         logger = logging.getLogger(__name__+".FieldsNotebook.OnAddFieldsEnd")
         logger.info("Starting")
-        self.tokenization_thread.join()
-        self.tokenization_thread = None
+        if self.tokenization_thread != None:
+            self.tokenization_thread.join()
+            self.tokenization_thread = None
         self.included_fields_model.Cleared()
         self.included_fields_ctrl.Expander(None)
         main_frame = wx.GetApp().GetTopWindow()

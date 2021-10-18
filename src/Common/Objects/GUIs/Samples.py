@@ -1,9 +1,6 @@
 import logging
 import copy
 from datetime import datetime
-from sys import setprofile
-
-import pandas as pd
 
 import wx
 import wx.adv
@@ -11,7 +8,7 @@ import wx.dataview as dv
 #import wx.lib.agw.flatnotebook as FNB
 import External.wxPython.flatnotebook_fix as FNB
 
-from Common.GUIText import Filtering, Samples as GUIText
+from Common.GUIText import Samples as GUIText
 from Common.GUIText import Filtering as FilteringGUIText
 from Common.CustomPlots import ChordPlotPanel#, TMPlotPanel, TreemapPlotPlanel, NetworkPlotPlanel
 import Common.Constants as Constants
@@ -441,6 +438,7 @@ class SampleRulesDialog(wx.Dialog):
         wx.Dialog.__init__(self, parent, title=FilteringGUIText.FILTERS_RULES+": "+repr(sample), style=style, size=wx.Size(600,400))
         self.sample = sample
         self.dataset = dataset
+        self.apply_rules_thread = None
         
         package_list = list(sample.tokenization_package_versions)
         tokenizer_package = sample.tokenization_package_versions[0]
@@ -454,7 +452,8 @@ class SampleRulesDialog(wx.Dialog):
         restore_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.RESTORE_RULES,
                                             bitmap=wx.Bitmap(1, 1),
                                             shortHelp=GUIText.RESTORE_RULES_TOOLTIP)
-        self.toolbar.Bind(wx.EVT_MENU, self.OnRestore, restore_tool)
+        self.toolbar.Bind(wx.EVT_MENU, self.OnRestoreStart, restore_tool)
+        CustomEvents.APPLY_FILTER_RULES_EVT_RESULT(self, self.OnRestoreFinish)
         self.toolbar.Realize()
         sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
 
@@ -490,15 +489,15 @@ class SampleRulesDialog(wx.Dialog):
         for field, word, pos, action in filter_rules:
             if isinstance(action, tuple):
                 if action[0] == Constants.FILTER_TFIDF_REMOVE or action[0] == Constants.FILTER_TFIDF_INCLUDE:
-                    action = str(action[0])+str(action[1])+str(action[2]*100)+"%"
+                    action = str(action[0])+str(action[1])+str(action[2])+"%"
                 else:
                     action = str(action[0]) + " ("+str(column_options[action[1]])+str(action[2])+str(action[3])+")"
                 
             self.rules_list.AppendItem([i, field, word, pos, str(action)])
             i += 1
     
-    def OnRestore(self, event):
-        logger = logging.getLogger(__name__+".SampleIncludedFieldsDialog["+str(self.sample.key)+"].OnRestore")
+    def OnRestoreStart(self, event):
+        logger = logging.getLogger(__name__+".SampleRulesDialog["+str(self.sample.key)+"].OnRestore")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
 
@@ -516,8 +515,20 @@ class SampleRulesDialog(wx.Dialog):
         self.dataset.tokenization_choice = self.sample.tokenization_choice
         self.dataset.filter_rules.clear()
         self.dataset.filter_rules.extend(self.sample.applied_filter_rules)
-        main_frame.DatasetsUpdated()
 
+        self.apply_rules_thread = DatasetsThreads.ApplyFilterRulesThread(self, main_frame, self.dataset)
+
+
+        logger.info("Finished")
+
+    def OnRestoreFinish(self, event):
+        logger = logging.getLogger(__name__+".SampleRulesDialog["+str(self.sample.key)+"].OnRestoreFinish")
+        logger.info("Starting")
+        self.apply_rules_thread.join()
+        self.apply_rules_thread = None
+        main_frame = wx.GetApp().GetTopWindow()
+        main_frame.multiprocessing_inprogress_flag = False
+        main_frame.DatasetsUpdated()
         main_frame.CloseProgressDialog(message=GUIText.RESTORE_COMPLETED_MSG,
                                        thaw=True)
         logger.info("Finished")
@@ -581,6 +592,7 @@ class SampleIncludedFieldsDialog(wx.Dialog):
         #2) add to the dataset any fields from sample's field_list that are not included fields dataset
         for field_key in self.fields:
             self.dataset.included_fields[field_key] = copy.copy(self.fields[field_key])
+            self.dataset.included_fields[field_key].last_changed_dt = datetime.now()
             
         main_frame.multiprocessing_inprogress_flag = True
         self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, self.dataset)

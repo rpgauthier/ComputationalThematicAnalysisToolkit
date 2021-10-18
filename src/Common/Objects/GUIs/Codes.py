@@ -12,7 +12,6 @@ from Common.GUIText import Coding as GUIText
 import Common.Constants as Constants
 import Common.Notes as Notes
 import Common.Objects.DataViews.Codes as CodesDataViews
-import Common.Objects.Datasets as Datasets
 
 class CodeConnectionsDialog(wx.Dialog):
     def __init__(self, parent, code, size=wx.DefaultSize):

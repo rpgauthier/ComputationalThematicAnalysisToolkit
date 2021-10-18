@@ -122,6 +122,7 @@ class Main(Common):
 
     SAVE_BUSY_LABEL = "Saving Workspace"
     SAVE_BUSY_MSG = "Please Wait while data is saved.\n"
+    AUTO_SAVE_BUSY_MSG = "Please Wait while data is autosaved.\n"
     SAVE_BUSY_MSG_FILE = "Saving File: "
     SAVE_BUSY_MSG_NOTES = "Saving Notes to text."
     SAVE_BUSY_MSG_CONFIG = "Saving Configurations."
@@ -295,7 +296,7 @@ class Datasets(Common):
     UTC = "UTC"
 
     REDDIT_LABEL = "Reddit"
-    REDDIT_SUBREDDIT = "Subreddit"
+    REDDIT_SUBREDDIT = "www.reddit.com/r/"
     REDDIT_SUBREDDIT_TOOLTIP = "Exact case-sensitive spelling of the subreddit for retrieval"
     REDDIT_SUBREDDIT_MISSING_ERROR = "You must enter a Subreddit."
     REDDIT_SUBMISSIONS = "Submissions"
@@ -549,11 +550,13 @@ class Collection(Main, Datasets):
     DELETING_BUSY_REMOVING_MSG = "Deleting Dataset: "
     DELETING_BUSY_UPDATING_MSG = "Updating metadata for Grouped Dataset: "
 
-    ADDING_FIELDS_BUSY_LABEL = "Adding Fields"
+    ADDING_INCLUDED_FIELDS_BUSY_LABEL = "Adding Included Fields"
+    ADDING_METADATA_FIELDS_BUSY_LABEL = "Adding Metadata Fields"
     ADDING_FIELDS_BUSY_PREPARING_MSG = "Preparing to Add Selected Fields"
     ADDING_FIELDS_BUSY_MSG = "Adding Selection: "
 
-    REMOVING_FIELDS_BUSY_LABEL = "Removing Fields"
+    REMOVING_INCLUDED_FIELDS_BUSY_LABEL = "Removing Included Fields"
+    REMOVING_METADATA_FIELDS_BUSY_LABEL = "Removing Metadata Fields"
     REMOVING_FIELDS_BUSY_PREPARING_MSG = "Preparing to Remove Selected Fields"
     REMOVING_FIELDS_BUSY_MSG = "Removing Selection: "
 

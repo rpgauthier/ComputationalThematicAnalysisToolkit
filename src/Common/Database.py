@@ -514,7 +514,230 @@ class DatabaseConnection():
             logger.exception("sql failed with error")
         logger.info("Finished")
 
-    #TODO check if additional indexes are needed to further optimize rule application
+    def _RuleGroupSqlCreator(self, rule_action, rule_group, dataset_id, token_type):
+
+        #filter sql
+        word_sql = """CASE ?
+                      WHEN 'stem' THEN stem
+                      WHEN 'lemma' THEN lemma
+                      ELSE text
+                      END = ?
+                      """
+        pos_sql = """pos = ?
+                     """
+        field_sql = """field_id = (SELECT id
+                                   FROM fields
+                                   WHERE fields.dataset_id = dataset_id
+                                   AND field_key = ?)
+                       """
+        stopword_sql = """spacy_stopword = 1
+                          """
+
+        sql_type_filters_list = []
+        sql_type_filters_parameters = []
+        for field, word, pos, action in rule_group:
+            sql_filter_list = []
+            if word != Constants.FILTER_RULE_ANY:
+                sql_filter_list.append(word_sql)
+                sql_type_filters_parameters.append(token_type)
+                sql_type_filters_parameters.append(word)
+            if pos != Constants.FILTER_RULE_ANY:
+                sql_filter_list.append(pos_sql)
+                sql_type_filters_parameters.append(pos)
+            if field != Constants.FILTER_RULE_ANY:
+                sql_filter_list.append(field_sql)
+                sql_type_filters_parameters.append(str(field))
+            if action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
+                sql_filter_list.append(stopword_sql)
+            sql_filter = " AND ".join(sql_filter_list)
+            sql_type_filters_list.append(sql_filter)
+        sql_filters = " OR ".join(sql_type_filters_list)
+
+
+        update_sql = """UPDATE string_tokens
+                        SET included = ?
+                        WHERE dataset_id = ?
+                        """
+            
+
+        query_totalwordcount_sql = """SELECT COUNT(*),
+                                    FROM string_tokens
+                                    WHERE dataset_id = ?
+                                    """
+        query_totaldoccount_sql = """SELECT COUNT(DISTINCT document_id)
+                                    FROM string_tokens
+                                    WHERE dataset_id = ?
+                                    """
+
+        #special sql code user to figure out tfidf positions
+        update_tfidflowerper_sql = """UPDATE string_tokens
+                                      SET included = ?
+                                      FROM (SELECT id, 
+                                            PERCENT_RANK() OVER(ORDER BY CASE ?
+                                                                         WHEN 'stem' THEN stem_tfidf
+                                                                         WHEN 'lemma' THEN lemma_tfidf
+                                                                         ELSE text_tfidf
+                                                                         END ASC
+                                                               ) AS per_rank
+                                            FROM string_tokens
+                                            WHERE dataset_id = ?
+                                           ) AS ranktable
+                                      WHERE ranktable.id = string_tokens.id
+                                      AND per_rank < ?
+                                      """
+        
+        update_tfidfupperper_sql = """UPDATE string_tokens
+                                      SET included = ?
+                                      FROM (SELECT id, 
+                                            PERCENT_RANK() OVER(ORDER BY CASE ?
+                                                                         WHEN 'stem' THEN stem_tfidf
+                                                                         WHEN 'lemma' THEN lemma_tfidf
+                                                                         ELSE text_tfidf
+                                                                         END DESC
+                                                               ) AS per_rank
+                                            FROM string_tokens
+                                            WHERE dataset_id = ?
+                                           ) AS ranktable
+                                        WHERE ranktable.id = string_tokens.id
+                                        AND per_rank < ?
+                                        """
+
+        #special code needed for number filters
+        update_count_sql1 = """UPDATE string_tokens
+                            SET included = ?
+                            FROM (
+                            """
+        subquery_count_sql2 = """GROUP BY CASE ?
+                                        WHEN 'stem' THEN stem
+                                        WHEN 'lemma' THEN lemma
+                                        ELSE text
+                                        END,
+                                        pos
+                                """
+        subquery_wordcount_sql1 = """SELECT CASE ?
+                                            WHEN 'stem' THEN stem
+                                            WHEN 'lemma' THEN lemma
+                                            ELSE text
+                                            END word,
+                                            pos,
+                                            COUNT(*) AS count
+                                    FROM string_tokens
+                                    WHERE dataset_id = ?
+                                    """
+        subquery_doccount_sql1 = """SELECT CASE ?
+                                        WHEN 'stem' THEN stem
+                                        WHEN 'lemma' THEN lemma
+                                        ELSE text
+                                        END word,
+                                        pos,
+                                        COUNT(DISTINCT document_id) AS count
+                                    FROM string_tokens
+                                    WHERE dataset_id = ?
+                                    """
+        update_count_sql2 = """) AS counttable
+                            WHERE dataset_id = ?
+                            AND counttable.word = CASE ?
+                                                    WHEN 'stem' THEN stem
+                                                    WHEN 'lemma' THEN lemma
+                                                    ELSE text
+                                                    END
+                            AND counttable.pos = string_tokens.pos
+                            AND counttable.count"""
+
+        #number filter symbol
+        gt_sql = """ > ?
+                    """
+        gteq_sql = """ >= ?
+                    """
+        eq_sql = """ = ?
+                    """
+        lteq_sql = """ <= ?
+                    """
+        lt_sql = """ < ?
+                    """
+
+        #Action sql
+        sql_action = ""
+        sql_action_parameters = []
+        if rule_action == Constants.FILTER_RULE_REMOVE:
+            sql_action = update_sql
+            sql_action_parameters.append(0)
+            sql_action_parameters.append(dataset_id)
+        elif rule_action == Constants.FILTER_RULE_INCLUDE:
+            sql_action = update_sql
+            sql_action_parameters.append(1)
+            sql_action_parameters.append(dataset_id)
+        elif isinstance(rule_action, tuple):
+            if rule_action[0] == Constants.FILTER_TFIDF_REMOVE:
+                sql_action_parameters.append(0)
+                sql_action_parameters.append(token_type)
+                sql_action_parameters.append(dataset_id)
+                sql_action_parameters.append(rule_action[2]/100)
+                if rule_action[1] == Constants.FILTER_TFIDF_LOWER:
+                    sql_action = update_tfidflowerper_sql
+                elif rule_action[1] == Constants.FILTER_TFIDF_UPPER:
+                    sql_action = update_tfidfupperper_sql
+            elif rule_action[0] == Constants.FILTER_TFIDF_INCLUDE:
+                sql_action_parameters.append(1)
+                sql_action_parameters.append(token_type)
+                sql_action_parameters.append(dataset_id)
+                sql_action_parameters.append(rule_action[2]/100)
+                if rule_action[1] == Constants.FILTER_TFIDF_LOWER:
+                    sql_action = update_tfidflowerper_sql
+                elif rule_action[1] == Constants.FILTER_TFIDF_UPPER:
+                    sql_action = update_tfidfupperper_sql
+            elif rule_action[0] == Constants.FILTER_RULE_REMOVE or rule_action[0] == Constants.FILTER_RULE_INCLUDE:
+                if rule_action[0] == Constants.FILTER_RULE_REMOVE:
+                    sql_action_parameters.append(0)
+                else:
+                    sql_action_parameters.append(1)
+                sql_action_parameters.append(token_type)
+                sql_action_parameters.append(dataset_id)
+                sql_parameters = sql_action_parameters + sql_type_filters_parameters
+                sql_parameters.append(token_type)
+                sql_parameters.append(dataset_id)
+                sql_parameters.append(token_type)
+
+                if rule_action[1] == Constants.TOKEN_NUM_WORDS:
+                    sql_action = update_count_sql1+subquery_wordcount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
+                    sql_parameters.append(rule_action[3])
+                elif rule_action[1] == Constants.TOKEN_PER_WORDS:
+                    sql_action = update_count_sql1+subquery_wordcount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
+                    #TODO rework to not need seperate sql call
+                    c = self.__conn.cursor()
+                    c.execute(query_totalwordcount_sql, (dataset_id,))
+                    total_words = c.fetchone()[0]
+                    sql_parameters.append(rule_action[3]/100*total_words)
+                elif rule_action[1] == Constants.TOKEN_NUM_DOCS:
+                    sql_action = update_count_sql1+subquery_doccount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
+                    sql_parameters.append(rule_action[3])
+                elif rule_action[1] == Constants.TOKEN_PER_DOCS:
+                    sql_action = update_count_sql1+subquery_doccount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
+                    #TODO rework to not need seperate sql call
+                    c = self.__conn.cursor()
+                    c.execute(query_totaldoccount_sql, (dataset_id,))
+                    total_docs = c.fetchone()[0]
+                    sql_parameters.append(rule_action[3]/100*total_docs)
+
+                if rule_action[2] == ">":
+                    sql_action = sql_action + gt_sql
+                elif rule_action[2] == ">=":
+                    sql_action = sql_action + gteq_sql
+                elif rule_action[2] == "=":
+                    sql_action = sql_action + eq_sql
+                elif rule_action[2] == "<=":
+                    sql_action = sql_action + lteq_sql
+                elif rule_action[2] == "<":
+                    sql_action = sql_action + lt_sql
+
+        if sql_filters != "":
+            sql = sql_action+" AND ("+sql_filters+")"
+            sql_parameters = sql_action_parameters + sql_type_filters_parameters
+        else:
+            sql = sql_action
+            sql_parameters = sql_action_parameters
+        return sql, sql_parameters
+
     def ApplyDatasetRules(self, dataset_key, rules):
         logger = logging.getLogger(__name__+".ApplyDatasetRules")
         logger.info("Starting")
@@ -529,233 +752,53 @@ class DatabaseConnection():
             dataset_id = result[0]
             token_type = result[1]
             
-            query_totalwordcount_sql = """SELECT COUNT(*),
-                                          FROM string_tokens
-                                          WHERE dataset_id = ?
-                                          """
-            query_totaldoccount_sql = """SELECT COUNT(DISTINCT document_id)
-                                         FROM string_tokens
-                                         WHERE dataset_id = ?
-                                         """
-
             update_sql = """UPDATE string_tokens
                             SET included = ?
                             WHERE dataset_id = ?
                             """
-
-            #special code needed to figure out tfidf positions
-            update_tfidflower_sql = """UPDATE string_tokens
-                                       SET included = ?
-                                       FROM (SELECT id, 
-                                                    PERCENT_RANK() OVER(ORDER BY CASE ?
-                                                                                 WHEN 'stem' THEN stem_tfidf
-                                                                                 WHEN 'lemma' THEN lemma_tfidf
-                                                                                 ELSE text_tfidf
-                                                                                 END ASC
-                                                    ) AS per_rank
-                                             FROM string_tokens
-                                             WHERE dataset_id = ?
-                                            ) AS ranktable
-                                       WHERE ranktable.id = string_tokens.id
-                                       AND per_rank < ?
-                                       """
-            
-            update_tfidfupper_sql = """UPDATE string_tokens
-                                       SET included = ?
-                                       FROM (SELECT id, 
-                                                    PERCENT_RANK() OVER(ORDER BY CASE ?
-                                                                                 WHEN 'stem' THEN stem_tfidf
-                                                                                 WHEN 'lemma' THEN lemma_tfidf
-                                                                                 ELSE text_tfidf
-                                                                                 END DESC
-                                                    ) AS per_rank
-                                             FROM string_tokens
-                                             WHERE dataset_id = ?
-                                            ) AS ranktable
-                                       WHERE ranktable.id = string_tokens.id
-                                       AND per_rank < ?
-                                       """
-
-            #special code needed for number filters
-            update_count_sql1 = """UPDATE string_tokens
-                                   SET included = ?
-                                   FROM (
-                                   """
-            subquery_count_sql2 = """GROUP BY CASE ?
-                                              WHEN 'stem' THEN stem
-                                              WHEN 'lemma' THEN lemma
-                                              ELSE text
-                                              END,
-                                              pos
-                                     """
-            subquery_wordcount_sql1 = """SELECT CASE ?
-                                                WHEN 'stem' THEN stem
-                                                WHEN 'lemma' THEN lemma
-                                                ELSE text
-                                                END word,
-                                                pos,
-                                                COUNT(*) AS count
-                                         FROM string_tokens
-                                         WHERE dataset_id = ?
-                                         """
-            subquery_doccount_sql1 = """SELECT CASE ?
-                                               WHEN 'stem' THEN stem
-                                               WHEN 'lemma' THEN lemma
-                                               ELSE text
-                                               END word,
-                                               pos,
-                                               COUNT(DISTINCT document_id) AS count
-                                        FROM string_tokens
-                                        WHERE dataset_id = ?
-                                        """
-            update_count_sql2 = """) AS counttable
-                                   WHERE dataset_id = ?
-                                   AND counttable.word = CASE ?
-                                                         WHEN 'stem' THEN stem
-                                                         WHEN 'lemma' THEN lemma
-                                                         ELSE text
-                                                         END
-                                   AND counttable.pos = string_tokens.pos
-                                   AND counttable.count"""
-
-            #number filter symbol
-            gt_sql = """ > ?
-                        """
-            gteq_sql = """ >= ?
-                        """
-            eq_sql = """ = ?
-                        """
-            lteq_sql = """ <= ?
-                        """
-            lt_sql = """ < ?
-                        """
-            
-            #stopword filter
-            stopwords_sql = """AND spacy_stopword = 1
-                               """
-
-            #string filters
-            word_sql = """AND CASE ?
-                            WHEN 'stem' THEN stem
-                            WHEN 'lemma' THEN lemma
-                            ELSE text
-                            END = ?
-                            """
-            pos_sql = """AND pos = ?
-                         """
-            field_sql = """AND field_id = (SELECT id
-                                           FROM fields
-                                           WHERE fields.dataset_id = dataset_id
-                                           AND field_key = ?)
-                           """
-
             #reset included to default for all strings
             c.execute(update_sql, (1, dataset_id,))
             self.__conn.commit()
+            logger.info("Completed Reseting all tokens to included.")
 
             #apply rules in order
-            for field, word, pos, action in rules:
-                sql_filters = ""
-                sql_filters_parameters = []
-                if word != Constants.FILTER_RULE_ANY:
-                    sql_filters = sql_filters + word_sql
-                    sql_filters_parameters.append(token_type)
-                    sql_filters_parameters.append(word)
-                if pos != Constants.FILTER_RULE_ANY:
-                    sql_filters = sql_filters + pos_sql
-                    sql_filters_parameters.append(pos)
-                if field != Constants.FILTER_RULE_ANY:
-                    sql_filters = sql_filters + field_sql
-                    sql_filters_parameters.append(str(field))
+            ##TODO explore if further concatination is possible (i.e. TFIDF removal with pos removal)
+            cur_rule_action = None
+            cur_rule_group = []
+            #field, word, pos, action
+            for rule in rules:
+                if cur_rule_action == None:
+                    cur_rule_action = rule[3]
+                next_rule_action = rule[3]
+                if next_rule_action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
+                    next_rule_action = Constants.FILTER_RULE_REMOVE
 
-                sql = ""
-                sql_parameters = []
-                if action == Constants.FILTER_RULE_REMOVE:
-                    sql = update_sql
-                    sql_parameters.append(0)
-                    sql_parameters.append(dataset_id)
-                elif action == Constants.FILTER_RULE_INCLUDE:
-                    sql = update_sql
-                    sql_parameters.append(1)
-                    sql_parameters.append(dataset_id)
-                elif action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
-                    sql = update_sql + stopwords_sql
-                    sql_parameters.append(0)
-                    sql_parameters.append(dataset_id)
-                elif isinstance(action, tuple):
-                    if action[0] == Constants.FILTER_TFIDF_REMOVE:
-                        sql_parameters.append(0)
-                        sql_parameters.append(token_type)
-                        sql_parameters.append(dataset_id)
-                        sql_parameters.append(action[2]/100)
-                        if action[1] == Constants.FILTER_TFIDF_LOWER:
-                            sql = update_tfidflower_sql
-                        elif action[1] == Constants.FILTER_TFIDF_UPPER:
-                            sql = update_tfidfupper_sql
-                    elif action[0] == Constants.FILTER_TFIDF_INCLUDE:
-                        sql_parameters.append(1)
-                        sql_parameters.append(token_type)
-                        sql_parameters.append(dataset_id)
-                        sql_parameters.append(action[2]/100)
-                        if action[1] == Constants.FILTER_TFIDF_LOWER:
-                            sql = update_tfidflower_sql
-                        elif action[1] == Constants.FILTER_TFIDF_UPPER:
-                            sql = update_tfidfupper_sql
-                    elif action[0] == Constants.FILTER_RULE_REMOVE or action[0] == Constants.FILTER_RULE_INCLUDE:
-                        if action[0] == Constants.FILTER_RULE_REMOVE:
-                            sql_parameters.append(0)
-                        else:
-                            sql_parameters.append(1)
-                        sql_parameters.append(token_type)
-                        sql_parameters.append(dataset_id)
-                        sql_parameters = sql_parameters + sql_filters_parameters
-                        sql_parameters.append(token_type)
-                        sql_parameters.append(dataset_id)
-                        sql_parameters.append(token_type)
+                if next_rule_action == cur_rule_action:
+                    cur_rule_group.append(rule)
+                else:
+                    sql, sql_parameters = self._RuleGroupSqlCreator(cur_rule_action, cur_rule_group, dataset_id, token_type)
+                    #execute the rule group
+                    c.execute(sql, sql_parameters)
+                    #commit after every rule to make sure operations are applied in correct order
+                    #TODO Assess if this is needed
+                    self.__conn.commit()
+                    logger.info("Completed Applying Rule Group %s", str(cur_rule_group))
 
-                        if action[1] == Constants.TOKEN_NUM_WORDS:
-                            sql = update_count_sql1+subquery_wordcount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
-                            sql_parameters.append(action[3])
-                        elif action[1] == Constants.TOKEN_PER_WORDS:
-                            sql = update_count_sql1+subquery_wordcount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
-                            c.execute(query_totalwordcount_sql, (dataset_id,))
-                            total_words = c.fetchone()[0]
-                            sql_parameters.append(action[3]/100*total_words)
-                        elif action[1] == Constants.TOKEN_NUM_DOCS:
-                            sql = update_count_sql1+subquery_doccount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
-                            sql_parameters.append(action[3])
-                        elif action[1] == Constants.TOKEN_PER_DOCS:
-                            sql = update_count_sql1+subquery_doccount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
-                            c.execute(query_totaldoccount_sql, (dataset_id,))
-                            total_docs = c.fetchone()[0]
-                            sql_parameters.append(action[3]/100*total_docs)
-
-                        if action[2] == ">":
-                            sql = sql + gt_sql
-                        elif action[2] == ">=":
-                            sql = sql + gteq_sql
-                        elif action[2] == "=":
-                            sql = sql + eq_sql
-                        elif action[2] == "<=":
-                            sql = sql + lteq_sql
-                        elif action[2] == "<":
-                            sql = sql + lt_sql
-
-                #execute the rule
-                sql = sql+sql_filters
-                sql_parameters = sql_parameters + sql_filters_parameters
-                c.execute(sql, sql_parameters)
-
-                #commit after every rule to make sure operations are applied in correct order
-                self.__conn.commit()
+                    cur_rule_action = next_rule_action
+                    cur_rule_group = [rule]
             
-                logger.info("Completed Applying Rule (%s, %s, %s, %s)", str(field), str(word), str(pos), str(action))
+            if cur_rule_action != None:
+                sql, sql_parameters = self._RuleGroupSqlCreator(cur_rule_action, cur_rule_group, dataset_id, token_type)
+                #execute the rule group
+                c.execute(sql, sql_parameters)
+                self.__conn.commit()
+                logger.info("Completed Applying Rule Group %s", str(cur_rule_group))
+
             c.close()
         except sqlite3.Error as e:
             logger.exception("sql failed with error")
         logger.info("Finished")
     
-    #TODO check if additional indexes are needed to optimize rule application performance
     def ApplyDatasetRule(self, dataset_key, rule):
         logger = logging.getLogger(__name__+".ApplyDatasetRule")
         logger.info("Starting Applying Rule %s", str(rule))
@@ -769,222 +812,13 @@ class DatabaseConnection():
             result = c.fetchone()
             dataset_id = result[0]
             token_type = result[1]
-            
-            query_totalwordcount_sql = """SELECT COUNT(*)
-                                          FROM string_tokens
-                                          WHERE dataset_id = ?
-                                          """
-            
-            query_totaldoccount_sql = """SELECT COUNT(DISTINCT document_id)
-                                         FROM string_tokens
-                                         WHERE dataset_id = ?
-                                         """
 
-            update_sql = """UPDATE string_tokens
-                            SET included = ?
-                            WHERE dataset_id = ?
-                            """
-
-            #special code needed to figure out tfidf positions
-            update_tfidflower_sql = """UPDATE string_tokens
-                                       SET included = ?
-                                       FROM (SELECT id, 
-                                             PERCENT_RANK() OVER(ORDER BY CASE ?
-                                                                          WHEN 'stem' THEN stem_tfidf
-                                                                          WHEN 'lemma' THEN lemma_tfidf
-                                                                          ELSE text_tfidf
-                                                                          END ASC
-                                                                ) AS per_rank
-                                             FROM string_tokens
-                                             WHERE dataset_id = ?
-                                            ) AS ranktable
-                                       WHERE ranktable.id = string_tokens.id
-                                       AND per_rank < ?
-                                       """
-            
-            update_tfidfupper_sql = """UPDATE string_tokens
-                                       SET included = ?
-                                       FROM (SELECT id, 
-                                             PERCENT_RANK() OVER(ORDER BY CASE ?
-                                                                          WHEN 'stem' THEN stem_tfidf
-                                                                          WHEN 'lemma' THEN lemma_tfidf
-                                                                          ELSE text_tfidf
-                                                                          END DESC
-                                                                ) AS per_rank
-                                             FROM string_tokens
-                                             WHERE dataset_id = ?
-                                            ) AS ranktable
-                                       WHERE ranktable.id = string_tokens.id
-                                       AND per_rank < ?
-                                       """
-
-            #special code needed for number filters
-            update_count_sql1 = """UPDATE string_tokens
-                                   SET included = ?
-                                   FROM (
-                                   """
-            subquery_count_sql2 = """GROUP BY CASE ?
-                                              WHEN 'stem' THEN stem
-                                              WHEN 'lemma' THEN lemma
-                                              ELSE text
-                                              END,
-                                              pos
-                                     """
-            subquery_wordcount_sql1 = """SELECT CASE ?
-                                                WHEN 'stem' THEN stem
-                                                WHEN 'lemma' THEN lemma
-                                                ELSE text
-                                                END word,
-                                                pos,
-                                                COUNT(*) AS count
-                                         FROM string_tokens
-                                         WHERE dataset_id = ?
-                                         """
-            subquery_doccount_sql1 = """SELECT CASE ?
-                                               WHEN 'stem' THEN stem
-                                               WHEN 'lemma' THEN lemma
-                                               ELSE text
-                                               END word,
-                                               pos,
-                                               COUNT(DISTINCT document_id) AS count
-                                        FROM string_tokens
-                                        WHERE dataset_id = ?
-                                        """
-            update_count_sql2 = """) as counttable
-                                       WHERE dataset_id = ?
-                                       AND CASE ?
-                                            WHEN 'stem' THEN stem
-                                            WHEN 'lemma' THEN lemma
-                                            ELSE text
-                                       END = counttable.word
-                                       AND string_tokens.pos = counttable.pos
-                                       AND counttable.count"""
-
-            #number filter symbol
-            gt_sql = """ > ?
-                        """
-            gteq_sql = """ >= ?
-                        """
-            eq_sql = """ = ?
-                        """
-            lteq_sql = """ <= ?
-                        """
-            lt_sql = """ < ?
-                        """
-            
-            #stopword filter
-            stopwords_sql = """AND spacy_stopword = 1
-                               """
-
-            #string filters
-            word_sql = """AND CASE ?
-                            WHEN 'stem' THEN stem
-                            WHEN 'lemma' THEN lemma
-                            ELSE text
-                            END = ?
-                            """
-            pos_sql = """AND pos = ?
-                         """
-            field_sql = """AND field_id = (SELECT id
-                                           FROM fields
-                                           WHERE fields.dataset_id = dataset_id
-                                           AND field_key = ?)
-                           """
-
-            #apply rule
-            field = rule[0]
-            word = rule[1]
-            pos = rule[2]
-            action = rule[3]
-            sql_filters = ""
-            sql_filters_parameters = []
-            if word != Constants.FILTER_RULE_ANY:
-                sql_filters = sql_filters + word_sql
-                sql_filters_parameters.append(token_type)
-                sql_filters_parameters.append(word)
-            if pos != Constants.FILTER_RULE_ANY:
-                sql_filters = sql_filters + pos_sql
-                sql_filters_parameters.append(pos)
-            if field != Constants.FILTER_RULE_ANY:
-                sql_filters = sql_filters + field_sql
-                sql_filters_parameters.append(str(field))
-
-            sql = ""
-            sql_parameters = []
-            if action == Constants.FILTER_RULE_REMOVE:
-                sql = update_sql
-                sql_parameters.append(0)
-                sql_parameters.append(dataset_id)
-            elif action == Constants.FILTER_RULE_INCLUDE:
-                sql = update_sql
-                sql_parameters.append(1)
-                sql_parameters.append(dataset_id)
-            elif action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
-                sql = update_sql + stopwords_sql
-                sql_parameters.append(0)
-                sql_parameters.append(dataset_id)
-            elif isinstance(action, tuple):
-                if action[0] == Constants.FILTER_TFIDF_REMOVE:
-                    sql_parameters.append(0)
-                    sql_parameters.append(token_type)
-                    sql_parameters.append(dataset_id)
-                    sql_parameters.append(action[2]/100)
-                    if action[1] == Constants.FILTER_TFIDF_LOWER:
-                        sql = update_tfidflower_sql
-                    elif action[1] == Constants.FILTER_TFIDF_UPPER:
-                        sql = update_tfidfupper_sql
-                elif action[0] == Constants.FILTER_TFIDF_INCLUDE:
-                    sql_parameters.append(1)
-                    sql_parameters.append(token_type)
-                    sql_parameters.append(dataset_id)
-                    sql_parameters.append(action[2]/100)
-                    if action[1] == Constants.FILTER_TFIDF_LOWER:
-                        sql = update_tfidflower_sql
-                    elif action[1] == Constants.FILTER_TFIDF_UPPER:
-                        sql = update_tfidfupper_sql
-                elif action[0] == Constants.FILTER_RULE_REMOVE or action[0] == Constants.FILTER_RULE_INCLUDE:
-                    if action[0] == Constants.FILTER_RULE_REMOVE:
-                        sql_parameters.append(0)
-                    else:
-                        sql_parameters.append(1)
-                    sql_parameters.append(token_type)
-                    sql_parameters.append(dataset_id)
-                    sql_parameters = sql_parameters + sql_filters_parameters
-                    sql_parameters.append(token_type)
-                    sql_parameters.append(dataset_id)
-                    sql_parameters.append(token_type)
-
-                    if action[1] == Constants.TOKEN_NUM_WORDS:
-                        sql = update_count_sql1+subquery_wordcount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
-                        sql_parameters.append(action[3])
-                    elif action[1] == Constants.TOKEN_PER_WORDS:
-                        sql = update_count_sql1+subquery_wordcount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
-                        c.execute(query_totalwordcount_sql, (dataset_id,))
-                        total_words = c.fetchone()[0]
-                        sql_parameters.append(action[3]/100*total_words)
-                    elif action[1] == Constants.TOKEN_NUM_DOCS:
-                        sql = update_count_sql1+subquery_doccount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
-                        sql_parameters.append(action[3])
-                    elif action[1] == Constants.TOKEN_PER_DOCS:
-                        sql = update_count_sql1+subquery_doccount_sql1+sql_filters+subquery_count_sql2+update_count_sql2
-                        c.execute(query_totaldoccount_sql, (dataset_id,))
-                        total_docs = c.fetchone()[0]
-                        sql_parameters.append(action[3]/100*total_docs)
-
-                    if action[2] == ">":
-                        sql = sql + gt_sql
-                    elif action[2] == ">=":
-                        sql = sql + gteq_sql
-                    elif action[2] == "=":
-                        sql = sql + eq_sql
-                    elif action[2] == "<=":
-                        sql = sql + lteq_sql
-                    elif action[2] == "<":
-                        sql = sql + lt_sql
-
+            #create rule's sql
+            rule_action = rule[3]
+            if rule_action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
+                rule_action == Constants.FILTER_RULE_REMOVE
+            sql, sql_parameters = self._RuleGroupSqlCreator(rule_action, [rule], dataset_id, token_type)
             #execute the rule
-            sql = sql+sql_filters
-            sql_parameters = sql_parameters + sql_filters_parameters
             c.execute(sql, sql_parameters)
             #commit after every rule to make sure operations are applied in order
             self.__conn.commit()
