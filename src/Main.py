@@ -646,7 +646,7 @@ class MainFrame(wx.Frame):
         self.save_thread.join()
         self.save_thread = None
         self.CloseProgressDialog(thaw=True)
-
+        logger.info("Finished")
         if self.closing:
             self.OnCloseEnd(event)
 

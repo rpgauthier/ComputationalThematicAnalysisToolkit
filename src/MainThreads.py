@@ -83,6 +83,7 @@ class SaveThread(Thread):
             with open(self.current_workspace_path+"/codes.pk", 'wb') as outfile:
                 pickle.dump(self.codes, outfile)
 
+            logger.info("Archiving and compressing Files")
             with tarfile.open(self.save_path, 'w|gz') as tar_file:
                 tar_file.add(self.current_workspace_path, arcname='.')
 

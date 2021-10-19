@@ -399,6 +399,7 @@ class LDASample(TopicSample):
             self.dictionary.save(current_workspace+"/Samples/"+self.key+'/ldadictionary.dict')
         if self.corpus is not None:
             gensim.corpora.MmCorpus.serialize(current_workspace+"/Samples/"+self.key+'/ldacorpus.mm', self.corpus)
+        logger.info("Finished")
 
 class BitermSample(TopicSample):
     def __init__(self, key, dataset_key, model_parameters):
@@ -496,6 +497,7 @@ class BitermSample(TopicSample):
         if self.model is not None:
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/btm.pk', 'wb') as outfile:
                 pickle.dump(self.model, outfile)
+        logger.info("Finished")
 
 class NMFSample(TopicSample):
     def __init__(self, key, dataset_key, model_parameters):
@@ -597,6 +599,7 @@ class NMFSample(TopicSample):
         if self.model is not None:
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/nmf_model.pk', 'wb') as outfile:
                 pickle.dump(self.model, outfile)
+        logger.info("Finished")
 
 class MergedPart(GenericObject):
     def __init__(self, parent, key, name=None):
