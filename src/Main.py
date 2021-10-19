@@ -8,6 +8,7 @@ import psutil
 from datetime import datetime
 
 import wx
+from wx.adv import HyperlinkCtrl
 import wx.lib.agw.labelbook as LB
 import External.wxPython.labelbook_fix as LB_fix
 
@@ -184,6 +185,11 @@ class MainFrame(wx.Frame):
         self.reviewing_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.reviewing_module.actions_menu, GUIText.REVIEWING_LABEL)
         self.reporting_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.reporting_module.actions_menu, GUIText.REPORTING_LABEL)
         self.menu_bar.Append(self.actions_menu, GUIText.ACTIONS)
+
+        self.help_menu = wx.Menu()
+        about_menuitem = self.help_menu.Append(wx.ID_ANY, GUIText.ABOUT)
+        self.Bind(wx.EVT_MENU, self.OnAbout, about_menuitem)
+        self.menu_bar.Append(self.help_menu, GUIText.HELP)
 
         self.SetMenuBar(self.menu_bar)
 
@@ -414,6 +420,12 @@ class MainFrame(wx.Frame):
         logger = logging.getLogger(__name__+".MainFrame.OnOptions")
         logger.info("Starting")
         OptionsDialog(self).Show()
+        logger.info("Finished")
+
+    def OnAbout(self, event):
+        logger = logging.getLogger(__name__+".MainFrame.OnAbout")
+        logger.info("Starting")
+        AboutDialog(self).Show()
         logger.info("Finished")
 
     def OnNew(self, event):
@@ -961,7 +973,40 @@ class OptionsDialog(wx.Dialog):
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.options_dict['twitter_consumer_key'] = self.twitter_consumer_key_ctrl.GetValue()
         main_frame.options_dict['twitter_consumer_secret'] = self.twitter_consumer_secret_ctrl.GetValue()
+
+class AboutDialog(wx.Dialog):
+    def __init__(self, parent):
+        wx.Dialog.__init__(self, parent, title=GUIText.ABOUT, style=wx.DEFAULT_DIALOG_STYLE)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.AddStretchSpacer()
+
+        name_text = wx.StaticText(self, label=GUIText.APP_NAME)
+        name_font = name_text.GetFont()
+        name_font.MakeBold()
+        name_font.MakeLarger()
+        name_text.SetFont(name_font)
+        sizer.Add(name_text, 0, wx.CENTER)
+        sizer.AddSpacer(10)
+
+        version_text = wx.StaticText(self, label=GUIText.ABOUT_VERSION + Constants.CUR_VER)
+        sizer.Add(version_text, 0, wx.CENTRE)
+        sizer.AddSpacer(5)
+
+        osf_url = HyperlinkCtrl(self, label=GUIText.ABOUT_OSF, url=GUIText.ABOUT_OSF_URL)
+        sizer.Add(osf_url, 0, wx.CENTRE)
+        sizer.AddSpacer(5)
+
+        github_url = HyperlinkCtrl(self, label=GUIText.ABOUT_GITHUB, url=GUIText.ABOUT_GITHUB_URL)
+        sizer.Add(github_url, 0, wx.CENTRE)
+        sizer.AddSpacer(5)
+
+        sizer.AddStretchSpacer()
+        self.SetSizer(sizer)
+        self.Layout()
+
         
+
 def Main():
     '''setup the main tasks for the application'''
     log_path = os.path.join(Constants.LOG_PATH, "MachineThematicAnalysis.log")

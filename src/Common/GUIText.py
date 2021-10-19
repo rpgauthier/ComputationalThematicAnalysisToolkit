@@ -172,6 +172,15 @@ class Main(Common):
     SAVE_AS_TOOLTIP = "Save the Current Workspace with a new name"
     EXIT = "Exit"
     EXIT_TOOLTIP = "Exit Application"
+    HELP = "Help"
+    ABOUT = "About"
+
+    #About dialog labels
+    ABOUT_VERSION = "Version: "
+    ABOUT_OSF = "OSF link"
+    ABOUT_OSF_URL = "https://osf.io/b72dm/"
+    ABOUT_GITHUB = "Github link"
+    ABOUT_GITHUB_URL = "https://github.com/rpgauthier/ComputationalThematicAnalysisToolkit"
 
     #Module/Notes Labels
     GENERAL_LABEL = "General"
