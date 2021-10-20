@@ -10,10 +10,11 @@ class DatabaseConnection():
     def __init__(self, current_workspace_path):
         database_path = os.path.join(current_workspace_path, "workspace_sqlite3.db")
         self.__conn = sqlite3.connect(database_path)
-        self.__conn.execute("PRAGMA foreign_keys=ON")
+        self.__conn.execute("PRAGMA foreign_keys = ON")
+        self.__conn.execute("PRAGMA synchronous = OFF")
+        self.__conn.execute("PRAGMA journal_mode = MEMORY")
     
     def __del__(self):
-
         self.__conn.close()
 
     def Create(self):
