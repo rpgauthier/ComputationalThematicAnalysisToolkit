@@ -47,7 +47,6 @@ class LDATrainingThread(Thread):
         self.eta = eta
         self.start()
 
-    #training code to be run asyncronously
     def run(self):
         '''Generates an LDA model'''
         logger = logging.getLogger(__name__+"LDATrainingThread["+str(self.key)+"].run")
@@ -120,7 +119,6 @@ class BitermTrainingThread(Thread):
         self.num_passes = num_passes
         self.start()
 
-    #TODO moved to a process if the thread is stalling the main GUI
     def run(self):
         '''Generates an Biterm model'''
         logger = logging.getLogger(__name__+"BitermTrainingThread["+str(self.key)+"].run")
@@ -183,7 +181,6 @@ class NMFTrainingThread(Thread):
         self.num_topics = num_topics
         self.start()
 
-    #TODO moved to a process if the thread is stalling the main GUI
     def run(self):
         '''Generates an NMF model'''
         logger = logging.getLogger(__name__+"NMFTrainingThread["+str(self.key)+"].run")

@@ -159,7 +159,7 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
         dataset.total_tokens = counts['tokens']
         dataset.total_uniquetokens = counts['unique_tokens']
         wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_TFIDF_MSG))
-        ApplyFilterRules(dataset, main_frame)
+        ApplyFilterAllRules(dataset, main_frame)
             
     logger.info("Finished")
 
@@ -170,28 +170,12 @@ def TokenizationWorker(data_list, field_key, label, language):
     package_versions = []
 
     spacy.prefer_gpu()
-    if language == 'fre-trf':
-        # tried to updated to use more accurate model
-        # but not able to install on python 3.9 on Sept 21, 2021
-        nlp = spacy.load("fr_dep_news_trf")
-        stemmer = nltk.stem.snowball.FrenchStemmer()
-        package_versions.append(spacy.__name__+" "+spacy.__version__+" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
-        package_versions.append(nltk.__name__ +" "+nltk.__version__+" snowball.FrenchStemmer")
-        package_versions.append(spacy.__name__ +" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
-    elif language == 'fre-sm':
+    if language == 'fre-sm':
         #less accurate but faster model
         nlp = fr_core_news_sm.load()
         stemmer = nltk.stem.snowball.FrenchStemmer()
         package_versions.append(spacy.__name__+" "+spacy.__version__+" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
         package_versions.append(nltk.__name__ +" "+nltk.__version__+" snowball.FrenchStemmer")
-        package_versions.append(spacy.__name__ +" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
-    elif language == 'eng-trf':
-        #more accurate but slower model
-        # but not able to work with pyinstaller on python 3.9 on Sept 21, 2021
-        nlp = spacy.load("en_core_web_trf")
-        stemmer = nltk.stem.snowball.EnglishStemmer()
-        package_versions.append(spacy.__name__+" "+spacy.__version__+" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
-        package_versions.append(nltk.__name__ +" "+nltk.__version__+" snowball.EnglishStemmer")
         package_versions.append(spacy.__name__ +" "+nlp.meta['lang']+"_"+nlp.meta['name']+" "+nlp.meta['version'])
     elif language == 'eng-sm':
         #less accurate but faster model
@@ -223,12 +207,12 @@ def TokenizationWorker(data_list, field_key, label, language):
     #return tokensets, rawtext_tokens_df, stem_tokens_df, lemma_tokens_df, package_versions
     return tokensets, package_versions
 
-def ApplyFilterRules(dataset, main_frame):
-    logger = logging.getLogger(__name__+".ApplyFilterRules")
+def ApplyFilterAllRules(dataset, main_frame):
+    logger = logging.getLogger(__name__+".ApplyFilterAllRules")
     logger.info("Starting")
     db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
     wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_BUSY_MSG))
-    db_conn.ApplyDatasetRules(dataset.key, dataset.filter_rules)
+    db_conn.ApplyAllDatasetRules(dataset.key, dataset.filter_rules)
     db_conn.RefreshStringTokensIncluded(dataset.key)
     db_conn.RefreshStringTokensRemoved(dataset.key)
     wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_UPDATING_COUNTS))
@@ -239,18 +223,15 @@ def ApplyFilterRules(dataset, main_frame):
     logger.info("Finished")
 
 
-def ApplyFilterLatestRule(dataset, main_frame):
-    logger = logging.getLogger(__name__+".ApplyFilterRule")
+def ApplyFilterNewRules(dataset, main_frame, new_rules):
+    logger = logging.getLogger(__name__+".ApplyFilterNewRules")
     logger.info("Starting")
-    if len(dataset.filter_rules) > 0:
+    if len(new_rules) > 0:
             db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
-
             wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_BUSY_MSG))
-            db_conn.ApplyDatasetRule(dataset.key, dataset.filter_rules[-1])
-
+            db_conn.ApplyNewDatasetRules(dataset.key, new_rules)
             db_conn.RefreshStringTokensIncluded(dataset.key)
             db_conn.RefreshStringTokensRemoved(dataset.key)
-
             wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_UPDATING_COUNTS))
             included_counts = db_conn.GetIncludedStringTokensCounts(dataset.key)
             dataset.total_docs_remaining = included_counts['documents']

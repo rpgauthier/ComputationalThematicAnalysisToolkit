@@ -7,6 +7,7 @@ import External.wxPython.flatnotebook_fix as FNB
 import wx.grid
 
 from Common.GUIText import Datasets as GUIText
+from Common.GUIText import Filtering as FilteringGUIText
 import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
 import Common.Objects.Datasets as Datasets
@@ -432,3 +433,69 @@ class DatasetDataPanel(wx.Panel):
         self.OnSearch(event)
         self.search_count_text.SetLabel("")
         logger.info("Finished")
+
+class FilterRuleListCtrl(wx.ListCtrl):
+    '''For rendering nlp filter rules'''
+    def __init__(self, parent):
+        logger = logging.getLogger(__name__+".FilterRuleListCtrl.__init__")
+        logger.info("Starting")
+        wx.ListCtrl.__init__(self, parent, style=wx.LC_REPORT)
+
+        self.AppendColumn(FilteringGUIText.FILTERS_RULES_STEP, format=wx.LIST_FORMAT_RIGHT)
+        self.AppendColumn(FilteringGUIText.FILTERS_FIELDS)
+        self.AppendColumn(FilteringGUIText.FILTERS_WORDS)
+        self.AppendColumn(FilteringGUIText.FILTERS_POS)
+        self.AppendColumn(FilteringGUIText.FILTERS_RULES_ACTION)
+
+        for column in range(0, 5):
+            self.SetColumnWidth(column, wx.LIST_AUTOSIZE_USEHEADER)
+
+        self.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnShowPopup)
+        copy_id = wx.ID_ANY
+        self.Bind(wx.EVT_MENU, self.OnCopyItems, id=copy_id)
+        accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), copy_id )])
+        self.SetAcceleratorTable(accel_tbl)
+
+        logger.info("Finished")
+    
+    def AutoSizeColumns(self):
+        for column in range(0, 5):
+            cur_size = self.GetColumnWidth(column)
+            self.SetColumnWidth(column, wx.LIST_AUTOSIZE)
+            new_size = self.GetColumnWidth(column)
+            self.SetColumnWidth(column, max(cur_size, new_size))
+
+    def OnShowPopup(self, event):
+        '''create popup menu with options that can be performed on the list'''
+        logger = logging.getLogger(__name__+".FilterRuleListCtrl.OnShowPopup")
+        logger.info("Starting")
+        menu = wx.Menu()
+        menu.Append(1, GUIText.COPY)
+        menu.Bind(wx.EVT_MENU, self.OnCopyItems)
+        self.PopupMenu(menu)
+
+    def OnCopyItems(self, event):
+        '''copies what is selected in the list to the user's clipboard'''
+        logger = logging.getLogger(__name__+".FilterRuleListCtrl.OnCopyItems")
+        logger.info("Starting")
+        selectedItems = []
+
+        for item in self.GetSelections():
+            row = self.ItemToRow(item)
+            step = self.GetValue(row, 0)
+            field = self.GetValue(row, 1)
+            word = self.GetValue(row, 2)
+            pos = self.GetValue(row, 3)
+            action = self.GetValue(row, 4)
+            selectedItems.append('\t'.join([str(step),
+                                            str(field), 
+                                            str(word),
+                                            str(pos),
+                                            str(action)
+                                            ]).strip())
+
+        clipdata = wx.TextDataObject()
+        clipdata.SetText("\n".join(selectedItems))
+        wx.TheClipboard.Open()
+        wx.TheClipboard.SetData(clipdata)
+        wx.TheClipboard.Close()

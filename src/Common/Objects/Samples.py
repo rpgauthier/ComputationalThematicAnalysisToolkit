@@ -287,7 +287,7 @@ class TopicSample(Sample):
                     if isinstance(self.parts_dict[topic].parts_dict[subtopic], Part) and topic != 'unknown':
                         UpdateLDATopicPart(topic)
         
-        unknown_list = set(self.tokensets.keys()) - document_set
+        unknown_list = set(self._tokensets) - document_set
         unknown_df = document_topic_prob_df[document_topic_prob_df.index.isin(unknown_list)]
         unknown_series = unknown_df.max(axis=1).sort_values()
         new_unknown_list = list(unknown_series.index.values)
@@ -344,10 +344,10 @@ class LDASample(TopicSample):
     def eta(self):
         return self._eta
 
-    def GenerateStart(self, notify_window, current_workspace_path):
+    def GenerateStart(self, notify_window, current_workspace_path, start_dt):
         logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].GenerateStart")
         logger.info("Starting")
-        self.start_dt = datetime.now()
+        self.start_dt = start_dt
         self.training_thread = SamplesThreads.LDATrainingThread(notify_window,
                                                                 current_workspace_path,
                                                                 self.key,
@@ -364,6 +364,7 @@ class LDASample(TopicSample):
         self.generated_flag = True
         self.training_thread.join()
         self.training_thread = None
+        self._tokensets = list(self.tokensets.keys())
         self.dictionary = gensim.corpora.Dictionary.load(current_workspace+"/Samples/"+self.key+'/ldadictionary.dict')
         self.corpus = gensim.corpora.MmCorpus(current_workspace+"/Samples/"+self.key+'/ldacorpus.mm')
         self.model = gensim.models.ldamodel.LdaModel.load(current_workspace+"/Samples/"+self.key+'/ldamodel.lda')
@@ -435,10 +436,10 @@ class BitermSample(TopicSample):
     def num_passes(self):
         return self._num_passes
     
-    def GenerateStart(self, notify_window, current_workspace_path):
+    def GenerateStart(self, notify_window, current_workspace_path, start_dt):
         logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].GenerateStart")
         logger.info("Starting")
-        self.start_dt = datetime.now()
+        self.start_dt = start_dt
         self.training_thread = SamplesThreads.BitermTrainingThread(notify_window,
                                                                    current_workspace_path,
                                                                    self.key,
@@ -453,6 +454,7 @@ class BitermSample(TopicSample):
         self.generated_flag = True
         self.training_thread.join()
         self.training_thread = None
+        self._tokensets = list(self.tokensets.keys())
         with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/transformed_texts.pk', 'rb') as infile:
             self.transformed_texts = pickle.load(infile)
         with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/vocab.pk', 'rb') as infile:
@@ -525,10 +527,10 @@ class NMFSample(TopicSample):
     def __repr__(self):
         return 'NMFSample: %s' % (self.key,)
     
-    def GenerateStart(self, notify_window, current_workspace_path):
+    def GenerateStart(self, notify_window, current_workspace_path, start_dt):
         logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].GenerateStart")
         logger.info("Starting")
-        self.start_dt = datetime.now()
+        self.start_dt = start_dt
         self.training_thread = SamplesThreads.NMFTrainingThread(notify_window,
                                                                    current_workspace_path,
                                                                    self.key,
@@ -542,6 +544,7 @@ class NMFSample(TopicSample):
         self.generated_flag = True
         self.training_thread.join()
         self.training_thread = None
+        self._tokensets = list(self.tokensets.keys())
         with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf_vectorizer.pk', 'rb') as infile:
            self.vectorizer = pickle.load(infile)
         with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf.pk', 'rb') as infile:

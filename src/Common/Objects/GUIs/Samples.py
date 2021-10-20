@@ -15,6 +15,7 @@ import Common.Constants as Constants
 import Common.Database as Database
 import Common.CustomEvents as CustomEvents
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
+import Common.Objects.GUIs.Datasets as DatasetsGUIs
 import Common.Objects.Threads.Datasets as DatasetsThreads
 import Common.Objects.Samples as Samples
 import Common.Objects.Threads.Samples as SamplesThreads
@@ -27,6 +28,7 @@ class SampleCreatePanel(wx.Panel):
         wx.Panel.__init__(self, parent, size=size)
         
         self.capture_thread = None
+        self.start_dt = None
 
         label_font = wx.Font(Constants.LABEL_SIZE, Constants.LABEL_FAMILY, Constants.LABEL_STYLE, Constants.LABEL_WEIGHT, underline=Constants.LABEL_UNDERLINE)
 
@@ -140,13 +142,14 @@ class SampleCreatePanel(wx.Panel):
             main_frame.multiprocessing_inprogress_flag = True
             with LDAModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
+                    self.start_dt = datetime.now()
                     model_parameters = create_dialog.model_parameters
                     name = model_parameters['name']
                     main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_SUBLABEL+str(name))
                     self.capture_thread = SamplesThreads.CaptureThread(self,
-                                                                        main_frame,
-                                                                        model_parameters,
-                                                                        model_type)
+                                                                       main_frame,
+                                                                       model_parameters,
+                                                                       model_type)
                 else:
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
                     main_frame.multiprocessing_inprogress_flag = False
@@ -154,26 +157,28 @@ class SampleCreatePanel(wx.Panel):
         elif model_type == 'Biterm':
             with BitermModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
+                    self.start_dt = datetime.now()
                     model_parameters = create_dialog.model_parameters
                     name = model_parameters['name']
                     main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_SUBLABEL+str(name))
                     self.capture_thread = SamplesThreads.CaptureThread(self,
-                                                                        main_frame,
-                                                                        model_parameters,
-                                                                        model_type)
+                                                                       main_frame,
+                                                                       model_parameters,
+                                                                       model_type)
                 else:
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
                     self.Thaw()
         elif model_type == 'NMF':
             with NMFModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
+                    self.start_dt = datetime.now()
                     model_parameters = create_dialog.model_parameters
                     name = model_parameters['name']
                     main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_SUBLABEL+str(name))
                     self.capture_thread = SamplesThreads.CaptureThread(self,
-                                                                        main_frame,
-                                                                        model_parameters,
-                                                                        model_type)
+                                                                       main_frame,
+                                                                       model_parameters,
+                                                                       model_type)
                 else:
                     main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
                     self.Thaw()
@@ -208,7 +213,7 @@ class SampleCreatePanel(wx.Panel):
             new_sample.tokenization_package_versions = dataset.tokenization_package_versions
             new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
             main_frame.samples[new_sample.key] = new_sample
-            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
+            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt)
             main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG3)
             parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
@@ -224,7 +229,7 @@ class SampleCreatePanel(wx.Panel):
             new_sample.tokenization_package_versions = dataset.tokenization_package_versions
             new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
             main_frame.samples[new_sample.key] = new_sample
-            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
+            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt)
             main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG3)
             parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
@@ -240,13 +245,14 @@ class SampleCreatePanel(wx.Panel):
             new_sample.tokenization_package_versions = dataset.tokenization_package_versions
             new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
             main_frame.samples[new_sample.key] = new_sample
-            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name)
+            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt)
             main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_MSG3)
             parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
             main_frame.CloseProgressDialog(message=GUIText.GENERATED_NMF_COMPLETED_PART1,
                                             thaw=False)
             self.Thaw()
+        self.start_dt = None
         logger.info("Finished")
 
 class AbstractSamplePanel(wx.Panel):
@@ -470,7 +476,7 @@ class SampleRulesDialog(wx.Dialog):
         tokenization_sizer.Add(tokenization_label, proportion=0, flag=wx.ALL, border=5)
         sizer.Add(tokenization_sizer, proportion=0, flag=wx.ALL, border=5)
         
-        self.rules_list = DatasetsDataViews.FilterRuleDataViewListCtrl(self)
+        self.rules_list = DatasetsGUIs.FilterRuleListCtrl(self)
         self.DisplayFilterRules(sample.applied_filter_rules)
         sizer.Add(self.rules_list, proportion=1, flag=wx.EXPAND, border=5)
 
@@ -485,16 +491,16 @@ class SampleRulesDialog(wx.Dialog):
                           Constants.TOKEN_NUM_DOCS:FilteringGUIText.FILTERS_NUM_DOCS,
                           Constants.TOKEN_PER_DOCS:FilteringGUIText.FILTERS_PER_DOCS}
         self.rules_list.DeleteAllItems()
-        i = 1
+        i = 0
         for field, word, pos, action in filter_rules:
+            i += 1
             if isinstance(action, tuple):
                 if action[0] == Constants.FILTER_TFIDF_REMOVE or action[0] == Constants.FILTER_TFIDF_INCLUDE:
                     action = str(action[0])+str(action[1])+str(action[2])+"%"
                 else:
                     action = str(action[0]) + " ("+str(column_options[action[1]])+str(action[2])+str(action[3])+")"
-                
-            self.rules_list.AppendItem([i, field, word, pos, str(action)])
-            i += 1
+            self.rules_list.Append([str(i), field, word, pos, str(action)])
+        self.rules_list.AutoSizeColumns()
     
     def OnRestoreStart(self, event):
         logger = logging.getLogger(__name__+".SampleRulesDialog["+str(self.sample.key)+"].OnRestore")
@@ -515,10 +521,7 @@ class SampleRulesDialog(wx.Dialog):
         self.dataset.tokenization_choice = self.sample.tokenization_choice
         self.dataset.filter_rules.clear()
         self.dataset.filter_rules.extend(self.sample.applied_filter_rules)
-
-        self.apply_rules_thread = DatasetsThreads.ApplyFilterRulesThread(self, main_frame, self.dataset)
-
-
+        self.apply_rules_thread = DatasetsThreads.ApplyFilterAllRulesThread(self, main_frame, self.dataset)
         logger.info("Finished")
 
     def OnRestoreFinish(self, event):

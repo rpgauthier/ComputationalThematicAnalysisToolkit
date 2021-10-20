@@ -43,7 +43,7 @@ class ChangeTokenizationChoiceThread(Thread):
         db_conn.UpdateDatasetTokenType(self.dataset.key, self.new_choice)
 
         wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_BUSY_MSG))
-        db_conn.ApplyDatasetRules(self.dataset.key, self.dataset.filter_rules)
+        db_conn.ApplyAllDatasetRules(self.dataset.key, self.dataset.filter_rules)
         db_conn.RefreshStringTokensIncluded(self.dataset.key)
         db_conn.RefreshStringTokensRemoved(self.dataset.key)
 
@@ -62,7 +62,7 @@ class ChangeTokenizationChoiceThread(Thread):
         wx.PostEvent(self._notify_window, CustomEvents.ChangeTokenizationResultEvent(result))
         logger.info("Finished")
 
-class ApplyFilterRulesThread(Thread):
+class ApplyFilterAllRulesThread(Thread):
     def __init__(self, notify_window, main_frame, dataset):
         """Init Worker Thread Class."""
         Thread.__init__(self)
@@ -72,27 +72,28 @@ class ApplyFilterRulesThread(Thread):
         self.start()
 
     def run(self):
-        logger = logging.getLogger(__name__+"ApplyFilterRulesThread["+str(self.dataset.key)+"].run")
+        logger = logging.getLogger(__name__+"ApplyFilterAllRulesThread["+str(self.dataset.key)+"].run")
         logger.info("Starting")
-        DatasetsUtilities.ApplyFilterRules(self.dataset, self.main_frame)
+        DatasetsUtilities.ApplyFilterAllRules(self.dataset, self.main_frame)
         #return event from thread
         result = {}
         wx.PostEvent(self._notify_window, CustomEvents.ApplyFilterRulesResultEvent(result))
         logger.info("Finished")
 
-class ApplyFilterLatestRuleThread(Thread):
-    def __init__(self, notify_window, main_frame, dataset):
+class ApplyFilterNewRulesThread(Thread):
+    def __init__(self, notify_window, main_frame, dataset, new_rules):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
         self.dataset = dataset
         self.main_frame = main_frame
+        self.new_rules = new_rules
         self.start()
 
     def run(self):
-        logger = logging.getLogger(__name__+"ApplyFilterLatestRuleThread["+str(self.dataset.key)+"].run")
+        logger = logging.getLogger(__name__+"ApplyFilterNewRulesThread["+str(self.dataset.key)+"].run")
         logger.info("Starting")
-        DatasetsUtilities.ApplyFilterLatestRule(self.dataset, self.main_frame)
+        DatasetsUtilities.ApplyFilterNewRules(self.dataset, self.main_frame, self.new_rules)
         #return event from thread
         result = {}
         wx.PostEvent(self._notify_window, CustomEvents.ApplyFilterRulesResultEvent(result))

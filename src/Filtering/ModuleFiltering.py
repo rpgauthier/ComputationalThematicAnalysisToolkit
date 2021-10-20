@@ -2,10 +2,12 @@
 import logging
 import json
 from datetime import datetime
+import re
 
 import jsonpickle
 import nltk
 import spacy.lang.en.stop_words
+import spacy.lang.fr.stop_words
 
 import wx
 #import wx.lib.agw.flatnotebook as FNB
@@ -14,7 +16,7 @@ import wx.lib.scrolledpanel
 
 import Common.Constants as Constants
 import Common.Objects.DataViews.Tokens as TokenDataViews
-import Common.Objects.DataViews.Datasets as DatasetsDataViews
+import Common.Objects.GUIs.Datasets as DatasetsGUIs
 import Common.Objects.Threads.Datasets as DatasetsThreads
 import Common.CustomEvents as CustomEvents
 from Common.GUIText import Filtering as GUIText
@@ -112,6 +114,7 @@ class FilterPanel(wx.Panel):
         self.dataset = dataset
         #thread used to generate dataframes for use when display lists
         self.thread = None
+        self.autosave = False
 
         panel_splitter = wx.SplitterWindow(self, size=self.GetSize(), style=wx.SP_BORDER)
         top_splitter = wx.SplitterWindow(panel_splitter, style=wx.SP_BORDER)
@@ -174,16 +177,18 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         selection = self.included_words_panel.words_list.GetSelectedRows()
         if len(selection) > 0:
+            new_rules = []
             for row in selection:
                 word = self.included_words_panel.words_list.GetCellValue(row, 0)
                 pos = self.included_words_panel.words_list.GetCellValue(row, 1)
-                self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, pos, Constants.FILTER_RULE_REMOVE))
-            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            main_frame = wx.GetApp().GetTopWindow()
-            main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-            self.ApplyLatestFilterRuleStart()
+                new_rules.append((Constants.FILTER_RULE_ANY, word, pos, Constants.FILTER_RULE_REMOVE))
+            if  not self.rules_panel.pauserules_tool.IsToggled():
+                for new_rule in new_rules:
+                    self.dataset.AddFilterRule(new_rule)
+                self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+                self.ApplyFilterNewRulesStart(new_rules)
+            else:
+                self.rules_panel.DraftNewFilterRules(new_rules)
         logger.info("Finished")
 
     def OnReaddEntry(self, event):
@@ -191,16 +196,18 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         selection = self.removed_words_panel.words_list.GetSelectedRows()
         if len(selection) > 0:
+            new_rules = []
             for row in selection:
                 word = self.removed_words_panel.words_list.GetCellValue(row, 0)
                 pos = self.removed_words_panel.words_list.GetCellValue(row, 1)
-                self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, pos, Constants.FILTER_RULE_INCLUDE))
-            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            main_frame = wx.GetApp().GetTopWindow()
-            main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-            self.ApplyLatestFilterRuleStart()
+                new_rules.append((Constants.FILTER_RULE_ANY, word, pos, Constants.FILTER_RULE_INCLUDE))
+            if  not self.rules_panel.pauserules_tool.IsToggled():
+                for new_rule in new_rules:
+                    self.dataset.AddFilterRule(new_rule)
+                self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+                self.ApplyFilterNewRulesStart(new_rules)
+            else:
+                self.rules_panel.DraftNewFilterRules(new_rules)
         logger.info("Finished")
 
     def OnRemoveWord(self, event):
@@ -208,15 +215,17 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         selection = self.included_words_panel.words_list.GetSelectedRows()
         if len(selection) > 0:
+            new_rules = []
             for row in selection:
                 word = self.included_words_panel.words_list.GetCellValue(row, 0)
-                self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
-            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            main_frame = wx.GetApp().GetTopWindow()
-            main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-            self.ApplyLatestFilterRuleStart()
+                new_rules.append((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
+            if  not self.rules_panel.pauserules_tool.IsToggled():
+                for new_rule in new_rules:
+                    self.dataset.AddFilterRule(new_rule)
+                self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+                self.ApplyFilterNewRulesStart(new_rules)
+            else:
+                self.rules_panel.DraftNewFilterRules(new_rules)
         logger.info("Finished")
 
     def OnReaddWord(self, event):
@@ -224,15 +233,17 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         selection = self.removed_words_panel.words_list.GetSelectedRows()
         if len(selection) > 0:
+            new_rules = []
             for row in selection:
                 word = self.removed_words_panel.words_list.GetCellValue(row, 0)
-                self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_INCLUDE))
-            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            main_frame = wx.GetApp().GetTopWindow()
-            main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-            self.ApplyLatestFilterRuleStart()
+                new_rules.append((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_INCLUDE))
+            if  not self.rules_panel.pauserules_tool.IsToggled():
+                for new_rule in new_rules:
+                    self.dataset.AddFilterRule(new_rule)
+                self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+                self.ApplyFilterNewRulesStart(new_rules)
+            else:
+                self.rules_panel.DraftNewFilterRules(new_rules)
         logger.info("Finished")
 
     def OnRemovePOS(self, event):
@@ -240,15 +251,17 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         selection = self.included_words_panel.words_list.GetSelectedRows()
         if len(selection) > 0:
+            new_rules = []
             for row in selection:
                 pos = self.included_words_panel.words_list.GetCellValue(row, 1)
-                self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, pos, Constants.FILTER_RULE_REMOVE))
-            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            main_frame = wx.GetApp().GetTopWindow()
-            main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-            self.ApplyLatestFilterRuleStart()
+                new_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, pos, Constants.FILTER_RULE_REMOVE))
+            if  not self.rules_panel.pauserules_tool.IsToggled():
+                for new_rule in new_rules:
+                    self.dataset.AddFilterRule(new_rule)
+                self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+                self.ApplyFilterNewRulesStart(new_rules)
+            else:
+                self.rules_panel.DraftNewFilterRules(new_rules)
         logger.info("Finished")
 
     def OnReaddPOS(self, event):
@@ -256,27 +269,29 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         selection = self.removed_words_panel.words_list.GetSelectedRows()
         if len(selection) > 0:
+            new_rules = []
             for row in selection:
                 pos = self.removed_words_panel.words_list.GetCellValue(row, 1)
-                self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, pos, Constants.FILTER_RULE_INCLUDE))
-            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            main_frame = wx.GetApp().GetTopWindow()
-            main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-            self.ApplyLatestFilterRuleStart()
+                new_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, pos, Constants.FILTER_RULE_INCLUDE))
+            if  not self.rules_panel.pauserules_tool.IsToggled():
+                for new_rule in new_rules:
+                    self.dataset.AddFilterRule(new_rule)
+                self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+                self.ApplyFilterNewRulesStart(new_rules)
+            else:
+                self.rules_panel.DraftNewFilterRules(new_rules)
         logger.info("Finished")
     
     def OnRemoveSpacyAutoStopword(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnSpacyAutoStopword")
         logger.info("Starting")
-        self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS))
-        self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-        self.ApplyLatestFilterRuleStart()
+        new_rule = (Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS)
+        if  not self.rules_panel.pauserules_tool.IsToggled():
+            self.dataset.AddFilterRule(new_rule)
+            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+            self.ApplyFilterNewRulesStart([new_rule])
+        else:
+            self.rules_panel.DraftNewFilterRules([new_rule])
         logger.info("Finished")
     
     def OnCreateCountFilter(self, event):
@@ -289,13 +304,13 @@ class FilterPanel(wx.Panel):
                         create_dialog.column,
                         create_dialog.operation,
                         create_dialog.number,)
-                self.dataset.AddFilterRule((create_dialog.field, create_dialog.word, create_dialog.pos, rule))
-                self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-                main_frame = wx.GetApp().GetTopWindow()
-                main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                            warning=GUIText.SIZE_WARNING_MSG,
-                                            freeze=False)
-                self.ApplyLatestFilterRuleStart()
+                new_rule = (create_dialog.field, create_dialog.word, create_dialog.pos, rule)
+                if  not self.rules_panel.pauserules_tool.IsToggled():
+                    self.dataset.AddFilterRule(new_rule)
+                    self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+                    self.ApplyFilterNewRulesStart([new_rule])
+                else:
+                    self.rules_panel.DraftNewFilterRules([new_rule])
         logger.info("Finished")
     
     def OnCreateTfidfFilter(self, event):
@@ -306,148 +321,171 @@ class FilterPanel(wx.Panel):
                 rule = (create_dialog.action1,
                         create_dialog.action2,
                         create_dialog.rank,)
-                self.dataset.AddFilterRule((create_dialog.field, create_dialog.word, create_dialog.pos, rule))
-                self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-                main_frame = wx.GetApp().GetTopWindow()
-                main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                            warning=GUIText.SIZE_WARNING_MSG,
-                                            freeze=False)
-                self.ApplyLatestFilterRuleStart()
+                new_rule = (create_dialog.field, create_dialog.word, create_dialog.pos, rule)
+                if  not self.rules_panel.pauserules_tool.IsToggled():
+                    self.dataset.AddFilterRule(new_rule)
+                    self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+                    self.ApplyFilterNewRulesStart([new_rule])
+                else:
+                    self.rules_panel.DraftNewFilterRules([new_rule])
         logger.info("Finished")
 
     def OnRemoveRule(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnRemoveRule")
         logger.info("Starting")
-        flag = False
-        for item in reversed(self.rules_panel.rules_list.GetSelections()):
-            row = self.rules_panel.rules_list.ItemToRow(item)
-            index = self.rules_panel.rules_list.GetValue(row, 0) - 1
-            del self.dataset.filter_rules[index]
-            self.dataset.last_changed_dt = datetime.now()
-            flag = True
-        if flag:
-            main_frame = wx.GetApp().GetTopWindow()
-            main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.ApplyFilterRulesStart()
+        removed_rule_idxs = []
+        selected_item = self.rules_panel.rules_list.GetFirstSelected()
+        while selected_item != -1:
+            removed_rule_idxs.append(selected_item)
+            selected_item = self.rules_panel.rules_list.GetNextSelected(selected_item)
+        if len(removed_rule_idxs) > 0:
+            if not self.rules_panel.pauserules_tool.IsToggled():
+                for idx in reversed(removed_rule_idxs):
+                    del self.dataset.filter_rules[idx]
+                    self.dataset.last_changed_dt = datetime.now()
+                self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+                self.ApplyFilterAllRulesStart()
+            else:
+                self.rules_panel.DraftRemovedFilterRules(removed_rule_idxs)
         logger.info("Finished")
     
     def OnMoveRuleUp(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnMoveRuleUp")
         logger.info("Starting")
-        changecompleted_flag = False
-        refreshneeded_flag = False
-        for item in reversed(self.rules_panel.rules_list.GetSelections()):
-            row = self.rules_panel.rules_list.ItemToRow(item)
-            index = self.rules_panel.rules_list.GetValue(row, 0)
-            if index < len(self.dataset.filter_rules):
-                self.dataset.filter_rules[index], self.dataset.filter_rules[index-1] = self.dataset.filter_rules[index-1], self.dataset.filter_rules[index]
-                self.dataset.last_changed_dt = datetime.now()
-                changecompleted_flag = True
-                action1 = self.dataset.filter_rules[index][3]
-                if isinstance(action1, tuple):
-                    action1 = action1[0]
-                    if action1 == Constants.FILTER_TFIDF_REMOVE:
-                        action1 = Constants.FILTER_RULE_REMOVE
-                    elif action1 == Constants.FILTER_TFIDF_INCLUDE:
-                        action1 = Constants.FILTER_RULE_INCLUDE
-                elif action1 == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
-                    action1 = Constants.FILTER_RULE_REMOVE
-                action2 = self.dataset.filter_rules[index-1][3]
-                if isinstance(action2, tuple):
-                    action2 = action2[0]
-                    if action2 == Constants.FILTER_TFIDF_REMOVE:
-                        action2 = Constants.FILTER_RULE_REMOVE
-                    elif action2 == Constants.FILTER_TFIDF_INCLUDE:
-                        action2 = Constants.FILTER_RULE_INCLUDE
-                elif action2 == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
-                    action2 = Constants.FILTER_RULE_REMOVE
-                if action1 != action2:
-                    refreshneeded_flag = True
+        moved_rule_idxs = []
+        selected_item = self.rules_panel.rules_list.GetFirstSelected()
+        while selected_item != -1:
+            if selected_item > 0:
+                moved_rule_idxs.append((selected_item, selected_item-1))
             else:
+                moved_rule_idxs = []
                 break
-        if changecompleted_flag:
-            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-        if refreshneeded_flag:
-            main_frame = wx.GetApp().GetTopWindow()
-            main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-            self.ApplyFilterRulesStart()
+            selected_item = self.rules_panel.rules_list.GetNextSelected(selected_item)
+
+        if len(moved_rule_idxs) > 0:
+            if not self.rules_panel.pauserules_tool.IsToggled():
+                changecompleted_flag = False
+                refreshneeded_flag = False
+                for old_idx, new_idx in moved_rule_idxs:
+                    self.dataset.filter_rules[old_idx], self.dataset.filter_rules[new_idx] = self.dataset.filter_rules[new_idx], self.dataset.filter_rules[old_idx]
+                    self.dataset.last_changed_dt = datetime.now()
+                    changecompleted_flag = True
+                    action1 = self.dataset.filter_rules[old_idx][3]
+                    if isinstance(action1, tuple):
+                        action1 = action1[0]
+                        if action1 == Constants.FILTER_TFIDF_REMOVE:
+                            action1 = Constants.FILTER_RULE_REMOVE
+                        elif action1 == Constants.FILTER_TFIDF_INCLUDE:
+                            action1 = Constants.FILTER_RULE_INCLUDE
+                    elif action1 == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
+                        action1 = Constants.FILTER_RULE_REMOVE
+                    action2 = self.dataset.filter_rules[new_idx][3]
+                    if isinstance(action2, tuple):
+                        action2 = action2[0]
+                        if action2 == Constants.FILTER_TFIDF_REMOVE:
+                            action2 = Constants.FILTER_RULE_REMOVE
+                        elif action2 == Constants.FILTER_TFIDF_INCLUDE:
+                            action2 = Constants.FILTER_RULE_INCLUDE
+                    elif action2 == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
+                        action2 = Constants.FILTER_RULE_REMOVE
+                    if action1 != action2:
+                        refreshneeded_flag = True
+
+                if changecompleted_flag:
+                    self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+                if refreshneeded_flag:
+                    self.ApplyFilterAllRulesStart()
+            else:    
+                self.rules_panel.DraftMovedFilterRules(moved_rule_idxs)
         logger.info("Finished")
     
     def OnMoveRuleDown(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnMoveRuleDown")
         logger.info("Starting")
-        changecompleted_flag = False
-        refreshneeded_flag = False
-        for item in self.rules_panel.rules_list.GetSelections():
-            row = self.rules_panel.rules_list.ItemToRow(item)
-            index = self.rules_panel.rules_list.GetValue(row, 0)
-            if index > 1:
-                self.dataset.filter_rules[index-2], self.dataset.filter_rules[index-1] = self.dataset.filter_rules[index-1], self.dataset.filter_rules[index-2]
-                self.dataset.last_changed_dt = datetime.now()
-                changecompleted_flag = True
-                action1 = self.dataset.filter_rules[index-2][3]
-                if isinstance(action1, tuple):
-                    action1 = action1[0]
-                    if action1 == Constants.FILTER_TFIDF_REMOVE:
-                        action1 = Constants.FILTER_RULE_REMOVE
-                    elif action1 == Constants.FILTER_TFIDF_INCLUDE:
-                        action1 = Constants.FILTER_RULE_INCLUDE
-                elif action1 == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
-                    action1 = Constants.FILTER_RULE_REMOVE
-                action2 = self.dataset.filter_rules[index-1][3]
-                if isinstance(action2, tuple):
-                    action2 = action2[0]
-                    if action2 == Constants.FILTER_TFIDF_REMOVE:
-                        action2 = Constants.FILTER_RULE_REMOVE
-                    elif action2 == Constants.FILTER_TFIDF_INCLUDE:
-                        action2 = Constants.FILTER_RULE_INCLUDE
-                elif action2 == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
-                    action2 = Constants.FILTER_RULE_REMOVE
-                if action1 != action2:
-                    refreshneeded_flag = True
+        moved_rule_idxs = []
+        selected_item = self.rules_panel.rules_list.GetFirstSelected()
+        while selected_item != -1:
+            if selected_item < self.rules_panel.rules_list.GetItemCount()-1:
+                moved_rule_idxs.append((selected_item, selected_item+1))
             else:
+                moved_rule_idxs = []
                 break
-        if changecompleted_flag:
-            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-        if refreshneeded_flag:
-            main_frame = wx.GetApp().GetTopWindow()
-            main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-            self.ApplyFilterRulesStart()
-        logger.info("Finished")
+            selected_item = self.rules_panel.rules_list.GetNextSelected(selected_item)
 
+        if len(moved_rule_idxs) > 0:
+            moved_rule_idxs = reversed(moved_rule_idxs)
+            if not self.rules_panel.pauserules_tool.IsToggled():
+                changecompleted_flag = False
+                refreshneeded_flag = False
+                for old_idx, new_idx in moved_rule_idxs:
+                    self.dataset.filter_rules[old_idx], self.dataset.filter_rules[new_idx] = self.dataset.filter_rules[new_idx], self.dataset.filter_rules[old_idx]
+                    self.dataset.last_changed_dt = datetime.now()
+                    changecompleted_flag = True
+                    action1 = self.dataset.filter_rules[old_idx][3]
+                    if isinstance(action1, tuple):
+                        action1 = action1[0]
+                        if action1 == Constants.FILTER_TFIDF_REMOVE:
+                            action1 = Constants.FILTER_RULE_REMOVE
+                        elif action1 == Constants.FILTER_TFIDF_INCLUDE:
+                            action1 = Constants.FILTER_RULE_INCLUDE
+                    elif action1 == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
+                        action1 = Constants.FILTER_RULE_REMOVE
+                    action2 = self.dataset.filter_rules[new_idx][3]
+                    if isinstance(action2, tuple):
+                        action2 = action2[0]
+                        if action2 == Constants.FILTER_TFIDF_REMOVE:
+                            action2 = Constants.FILTER_RULE_REMOVE
+                        elif action2 == Constants.FILTER_TFIDF_INCLUDE:
+                            action2 = Constants.FILTER_RULE_INCLUDE
+                    elif action2 == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
+                        action2 = Constants.FILTER_RULE_REMOVE
+                    if action1 != action2:
+                        refreshneeded_flag = True
+
+                if changecompleted_flag:
+                    self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+                if refreshneeded_flag:
+                    self.ApplyFilterAllRulesStart()
+            else:    
+                self.rules_panel.DraftMovedFilterRules(moved_rule_idxs)
+        logger.info("Finished")
+    
     def OnImportNLTKStopWords(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnImportNLTKStopWords")
         logger.info("Starting")
-        nltk_stopwords = set(nltk.corpus.stopwords.words('english'))
+        if self.dataset.language == 'fre-sm':
+            nltk_stopwords = set(nltk.corpus.stopwords.words('french'))
+        elif self.dataset.language == 'eng-sm':
+            nltk_stopwords = set(nltk.corpus.stopwords.words('english'))
+        new_rules = []
         for word in nltk_stopwords:
-            self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
-        self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-        self.ApplyFilterRulesStart()
+            new_rules.append((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
+        if not self.rules_panel.pauserules_tool.IsToggled():
+            for new_rule in new_rules:
+                self.dataset.AddFilterRule(new_rule)
+            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+            self.ApplyFilterNewRulesStart(new_rules)
+        else:
+            self.rules_panel.DraftNewFilterRules(new_rules)
         logger.info("Finished")
 
     def OnImportSpacyStopWords(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnImportSpacyStopWords")
         logger.info("Starting")
-        spacy_stopwords = spacy.lang.en.stop_words.STOP_WORDS
+        if self.dataset.language == 'fre-sm':
+            spacy_stopwords = spacy.lang.fr.stop_words.STOP_WORDS
+        elif self.dataset.language == 'eng-sm':
+            spacy_stopwords = spacy.lang.en.stop_words.STOP_WORDS
+        new_rules = []
         for word in spacy_stopwords:
-            self.dataset.AddFilterRule((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
-        self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-        self.ApplyFilterRulesStart()
+            new_rules.append((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
+        if not self.rules_panel.pauserules_tool.IsToggled():
+            for new_rule in new_rules:
+                self.dataset.AddFilterRule(new_rule)
+            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+            self.ApplyFilterNewRulesStart(new_rules)
+        else:
+            self.rules_panel.DraftNewFilterRules(new_rules)
         logger.info("Finished")
  
     def OnImportFilterRules(self, event):
@@ -466,18 +504,61 @@ class FilterPanel(wx.Panel):
                 pathname = file_dialog.GetPath()
                 try:
                     with open(pathname, 'r') as file:
-                        self.dataset.filter_rules = jsonpickle.decode(json.load(file))
-                        self.dataset.last_changed_dt = datetime.now()
+                        new_rules = jsonpickle.decode(json.load(file))
+                        if not self.rules_panel.pauserules_tool.IsToggled():
+                            self.dataset.filter_rules = new_rules
+                            self.dataset.last_changed_dt = datetime.now()
+                            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+                            self.ApplyFilterAllRulesStart()
+                        else:
+                            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+                            self.rules_panel.DraftRemovedFilterRules(range(0, len(self.dataset.filter_rules)))
+                            self.rules_panel.DraftNewFilterRules(new_rules)
                 except IOError:
                     wx.LogError("Cannot open file '%s'", self.saved_name)
                     logger.error("Failed to open file '%s'", self.saved_name)
-            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            main_frame = wx.GetApp().GetTopWindow()
-            main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-            self.ApplyFilterRulesStart()
         logger.info("Finished")
+
+    def OnPauseRules(self, event):
+        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnPauseRules")
+        logger.info("Starting")
+        if self.rules_panel.pauserules_tool.IsToggled():
+            self.rules_panel.pauserules_tool.SetLabel(GUIText.FILTERS_AUTOAPPLY_RESUME)
+        else:
+            if self.rules_panel.toolbar.FindById(wx.ID_CANCEL):
+                self.dataset.filter_rules = self.rules_panel.GetDraftedRules()
+                self.dataset.last_changed_dt = datetime.now()
+                self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+                self.autosave = True
+                self.ApplyFilterAllRulesStart()
+            self.rules_panel.pauserules_tool.SetLabel(GUIText.FILTERS_AUTOAPPLY_PAUSE)
+            self.rules_panel.toolbar.RemoveTool(wx.ID_APPLY)
+            self.rules_panel.toolbar.RemoveTool(wx.ID_CANCEL)
+            self.rules_panel.toolbar.Realize()
+        logger.info("Finished")
+    
+    def OnCancelRules(self, event):
+        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnCancelRules")
+        logger.info("Starting")
+        self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+        self.rules_panel.toolbar.RemoveTool(wx.ID_APPLY)
+        self.rules_panel.toolbar.RemoveTool(wx.ID_CANCEL)
+        self.rules_panel.toolbar.Realize()
+        logger.info("Finished")
+    
+    def OnApplyRules(self, event):
+        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnApplyRules")
+        logger.info("Starting")
+        self.dataset.filter_rules = self.rules_panel.GetDraftedRules()
+        self.dataset.last_changed_dt = datetime.now()
+        self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+        self.rules_panel.toolbar.RemoveTool(wx.ID_APPLY)
+        self.rules_panel.toolbar.RemoveTool(wx.ID_CANCEL)
+        self.rules_panel.toolbar.Realize()
+        self.autosave = True
+        self.ApplyFilterAllRulesStart()
+        logger.info("Finished")
+    
 
     def OnExportFilterRules(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnExportRemovalSettings")
@@ -531,20 +612,26 @@ class FilterPanel(wx.Panel):
         self.Thaw()
         logger.info("Finished")
 
-    def ApplyFilterRulesStart(self):
-        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].ApplyFilterRulesStart")
+    def ApplyFilterAllRulesStart(self):
+        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].ApplyFilterAllRulesStart")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
+        main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
+                                        warning=GUIText.SIZE_WARNING_MSG,
+                                        freeze=False)
         self.Freeze()
-        self.thread = DatasetsThreads.ApplyFilterRulesThread(self, main_frame, self.dataset)
+        self.thread = DatasetsThreads.ApplyFilterAllRulesThread(self, main_frame, self.dataset)
         logger.info("Finished")
 
-    def ApplyLatestFilterRuleStart(self):
-        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].ApplyLatestFilterRuleStart")
+    def ApplyFilterNewRulesStart(self, new_rules):
+        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].ApplyFilterNewRulesStart")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
+        main_frame.CreateProgressDialog(GUIText.FILTERS_APPLYING_RULES_BUSY_LABEL,
+                                        warning=GUIText.SIZE_WARNING_MSG,
+                                        freeze=False)
         self.Freeze()
-        self.thread = DatasetsThreads.ApplyFilterLatestRuleThread(self, main_frame, self.dataset)
+        self.thread = DatasetsThreads.ApplyFilterNewRulesThread(self, main_frame, self.dataset, new_rules)
         logger.info("Finished")
 
     def OnApplyFilterRulesEnd(self, event):
@@ -552,12 +639,14 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         self.thread.join()
-        self.thread = None
-        
+        self.thread = None        
         self.UpdateImpact()
 
-        main_frame.CloseProgressDialog(thaw=False)
+        if self.autosave:
+            self.autosave = False
+            main_frame.AutoSaveStart()
         self.Thaw()
+        main_frame.CloseProgressDialog(thaw=False)
         logger.info("Finished")
     
     def UpdateImpact(self):
@@ -592,7 +681,19 @@ class FilterPanel(wx.Panel):
         if 'removed_search_pos' in saved_data:
             self.removed_words_panel.pos_searchctrl.SetValue(saved_data['removed_search_pos'])
 
-        self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+        if 'applying_rules_paused' in saved_data:
+            self.rules_panel.pauserules_tool.Toggle(saved_data['applying_rules_paused'])
+        if self.rules_panel.pauserules_tool.IsToggled():
+            self.rules_panel.pauserules_tool.SetLabel(GUIText.FILTERS_AUTOAPPLY_RESUME)
+        else:
+            self.rules_panel.pauserules_tool.SetLabel(GUIText.FILTERS_AUTOAPPLY_PAUSE)
+        
+        if self.rules_panel.pauserules_tool.IsToggled() and 'draft_rules' in saved_data:
+            self.rules_panel.DisplayDraftFilterRules(saved_data['draft_rules'])
+        else:
+            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
+        
+
         self.UpdateImpact()
 
         logger.info("Finished")
@@ -607,6 +708,10 @@ class FilterPanel(wx.Panel):
         saved_data['included_search_pos'] = self.included_words_panel.pos_searchctrl.GetValue()
         saved_data['removed_search_word'] = self.removed_words_panel.word_searchctrl.GetValue()
         saved_data['removed_search_pos'] = self.removed_words_panel.pos_searchctrl.GetValue()
+        saved_data['applying_rules_paused'] = self.rules_panel.pauserules_tool.IsToggled()
+        if self.rules_panel.pauserules_tool.IsToggled():
+            saved_data['draft_rules'] = self.rules_panel.current_rules
+
         logger.info("Finished")
         return saved_data
 
@@ -753,6 +858,8 @@ class RulesPanel(wx.Panel):
         wx.Panel.__init__(self, parent, style=style)
         self.parent_frame = parent_frame
 
+        self.current_rules = []
+
         package_list = list(self.parent_frame.dataset.tokenization_package_versions)
         tokenizer_package = self.parent_frame.dataset.tokenization_package_versions[0]
         package_list[0] = GUIText.FILTERS_RAWTOKENS
@@ -787,14 +894,14 @@ class RulesPanel(wx.Panel):
                                            bitmap=wx.Bitmap(1, 1),
                                            shortHelp=GUIText.FILTERS_RULE_REMOVE_TOOLTIP)
         self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnRemoveRule, remove_tool)
-        moveruledown_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_RULE_DECREASE,
+        moveruleup_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_RULE_UP,
                                                  bitmap=wx.Bitmap(1, 1),
-                                                 shortHelp=GUIText.FILTERS_RULE_DECREASE_TOOLTIP)
-        self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnMoveRuleDown, moveruledown_tool)
-        moveruleup_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_RULE_INCREASE,
-                                               bitmap=wx.Bitmap(1, 1),
-                                               shortHelp=GUIText.FILTERS_RULE_INCREASE_TOOLTIP)
+                                                 shortHelp=GUIText.FILTERS_RULE_UP_TOOLTIP)
         self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnMoveRuleUp, moveruleup_tool)
+        moveruledown_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_RULE_DOWN,
+                                               bitmap=wx.Bitmap(1, 1),
+                                               shortHelp=GUIText.FILTERS_RULE_DOWN_TOOLTIP)
+        self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnMoveRuleDown, moveruledown_tool)
         self.toolbar.AddSeparator()
         spacyautoremove_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_REMOVE_SPACY_AUTO_STOPWORDS,
                                                     bitmap=wx.Bitmap(1, 1),
@@ -808,10 +915,29 @@ class RulesPanel(wx.Panel):
                                                 bitmap=wx.Bitmap(1, 1),
                                                 shortHelp=GUIText.FILTERS_CREATE_TFIDF_RULE_TOOLTIP)
         self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnCreateTfidfFilter, tfidffilter_tool)
+
+
+        self.pauserules_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_AUTOAPPLY_PAUSE,
+                                                    bitmap=wx.Bitmap(1,1),
+                                                    shortHelp=GUIText.FILTERS_AUTOAPPLY_TOOLTIP,
+                                                    kind=wx.ITEM_CHECK)
+        self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnPauseRules, self.pauserules_tool)
+        self.applyrules_tool = self.toolbar.AddTool(wx.ID_APPLY, label=GUIText.FILTERS_MANUALAPPLY,
+                                                    bitmap=wx.Bitmap(1,1),
+                                                    shortHelp=GUIText.FILTERS_MANUALAPPLY_TOOLTIP)
+        self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnApplyRules, self.applyrules_tool)
+        self.cancelrules_tool = self.toolbar.AddTool(wx.ID_CANCEL, label=GUIText.FILTERS_MANUALCANCEL,
+                                                    bitmap=wx.Bitmap(1,1),
+                                                    shortHelp=GUIText.FILTERS_MANUALCANCEL_TOOLTIP)
+        self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnCancelRules, self.cancelrules_tool)
+
+        self.toolbar.Realize()
+        self.toolbar.RemoveTool(wx.ID_APPLY)
+        self.toolbar.RemoveTool(wx.ID_CANCEL)
         self.toolbar.Realize()
         sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
 
-        self.rules_list = DatasetsDataViews.FilterRuleDataViewListCtrl(self)
+        self.rules_list = DatasetsGUIs.FilterRuleListCtrl(self)
         sizer.Add(self.rules_list, proportion=1, flag=wx.EXPAND, border=5)
 
         border = wx.BoxSizer()
@@ -820,7 +946,6 @@ class RulesPanel(wx.Panel):
         logger.info("Finished")
 
     def DisplayFilterRules(self, filter_rules):
-
         package_list = list(self.parent_frame.dataset.tokenization_package_versions)
         tokenizer_package = self.parent_frame.dataset.tokenization_package_versions[0]
         package_list[0] = GUIText.FILTERS_RAWTOKENS
@@ -832,21 +957,96 @@ class RulesPanel(wx.Panel):
         self.tokenization_choice.SetString(1, package_list[1])
         self.tokenization_choice.SetString(2, package_list[2])
 
+        self.current_rules = []
+        for rule in filter_rules:
+            self.current_rules.append([rule, ""])
+
         column_options = {Constants.TOKEN_NUM_WORDS:GUIText.FILTERS_NUM_WORDS,
                           Constants.TOKEN_PER_WORDS:GUIText.FILTERS_PER_WORDS,
                           Constants.TOKEN_NUM_DOCS:GUIText.FILTERS_NUM_DOCS,
                           Constants.TOKEN_PER_DOCS:GUIText.FILTERS_PER_DOCS}
         self.rules_list.DeleteAllItems()
-        i = 1
+        i = 0
         for field, word, pos, action in filter_rules:
+            i += 1
             if isinstance(action, tuple):
                 if action[0] == Constants.FILTER_TFIDF_REMOVE or action[0] == Constants.FILTER_TFIDF_INCLUDE:
                     action = str(action[0])+str(action[1])+str(action[2])+"%"
                 else:
                     action = str(action[0]) + " ("+str(column_options[action[1]])+str(action[2])+str(action[3])+")"
-                
-            self.rules_list.AppendItem([i, field, word, pos, str(action)])
+            self.rules_list.Append([str(i), field, word, pos, str(action)])
+        self.rules_list.AutoSizeColumns()
+    
+    def DisplayDraftFilterRules(self, draft_rules=None):
+        if draft_rules != None:
+            self.current_rules = draft_rules
+        column_options = {Constants.TOKEN_NUM_WORDS:GUIText.FILTERS_NUM_WORDS,
+                          Constants.TOKEN_PER_WORDS:GUIText.FILTERS_PER_WORDS,
+                          Constants.TOKEN_NUM_DOCS:GUIText.FILTERS_NUM_DOCS,
+                          Constants.TOKEN_PER_DOCS:GUIText.FILTERS_PER_DOCS}
+        self.rules_list.DeleteAllItems()
+        i = 0
+        num_changed = 0
+        for rule, state in self.current_rules:
             i += 1
+            field = rule[0]
+            word = rule[1]
+            pos = rule[2]
+            action = rule[3]
+            if isinstance(action, tuple):
+                if action[0] == Constants.FILTER_TFIDF_REMOVE or action[0] == Constants.FILTER_TFIDF_INCLUDE:
+                    action = str(action[0])+str(action[1])+str(action[2])+"%"
+                else:
+                    action = str(action[0]) + " ("+str(column_options[action[1]])+str(action[2])+str(action[3])+")"
+            self.rules_list.Append([str(i), field, word, pos, str(action)])
+            if "R" in state:
+                #D55E00
+                self.rules_list.SetItemBackgroundColour(i-1, wx.Colour(red=213, green=94, blue=0))
+                num_changed = num_changed + 1
+            elif "A" in state:
+                #009E73
+                self.rules_list.SetItemBackgroundColour(i-1, wx.Colour(red=0, green=158, blue=115))
+                num_changed = num_changed + 1
+            elif "M" in state:
+                #56B4E9
+                self.rules_list.SetItemBackgroundColour(i-1, wx.Colour(red=86, green=180, blue=223))
+                num_changed = num_changed + 1
+        self.rules_list.AutoSizeColumns()
+        
+        if self.toolbar.FindById(wx.ID_APPLY) == None and num_changed > 0:
+            self.toolbar.AddTool(self.applyrules_tool)
+            self.toolbar.AddTool(self.cancelrules_tool)
+            self.toolbar.Realize()
+
+    def DraftNewFilterRules(self, new_rules):
+        for new_rule in new_rules:
+            self.current_rules.append([new_rule, "A"])
+        self.DisplayDraftFilterRules()
+
+    def DraftRemovedFilterRules(self, removed_idxs):
+        for idx in removed_idxs:
+            state = self.current_rules[idx][1]
+            if "A" not in state:
+                self.current_rules[idx][1] = state + "R"
+            elif state == "A":
+                self.current_rules.pop(idx)
+        self.DisplayDraftFilterRules()
+    
+    def DraftMovedFilterRules(self, moved_idxs):
+        for old_idx, new_idx in moved_idxs:
+            state = self.current_rules[old_idx][1]
+            if "M" not in state:
+                state = state + "M"
+                self.current_rules[old_idx][1] = state
+            self.current_rules[old_idx], self.current_rules[new_idx] = self.current_rules[new_idx], self.current_rules[old_idx]
+        self.DisplayDraftFilterRules()
+            
+    def GetDraftedRules(self):
+        rules = []
+        for rule, state in self.current_rules:
+            if "R" not in state:
+                rules.append(rule)
+        return rules
 
 class ImpactPanel(wx.Panel):
     def __init__(self, parent, parent_frame):

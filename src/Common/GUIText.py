@@ -632,13 +632,13 @@ class Filtering(Main, Datasets):
     FILTERS_LEMMATIZER = "Lemmatizer: "
     FILTERS_RULES = "Rules"
     FILTERS_RULES_LIST = "Rules List"
-    FILTERS_RULES_STEP = "Sequence"
+    FILTERS_RULES_STEP = "Step"
     FILTERS_RULES_ACTION = "Action"
     FILTERS_RULE_REMOVE_TOOLTIP = "Selected rules will be removed"
-    FILTERS_RULE_INCREASE = "Move Later"
-    FILTERS_RULE_INCREASE_TOOLTIP = "Selected rules will each occur later"
-    FILTERS_RULE_DECREASE = "Move Earlier"
-    FILTERS_RULE_DECREASE_TOOLTIP = "Selected rules will each occur earlier"
+    FILTERS_RULE_UP = "Move Up"
+    FILTERS_RULE_UP_TOOLTIP = "Selected rules will each occur later"
+    FILTERS_RULE_DOWN = "Move Down"
+    FILTERS_RULE_DOWN_TOOLTIP = "Selected rules will each occur earlier"
     FILTERS_REMOVE_SPACY_AUTO_STOPWORDS = "Remove Spacy Auto Stop Words"
     FILTERS_REMOVE_SPACY_AUTO_STOPWORDS_TOOLTIP = "Add a Remove spaCy Auto Stopwords Rule"
 
@@ -662,6 +662,17 @@ class Filtering(Main, Datasets):
     FILTERS_CREATE_TFIDF_RULE_TOOLTIP = "Create a New TFIDF Rule"
     FILTERS_CREATE_TFIDF_RULE_NUMBER_TOOLTIP = "Set the token rank to use when deciding what tfidf value to use"
     FILTERS_CREATE_TFIDF_RULE_INCOMPLETE_ERROR = "Incomplete tfidf rule.\nPlease make sure all Rule fields are filled out."
+
+    FILTERS_AUTOAPPLY_PAUSE = "Pause Auto-Apply"
+    FILTERS_AUTOAPPLY_RESUME = "Resume Auto-Apply"
+    FILTERS_AUTOAPPLY_TOOLTIP = "Pause to prevent rules from automatically applying as they are changed.\
+                                \nIf resumed, will auto-apply all drafted rule changes.\
+                                \nUseful when performing multiple rule changes on millions of words."
+    FILTERS_MANUALAPPLY = "Apply Changes"
+    FILTERS_MANUALAPPLY_TOOLTIP = "Will apply any drafted rule changes made to the dataset"
+    FILTERS_MANUALCANCEL = "Cancel Changes"
+    FILTERS_MANUALCANCEL_TOOLTIP = "Will cancel any drafted rule changes to the dataset"
+
 
     FILTERS_IMPORT_CONFIRMATION_REQUEST = "Are you sure you wnat to proceed with importing removal settings?"\
                                           "\nWARNING: Any current settings will be lost."

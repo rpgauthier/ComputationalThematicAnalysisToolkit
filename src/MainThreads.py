@@ -260,7 +260,7 @@ class LoadThread(Thread):
                             db_conn.InsertStringTokens(dataset_key, field_key, result['datasets'][dataset_key].included_fields[field_key].tokenset)
                             result['datasets'][dataset_key].included_fields[field_key].tokenset = None
                     db_conn.UpdateStringTokensTFIDF(dataset_key)
-                    db_conn.ApplyDatasetRules(dataset_key, result['datasets'][dataset_key].filter_rules)
+                    db_conn.ApplyAllDatasetRules(dataset_key, result['datasets'][dataset_key].filter_rules)
                     db_conn.RefreshStringTokensIncluded(dataset_key)
                     db_conn.RefreshStringTokensRemoved(dataset_key)
                     included_counts = db_conn.GetStringTokensCounts(dataset_key)
@@ -277,7 +277,7 @@ class LoadThread(Thread):
                 db_conn.Upgrade()
                 for dataset_key in result['datasets']:
                     db_conn.UpdateStringTokensTFIDF(dataset_key)
-                    db_conn.ApplyDatasetRules(dataset_key, result['datasets'][dataset_key].filter_rules)    
+                    db_conn.ApplyAllDatasetRules(dataset_key, result['datasets'][dataset_key].filter_rules)    
                     db_conn.RefreshStringTokensIncluded(dataset_key)
                     db_conn.RefreshStringTokensRemoved(dataset_key)
                     included_counts = db_conn.GetIncludedStringTokensCounts(dataset_key)
@@ -300,6 +300,10 @@ class LoadThread(Thread):
             if hasattr(sample, 'metadataset_key_list'):
                 sample.document_keys = sample.metadataset_key_list
                 sample.last_changed_dt = datetime.now()
+        if ver < version.parse('0.8.3'):
+            #reduce amount of data in each sample that has been generated to help speed up saving
+            if hasattr(sample, "_tokenset") and isinstance(sample._tokenset, dict) and sample.generated_flag:
+                sample.tokensets = sample.tokensets.keys()
 
     def UpgradeCode(self, code, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_CODES))

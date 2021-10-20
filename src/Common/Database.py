@@ -748,8 +748,8 @@ class DatabaseConnection():
             sql_parameters = sql_action_parameters
         return sql, sql_parameters
 
-    def ApplyDatasetRules(self, dataset_key, rules):
-        logger = logging.getLogger(__name__+".ApplyDatasetRules")
+    def ApplyAllDatasetRules(self, dataset_key, rules):
+        logger = logging.getLogger(__name__+".ApplyAllDatasetRules")
         logger.info("Starting")
         try:
             c = self.__conn.cursor()
@@ -809,9 +809,9 @@ class DatabaseConnection():
             logger.exception("sql failed with error")
         logger.info("Finished")
     
-    def ApplyDatasetRule(self, dataset_key, rule):
-        logger = logging.getLogger(__name__+".ApplyDatasetRule")
-        logger.info("Starting Applying Rule %s", str(rule))
+    def ApplyNewDatasetRules(self, dataset_key, new_rules):
+        logger = logging.getLogger(__name__+".ApplyNewDatasetRules")
+        logger.info("Starting")
         try:
             c = self.__conn.cursor()
             sql_select_dataset = """SELECT id, token_type
@@ -823,19 +823,43 @@ class DatabaseConnection():
             dataset_id = result[0]
             token_type = result[1]
 
-            #create rule's sql
-            rule_action = rule[3]
-            if rule_action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
-                rule_action == Constants.FILTER_RULE_REMOVE
-            sql, sql_parameters = self._RuleGroupSqlCreator(rule_action, [rule], dataset_id, token_type)
-            #execute the rule
-            c.execute(sql, sql_parameters)
-            #commit after every rule to make sure operations are applied in order
-            self.__conn.commit()
+            #apply rules in order
+            ##TODO explore if further concatination is possible (i.e. TFIDF removal with pos removal)
+            cur_rule_action = None
+            cur_rule_group = []
+            #field, word, pos, action
+            for rule in new_rules:
+                if cur_rule_action == None:
+                    cur_rule_action = rule[3]
+                next_rule_action = rule[3]
+                if next_rule_action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
+                    next_rule_action = Constants.FILTER_RULE_REMOVE
+
+                if next_rule_action == cur_rule_action:
+                    cur_rule_group.append(rule)
+                else:
+                    sql, sql_parameters = self._RuleGroupSqlCreator(cur_rule_action, cur_rule_group, dataset_id, token_type)
+                    #execute the rule group
+                    c.execute(sql, sql_parameters)
+                    #commit after every rule to make sure operations are applied in correct order
+                    #TODO Assess if this is needed
+                    self.__conn.commit()
+                    logger.info("Completed Applying Rule Group %s", str(cur_rule_group))
+
+                    cur_rule_action = next_rule_action
+                    cur_rule_group = [rule]
+            
+            if cur_rule_action != None:
+                sql, sql_parameters = self._RuleGroupSqlCreator(cur_rule_action, cur_rule_group, dataset_id, token_type)
+                #execute the rule group
+                c.execute(sql, sql_parameters)
+                self.__conn.commit()
+                logger.info("Completed Applying Rule Group %s", str(cur_rule_group))
+
             c.close()
         except sqlite3.Error as e:
             logger.exception("sql failed with error")
-        logger.info("Finished Applying Rule %s", str(rule))
+        logger.info("Finished")
 
     def RefreshStringTokensIncluded(self, dataset_key):
         logger = logging.getLogger(__name__+".RefreshStringTokensIncluded")
