@@ -67,18 +67,17 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
         total = len(field_data)
         full_data_list = list(field_data.items())
         split_data_lists = []
-        if total > main_frame.pool_num:
-            increment = int(total/main_frame.pool_num)
+        if total > main_frame.pool_num*2:
+            increment = int(total/(main_frame.pool_num*2))
             start = 0
             end = increment
-            for i in range(main_frame.pool_num-1):
+            for i in range(main_frame.pool_num*2-1):
                 split_data_lists.append(full_data_list[start:end])
                 start = end
                 end = end+increment
             split_data_lists.append(full_data_list[start:])
         else:
-            for i in range(total):
-                split_data_lists.append(full_data_list[i:i+1])
+            split_data_lists.append(full_data_list)
         
         count = 0
         for data_list in split_data_lists:
