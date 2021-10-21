@@ -260,9 +260,11 @@ class PartsViewCtrl(dv.DataViewCtrl):
         for field_name in model.metadata_column_names:
             if model.metadata_column_types[idx-1] == 'int':
                 renderer = dv.DataViewTextRenderer(varianttype="long")
-            else:
+            elif model.metadata_column_types[idx-1] == 'url':
                 renderer = dv.DataViewTextRenderer()
                 renderer.EnableMarkup()
+            else:
+                renderer = dv.DataViewTextRenderer()
 
             column = dv.DataViewColumn(field_name, renderer, idx, align=wx.ALIGN_LEFT)
             self.AppendColumn(column)

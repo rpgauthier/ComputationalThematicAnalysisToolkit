@@ -1380,9 +1380,11 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         for field_name in model.metadata_column_names:
             if model.metadata_column_types[idx] == 'int':
                 renderer = dv.DataViewTextRenderer(varianttype="long")
-            else:
+            elif model.metadata_column_types[idx] == 'url':
                 renderer = dv.DataViewTextRenderer()
                 renderer.EnableMarkup()
+            else:
+                renderer = dv.DataViewTextRenderer()
             column = dv.DataViewColumn(field_name, renderer, idx, align=wx.ALIGN_LEFT)
             self.AppendColumn(column)
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
@@ -1391,9 +1393,11 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         for field_name in model.data_column_names:
             if model.data_column_types[idx-len(model.metadata_column_names)] == 'int':
                 renderer = dv.DataViewTextRenderer(varianttype="long")
-            else:
+            elif model.data_column_types[idx-len(model.metadata_column_names)] == 'url':
                 renderer = dv.DataViewTextRenderer()
                 renderer.EnableMarkup()
+            else:
+                renderer = dv.DataViewTextRenderer()
             column = dv.DataViewColumn(field_name, renderer, idx, align=wx.ALIGN_LEFT)
             self.AppendColumn(column)
             idx = idx+1

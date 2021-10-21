@@ -513,6 +513,12 @@ class MainFrame(wx.Frame):
                         self.codes[key].DestroyObject()
                     self.codes.clear()
 
+                    #update gui based on reset objects to prevent errors
+                    self.DatasetsUpdated(autosave=False)
+                    self.SamplesUpdated()
+                    self.DocumentsUpdated()
+                    self.CodesUpdated()
+
                     self.current_workspace.cleanup()
                     self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
 
