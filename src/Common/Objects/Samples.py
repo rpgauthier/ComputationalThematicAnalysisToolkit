@@ -388,7 +388,7 @@ class LDASample(TopicSample):
         if self.generated_flag:
             self.dictionary = gensim.corpora.Dictionary.load(current_workspace+"/Samples/"+self.key+'/ldadictionary.dict')
             self.corpus = gensim.corpora.MmCorpus(current_workspace+"/Samples/"+self.key+'/ldacorpus.mm')
-            self.model = gensim.models.ldamodel.LdaModel.load(current_workspace+"/Samples/"+self.key+'/ldamodel.lda')
+            self._model = gensim.models.ldamodel.LdaModel.load(current_workspace+"/Samples/"+self.key+'/ldamodel.lda')
         logger.info("Finished")
 
     def Save(self, current_workspace):
@@ -484,7 +484,7 @@ class BitermSample(TopicSample):
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/vocab.pk', 'rb') as infile:
                 self.vocab = pickle.load(infile)
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/btm.pk', 'rb') as infile:
-                self.model = pickle.load(infile)
+                self._model = pickle.load(infile)
         logger.info("Finished")
 
     def Save(self, current_workspace):
@@ -575,7 +575,7 @@ class NMFSample(TopicSample):
             with bz2.BZ2File(self._workspace_path+self.filedir+'/tfidf.pk', 'rb') as infile:
                 self.transformed_texts = pickle.load(infile)
             with bz2.BZ2File(self._workspace_path+self.filedir+'/nmf_model.pk', 'rb') as infile:
-                self.model = pickle.load(infile)
+                self._model = pickle.load(infile)
         logger.info("Finished")
 
     def Load(self, current_workspace):
@@ -587,7 +587,7 @@ class NMFSample(TopicSample):
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf.pk', 'rb') as infile:
                 self.transformed_texts = pickle.load(infile)
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/nmf_model.pk', 'rb') as infile:
-                self.model = pickle.load(infile)
+                self._model = pickle.load(infile)
         logger.info("Finished")
 
     def Save(self, current_workspace):

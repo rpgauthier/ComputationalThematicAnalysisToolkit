@@ -118,6 +118,7 @@ class Main(Common):
     LOAD_BUSY_MSG_FILE = "Loading File: "
     LOAD_BUSY_MSG_DATASET = "Loading Dataset: "
     LOAD_BUSY_MSG_SAMPLE = "Loading Sample: "
+    LOAD_BUSY_MSG_CODES = "Loading Codes"
     LOAD_BUSY_MSG_CONFIG = "Loading Configurations."
 
     SAVE_BUSY_LABEL = "Saving Workspace"
@@ -128,6 +129,8 @@ class Main(Common):
     SAVE_BUSY_MSG_CONFIG = "Saving Configurations."
     SAVE_BUSY_MSG_DATASETS = "Saving Dataset: "
     SAVE_BUSY_MSG_SAMPLES = "Saving Sample: "
+    SAVE_BUSY_MSG_CODES = "Saving Codes"
+    SAVE_BUSY_MSG_COMPRESSING = "Compressing Saved Data"
 
     UPGRADE_BUSY_MSG_WORKSPACE1 = "Upgrading Workspace version from  "
     UPGRADE_BUSY_MSG_WORKSPACE2 = " to "
