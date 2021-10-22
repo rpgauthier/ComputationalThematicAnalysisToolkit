@@ -608,6 +608,7 @@ class FilterPanel(wx.Panel):
         
         self.UpdateImpact()
 
+        main_frame.AutoSaveStart()
         main_frame.CloseProgressDialog(thaw=False)
         self.Thaw()
         logger.info("Finished")

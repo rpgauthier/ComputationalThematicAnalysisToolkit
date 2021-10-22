@@ -324,7 +324,6 @@ class DocumentDialog(wx.Dialog):
 class DocumentPanel(wx.Panel):
     def __init__(self, parent, document, size):
         wx.Panel.__init__(self, parent, size=size)
-
         self.document = document
         self.cur_position = None
         self.field_positions = {}
@@ -509,11 +508,11 @@ class DocumentPanel(wx.Panel):
             codes = code_connections
         
         for code in codes:
-            if self.document.key in code.doc_positions:
+            if (self.document.parent.key, self.document.key) in code.doc_positions:
                 new_attr = wx.TextAttr()
                 new_attr.SetFlags(wx.TEXT_ATTR_TEXT_COLOUR)
                 new_attr.SetTextColour(wx.Colour(code.colour_rgb[0], code.colour_rgb[1], code.colour_rgb[2]))
-                for position in code.doc_positions[self.document.key]:
+                for position in code.doc_positions[(self.document.parent.key, self.document.key)]:
                     if position[0] in self.field_positions:
                         start = position[1] + self.field_positions[position[0]][0]
                         end = position[2] + self.field_positions[position[0]][0]
@@ -548,8 +547,8 @@ class DocumentPanel(wx.Panel):
                 relative_position = self.cur_position - field_position[0]
                 break
         for code in self.document.GetCodeConnections(self.codes_model.codes):
-            if self.document.key in code.doc_positions:
-                for position in code.doc_positions[self.document.key]:
+            if (self.document.parent.key, self.document.key) in code.doc_positions:
+                for position in code.doc_positions[(self.document.parent.key, self.document.key)]:
                     if position[0] == relative_field and position[1] <= relative_position <= position[2]:
                         remove_menuitem = menu.Append(wx.ID_ANY, GUIText.REMOVE + " " + code.name)
                         self.Bind(wx.EVT_MENU, functools.partial(self.OnRemove, code), remove_menuitem)
@@ -573,15 +572,15 @@ class DocumentPanel(wx.Panel):
             else:
                 end = cur_selection[1] - field_position[0]
             if include:
-                if self.document.key not in code.doc_positions:
-                    code.doc_positions[self.document.key] = []
-                code.doc_positions[self.document.key].append((field_key, start, end,))
+                if (self.document.parent.key, self.document.key) not in code.doc_positions:
+                    code.doc_positions[(self.document.parent.key, self.document.key)] = []
+                code.doc_positions[(self.document.parent.key, self.document.key)].append((field_key, start, end,))
         self.field_ctrl.SelectNone()
         self.OnShowCode(None)
         
 
     def OnRemove(self, code, event):
-        if self.document.key in code.doc_positions:
+        if (self.document.parent.key, self.document.key) in code.doc_positions:
             relative_field = None
             relative_position = None
             for field_key, field_position in self.field_positions.items():
@@ -589,9 +588,9 @@ class DocumentPanel(wx.Panel):
                     relative_field = field_key
                     relative_position = self.cur_position - field_position[0]
                     break
-            for position in reversed(code.doc_positions[self.document.key]):
+            for position in reversed(code.doc_positions[(self.document.parent.key, self.document.key)]):
                 if position[0] == relative_field and position[1] <= relative_position <= position[2]:
-                    code.doc_positions[self.document.key].remove(position)
+                    code.doc_positions[(self.document.parent.key, self.document.key)].remove(position)
         self.field_ctrl.SelectNone()
         self.OnShowCode(None)
     
@@ -604,25 +603,27 @@ class DocumentPanel(wx.Panel):
         self.notes_panel.Bind(wx.EVT_TEXT, self.OnUpdateNotes)
 
 class CreateQuotationDialog(wx.Dialog):
-    def __init__(self, parent, code, size=wx.DefaultSize):
+    def __init__(self, parent, code, datasets, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".CreateQuotationDialog["+str(code.key)+"].__init__")
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=str(code.key), size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
         sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.code = code
+        self.datasets = datasets
 
         instruction_label = wx.StaticText(self, label="Choose a document:")
         sizer.Add(instruction_label, 0, wx.ALL, 5)
 
         #single dataset mode
         main_frame = wx.GetApp().GetTopWindow()
-        self.connections = code.GetConnections(main_frame.datasets, main_frame.samples)
-        self.connections_model = CodesDataViews.DocumentConnectionsViewModel(self.connections)
-        self.connections_ctrl = CodesDataViews.DocumentConnectionsViewCtrl(self, self.connections_model)
-        self.connections_ctrl.ToggleWindowStyle(wx.dataview.DV_MULTIPLE)
-        self.connections_ctrl.SetWindowStyle(wx.dataview.DV_SINGLE)
-        sizer.Add(self.connections_ctrl, 1, wx.EXPAND, 5)
+        self.positions_model = CodesDataViews.DocumentPositionsViewModel(self.code, self.datasets)
+        self.positions_ctrl = CodesDataViews.DocumentPositionsViewCtrl(self, self.positions_model)
+        self.positions_ctrl.ToggleWindowStyle(wx.dataview.DV_MULTIPLE)
+        self.positions_ctrl.SetWindowStyle(wx.dataview.DV_SINGLE)
+        sizer.Add(self.positions_ctrl, 1, wx.EXPAND, 5)
 
-        self.connections_model.Cleared()
+        self.positions_model.Cleared()
 
         controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
         ok_button = wx.FindWindowById(wx.ID_OK, self)
@@ -636,8 +637,8 @@ class CreateQuotationDialog(wx.Dialog):
         logger = logging.getLogger(__name__+".CreateQuotationDialog.OnOK")
         logger.info("Starting")
         #check that an object was selected
-        if not self.connections_ctrl.HasSelection():
-            wx.MessageBox("No item selected. Must select one item to create a quotation from.",
+        if not self.positions_ctrl.HasSelection():
+            wx.MessageBox("No item selected. Must select atleast one document or quotation.",
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('no item selected')
         else:

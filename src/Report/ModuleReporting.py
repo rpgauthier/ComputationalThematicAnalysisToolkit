@@ -16,8 +16,8 @@ class ReportingPanel(wx.Panel):
         sizer = wx.BoxSizer( wx.VERTICAL)
 
         main_frame = wx.GetApp().GetTopWindow()
-        self.quotations_model = CodesDataViews.QuotationsViewModel(main_frame.codes)
-        self.quotations_ctrl = CodesDataViews.QuotationsViewCtrl(self, self.quotations_model)
+        self.quotations_model = CodesDataViews.SelectedQuotationsViewModel(main_frame.codes)
+        self.quotations_ctrl = CodesDataViews.SelectedQuotationsViewCtrl(self, self.quotations_model)
         sizer.Add(self.quotations_ctrl, 1, wx.EXPAND|wx.ALL, 5)
 
         self.SetSizer(sizer)

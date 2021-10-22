@@ -181,11 +181,21 @@ class Code(GenericObject):
             self.parent = None
 
 class Quotation(GenericObject):
-    def __init__(self, key, parent):
+    def __init__(self, key, parent, dataset_key, document_key, original_data=None, paraphrased_data=None):
         GenericObject.__init__(self, key=key, parent=parent, name=key)
         #key needs to be a tuple made up of the dataset_key and a document_key from that dataset allowing for lookup of the document
-        self._original_data = None
-        self._paraphrased_data = None
+        self._dataset_key = dataset_key
+        self._document_key = document_key
+        self._original_data = original_data
+        self._paraphrased_data = paraphrased_data
+
+    @property
+    def dataset_key(self):
+        return self._dataset_key
+
+    @property
+    def document_key(self):
+        return self._document_key
 
     @property
     def original_data(self):

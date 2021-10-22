@@ -856,6 +856,7 @@ class MainFrame(wx.Frame):
         self.sampling_module.ModeChange()
         self.coding_module.DocumentsUpdated()
         self.reviewing_module.ModeChange()
+        self.reporting_module.ModeChange()
 
 class CustomProgressDialog(wx.Dialog):
     def __init__(self, parent, title, warning=""):

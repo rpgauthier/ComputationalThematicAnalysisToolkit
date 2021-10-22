@@ -14,6 +14,7 @@ import Common.CustomEvents as CustomEvents
 from Common.GUIText import Main as GUIText
 import Common.Objects.Datasets as Datasets
 import Common.Database as Database
+import Common.Objects.Codes as Codes
 
 # Thread class that executes processing
 class SaveThread(Thread):
@@ -175,7 +176,7 @@ class LoadThread(Thread):
             self.UpgradeSample(result['samples'][sample_key], result['datasets'][result['samples'][sample_key].dataset_key], ver)
         #upgrade codes
         for code_key in result['codes']:
-            self.UpgradeCode(result['codes'][code_key], ver)
+            self.UpgradeCode(result['codes'][code_key], result['datasets'], ver)
 
     def UpgradeConfig(self, config, ver):
         if ver < version.parse('0.8.1'):
@@ -305,7 +306,7 @@ class LoadThread(Thread):
             if hasattr(sample, "_tokenset") and isinstance(sample._tokenset, dict) and sample.generated_flag:
                 sample.tokensets = sample.tokensets.keys()
 
-    def UpgradeCode(self, code, ver):
+    def UpgradeCode(self, code, datasets, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_CODES))
         if ver < version.parse('0.8.1'):
             if not hasattr(code, "doc_positions"):
@@ -314,5 +315,18 @@ class LoadThread(Thread):
             if not hasattr(code, "_colour_rgb"):
                 code._colour_rgb = (0,0,0,)
                 code.last_changed_dt = datetime.now()
+        if ver < version.parse('0.8.3'):
+            new_doc_positions = {}
+            for key in code.doc_positions:
+                new_doc_positions[(list(datasets.keys())[0], key)] =  code.doc_positions[key]
+            code.doc_positions = new_doc_positions
+            new_quotations = []
+            for quotation in code.quotations:
+                new_quotations.append(Codes.Quotation(None, code, quotation.key[0], quotation.key[1], quotation.original_data, quotation.paraphrased_data))
+            code.quotations = new_quotations
+            code.last_changed_dt = datetime.now()
+
+
+            
 
     
