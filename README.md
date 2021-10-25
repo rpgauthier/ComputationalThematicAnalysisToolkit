@@ -2,7 +2,7 @@
 
 ## Installation Instructions
 
-To Access most resent version 0.8.1: 
+To Access most recent version 0.8.3: 
 
 Installers avaliable for Windows 10 x64 and OSX 
 
