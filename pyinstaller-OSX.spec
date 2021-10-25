@@ -48,4 +48,4 @@ app = BUNDLE(coll,
              name='ComputationalThematicAnalysisToolkit.app',
              icon=None,
              bundle_identifier=None,
-             version='0.8.2')
+             version='0.8.3')
