@@ -30,11 +30,12 @@ class Dataset(GenericObject):
 
         #properties that when modfied need to have changed date manual updated
         self.filter_rules = []
+        self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, 'X', Constants.FILTER_RULE_REMOVE))
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, 'SPACE', Constants.FILTER_RULE_REMOVE))
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, 'PUNCT', Constants.FILTER_RULE_REMOVE))
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, 'NUM', Constants.FILTER_RULE_REMOVE))
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS))
-        self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, (Constants.FILTER_TFIDF_REMOVE, Constants.FILTER_TFIDF_LOWER, 25.0)))
+        self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, (Constants.FILTER_TFIDF_REMOVE, Constants.FILTER_TFIDF_LOWER, 75.0)))
 
         #objects that have their own last_changed_dt and thus need to be checked dynamically
         self.available_fields = {}
