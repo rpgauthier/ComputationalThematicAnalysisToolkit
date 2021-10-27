@@ -38,18 +38,26 @@ if not os.path.exists(SAVE_DATA_PATH):
         os.rename(old_SAVE_DATA_PATH, SAVE_DATA_PATH)
     else:
         os.makedirs(SAVE_DATA_PATH)
-SAVED_WORKSPACES_PATH = os.path.realpath(os.path.join(SAVE_DATA_PATH, 'Saved_Workspaces'))
-if not os.path.exists(SAVED_WORKSPACES_PATH):
-    os.makedirs(SAVED_WORKSPACES_PATH)
-
-AUTOSAVE_PATH = os.path.realpath(os.path.join(SAVED_WORKSPACES_PATH, 'AutoSave.mta'))
-
 if platform.system() == 'Windows':
     APP_DATA_PATH = os.path.realpath(os.path.expanduser('~/AppData/Local/ComputationalThematicAnalysisToolkit'))
 else:
     APP_DATA_PATH = os.path.realpath(os.path.expanduser('~/Library/ComputationalThematicAnalysisToolkit'))
 if not os.path.exists(APP_DATA_PATH):
     os.makedirs(APP_DATA_PATH)
+
+SAVED_WORKSPACES_PATH = os.path.realpath(os.path.join(SAVE_DATA_PATH, 'Saved_Workspaces'))
+if not os.path.exists(SAVED_WORKSPACES_PATH):
+    os.makedirs(SAVED_WORKSPACES_PATH)
+DATA_PATH = os.path.realpath(os.path.join(SAVE_DATA_PATH, 'Data'))
+if not os.path.exists(DATA_PATH):
+    old_DATA = os.path.realpath(os.path.join(APP_DATA_PATH, 'Data'))
+    if os.path.exists(old_DATA):
+        shutil.move(old_DATA, SAVE_DATA_PATH)
+    else:
+        os.makedirs(DATA_PATH)
+
+AUTOSAVE_PATH = os.path.realpath(os.path.join(SAVED_WORKSPACES_PATH, 'AutoSave.mta'))
+
 CURRENT_WORKSPACE_PATH = os.path.realpath(os.path.join(APP_DATA_PATH, 'Current_Workspace'))
 old_CURRENT_WORKSPACE = os.path.realpath(os.path.join(SAVE_DATA_PATH, 'Current_Workspace'))
 if not os.path.exists(CURRENT_WORKSPACE_PATH):
@@ -57,13 +65,6 @@ if not os.path.exists(CURRENT_WORKSPACE_PATH):
         shutil.move(old_CURRENT_WORKSPACE, APP_DATA_PATH)
     else:
         os.makedirs(CURRENT_WORKSPACE_PATH)
-DATA_PATH = os.path.realpath(os.path.join(APP_DATA_PATH, 'Data'))
-if not os.path.exists(DATA_PATH):
-    old_DATA = os.path.realpath(os.path.join(SAVE_DATA_PATH, 'Data'))
-    if os.path.exists(old_DATA):
-        shutil.move(old_DATA, APP_DATA_PATH)
-    else:
-        os.makedirs(DATA_PATH)
 LOG_PATH = os.path.realpath(os.path.join(APP_DATA_PATH, 'Logs'))
 old_LOG = os.path.realpath(os.path.join(SAVE_DATA_PATH, 'Logs'))
 if not os.path.exists(LOG_PATH):
