@@ -270,7 +270,8 @@ class CodesViewCtrl(dv.DataViewCtrl):
         model = self.GetModel()
         main_frame = wx.GetApp().GetTopWindow()
         add_dialog = wx.TextEntryDialog(main_frame, message=GUIText.ADD_NEW_CODE, caption=GUIText.NEW_CODE)
-        
+        ok_button = wx.FindWindowById(wx.ID_OK, add_dialog)
+        ok_button.SetLabel(GUIText.ADD_NEW_CODE)
         while new_name is None:
             rc = add_dialog.ShowModal()
             if rc == wx.ID_OK:
@@ -305,7 +306,8 @@ class CodesViewCtrl(dv.DataViewCtrl):
         item = self.selected_item
         node = model.ItemToObject(item)
         add_dialog = wx.TextEntryDialog(main_frame, message=GUIText.ADD_NEW_SUBCODE, caption=GUIText.NEW_SUBCODE)
-        
+        ok_button = wx.FindWindowById(wx.ID_OK, add_dialog)
+        ok_button.SetLabel(GUIText.ADD_NEW_SUBCODE)
         while new_name is None:
             rc = add_dialog.ShowModal()
             if rc == wx.ID_OK:
@@ -335,36 +337,35 @@ class CodesViewCtrl(dv.DataViewCtrl):
         logger = logging.getLogger(__name__+".CodesViewCtrl.OnDeleteCodes")
         logger.info("Starting")
         #confirmation
-        if wx.MessageBox(GUIText.CONFIRM_DELETE_CODES,
-                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
-            logger.info("Finished - Cancelled")
-            return
+        confirm_dialog = wx.MessageDialog(self, GUIText.CONFIRM_DELETE_CODES,
+                                          GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+        confirm_dialog.SetOKLabel(GUIText.DELETE_CODES)
+        if confirm_dialog.ShowModal() == wx.ID_OK:
+            model = self.GetModel() 
+            main_frame = wx.GetApp().GetTopWindow()
+            delete_codes = []
+            for item in self.GetSelections():
+                delete_codes.append(model.ItemToObject(item))
+            
+            for code in delete_codes:
+                def DeleteCode(code):
+                    for subcode_key in list(code.subcodes.keys()):
+                        DeleteCode(code.subcodes[subcode_key])
+                    connection_objs = code.GetConnections(main_frame.datasets, main_frame.samples)
+                    for obj in connection_objs:
+                        obj.RemoveCode(code.key)
+                        code.RemoveConnection(obj)
 
-        model = self.GetModel() 
-        main_frame = wx.GetApp().GetTopWindow()
-        delete_codes = []
-        for item in self.GetSelections():
-            delete_codes.append(model.ItemToObject(item))
-        
-        for code in delete_codes:
-            def DeleteCode(code):
-                for subcode_key in list(code.subcodes.keys()):
-                    DeleteCode(code.subcodes[subcode_key])
-                connection_objs = code.GetConnections(main_frame.datasets, main_frame.samples)
-                for obj in connection_objs:
-                    obj.RemoveCode(code.key)
-                    code.RemoveConnection(obj)
+                    if code.parent != None:
+                        code.DestroyObject()
+                    elif code.key in main_frame.codes:
+                        code.DestroyObject()
+                        del main_frame.codes[code.key]
+                DeleteCode(code)
 
-                if code.parent != None:
-                    code.DestroyObject()
-                elif code.key in main_frame.codes:
-                    code.DestroyObject()
-                    del main_frame.codes[code.key]
-            DeleteCode(code)
-
-        model.Cleared()
-        self.Expander(None)
-        main_frame.CodesUpdated()
+            model.Cleared()
+            self.Expander(None)
+            main_frame.CodesUpdated()
         logger.info("Finished")
 
     def OnChangeColour(self, event):
@@ -607,7 +608,8 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         model = self.GetModel()
         main_frame = wx.GetApp().GetTopWindow()
         add_dialog = wx.TextEntryDialog(main_frame, message=GUIText.ADD_NEW_CODE, caption=GUIText.NEW_CODE)
-        
+        ok_button = wx.FindWindowById(wx.ID_OK, add_dialog)
+        ok_button.SetLabel(GUIText.ADD_NEW_CODE)
         while new_name is None:
             rc = add_dialog.ShowModal()
             if rc == wx.ID_OK:
@@ -644,7 +646,8 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         item = self.selected_item
         node = model.ItemToObject(item)
         add_dialog = wx.TextEntryDialog(main_frame, message=GUIText.ADD_NEW_SUBCODE, caption=GUIText.NEW_SUBCODE)
-        
+        ok_button = wx.FindWindowById(wx.ID_OK, add_dialog)
+        ok_button.SetLabel(GUIText.ADD_NEW_SUBCODE)
         while new_name is None:
             rc = add_dialog.ShowModal()
             if rc == wx.ID_OK:
@@ -676,38 +679,39 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         logger = logging.getLogger(__name__+".ObjectCodesViewCtrl.OnDeleteCodes")
         logger.info("Starting")
         #confirmation
-        if wx.MessageBox(GUIText.CONFIRM_DELETE_CODES,
-                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
-            logger.info("Finished - Cancelled")
-            return
+        confirm_dialog = wx.MessageDialog(self, GUIText.CONFIRM_DELETE_CODES,
+                                          GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+        confirm_dialog.SetOKLabel(GUIText.DELETE_CODES)
+        if confirm_dialog.ShowModal() == wx.ID_OK:
+            model = self.GetModel() 
+            main_frame = wx.GetApp().GetTopWindow()
+            delete_codes = []
+            for item in self.GetSelections():
+                delete_codes.append(model.ItemToObject(item))
+            
+            for code in delete_codes:
+                def DeleteCode(code):
+                    for subcode_key in list(code.subcodes.keys()):
+                        DeleteCode(code.subcodes[subcode_key])
+                    connection_objs = code.GetConnections(main_frame.datasets, main_frame.samples)
+                    for obj in connection_objs:
+                        obj.RemoveCode(code.key)
+                        code.RemoveConnection(obj)
 
-        model = self.GetModel() 
-        main_frame = wx.GetApp().GetTopWindow()
-        delete_codes = []
-        for item in self.GetSelections():
-            delete_codes.append(model.ItemToObject(item))
+                    if code.parent != None:
+                        code.DestroyObject()
+                    elif code.key in main_frame.codes:
+                        code.DestroyObject()
+                        del main_frame.codes[code.key]
+                DeleteCode(code)
+
+            model.Cleared()
+            self.Expander(None)
+            main_frame.CodesUpdated()
+            wx.PostEvent(self.GetEventHandler(), dv.DataViewEvent(dv.EVT_DATAVIEW_SELECTION_CHANGED.typeId, self, dv.DataViewItem()))
         
-        for code in delete_codes:
-            def DeleteCode(code):
-                for subcode_key in list(code.subcodes.keys()):
-                    DeleteCode(code.subcodes[subcode_key])
-                connection_objs = code.GetConnections(main_frame.datasets, main_frame.samples)
-                for obj in connection_objs:
-                    obj.RemoveCode(code.key)
-                    code.RemoveConnection(obj)
-
-                if code.parent != None:
-                    code.DestroyObject()
-                elif code.key in main_frame.codes:
-                    code.DestroyObject()
-                    del main_frame.codes[code.key]
-            DeleteCode(code)
-
-        model.Cleared()
-        self.Expander(None)
-        main_frame.CodesUpdated()
         logger.info("Finished")
-        wx.PostEvent(self.GetEventHandler(), dv.DataViewEvent(dv.EVT_DATAVIEW_SELECTION_CHANGED.typeId, self, dv.DataViewItem()))
+        
 
     def OnChangeColour(self, event):
         logger = logging.getLogger(__name__+".CodesViewCtrl.OnChangeColour")
@@ -1897,8 +1901,10 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
     
     def OnDeleteItems(self, event):
         model = self.GetModel()
-        if wx.MessageBox(GUIText.CONFIRM_DELETE_QUOTATIONS,
-                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
+        confirm_dialog = wx.MessageDialog(self, GUIText.CONFIRM_DELETE_QUOTATIONS,
+                                          GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+        confirm_dialog.SetOKLabel(GUIText.DELETE_QUOTATIONS)
+        if confirm_dialog.ShowModal() == wx.ID_OK:
             for item in self.GetSelections():
                 node = model.ItemToObject(item)
                 if isinstance(node, Codes.Quotation):

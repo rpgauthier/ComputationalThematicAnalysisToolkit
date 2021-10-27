@@ -434,48 +434,65 @@ class MainFrame(wx.Frame):
         if self.multiprocessing_inprogress_flag:
             wx.MessageBox(GUIText.MULTIPROCESSING_WARNING_MSG,
                           GUIText.WARNING, wx.OK | wx.ICON_WARNING)
-        elif wx.MessageBox(GUIText.NEW_WARNING, GUIText.CONFIRM_REQUEST,
-                         wx.ICON_QUESTION|wx.YES_NO, self) == wx.YES:
-            self.CreateProgressDialog(title=GUIText.NEW_BUSY_LABEL,
-                                      warning=GUIText.SIZE_WARNING_MSG,
-                                      freeze=True)
-            self.PulseProgressDialog(GUIText.NEW_BUSY_MSG)
+        else:
+            #check if current workspace is not recently saved
+            check_flag = False
+            if not check_flag and len(self.datasets) != 0:
+                for dataset_key in self.datasets:
+                    if self.datasets[dataset_key].last_changed_dt > self.last_load_dt:
+                        check_flag = True
+            if not check_flag and len(self.samples) != 0:
+                for sample_key in self.samples:
+                    if self.samples[sample_key].last_changed_dt > self.last_load_dt:
+                        check_flag = True
+            if not check_flag and len(self.codes) != 0:
+                for code_key in self.codes:
+                    if self.codes[code_key].last_changed_dt > self.last_load_dt:
+                        check_flag = True
+            confirm_dialog = wx.MessageDialog(self, GUIText.NEW_WARNING,
+                                              GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+            confirm_dialog.SetOKLabel(GUIText.PROCEED_ANYWAYS)
+            if confirm_dialog.ShowModal() == wx.ID_OK:
+                self.CreateProgressDialog(title=GUIText.NEW_BUSY_LABEL,
+                                        warning=GUIText.SIZE_WARNING_MSG,
+                                        freeze=True)
+                self.PulseProgressDialog(GUIText.NEW_BUSY_MSG)
 
-            #reset objects
-            for key in self.datasets:
-                self.datasets[key].DestroyObject()
-            self.datasets.clear()
-            for key in self.samples:
-                self.samples[key].DestroyObject()
-            self.samples.clear()
-            for key in self.codes:
-                self.codes[key].DestroyObject()
-            self.codes.clear()
+                #reset objects
+                for key in self.datasets:
+                    self.datasets[key].DestroyObject()
+                self.datasets.clear()
+                for key in self.samples:
+                    self.samples[key].DestroyObject()
+                self.samples.clear()
+                for key in self.codes:
+                    self.codes[key].DestroyObject()
+                self.codes.clear()
 
-            self.save_path = ''
-            self.current_workspace.cleanup()
-            self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
-            Database.DatabaseConnection(self.current_workspace.name).Create()
-        
-            self.last_load_dt = datetime.now()
+                self.save_path = ''
+                self.current_workspace.cleanup()
+                self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
+                Database.DatabaseConnection(self.current_workspace.name).Create()
+            
+                self.last_load_dt = datetime.now()
 
-            self.DatasetsUpdated(autosave=False)
-            self.SamplesUpdated()
-            self.DocumentsUpdated()
-            #TODO investigate error that occurs when a code is selected when new is clicked
-            self.CodesUpdated()
+                self.DatasetsUpdated(autosave=False)
+                self.SamplesUpdated()
+                self.DocumentsUpdated()
+                #TODO investigate error that occurs when a code is selected when new is clicked
+                self.CodesUpdated()
 
-            self.SetTitle(GUIText.APP_NAME+" - "+GUIText.UNSAVED)
+                self.SetTitle(GUIText.APP_NAME+" - "+GUIText.UNSAVED)
 
-            #reset view
-            self.toggle_collection_menuitem.Check(True)
-            self.OnToggleCollection(None)
-            self.toggle_filtering_menuitem.Check(True)
-            self.OnToggleFiltering(None)
-            self.toggle_coding_menuitem.Check(True)
-            self.OnToggleCoding(None)
+                #reset view
+                self.toggle_collection_menuitem.Check(True)
+                self.OnToggleCollection(None)
+                self.toggle_filtering_menuitem.Check(True)
+                self.OnToggleFiltering(None)
+                self.toggle_coding_menuitem.Check(True)
+                self.OnToggleCoding(None)
 
-            self.CloseProgressDialog(thaw=True)
+                self.CloseProgressDialog(thaw=True)
         logger.info("Finished")
     
     def OnLoadStart(self, event):
@@ -483,8 +500,29 @@ class MainFrame(wx.Frame):
         '''Menu Function for loading data'''
         logger = logging.getLogger(__name__+".MainFrame.OnLoadStart")
         logger.info("Starting")
-        if wx.MessageBox(GUIText.LOAD_WARNING,
-                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
+        
+        check_flag = False
+        #check if current workspace is not recently saved
+        if not check_flag and len(self.datasets) != 0:
+            for dataset_key in self.datasets:
+                if self.datasets[dataset_key].last_changed_dt > self.last_load_dt:
+                    check_flag = True
+        if not check_flag and len(self.samples) != 0:
+            for sample_key in self.samples:
+                if self.samples[sample_key].last_changed_dt > self.last_load_dt:
+                    check_flag = True
+        if not check_flag and len(self.codes) != 0:
+            for code_key in self.codes:
+                if self.codes[code_key].last_changed_dt > self.last_load_dt:
+                    check_flag = True
+        if check_flag:
+            confirm_dialog = wx.MessageDialog(self, GUIText.LOAD_WARNING,
+                                                GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+            confirm_dialog.SetOKLabel(GUIText.LOAD_ANYWAYS)
+            confirm_flag = confirm_dialog.ShowModal()
+        else:
+            confirm_flag = wx.ID_OK
+        if confirm_flag == wx.ID_OK:
             #ask the user what workspace to open
             with wx.FileDialog(self,
                             message=GUIText.LOAD_REQUEST,
@@ -705,18 +743,40 @@ class MainFrame(wx.Frame):
                                   freeze=True)
         cancel_flag = False
         if self.multiprocessing_inprogress_flag:
-            if wx.MessageBox(GUIText.MULTIPROCESSING_CLOSING_MSG,
-                             GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) != wx.YES:
+            confirm_dialog = wx.MessageDialog(self, GUIText.MULTIPROCESSING_CLOSING_MSG,
+                                              GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+            confirm_dialog.SetOKLabel(GUIText.PROCEED)
+            if confirm_dialog.ShowModal() == wx.ID_CANCEL:
                 cancel_flag = True
 
         if not cancel_flag:
-            res = wx.MessageBox(GUIText.CLOSE_WARNING,
-                            GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL, self)
-            if res == wx.YES:
+            check_flag = False
+            #check if current workspace is not recently saved
+            if not check_flag and len(self.datasets) != 0:
+                for dataset_key in self.datasets:
+                    if self.datasets[dataset_key].last_changed_dt > self.last_load_dt:
+                        check_flag = True
+            if not check_flag and len(self.samples) != 0:
+                for sample_key in self.samples:
+                    if self.samples[sample_key].last_changed_dt > self.last_load_dt:
+                        check_flag = True
+            if not check_flag and len(self.codes) != 0:
+                for code_key in self.codes:
+                    if self.codes[code_key].last_changed_dt > self.last_load_dt:
+                        check_flag = True
+            if check_flag:
+                confirm_dialog = wx.MessageDialog(self, GUIText.CLOSE_WARNING,
+                                              GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+                confirm_dialog.SetYesNoLabels(GUIText.SAVE, GUIText.SKIP)
+                exit_flag = confirm_dialog.ShowModal()
+            else:
+                exit_flag = wx.ID_NO
+
+            if exit_flag == wx.ID_YES:
                 self.closing = True
                 self.PulseProgressDialog(text=GUIText.SAVE_BUSY_LABEL)
                 self.OnSaveStart(None)
-            elif res == wx.NO:
+            elif exit_flag == wx.ID_NO:
                 self.OnCloseEnd(event)
             else:
                 self.CloseProgressDialog(GUIText.CANCELED, thaw=True)
@@ -883,11 +943,11 @@ class CustomProgressDialog(wx.Dialog):
         self.text = wx.TextCtrl(self, -1, GUIText.STARTING+"\n", size=(320,240), style=wx.TE_MULTILINE | wx.TE_READONLY)
         v_sizer.Add(self.text, 1, wx.EXPAND|wx.ALL, 5)
 
-        btnsizer = wx.BoxSizer()
-        self.ok_btn = wx.Button(self, wx.ID_OK)
-        self.ok_btn.Disable()
-        btnsizer.Add(self.ok_btn, 0, wx.ALL, 5)
-        v_sizer.Add(btnsizer, 0, wx.ALIGN_CENTER_HORIZONTAL|wx.ALL, 5)
+        controls_sizer = self.CreateButtonSizer(wx.OK)
+        self.ok_button = wx.FindWindowById(wx.ID_OK, self)
+        self.ok_button.SetLabel(GUIText.FINISHED)
+        self.ok_button.Disable()
+        v_sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
 
         self.SetSizerAndFit (v_sizer)
     
@@ -907,7 +967,7 @@ class CustomProgressDialog(wx.Dialog):
         current_time = datetime.now()
         elapsed_time = current_time - self.start_time
         self.timer_label.SetLabel(str(elapsed_time).split('.')[0])
-        self.ok_btn.Enable()
+        self.ok_button.Enable()
 
 class OptionsDialog(wx.Dialog):
     def __init__(self, parent, size=Constants.OPTIONS_DIALOG_SIZE):

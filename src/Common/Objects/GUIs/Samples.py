@@ -108,19 +108,17 @@ class SampleCreatePanel(wx.Panel):
         main_frame = wx.GetApp().GetTopWindow()
                     
         new_sample = None
-        self.Freeze()
-        main_frame.CreateProgressDialog(GUIText.GENERATING_DEFAULT_LABEL,
-                                        warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-        main_frame.PulseProgressDialog(GUIText.GENERATING_DEFAULT_MSG)
         if main_frame.multiprocessing_inprogress_flag:
             wx.MessageBox(GUIText.MULTIPROCESSING_WARNING_MSG,
                           GUIText.WARNING, wx.OK | wx.ICON_WARNING)
-            main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
-            self.Thaw()
         elif model_type == 'Random':
             with RandomModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
+                    self.Freeze()
+                    main_frame.CreateProgressDialog(GUIText.GENERATING_DEFAULT_LABEL,
+                                        warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
+                                        freeze=False)
+                    main_frame.PulseProgressDialog(GUIText.GENERATING_DEFAULT_MSG)
                     model_parameters = create_dialog.model_parameters
                     name = model_parameters['name']
                     main_frame.PulseProgressDialog(GUIText.GENERATING_RANDOM_SUBLABEL+str(name))
@@ -135,13 +133,16 @@ class SampleCreatePanel(wx.Panel):
                     parent_notebook.sample_panels[new_sample.key] = new_sample_panel
                     main_frame.DocumentsUpdated()
                     main_frame.CloseProgressDialog(thaw=False)
-                else:
-                    main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
-                self.Thaw()
+                    self.Thaw()
         elif model_type == 'LDA':
-            main_frame.multiprocessing_inprogress_flag = True
             with LDAModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
+                    main_frame.multiprocessing_inprogress_flag = True
+                    self.Freeze()
+                    main_frame.CreateProgressDialog(GUIText.GENERATING_DEFAULT_LABEL,
+                                        warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
+                                        freeze=False)
+                    main_frame.PulseProgressDialog(GUIText.GENERATING_DEFAULT_MSG)
                     self.start_dt = datetime.now()
                     model_parameters = create_dialog.model_parameters
                     name = model_parameters['name']
@@ -150,13 +151,14 @@ class SampleCreatePanel(wx.Panel):
                                                                        main_frame,
                                                                        model_parameters,
                                                                        model_type)
-                else:
-                    main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
-                    main_frame.multiprocessing_inprogress_flag = False
-                    self.Thaw()
         elif model_type == 'Biterm':
             with BitermModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
+                    self.Freeze()
+                    main_frame.CreateProgressDialog(GUIText.GENERATING_DEFAULT_LABEL,
+                                        warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
+                                        freeze=False)
+                    main_frame.PulseProgressDialog(GUIText.GENERATING_DEFAULT_MSG)
                     self.start_dt = datetime.now()
                     model_parameters = create_dialog.model_parameters
                     name = model_parameters['name']
@@ -165,12 +167,14 @@ class SampleCreatePanel(wx.Panel):
                                                                        main_frame,
                                                                        model_parameters,
                                                                        model_type)
-                else:
-                    main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
-                    self.Thaw()
         elif model_type == 'NMF':
             with NMFModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
+                    self.Freeze()
+                    main_frame.CreateProgressDialog(GUIText.GENERATING_DEFAULT_LABEL,
+                                        warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
+                                        freeze=False)
+                    main_frame.PulseProgressDialog(GUIText.GENERATING_DEFAULT_MSG)
                     self.start_dt = datetime.now()
                     model_parameters = create_dialog.model_parameters
                     name = model_parameters['name']
@@ -179,13 +183,6 @@ class SampleCreatePanel(wx.Panel):
                                                                        main_frame,
                                                                        model_parameters,
                                                                        model_type)
-                else:
-                    main_frame.CloseProgressDialog(message=GUIText.CANCELED, thaw=False)
-                    self.Thaw()
-        else:
-            main_frame.PulseProgressDialog(GUIText.TYPE_UNKNOWN_ERROR)
-            main_frame.CloseProgressDialog(thaw=False)
-            self.Thaw()
         logger.info("Finished")
 
     def OnFinishCreateSample(self, event):
@@ -218,8 +215,7 @@ class SampleCreatePanel(wx.Panel):
             parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
             main_frame.CloseProgressDialog(message=GUIText.GENERATED_LDA_COMPLETED_PART1,
-                                            thaw=False)
-            self.Thaw()
+                                           thaw=False)
         elif model_type == 'Biterm':
             main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG2)
             new_sample = Samples.BitermSample(name, dataset_key, model_parameters)
@@ -234,8 +230,7 @@ class SampleCreatePanel(wx.Panel):
             parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
             main_frame.CloseProgressDialog(message=GUIText.GENERATED_BITERM_COMPLETED_PART1,
-                                            thaw=False)
-            self.Thaw()
+                                           thaw=False)
         elif model_type == 'NMF':
             main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_MSG2)
             new_sample = Samples.NMFSample(name, dataset_key, model_parameters)
@@ -250,8 +245,8 @@ class SampleCreatePanel(wx.Panel):
             parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
             main_frame.CloseProgressDialog(message=GUIText.GENERATED_NMF_COMPLETED_PART1,
-                                            thaw=False)
-            self.Thaw()
+                                           thaw=False)
+        self.Thaw()
         self.start_dt = None
         logger.info("Finished")
 
@@ -507,21 +502,20 @@ class SampleRulesDialog(wx.Dialog):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
 
-        if wx.MessageBox(GUIText.CONFIRM_RESTORE_RULES,
-                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
-            logger.info("Finished - Cancelled")
-            return
+        confirm_dialog = wx.MessageDialog(self, GUIText.CONFIRM_RESTORE_RULES,
+                                          GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+        confirm_dialog.SetOKLabel(GUIText.RESTORE_RULES)
+        if confirm_dialog.ShowModal() == wx.ID_OK:
+            main_frame.CreateProgressDialog(GUIText.RESTORE_RULES,
+                                            warning=GUIText.SIZE_WARNING_MSG,
+                                            freeze=True)
+            main_frame.PulseProgressDialog(GUIText.RESTORE_BEGINNING_MSG)
 
-        main_frame.CreateProgressDialog(GUIText.RESTORE_RULES,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=True)
-        main_frame.PulseProgressDialog(GUIText.RESTORE_BEGINNING_MSG)
-
-        main_frame.PulseProgressDialog(GUIText.RESTORE_REPLACINGRULES_MSG)
-        self.dataset.tokenization_choice = self.sample.tokenization_choice
-        self.dataset.filter_rules.clear()
-        self.dataset.filter_rules.extend(self.sample.applied_filter_rules)
-        self.apply_rules_thread = DatasetsThreads.ApplyFilterAllRulesThread(self, main_frame, self.dataset)
+            main_frame.PulseProgressDialog(GUIText.RESTORE_REPLACINGRULES_MSG)
+            self.dataset.tokenization_choice = self.sample.tokenization_choice
+            self.dataset.filter_rules.clear()
+            self.dataset.filter_rules.extend(self.sample.applied_filter_rules)
+            self.apply_rules_thread = DatasetsThreads.ApplyFilterAllRulesThread(self, main_frame, self.dataset)
         logger.info("Finished")
 
     def OnRestoreFinish(self, event):
@@ -574,31 +568,30 @@ class SampleIncludedFieldsDialog(wx.Dialog):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
 
-        if wx.MessageBox(GUIText.CONFIRM_RESTORE_INCLUDEDFIELDS,
-                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
-            logger.info("Finished - Cancelled")
-            return
+        confirm_dialog = wx.MessageDialog(self, GUIText.CONFIRM_RESTORE_INCLUDEDFIELDS,
+                                          GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+        confirm_dialog.SetOKLabel(GUIText.RESTORE_INCLUDEDFIELDS, GUIText.CANCEL)
+        if confirm_dialog.ShowModal() == wx.ID_OK:
+            main_frame.CreateProgressDialog(GUIText.RESTORE_RULES,
+                                            warning=GUIText.SIZE_WARNING_MSG,
+                                            freeze=True)
+            main_frame.PulseProgressDialog(GUIText.RESTORE_BEGINNING_MSG)
 
-        main_frame.CreateProgressDialog(GUIText.RESTORE_RULES,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=True)
-        main_frame.PulseProgressDialog(GUIText.RESTORE_BEGINNING_MSG)
+            db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
 
-        db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
-
-        main_frame.PulseProgressDialog(GUIText.RESTORE_REPLACINGFIELDS_MSG)
-        #1) remove from the dataset any currently included fields
-        for field_key in list(self.dataset.included_fields.keys()):
-            if field_key not in self.fields:
-                db_conn.DeleteField(self.dataset.key, field_key)
-            self.dataset.included_fields[field_key].DestroyObject()
-        #2) add to the dataset any fields from sample's field_list that are not included fields dataset
-        for field_key in self.fields:
-            self.dataset.included_fields[field_key] = copy.copy(self.fields[field_key])
-            self.dataset.included_fields[field_key].last_changed_dt = datetime.now()
-            
-        main_frame.multiprocessing_inprogress_flag = True
-        self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, self.dataset)
+            main_frame.PulseProgressDialog(GUIText.RESTORE_REPLACINGFIELDS_MSG)
+            #1) remove from the dataset any currently included fields
+            for field_key in list(self.dataset.included_fields.keys()):
+                if field_key not in self.fields:
+                    db_conn.DeleteField(self.dataset.key, field_key)
+                self.dataset.included_fields[field_key].DestroyObject()
+            #2) add to the dataset any fields from sample's field_list that are not included fields dataset
+            for field_key in self.fields:
+                self.dataset.included_fields[field_key] = copy.copy(self.fields[field_key])
+                self.dataset.included_fields[field_key].last_changed_dt = datetime.now()
+                
+            main_frame.multiprocessing_inprogress_flag = True
+            self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, self.dataset)
         logger.info("Finished")
 
     def OnRestoreFinish(self, event):
@@ -658,7 +651,7 @@ class RandomModelCreateDialog(wx.Dialog):
     def __init__(self, parent):
         logger = logging.getLogger(__name__+".ModelCreateDialog.__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=GUIText.CREATE_RANDOM, )
+        wx.Dialog.__init__(self, parent, title=GUIText.CREATE_RANDOM)
 
         self.model_parameters = {}
 
@@ -682,13 +675,12 @@ class RandomModelCreateDialog(wx.Dialog):
             dataset_sizer.Add(self.dataset_ctrl, 0, wx.ALL, 5)
             sizer.Add(dataset_sizer)
 
-        ok_button = wx.Button(self, id=wx.ID_OK, label=GUIText.OK, )
+        controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
+        ok_button = wx.FindWindowById(wx.ID_OK, self)
+        ok_button.SetLabel(GUIText.CREATE_RANDOM)
         ok_button.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
-        cancel_button = wx.Button(self, id=wx.ID_CANCEL, label=GUIText.CANCEL)
-        controls_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        controls_sizer.Add(ok_button)
-        controls_sizer.Add(cancel_button)
-        sizer.Add(controls_sizer)
+        sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
+
         self.SetSizer(sizer)
         
         self.Layout()
@@ -968,27 +960,30 @@ class TopicSamplePanel(AbstractSamplePanel):
     def OnRemoveTopics(self, event):
         logger = logging.getLogger(__name__+"TopicSamplePanel["+str(self.sample.key)+"].OnRemoveTopics")
         logger.info("Starting")
+        #confirmation
         selections = self.topiclist_panel.topic_list_ctrl.GetSelections()
         nodes = []
         old_mergedparts = []
         for item in selections:
             node = self.topiclist_panel.topic_list_model.ItemToObject(item)
-            if isinstance(node, Samples.TopicPart):
-                nodes.append(node)
-                if isinstance(node.parent, Samples.TopicMergedPart):
-                    if node.parent not in old_mergedparts:
-                        old_mergedparts.append(node.parent)
-            if isinstance(node, Samples.TopicMergedPart):
-                if node not in old_mergedparts:
-                    old_mergedparts.append(node)
-                for part_key in node.parts_dict:
-                    nodes.append(node.parts_dict[part_key])
-
-        #confirmation
-        if wx.MessageBox(GUIText.CONFIRM_DELETE_TOPICS,
-                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
-            logger.info("Finished - Cancelled")
-            return
+            confirm_dialog = wx.MessageDialog(self, GUIText.CONFIRM_DELETE_TOPIC1+str(node)+GUIText.CONFIRM_DELETE_TOPIC2,
+                                              GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+            confirm_dialog.SetYesNoLabels(GUIText.DELETE_TOPIC, GUIText.SKIP)
+            confirm_flg = confirm_dialog.ShowModal()
+            if confirm_flg == wx.ID_YES:
+                if isinstance(node, Samples.TopicPart):
+                    nodes.append(node)
+                    if isinstance(node.parent, Samples.TopicMergedPart):
+                        if node.parent not in old_mergedparts:
+                            old_mergedparts.append(node.parent)
+                if isinstance(node, Samples.TopicMergedPart):
+                    if node not in old_mergedparts:
+                        old_mergedparts.append(node)
+                    for part_key in node.parts_dict:
+                        nodes.append(node.parts_dict[part_key])
+            elif confirm_flg == wx.ID_CANCEL:
+                nodes = []
+                break
 
         if len(nodes) > 0:
             for node in nodes:
@@ -1386,13 +1381,11 @@ class LDAModelCreateDialog(wx.Dialog):
         #fields to choose specific fields for model
         #--- not part of mvp so default is to use all fields
 
-        ok_button = wx.Button(self, id=wx.ID_OK, label=GUIText.OK, )
+        controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
+        ok_button = wx.FindWindowById(wx.ID_OK, self)
+        ok_button.SetLabel(GUIText.CREATE_LDA)
         ok_button.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
-        cancel_button = wx.Button(self, id=wx.ID_CANCEL, label=GUIText.CANCEL)
-        controls_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        controls_sizer.Add(ok_button)
-        controls_sizer.Add(cancel_button)
-        sizer.Add(controls_sizer)
+        sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
 
         self.SetSizer(sizer)
         
@@ -1501,13 +1494,11 @@ class BitermModelCreateDialog(wx.Dialog):
         #fields to choose specific fields for model
         #--- not part of mvp so default is to use all fields
 
-        ok_button = wx.Button(self, id=wx.ID_OK, label=GUIText.OK, )
+        controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
+        ok_button = wx.FindWindowById(wx.ID_OK, self)
+        ok_button.SetLabel(GUIText.CREATE_BITERM)
         ok_button.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
-        cancel_button = wx.Button(self, id=wx.ID_CANCEL, label=GUIText.CANCEL)
-        controls_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        controls_sizer.Add(ok_button)
-        controls_sizer.Add(cancel_button)
-        sizer.Add(controls_sizer)
+        sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
 
         self.SetSizer(sizer)
         
@@ -1606,13 +1597,11 @@ class NMFModelCreateDialog(wx.Dialog):
         #fields to choose specific fields for model
         #--- not part of mvp so default is to use all fields
 
-        ok_button = wx.Button(self, id=wx.ID_OK, label=GUIText.OK, )
+        controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
+        ok_button = wx.FindWindowById(wx.ID_OK, self)
+        ok_button.SetLabel(GUIText.CREATE_NMF)
         ok_button.Bind(wx.EVT_BUTTON, self.OnOK, id=wx.ID_OK)
-        cancel_button = wx.Button(self, id=wx.ID_CANCEL, label=GUIText.CANCEL)
-        controls_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        controls_sizer.Add(ok_button)
-        controls_sizer.Add(cancel_button)
-        sizer.Add(controls_sizer)
+        sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
 
         self.SetSizer(sizer)
         

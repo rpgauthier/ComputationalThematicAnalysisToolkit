@@ -406,6 +406,10 @@ class DatasetDataPanel(wx.Panel):
         self.search_ctrl.Bind(wx.EVT_SEARCH_CANCEL, self.OnSearchCancel)
         self.search_ctrl.SetDescriptiveText(GUIText.SEARCH)
         self.search_ctrl.ShowCancelButton(True)
+        #TODO check this on OSX
+        extent = self.search_ctrl.GetTextExtent(GUIText.SEARCH)
+        size = self.search_ctrl.GetSizeFromTextSize(extent.GetWidth()+extent.GetHeight()*2, -1)
+        self.search_ctrl.SetMinSize(size)
         controls_sizer.Add(self.search_ctrl, 0, wx.ALL, 5)
         self.search_count_text = wx.StaticText(self)
         controls_sizer.Add(self.search_count_text, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)

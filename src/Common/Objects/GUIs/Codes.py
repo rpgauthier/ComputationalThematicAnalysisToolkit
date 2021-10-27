@@ -146,6 +146,10 @@ class DocumentListPanel(wx.Panel):
         self.search_ctrl.Bind(wx.EVT_SEARCH_CANCEL, self.OnSearchCancel)
         self.search_ctrl.SetDescriptiveText(GUIText.SEARCH)
         self.search_ctrl.ShowCancelButton(True)
+        #TODO check this on OSX
+        extent = self.search_ctrl.GetTextExtent(GUIText.SEARCH)
+        size = self.search_ctrl.GetSizeFromTextSize(extent.GetWidth()+extent.GetHeight()*2, -1)
+        self.search_ctrl.SetMinSize(size)
         view_toolbar.Realize()
         view_sizer.Add(view_toolbar)
         controls_sizer.Add(view_sizer, 0, wx.ALL, 5)
@@ -627,8 +631,9 @@ class CreateQuotationDialog(wx.Dialog):
 
         controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
         ok_button = wx.FindWindowById(wx.ID_OK, self)
+        ok_button.SetLabel(GUIText.CREATE_QUOTATION)
         ok_button.Bind(wx.EVT_BUTTON, self.OnOK)
-        sizer.Add(controls_sizer, 0, wx.ALIGN_CENTER|wx.ALL, 5)
+        sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
 
         self.SetSizer(sizer)
         logger.info("Finished")

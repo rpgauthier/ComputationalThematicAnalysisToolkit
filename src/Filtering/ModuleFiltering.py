@@ -491,8 +491,10 @@ class FilterPanel(wx.Panel):
     def OnImportFilterRules(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnImportRemovalSettings")
         logger.info("Starting")
-        if wx.MessageBox(GUIText.FILTERS_IMPORT_CONFIRMATION_REQUEST,
-                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
+        confirm_dialog = wx.MessageDialog(self, GUIText.FILTERS_IMPORT_CONFIRMATION_REQUEST,
+                                          GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+        confirm_dialog.SetOKLabel(GUIText.FILTERS_IMPORT)
+        if confirm_dialog.ShowModal() == wx.ID_OK:
             # otherwise ask the user what new file to open
             with wx.FileDialog(self, GUIText.FILTERS_IMPORT, defaultDir=Constants.SAVED_WORKSPACES_PATH,
                             wildcard="Rules JSON files (*.rules_json)|*.rules_json",
@@ -755,12 +757,20 @@ class WordsPanel(wx.Panel):
         self.word_searchctrl.Bind(wx.EVT_SEARCH_CANCEL, self.OnSearchCancel)
         self.word_searchctrl.SetDescriptiveText(GUIText.FILTERS_WORD_SEARCH)
         self.word_searchctrl.ShowCancelButton(True)
+        #TODO check this on OSX
+        extent = self.word_searchctrl.GetTextExtent(GUIText.FILTERS_WORD_SEARCH)
+        size = self.word_searchctrl.GetSizeFromTextSize(extent.GetWidth()+extent.GetHeight()*2, -1)
+        self.word_searchctrl.SetMinSize(size)
         search_sizer.Add(self.word_searchctrl, 0, wx.ALL, 5)
         self.pos_searchctrl = wx.SearchCtrl(self)
         self.pos_searchctrl.Bind(wx.EVT_SEARCH, self.OnSearch)
         self.pos_searchctrl.Bind(wx.EVT_SEARCH_CANCEL, self.OnSearchCancel)
         self.pos_searchctrl.SetDescriptiveText(GUIText.FILTERS_POS_SEARCH)
         self.pos_searchctrl.ShowCancelButton(True)
+        #TODO check this on OSX
+        extent = self.pos_searchctrl.GetTextExtent(GUIText.FILTERS_POS_SEARCH)
+        size = self.pos_searchctrl.GetSizeFromTextSize(extent.GetWidth()+extent.GetHeight()*2, -1)
+        self.pos_searchctrl.SetMinSize(size)
         search_sizer.Add(self.pos_searchctrl, 0, wx.ALL, 5)
         self.search_count_text = wx.StaticText(self)
         search_sizer.Add(self.search_count_text, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
@@ -1169,8 +1179,9 @@ class CreateCountFilterDialog(wx.Dialog):
 
         controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
         ok_button = wx.FindWindowById(wx.ID_OK, self)
+        ok_button.SetLabel(GUIText.FILTERS_CREATE_COUNT_RULE)
         ok_button.Bind(wx.EVT_BUTTON, self.OnOK)
-        sizer.Add(controls_sizer, 0, wx.ALIGN_CENTER|wx.ALL, 5)
+        sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
 
         self.SetSizer(sizer)
         self.Layout()
@@ -1268,8 +1279,9 @@ class CreateTfidfFilterDialog(wx.Dialog):
 
         controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
         ok_button = wx.FindWindowById(wx.ID_OK, self)
+        ok_button.SetLabel(GUIText.FILTERS_CREATE_TFIDF_RULE)
         ok_button.Bind(wx.EVT_BUTTON, self.OnOK)
-        sizer.Add(controls_sizer, 0, wx.ALIGN_CENTER|wx.ALL, 5)
+        sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
 
         self.SetSizer(sizer)
         self.Layout()

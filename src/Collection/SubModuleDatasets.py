@@ -197,10 +197,17 @@ class DatasetsListPanel(wx.Panel):
             for item in self.datasets_ctrl.GetSelections():
                 node = self.datasets_model.ItemToObject(item)
                 if isinstance(node, Datasets.Dataset):
-                    if wx.MessageBox(str(node.key) + GUIText.DELETE_CONFIRMATION
-                                    + GUIText.DATASETS_DELETE_CONFIRMATION_WARNING,
-                                    GUIText.WARNING, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
+                    confirm_dialog = wx.MessageDialog(self, str(node.key)+GUIText.DELETE_CONFIRMATION
+                                                      + GUIText.DATASETS_DELETE_CONFIRMATION_WARNING,
+                                                      GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+                    confirm_dialog.SetYesNoLabels(GUIText.DATASETS_DELETE_DATASET, GUIText.SKIP)
+                    confirm_flg = confirm_dialog.ShowModal()
+                    if confirm_flg  == wx.ID_YES:
                         delete_nodes.append(node)
+                    elif confirm_flg == wx.ID_CANCEL:
+                        delete_nodes = []
+                        main_frame.PulseProgressDialog(GUIText.CANCELED)
+                        break
             if len(delete_nodes) > 0:
                 db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
                 for node in delete_nodes:
@@ -285,9 +292,11 @@ class DatasetDetailsPanel(wx.Panel):
                                         freeze=True)
         try:
             main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_PREPARING_MSG)
-            if wx.MessageBox(str(self.dataset.key) + GUIText.DELETE_CONFIRMATION
-                            + GUIText.DATASETS_DELETE_CONFIRMATION_WARNING,
-                            GUIText.WARNING, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
+            confirm_dialog = wx.MessageDialog(self, str(self.dataset.key)+GUIText.DELETE_CONFIRMATION
+                                              + GUIText.DATASETS_DELETE_CONFIRMATION_WARNING,
+                                              GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+            confirm_dialog.SetOKLabel(GUIText.DATASETS_DELETE_DATASET)
+            if confirm_dialog.ShowModal() == wx.ID_YES:
                 main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_REMOVING_MSG+str(self.dataset.key))
                 if self.dataset.parent is None:
                     del main_frame.datasets[self.dataset.key]

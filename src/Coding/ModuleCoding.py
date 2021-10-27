@@ -65,8 +65,10 @@ class CodingNotebook(FNB.FlatNotebook):
     def OnImportCodes(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnImportRemovalSettings")
         logger.info("Starting")
-        if wx.MessageBox(GUIText.CODES_IMPORT_CONFIRMATION_REQUEST,
-                         GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO, self) == wx.YES:
+        confirm_dialog = wx.MessageDialog(self, GUIText.CODES_IMPORT_CONFIRMATION_REQUEST,
+                                          GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+        confirm_dialog.SetOKLabel(GUIText.CODES_IMPORT)
+        if confirm_dialog.ShowModal() == wx.ID_OK:
             # otherwise ask the user what new file to open
             with wx.FileDialog(self, GUIText.CODES_IMPORT, defaultDir=Constants.SAVED_WORKSPACES_PATH,
                             wildcard="Code Pickle files (*.code_pk)|*.code_pk",

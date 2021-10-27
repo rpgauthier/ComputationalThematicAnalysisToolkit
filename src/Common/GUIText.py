@@ -17,7 +17,10 @@ class Common:
 
     OK = "OK"
     SKIP = "Skip"
+    PROCEED = "Proceed"
     CANCEL = "Cancel"
+    LOAD_ANYWAYS = "Load Anyways"
+    PROCEED_ANYWAYS = "Proceed Anyways"
 
     ADD = "Add"
     SELECT = "Select"
@@ -98,9 +101,11 @@ class Main(Common):
     APP_NAME = "Computational Thematic Analysis Toolkit"
     UNSAVED = "Unsaved Workspace"
 
-    NEW_WARNING = "Are you sure you wnat to proceed with creating a new workspace?"\
+    NEW_WARNING = "You have unsaved changes."\
+                  "\nAre you sure you want to creating a new workspace?"\
                   "\nAny unsaved changes will be lost."
-    LOAD_WARNING = "Are you sure you want to proceed with loading a workspace?" \
+    LOAD_WARNING = "You have unsaved changes."\
+                   "\nAre you sure you want to load a different workspace?" \
                    "\nAny unsaved changes will be lost."
     LOAD_REQUEST = "Please Choose Workspace to Load"
     LOAD_FAILURE = "Cannot open workspace "
@@ -108,7 +113,7 @@ class Main(Common):
     SAVE_AS_FAILURE = "Failed to save workspace "
     SAVE_FAILURE = "Failed to save workspace "
     CLOSE_WARNING = "Would you like to save your changes before closing?" \
-                   "\nIf you do not save any recent changes will be lost."
+                   "\nIf skipped any recent changes will be lost."
 
     NEW_BUSY_LABEL = "Creating New Workspace"
     NEW_BUSY_MSG = "Please Wait while new workspace is created.\n"
@@ -143,6 +148,7 @@ class Main(Common):
     SHUTDOWN_BUSY_LABEL = "Shutting Down Application"
     SHUTDOWN_BUSY_POOL = "Shutting down Process Pool"
     
+    SAMPLE_CHANGE_NAME = "Change Sample Name"
     NAME_MISSING_ERROR = "You must enter a Name."
     FILENAME_MISSING_ERROR = "You must enter a Filename"
     NAME_DUPLICATE_ERROR = "Same name already exists."\
@@ -216,6 +222,8 @@ class Datasets(Common):
     TYPE_ERROR = "Dataset Type must be selected"
     NAME_EXISTS_ERROR = "Name must be unique"
     RETRIEVAL_FAILED_ERROR = "Retrieval failed for one or more datasets.\nPlease try again later."
+    RETRIEVAL_FAILED_SUBMISSION = "Failed to retrieve submissions for month "
+    RETRIEVAL_FAILED_COMMENT = "Failed to retrieve comments for month "
     NO_RETRIEVAL_CONNECTION_ERROR = "Unable to Connect to Internet.\nPlease check your network status."
     NO_DATA_RETRIEVED_ERROR = "No data retrieved.\nPlease trying again later as requested data may not yet be available."
     NO_DATA_AVALIABLE_ERROR = "No data available.\nPlease try enabling data retrieval."
@@ -402,11 +410,14 @@ class Samples(Main):
     CREATE_NMF = "Create " + NMF_LABEL
     CREATE_NMF_TOOLTIP = "Create a new Non-Negative Matrix Factorization Topic Model of a dataset"
     DELETE_TOOLTIP = "Remove selected sample from workspace"
-    DELETE_CONFIRMATION_WARNING = "Are you sure you want to delete this sample?"\
-                                  "\nWARNING this action cannot be undone."
+    
+    DELETE_SAMPLE = "Delete Sample"
+    DELETE_SAMPLE_CONFIRM1 = "Are you sure you want to delete sample: "
+    DELETE_SAMPLE_CONFIRM2 = "\nWARNING this action cannot be undone."
 
-    CONFIRM_DELETE_TOPICS = "Are you sure you want to delete the selected topics?"\
-                            "\nWARNING this action cannot be undone."
+    DELETE_TOPIC = "Delete Topic"
+    CONFIRM_DELETE_TOPIC1 = "Are you sure you want to delete the topic: "
+    CONFIRM_DELETE_TOPIC2 = "\nWARNING this action cannot be undone."
 
     MERGE_TOPIC_LABEL = "Merge Topics"
     MERGE_TOPIC_SHORTHELP = "Create a new Merged Topic from selected Topics"
@@ -531,6 +542,7 @@ class Collection(Main, Datasets):
     DATASETS_GROUP_TOOLTIP = "Selected datasets will be grouped"
     DATASETS_GROUP_NAME = "Group Name:"
     DATASETS_UNGROUP_TOOLTIP = "Selected datasets will be ungrouped"
+    DATASETS_DELETE_DATASET = "Delete Dataset"
     DATASETS_DELETE_TOOLTIP = "Selected datasets will be removed"
     DATASETS_DELETE_CONFIRMATION_WARNING = "\nWARNING this action can only be undone by adding new datasets."
 
@@ -677,8 +689,8 @@ class Filtering(Main, Datasets):
     FILTERS_MANUALCANCEL_TOOLTIP = "Will cancel any drafted rule changes to the dataset"
 
 
-    FILTERS_IMPORT_CONFIRMATION_REQUEST = "Are you sure you wnat to proceed with importing removal settings?"\
-                                          "\nWARNING: Any current settings will be lost."
+    FILTERS_IMPORT_CONFIRMATION_REQUEST = "Are you sure you want to proceed with importing rule?"\
+                                          "\nWARNING: Any current rules will be lost."
     FILTERS_IMPORT = "Import Rules"
     FILTERS_IMPORT_TOOLTIP = "Import Custom Rules from file"
     FILTERS_EXPORT = "Export Rules"
@@ -738,9 +750,12 @@ class Coding(Main):
     RENAME_CODE_NOTUNIQUE_ERROR = "Code's new name is the same name as an existing code.\nCodes must have unique names."
     RENAME_CODE_BLANK_ERROR = "Code's new name is blank.\nCodes must have unique names."
 
+    CREATE_QUOTATION = "Create Quotation"
+
     QUOTATIONS = "Quotations"
     PARAPHRASES = "Paraphrases"
 
+    DELETE_QUOTATIONS = "Delete Quotations"
     CONFIRM_DELETE_QUOTATIONS = "Are you sure you want to delete selected quotations?"
 
     LOAD_BUSY_MSG_CONFIG = "Loading Coding Configurations"
