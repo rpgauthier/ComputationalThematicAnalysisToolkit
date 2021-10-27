@@ -48,42 +48,14 @@ class CollectionPanel(wx.Panel):
         main_frame.notes_notebook.AddPage(self.notes_panel, GUIText.COLLECTION_LABEL)
 
         #Menu for Module
-        self.view_menu = wx.Menu()
-        self.view_menu_menuitem = None
-        self.toggle_datasetsdata_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                               GUIText.DATASETSDATA_LABEL,
-                                                               GUIText.SHOW_HIDE+GUIText.DATASETSDATA_LABEL,
-                                                               kind=wx.ITEM_CHECK)
-        main_frame.Bind(wx.EVT_MENU, self.OnToggleDatasetsData, self.toggle_datasetsdata_menuitem)
-        
         self.actions_menu = wx.Menu()
         self.actions_menu_menuitem = None
 
         #setup the default visable state
-        self.toggle_datasetsdata_menuitem.Check(True)
-        self.OnToggleDatasetsData(None)
-        logger.info("Finished")
-
-    #functions called by GUI (menus, or ctrls)
-    def OnToggleDatasetsData(self, event):
-        logger = logging.getLogger(__name__+".CollectionNotebook.OnToggleDatasetsData")
-        logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        if self.toggle_datasetsdata_menuitem.IsChecked():
-            self.datasetsdata_notebook.Show()
-            self.splitter.SplitHorizontally(self.splitter.GetWindow1(), self.datasetsdata_notebook)
-            
-            if main_frame.options_dict['multipledatasets_mode']:
-                sash_height = int(self.GetSize().GetHeight()/6)
-            else:
-                sash_height = int(self.datasetdetails_panel.GetBestSize().GetHeight()) + 5
-            self.splitter.SetSashPosition(sash_height)
-        else:
-            self.datasetsdata_notebook.Hide()
-            self.splitter.Unsplit(self.datasetsdata_notebook)
         self.Layout()
         logger.info("Finished")
 
+    #functions called by GUI (menus, or ctrls)
     def OnShowData(self, event):
         logger = logging.getLogger(__name__+".CollectionNotebook.OnShowData")
         logger.info("Starting")
@@ -155,9 +127,6 @@ class CollectionPanel(wx.Panel):
         #TODO confirm that custom load functionality isnt needed to properly reset this panel and this notebook
         self.datasetslist_panel.DatasetsUpdated()
         self.datasetsdata_notebook.DatasetsUpdated()
-        if 'datasetsdata_toggle_flag' in saved_data:
-            self.toggle_datasetsdata_menuitem.Check(saved_data['datasetsdata_toggle_flag'])
-            self.OnToggleDatasetsData(None)
         if 'notes' in saved_data:
             self.notes_panel.Load(saved_data['notes'])
         self.Thaw()
@@ -172,6 +141,5 @@ class CollectionPanel(wx.Panel):
         saved_data = {}
         saved_data['notes'] = self.notes_panel.Save()
         #save configurations
-        saved_data['datasetsdata_toggle_flag'] = self.toggle_datasetsdata_menuitem.IsChecked()
         logger.info("Finished")
         return saved_data

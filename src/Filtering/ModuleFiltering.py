@@ -30,9 +30,6 @@ class FilteringNotebook(FNB.FlatNotebook):
         #create dictionary to hold instances of filter panels for each dataset
         self.filters = {}
 
-        self.view_menu = wx.Menu()
-        self.view_menu_menuitem = None
-
         self.actions_menu = wx.Menu()
         self.actions_menu_menuitem = None
 

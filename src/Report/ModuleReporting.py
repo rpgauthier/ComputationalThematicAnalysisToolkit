@@ -28,11 +28,6 @@ class ReportingPanel(wx.Panel):
         main_frame.notes_notebook.AddPage(self.notes_panel, GUIText.REPORTING_LABEL)
 
         #Menu for Module
-        main_frame = wx.GetApp().GetTopWindow()
-        self.view_menu = wx.Menu()
-        self.view_menu_menuitem = None
-
-        #actions that can be run against module or submodules
         self.actions_menu = wx.Menu()
         self.actions_menu_menuitem = None
         

@@ -44,11 +44,6 @@ class CodingNotebook(FNB.FlatNotebook):
         main_frame.notes_notebook.AddPage(self.notes_panel, GUIText.CODING_LABEL)
     
         #Menu for Module
-        self.view_menu = wx.Menu()
-        self.view_menu_menuitem = None
-        #self.menu.AppendSeparator()
-        #self.menu.AppendSubMenu(view_menu, GUIText.VIEW_MENU)
-
         self.actions_menu = wx.Menu()
         self.actions_menu_menuitem = None
         importCodesItem = self.actions_menu.Append(wx.ID_ANY,

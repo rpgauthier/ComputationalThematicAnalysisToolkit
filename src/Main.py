@@ -140,27 +140,15 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnCloseStart, exit_file_menuitem)
         self.menu_bar.Append(file_menu, GUIText.FILE_MENU)
 
-        self.view_menu = wx.Menu()
-        self.toggle_notes_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                           GUIText.SHOW_HIDE + GUIText.NOTES_LABEL,
-                                                           kind=wx.ITEM_CHECK)
-        self.Bind(wx.EVT_MENU, self.OnToggleNotes, self.toggle_notes_menuitem)
-
-        self.view_menu.AppendSeparator()
-
-        #commented out modules that do not use this menu type at this time. readd once used
-        self.collection_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.collection_module.view_menu, GUIText.COLLECTION_LABEL)
-        #self.filtering_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.filtering_module.view_menu, GUIText.FILTERING_MENU_LABEL)
-        #self.sampling_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.sampling_module.view_menu, GUIText.SAMPLING_MENU_LABEL)
-        #self.coding_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.coding_module.view_menu, GUIText.CODING_LABEL)
-        #self.reviewing_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.reviewing_module.view_menu, GUIText.REVIEWING_LABEL)
-        #self.reporting_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.reporting_module.view_menu, GUIText.REPORTING_LABEL)
-        
-        self.view_menu.AppendSeparator()
-
-        self.menu_bar.Append(self.view_menu, GUIText.VIEW_MENU)
-
         self.actions_menu = wx.Menu()
+
+        self.toggle_notes_menuitem = self.actions_menu.Append(wx.ID_ANY,
+                                                              GUIText.SHOW_HIDE + GUIText.NOTES_LABEL,
+                                                              kind=wx.ITEM_CHECK)
+        self.Bind(wx.EVT_MENU, self.OnToggleNotes, self.toggle_notes_menuitem)
+        
+        self.actions_menu.AppendSeparator()
+
         #commented out modules that do not use this menu type at this time. readd once used
         #self.collection_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.collection_module.actions_menu, GUIText.COLLECTION_LABEL)
         self.filtering_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filtering_module.actions_menu, GUIText.FILTERING_MENU_LABEL)

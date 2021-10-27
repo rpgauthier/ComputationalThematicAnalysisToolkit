@@ -168,7 +168,6 @@ class Main(Common):
 
     #Menu related text
     MODE_MENU = "Mode"
-    VIEW_MENU = "View"
     SHOW_HIDE = "Show/Hide "
     FILE_MENU = "File"
     NEW = "New"

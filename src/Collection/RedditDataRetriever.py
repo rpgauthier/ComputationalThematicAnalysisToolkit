@@ -131,9 +131,9 @@ def UpdateRetrievedMonth(sub, month, file, prefix):
                      + relativedelta(months=1)).strftime(r"%Y-%m") + "-01"
         end_dt = calendar.timegm(datetime.datetime.strptime(month_end, "%Y-%m-%d").timetuple())
     if prefix == "RS_":
-        new_data = PushshiftRetriever.GetSubmissionData(start_dt, end_dt, sub)
+        new_data, status = PushshiftRetriever.GetSubmissionData(start_dt, end_dt, sub)
     else:
-        new_data = PushshiftRetriever.GetCommentData(start_dt, end_dt, sub)
+        new_data, status = PushshiftRetriever.GetCommentData(start_dt, end_dt, sub)
 
     if len(new_data) > 0:
         for entry in new_data:
@@ -160,6 +160,9 @@ def UpdateRetrievedMonth(sub, month, file, prefix):
         file_path = os.path.join(Constants.DATA_PATH, 'Reddit', sub, prefix+month+'.json')
         with open(file_path, 'w') as outfile:
             json.dump(data, outfile)
+    if status != 0:
+        logger.error("Retrieval of sub[%s], file[%s] was incomplete.", sub, month+prefix)
+        raise RuntimeError("Incomplete Retrieval")
     logger.info("Finished")
 
 class PushshiftRetriever():
