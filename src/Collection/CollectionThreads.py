@@ -186,6 +186,10 @@ class RetrieveRedditDatasetThread(Thread):
             try:
                 rdr.RetrieveMonth(subreddit, month, prefix)
             except RuntimeError as error:
+                if prefix == "RS_":
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVAL_FAILED_SUBMISSION+str(month)))
+                else:
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVAL_FAILED_COMMENT+str(month)))
                 errors.append(error)
         #check the exiting months of data for any missing data
         for month in months_tocheck:
@@ -193,6 +197,10 @@ class RetrieveRedditDatasetThread(Thread):
             try:
                 rdr.UpdateRetrievedMonth(subreddit, month, dict_monthfiles[month], prefix)
             except RuntimeError as error:
+                if prefix == "RS_":
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVAL_FAILED_SUBMISSION+str(month)))
+                else:
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVAL_FAILED_COMMENT+str(month)))
                 errors.append(error)
         if len(errors) != 0:
             raise RuntimeError(str(len(errors)) + " Retrievals Failed")

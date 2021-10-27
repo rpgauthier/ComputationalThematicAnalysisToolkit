@@ -76,9 +76,9 @@ def RetrieveMonth(sub, month, prefix):
                  + relativedelta(months=1)).strftime(r"%Y-%m")
     end_dt = calendar.timegm(datetime.datetime.strptime(month_end, "%Y-%m").timetuple())
     if prefix == "RS_":
-        new_data = PushshiftRetriever.GetSubmissionData(start_dt, end_dt, sub)
+        new_data, status = PushshiftRetriever.GetSubmissionData(start_dt, end_dt, sub)
     else:
-        new_data = PushshiftRetriever.GetCommentData(start_dt, end_dt, sub)
+        new_data, status = PushshiftRetriever.GetCommentData(start_dt, end_dt, sub)
     
     if len(new_data) > 0:
         for entry in new_data:
@@ -105,6 +105,9 @@ def RetrieveMonth(sub, month, prefix):
         file_path = os.path.join(Constants.DATA_PATH, 'Reddit', sub, prefix+month+'.json')
         with open(file_path, 'w') as outfile:
             json.dump(data, outfile)
+    if status != 0:
+        logger.error("Retrieval of sub[%s], file[%s] was incomplete.", sub, month+prefix)
+        raise RuntimeError("Incomplete Retrieval")
     logger.info("Finished")
 
 def UpdateRetrievedMonth(sub, month, file, prefix):
@@ -163,7 +166,6 @@ class PushshiftRetriever():
     @staticmethod
     def SendDataRequest(url):
         logger = logging.getLogger(__name__+".PushshiftRetriever.SendDataRequest["+str(url)+"]")
-        logger.info("Starting")
         #used to throttle and avoid ddosing pushshift
         min_seconds_per_request = 1
         retry = 0
@@ -182,7 +184,6 @@ class PushshiftRetriever():
         except requests.exceptions.ConnectionError:
             logger.error("Connection Failure")
             raise RuntimeError("Retrieval Failed")
-        logger.info("Finished")
         return data
 
     @staticmethod
@@ -191,18 +192,23 @@ class PushshiftRetriever():
         logger.info("Starting")
         submissions = []
         start_dt = start_dt
-        # Will run until all submissions have been gathered
-        # from the 'after' date up until before date
-        url = 'https://api.pushshift.io/reddit/search/submission/?size=1000&after=' + str(start_dt) + '&before=' + str(end_dt) + '&subreddit=' + str(sub)
-        submission_data = PushshiftRetriever.SendDataRequest(url)
-        while len(submission_data) > 0:
-            submissions = submissions+submission_data
-            # Calls getPushshiftData() with the created date of the last submission
-            start_dt = submission_data[-1]['created_utc']
-            url = 'https://api.pushshift.io/reddit/search/submission/?size=1000&after=' + str(start_dt) + '&before=' + str(end_dt) + '&subreddit=' + str(sub)
+        status = 0
+        try:
+            # Will run until all submissions have been gathered
+            # from the 'after' date up until before date
+            url = 'https://api.pushshift.io/reddit/search/submission/?size=500&after=' + str(start_dt) + '&before=' + str(end_dt) + '&subreddit=' + str(sub)
             submission_data = PushshiftRetriever.SendDataRequest(url)
-        logger.info("Finished %s submissions have added to list", str(len(submissions)))
-        return submissions
+            while len(submission_data) > 0:
+                submissions = submissions+submission_data
+                # Calls getPushshiftData() with the created date of the last submission
+                start_dt = submission_data[-1]['created_utc']
+                url = 'https://api.pushshift.io/reddit/search/submission/?size=500&after=' + str(start_dt) + '&before=' + str(end_dt) + '&subreddit=' + str(sub)
+                submission_data = PushshiftRetriever.SendDataRequest(url)
+            logger.info("Finished %s submissions have added to list", str(len(submissions)))
+        except RuntimeError:
+            status = 1
+            logger.info("Due to Error canceled operation. only %s submissions have added to list", str(len(submissions)))
+        return submissions, status
 
     @staticmethod
     def GetCommentData(start_dt, end_dt, sub):
@@ -210,17 +216,22 @@ class PushshiftRetriever():
         logger.info("Starting")
         comments = []
         start_dt = start_dt
-        # Will run until all comments have been gathered
-        # from the 'after' date up until before date
-        url = 'https://api.pushshift.io/reddit/search/comment/?size=1000&after=' + str(start_dt) + '&before=' + str(end_dt) + '&subreddit=' + str(sub)
-        comment_data = PushshiftRetriever.SendDataRequest(url)
-        while len(comment_data) > 0:
-            comments = comments+comment_data
-            # Calls getPushshiftData() with the created date of the last submission
-            start_dt = comment_data[-1]['created_utc']
-            url = 'https://api.pushshift.io/reddit/search/comment/?size=1000&after=' + str(start_dt) + '&before=' + str(end_dt) + '&subreddit=' + str(sub)
+        status = 0
+        try:
+            # Will run until all comments have been gathered
+            # from the 'after' date up until before date
+            url = 'https://api.pushshift.io/reddit/search/comment/?size=500&after=' + str(start_dt) + '&before=' + str(end_dt) + '&subreddit=' + str(sub)
             comment_data = PushshiftRetriever.SendDataRequest(url)
-        logger.info("Finished %s comments have added to list", str(len(comments)))
-        return comments
+            while len(comment_data) > 0:
+                comments = comments+comment_data
+                # Calls getPushshiftData() with the created date of the last submission
+                start_dt = comment_data[-1]['created_utc']
+                url = 'https://api.pushshift.io/reddit/search/comment/?size=500&after=' + str(start_dt) + '&before=' + str(end_dt) + '&subreddit=' + str(sub)
+                comment_data = PushshiftRetriever.SendDataRequest(url)
+            logger.info("Finished %s comments have added to list", str(len(comments)))
+        except RuntimeError:
+            status = 1
+            logger.info("Due to Error canceled operation. only %s comments have added to list", str(len(comments)))
+        return comments, status
 
         
