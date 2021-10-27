@@ -98,16 +98,17 @@ class CodesViewModel(dv.PyDataViewModel):
                 old_key = node.key
                 node.key = value
                 node.name = value
+                main_frame = wx.GetApp().GetTopWindow()
                 if node.parent == None:
-                    self.codes[node.key] = node
-                    del self.codes[old_key]
+                    main_frame.codes[node.key] = node
+                    del main_frame.codes[old_key]
                 else:
                     node.parent.subcodes[node.key] = node
                     del node.parent.subcodes[old_key]
-                main_frame = wx.GetApp().GetTopWindow()
                 for obj in node.GetConnections(main_frame.datasets, main_frame.samples):
                     obj.codes.remove(old_key)
                     obj.codes.append(node.key)
+                    obj.last_changed_dt = datetime.now()
                 main_frame.DocumentsUpdated()
                 main_frame.CodesUpdated()
             else:
@@ -134,7 +135,7 @@ class CodesViewCtrl(dv.DataViewCtrl):
         model.DecRef()
 
         editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
-        column0 = dv.DataViewColumn(GUIText.CODES, editabletext_renderer, 0, flags=dv.DATAVIEW_CELL_EDITABLE, align=wx.ALIGN_LEFT)
+        column0 = dv.DataViewColumn(GUIText.CODES, editabletext_renderer, 0, align=wx.ALIGN_LEFT)
         self.AppendColumn(column0)
         text_renderer = dv.DataViewTextRenderer()
         column1 = dv.DataViewColumn(GUIText.NOTES, text_renderer, 1, align=wx.ALIGN_LEFT)
@@ -173,6 +174,8 @@ class CodesViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
+        for column in self.Columns:
+            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def OnDrag(self, event):
         item = event.GetItem()
@@ -445,12 +448,17 @@ class ObjectCodesViewModel(CodesViewModel):
                 old_key = node.key
                 node.key = value
                 node.name = value
-                self.codes[node.key] = node
-                del self.codes[old_key]
                 main_frame = wx.GetApp().GetTopWindow()
+                if node.parent == None:
+                    main_frame.codes[node.key] = node
+                    del main_frame.codes[old_key]
+                else:
+                    node.parent.subcodes[node.key] = node
+                    del node.parent.subcodes[old_key]
                 for obj in node.GetConnections(main_frame.datasets, main_frame.samples):
                     obj.codes.remove(old_key)
                     obj.codes.append(node.key)
+                    obj.last_changed_dt = datetime.now()
                 main_frame.DocumentsUpdated()
                 main_frame.CodesUpdated()
             else:
@@ -472,7 +480,7 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         column0 = dv.DataViewColumn("", renderer, 0, flags=dv.DATAVIEW_CELL_ACTIVATABLE)
         self.AppendColumn(column0)
         editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
-        column1 = dv.DataViewColumn(GUIText.CODES, editabletext_renderer, 1, flags=dv.DATAVIEW_CELL_EDITABLE, align=wx.ALIGN_LEFT)
+        column1 = dv.DataViewColumn(GUIText.CODES, editabletext_renderer, 1, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
         text_renderer = dv.DataViewTextRenderer()
         column2 = dv.DataViewColumn(GUIText.NOTES, text_renderer, 2, align=wx.ALIGN_LEFT)
@@ -511,6 +519,8 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
+        for column in self.Columns:
+            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def OnDrag(self, event):
         item = event.GetItem()
@@ -922,6 +932,8 @@ class CodeConnectionsViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
+        for column in self.Columns:
+            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def OnOpen(self, event):
         logger = logging.getLogger(__name__+".CodeConnectionsViewCtrl.OnOpen")
@@ -1378,6 +1390,8 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
+        for column in self.Columns:
+            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def UpdateColumns(self):
         model = self.GetModel()
@@ -1686,10 +1700,10 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
 
         node = self.ItemToObject(parent)
         if isinstance(node, Codes.Code):
-            for subcode_key in node.subcodes:
-                children.append(self.ObjectToItem(node.subcodes[subcode_key]))
             for quotation in node.quotations:
                 children.append(self.ObjectToItem(quotation))
+            for subcode_key in node.subcodes:
+                children.append(self.ObjectToItem(node.subcodes[subcode_key]))
         return len(children)
 
     def IsContainer(self, item):
@@ -1774,7 +1788,7 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
 
         self.UpdateColumns()
 
-        self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
+        self.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
         self.Bind(dv.EVT_DATAVIEW_ITEM_ACTIVATED, self.OnOpen)
         self.Bind(wx.EVT_MENU, self.OnCopyItems, id=wx.ID_COPY)
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
@@ -1790,6 +1804,8 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
+        for column in self.Columns:
+            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def UpdateColumns(self):
         if self.ColumnCount:
@@ -1822,8 +1838,6 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
             column.Reorderable = True
             column.Resizeable = True
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
-        
-        
 
     def OnOpen(self, event):
         logger = logging.getLogger(__name__+".QuotationsViewCtrl.OnOpen")
@@ -1833,7 +1847,7 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
         node = model.ItemToObject(item)
         main_frame = wx.GetApp().GetTopWindow()
         if isinstance(node, Codes.Code):
-            CodesGUIs.CodeDialog(main_frame, node, size=wx.Size(400,400)).Show()
+            CodesGUIs.CodeConnectionsDialog(main_frame, node, size=wx.Size(400,400)).Show()
         elif isinstance(node, Codes.Quotation):
             document = main_frame.datasets[node.dataset_key].documents[node.document_key]
             CodesGUIs.DocumentDialog(main_frame, document).Show()

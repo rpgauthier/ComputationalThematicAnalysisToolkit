@@ -51,8 +51,8 @@ class Code(GenericObject):
             tmp_last_changed_dt = self.subcodes[subcode_key].last_changed_dt
             if tmp_last_changed_dt > self._last_changed_dt:
                 self._last_changed_dt = tmp_last_changed_dt
-        for quotation_key in self.quotations:
-            tmp_last_changed_dt = self.quotations[quotation_key].last_changed_dt
+        for quotation in self.quotations:
+            tmp_last_changed_dt = quotation.last_changed_dt
             if tmp_last_changed_dt > self._last_changed_dt:
                 self._last_changed_dt = tmp_last_changed_dt
         return self._last_changed_dt

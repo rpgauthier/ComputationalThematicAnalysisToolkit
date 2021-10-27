@@ -15,7 +15,7 @@ import Common.Objects.DataViews.Codes as CodesDataViews
 
 class CodeConnectionsDialog(wx.Dialog):
     def __init__(self, parent, code, size=wx.DefaultSize):
-        logger = logging.getLogger(__name__+".CodeDialog["+str(code.key)+"].__init__")
+        logger = logging.getLogger(__name__+".CodeConnectionsDialog["+str(code.key)+"].__init__")
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=str(code.key), size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
         sizer = wx.BoxSizer()
@@ -140,19 +140,21 @@ class DocumentListPanel(wx.Panel):
         usefulness_tool.SetDropdownMenu(usefulness_menu)
         origins_tool = view_toolbar.AddTool(wx.ID_ANY, label=GUIText.SHOW_DOCS_FROM, bitmap=wx.Bitmap(1, 1), kind=wx.ITEM_DROPDOWN)
         origins_tool.SetDropdownMenu(self.origins_menu)
-        self.search_ctrl = wx.SearchCtrl(view_toolbar)
-        view_toolbar.AddControl(self.search_ctrl, GUIText.SEARCH)
+        
+        view_toolbar.Realize()
+        view_sizer.Add(view_toolbar)
+        controls_sizer.Add(view_sizer, 0, wx.ALL, 5)
+
+        self.search_ctrl = wx.SearchCtrl(self)
         self.search_ctrl.Bind(wx.EVT_SEARCH, self.OnSearch)
         self.search_ctrl.Bind(wx.EVT_SEARCH_CANCEL, self.OnSearchCancel)
         self.search_ctrl.SetDescriptiveText(GUIText.SEARCH)
         self.search_ctrl.ShowCancelButton(True)
         #TODO check this on OSX
         extent = self.search_ctrl.GetTextExtent(GUIText.SEARCH)
-        size = self.search_ctrl.GetSizeFromTextSize(extent.GetWidth()+extent.GetHeight()*2, -1)
+        size = self.search_ctrl.GetSizeFromTextSize(extent.GetWidth()*4, -1)
         self.search_ctrl.SetMinSize(size)
-        view_toolbar.Realize()
-        view_sizer.Add(view_toolbar)
-        controls_sizer.Add(view_sizer, 0, wx.ALL, 5)
+        controls_sizer.Add(self.search_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
         self.sizer.Add(controls_sizer, 0, wx.ALL, 5)
         

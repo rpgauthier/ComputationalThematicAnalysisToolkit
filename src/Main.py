@@ -60,6 +60,13 @@ class MainFrame(wx.Frame):
         self.options_dict = {'multipledatasets_mode': False,
                              'adjustable_metadata_mode': False,
                              'adjustable_includedfields_mode': False}
+        #used to control order of modules. not currently used but needed in future customization options to support other thematic analysis approaches
+        self.module_order = ['collection',
+                             'filtering',
+                             'sampling',
+                             'coding',
+                             #'reviewing',
+                             'reporting']
 
         #frame and notebook for notes to make accessible when moving between modules
         self.notes_frame = wx.Frame(self,
@@ -76,18 +83,17 @@ class MainFrame(wx.Frame):
 
         #Modules
         self.collection_module = CollectionModule.CollectionPanel(self.main_notebook, size=self.GetSize())
-        self.main_notebook.InsertPage(0, self.collection_module, GUIText.COLLECTION_LABEL)
+        self.main_notebook.InsertPage(self.module_order.index('collection'), self.collection_module, GUIText.COLLECTION_LABEL)
         self.filtering_module = FilteringModule.FilteringNotebook(self.main_notebook, size=self.GetSize())
-        self.main_notebook.InsertPage(1, self.filtering_module, GUIText.FILTERING_LABEL)
+        self.main_notebook.InsertPage(self.module_order.index('filtering'), self.filtering_module, GUIText.FILTERING_LABEL)
         self.sampling_module = SamplingModule.SamplingNotebook(self.main_notebook, size=self.GetSize())
-        self.main_notebook.InsertPage(2, self.sampling_module, GUIText.SAMPLING_LABEL)
+        self.main_notebook.InsertPage(self.module_order.index('sampling'), self.sampling_module, GUIText.SAMPLING_LABEL)
         self.coding_module = CodingModule.CodingNotebook(self.main_notebook, size=self.GetSize())
-        self.main_notebook.InsertPage(3, self.coding_module, GUIText.CODING_LABEL)
-        self.reviewing_module = ReviewingModule.ReviewingPanel(self.main_notebook, size=self.GetSize())
-        self.reviewing_module.Hide()
-        #self.main_notebook.InsertPage(4, self.reviewing_module, GUIText.REVIEWING_LABEL)
+        self.main_notebook.InsertPage(self.module_order.index('coding'), self.coding_module, GUIText.CODING_LABEL)
+        #self.reviewing_module = ReviewingModule.ReviewingPanel(self.main_notebook, size=self.GetSize())
+        #self.main_notebook.InsertPage(self.module_order.index('reviewing'), self.reviewing_module, GUIText.REVIEWING_LABEL)
         self.reporting_module = ReportingModule.ReportingPanel(self.main_notebook, size=self.GetSize())
-        self.main_notebook.InsertPage(5, self.reporting_module, GUIText.REPORTING_LABEL)
+        self.main_notebook.InsertPage(self.module_order.index('reporting'), self.reporting_module, GUIText.REPORTING_LABEL)
         
         #Sizer for Frame
         self.panel_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -135,32 +141,6 @@ class MainFrame(wx.Frame):
         self.menu_bar.Append(file_menu, GUIText.FILE_MENU)
 
         self.view_menu = wx.Menu()
-        self.toggle_collection_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                                GUIText.SHOW_HIDE+GUIText.COLLECTION_LABEL,
-                                                                kind=wx.ITEM_CHECK)
-        self.Bind(wx.EVT_MENU, self.OnToggleCollection, self.toggle_collection_menuitem)
-        self.toggle_filtering_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                                     GUIText.SHOW_HIDE+GUIText.FILTERING_MENU_LABEL,
-                                                                     kind=wx.ITEM_CHECK)
-        self.Bind(wx.EVT_MENU, self.OnToggleFiltering, self.toggle_filtering_menuitem)
-        self.toggle_sampling_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                              GUIText.SHOW_HIDE+GUIText.SAMPLING_MENU_LABEL,
-                                                              kind=wx.ITEM_CHECK)
-        self.Bind(wx.EVT_MENU, self.OnToggleSampling, self.toggle_sampling_menuitem)
-        self.toggle_coding_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                            GUIText.SHOW_HIDE+GUIText.CODING_LABEL,
-                                                            kind=wx.ITEM_CHECK)
-        self.Bind(wx.EVT_MENU, self.OnToggleCoding, self.toggle_coding_menuitem)
-        self.toggle_reviewing_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                               GUIText.SHOW_HIDE+GUIText.REVIEWING_LABEL,
-                                                               kind=wx.ITEM_CHECK)
-        self.Bind(wx.EVT_MENU, self.OnToggleReviewing, self.toggle_reviewing_menuitem)
-        self.toggle_reporting_menuitem = self.view_menu.Append(wx.ID_ANY,
-                                                               GUIText.SHOW_HIDE+GUIText.REPORTING_LABEL,
-                                                               kind=wx.ITEM_CHECK)
-        self.Bind(wx.EVT_MENU, self.OnToggleReporting, self.toggle_reporting_menuitem)
-        
-        self.view_menu.AppendSeparator()
         self.toggle_notes_menuitem = self.view_menu.Append(wx.ID_ANY,
                                                            GUIText.SHOW_HIDE + GUIText.NOTES_LABEL,
                                                            kind=wx.ITEM_CHECK)
@@ -168,22 +148,26 @@ class MainFrame(wx.Frame):
 
         self.view_menu.AppendSeparator()
 
+        #commented out modules that do not use this menu type at this time. readd once used
         self.collection_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.collection_module.view_menu, GUIText.COLLECTION_LABEL)
-        self.filtering_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.filtering_module.view_menu, GUIText.FILTERING_MENU_LABEL)
-        self.sampling_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.sampling_module.view_menu, GUIText.SAMPLING_MENU_LABEL)
-        self.coding_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.coding_module.view_menu, GUIText.CODING_LABEL)
-        self.reviewing_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.reviewing_module.view_menu, GUIText.REVIEWING_LABEL)
-        self.reporting_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.reporting_module.view_menu, GUIText.REPORTING_LABEL)
+        #self.filtering_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.filtering_module.view_menu, GUIText.FILTERING_MENU_LABEL)
+        #self.sampling_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.sampling_module.view_menu, GUIText.SAMPLING_MENU_LABEL)
+        #self.coding_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.coding_module.view_menu, GUIText.CODING_LABEL)
+        #self.reviewing_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.reviewing_module.view_menu, GUIText.REVIEWING_LABEL)
+        #self.reporting_module.view_menu_menuitem = self.view_menu.AppendSubMenu(self.reporting_module.view_menu, GUIText.REPORTING_LABEL)
         
+        self.view_menu.AppendSeparator()
+
         self.menu_bar.Append(self.view_menu, GUIText.VIEW_MENU)
 
         self.actions_menu = wx.Menu()
-        self.collection_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.collection_module.actions_menu, GUIText.COLLECTION_LABEL)
+        #commented out modules that do not use this menu type at this time. readd once used
+        #self.collection_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.collection_module.actions_menu, GUIText.COLLECTION_LABEL)
         self.filtering_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filtering_module.actions_menu, GUIText.FILTERING_MENU_LABEL)
-        self.sampling_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.sampling_module.actions_menu, GUIText.SAMPLING_MENU_LABEL)
+        #self.sampling_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.sampling_module.actions_menu, GUIText.SAMPLING_MENU_LABEL)
         self.coding_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.coding_module.actions_menu, GUIText.CODING_LABEL)
-        self.reviewing_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.reviewing_module.actions_menu, GUIText.REVIEWING_LABEL)
-        self.reporting_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.reporting_module.actions_menu, GUIText.REPORTING_LABEL)
+        #self.reviewing_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.reviewing_module.actions_menu, GUIText.REVIEWING_LABEL)
+        #self.reporting_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.reporting_module.actions_menu, GUIText.REPORTING_LABEL)
         self.menu_bar.Append(self.actions_menu, GUIText.ACTIONS)
 
         self.help_menu = wx.Menu()
@@ -193,25 +177,7 @@ class MainFrame(wx.Frame):
 
         self.SetMenuBar(self.menu_bar)
 
-        self.view_toggle_num = 9
-        self.collection_pos = 0
-        self.filtering_pos = 1
-        self.sampling_pos = 2
-        self.coding_pos = 3
-        self.reviewing_pos = 4
-        self.reporting_pos = 5
-
         CustomEvents.EVT_PROGRESS(self, self.OnProgress)
-
-        #setup default visable state
-        self.toggle_collection_menuitem.Check(True)
-        self.toggle_filtering_menuitem.Check(True)
-        self.toggle_sampling_menuitem.Check(True)
-        self.toggle_coding_menuitem.Check(True)
-        self.toggle_reviewing_menuitem.Check(False)
-        self.OnToggleReviewing(None)
-        self.toggle_reporting_menuitem.Check(True)
-
 
         self.Layout()
         self.Fit()
@@ -220,186 +186,6 @@ class MainFrame(wx.Frame):
         logger.info("Finished")
 
     #Functions called by actions on the GUI (menus or buttons)
-    def OnToggleCollection(self, event):
-        logger = logging.getLogger(__name__+".MainFrame.OnToggleCollection")
-        logger.info("Starting")
-        if self.toggle_collection_menuitem.IsChecked():
-            index = None
-            for idx in range(self.main_notebook.GetPageCount()):
-                if self.main_notebook.GetPage(idx) is self.collection_module:
-                    index = idx
-            if index is None:
-                self.main_notebook.InsertPage(self.coding_pos, self.collection_module,
-                                              GUIText.COLLECTION_LABEL)
-                self.view_menu.Insert(self.view_toggle_num+self.coding_pos, self.collection_module.view_menu_menuitem)
-                self.actions_menu.Insert(self.coding_pos, self.collection_module.actions_menu_menuitem)
-                self.filtering_pos += 1
-                self.sampling_pos += 1
-                self.coding_pos += 1
-                self.reviewing_pos += 1
-                self.reporting_pos += 1
-        else:
-            index = None
-            for idx in range(self.main_notebook.GetPageCount()):
-                if self.main_notebook.GetPage(idx) is self.collection_module:
-                    index = idx
-            if index is not None:
-                self.main_notebook.RemovePage(index)
-                self.collection_module.Hide()
-                self.collection_module.view_menu_menuitem = self.view_menu.Remove(self.collection_module.view_menu_menuitem)
-                self.collection_module.actions_menu_menuitem = self.actions_menu.Remove(self.collection_module.actions_menu_menuitem)
-                self.filtering_pos -= 1
-                self.sampling_pos -= 1
-                self.coding_pos -= 1
-                self.reviewing_pos -= 1
-                self.reporting_pos -= 1
-        logger.info("Finished")
-
-    def OnToggleFiltering(self, event):
-        logger = logging.getLogger(__name__+".MainFrame.OnToggleFiltering")
-        logger.info("Starting")
-        if self.toggle_filtering_menuitem.IsChecked():
-            index = None
-            for idx in range(self.main_notebook.GetPageCount()):
-                if self.main_notebook.GetPage(idx) is self.filtering_module:
-                    index = idx
-            if index is None:
-                self.main_notebook.InsertPage(self.filtering_pos, self.filtering_module,
-                                              GUIText.FILTERING_LABEL)
-                self.view_menu.Insert(self.view_toggle_num+self.filtering_pos, self.filtering_module.view_menu_menuitem)
-                self.actions_menu.Insert(self.filtering_pos, self.filtering_module.actions_menu_menuitem)
-                self.sampling_pos += 1
-                self.coding_pos += 1
-                self.reviewing_pos += 1
-                self.reporting_pos += 1
-        else:
-            index = None
-            for idx in range(self.main_notebook.GetPageCount()):
-                if self.main_notebook.GetPage(idx) is self.filtering_module:
-                    index = idx
-            if index is not None:
-                self.main_notebook.RemovePage(index)
-                self.filtering_module.Hide()
-                self.filtering_module.view_menu_menuitem = self.view_menu.Remove(self.filtering_module.view_menu_menuitem)
-                self.filtering_module.actions_menu_menuitem = self.actions_menu.Remove(self.filtering_module.actions_menu_menuitem)
-                self.sampling_pos -= 1
-                self.coding_pos -= 1
-                self.reviewing_pos -= 1
-                self.reporting_pos -= 1
-        logger.info("Finished")
-
-    def OnToggleSampling(self, event):
-        logger = logging.getLogger(__name__+".MainFrame.OnToggleSampling")
-        logger.info("Starting")
-        if self.toggle_sampling_menuitem.IsChecked():
-            index = None
-            for idx in range(self.main_notebook.GetPageCount()):
-                if self.main_notebook.GetPage(idx) is self.sampling_module:
-                    index = idx
-            if index is None:
-                self.main_notebook.InsertPage(self.sampling_pos, self.sampling_module,
-                                              GUIText.SAMPLING_LABEL)
-                self.view_menu.Insert(self.view_toggle_num+self.sampling_pos, self.sampling_module.view_menu_menuitem)
-                self.actions_menu.Insert(self.sampling_pos, self.sampling_module.actions_menu_menuitem)
-                self.coding_pos += 1
-                self.reviewing_pos += 1
-                self.reporting_pos += 1
-        else:
-            index = None
-            for idx in range(self.main_notebook.GetPageCount()):
-                if self.main_notebook.GetPage(idx) is self.sampling_module:
-                    index = idx
-            if index is not None:
-                self.main_notebook.RemovePage(index)
-                self.sampling_module.Hide()
-                self.sampling_module.view_menu_menuitem = self.view_menu.Remove(self.sampling_module.view_menu_menuitem)
-                self.sampling_module.actions_menu_menuitem = self.actions_menu.Remove(self.sampling_module.actions_menu_menuitem)
-                self.coding_pos -= 1
-                self.reviewing_pos -= 1
-                self.reporting_pos -= 1
-        logger.info("Finished")
-
-    def OnToggleCoding(self, event):
-        logger = logging.getLogger(__name__+".MainFrame.OnToggleCoding")
-        logger.info("Starting")
-        if self.toggle_coding_menuitem.IsChecked():
-            index = None
-            for idx in range(self.main_notebook.GetPageCount()):
-                if self.main_notebook.GetPage(idx) is self.coding_module:
-                    index = idx
-            if index is None:
-                self.main_notebook.InsertPage(self.coding_pos, self.coding_module,
-                                              GUIText.CODING_LABEL)
-                self.view_menu.Insert(self.view_toggle_num+self.coding_pos, self.coding_module.view_menu_menuitem)
-                self.actions_menu.Insert(self.coding_pos, self.coding_module.actions_menu_menuitem)
-                self.reviewing_pos += 1
-                self.reporting_pos += 1
-        else:
-            index = None
-            for idx in range(self.main_notebook.GetPageCount()):
-                if self.main_notebook.GetPage(idx) is self.coding_module:
-                    index = idx
-            if index is not None:
-                self.main_notebook.RemovePage(index)
-                self.coding_module.Hide()
-                self.coding_module.view_menu_menuitem = self.view_menu.Remove(self.coding_module.view_menu_menuitem)
-                self.coding_module.actions_menu_menuitem = self.actions_menu.Remove(self.coding_module.actions_menu_menuitem)
-                self.reviewing_pos -= 1
-                self.reporting_pos -= 1
-        logger.info("Finished")
-
-    def OnToggleReviewing(self, event):
-        logger = logging.getLogger(__name__+".MainFrame.OnToggleReviewing")
-        logger.info("Starting")
-        if self.toggle_reviewing_menuitem.IsChecked():
-            index = None
-            for idx in range(self.main_notebook.GetPageCount()):
-                if self.main_notebook.GetPage(idx) is self.reviewing_module:
-                    index = idx
-            if index is None:
-                self.main_notebook.InsertPage(self.reviewing_pos, self.reviewing_module,
-                                              GUIText.REVIEWING_LABEL)
-                self.view_menu.Insert(self.view_toggle_num+self.reviewing_pos, self.reviewing_module.view_menu_menuitem)
-                self.actions_menu.Insert(self.reviewing_pos, self.reviewing_module.actions_menu_menuitem)
-                self.reporting_pos += 1
-        else:
-            index = None
-            for idx in range(self.main_notebook.GetPageCount()):
-                if self.main_notebook.GetPage(idx) is self.reviewing_module:
-                    index = idx
-            if index is not None:
-                self.main_notebook.RemovePage(index)
-                self.reviewing_module.Hide()
-                self.reviewing_module.view_menu_menuitem = self.view_menu.Remove(self.reviewing_module.view_menu_menuitem)
-                self.reviewing_module.actions_menu_menuitem = self.actions_menu.Remove(self.reviewing_module.actions_menu_menuitem)
-                self.reporting_pos -= 1
-        logger.info("Finished")
-
-    def OnToggleReporting(self, event):
-        logger = logging.getLogger(__name__+".MainFrame.OnToggleReporting")
-        logger.info("Starting")
-        if self.toggle_reporting_menuitem.IsChecked():
-            index = None
-            for idx in range(self.main_notebook.GetPageCount()):
-                if self.main_notebook.GetPage(idx) is self.reporting_module:
-                    index = idx
-            if index is None:
-                self.main_notebook.InsertPage(self.reporting_pos, self.reporting_module,
-                                              GUIText.REPORTING_LABEL)
-                self.view_menu.Insert(self.view_toggle_num+self.reporting_pos, self.reporting_module.view_menu_menuitem)
-                self.actions_menu.Insert(self.reporting_pos, self.reporting_module.actions_menu_menuitem)
-        else:
-            index = None
-            for idx in range(self.main_notebook.GetPageCount()):
-                if self.main_notebook.GetPage(idx) is self.reporting_module:
-                    index = idx
-            if index is not None:
-                self.main_notebook.RemovePage(index)
-                self.reporting_module.Hide()
-                self.reporting_module.view_menu_menuitem = self.view_menu.Remove(self.reporting_module.view_menu_menuitem)
-                self.reporting_module.actions_menu_menuitem = self.actions_menu.Remove(self.reporting_module.actions_menu_menuitem)
-        logger.info("Finished")
-
     def OnToggleNotes(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnToggleNotes")
         logger.info("Starting")
@@ -484,14 +270,6 @@ class MainFrame(wx.Frame):
 
                 self.SetTitle(GUIText.APP_NAME+" - "+GUIText.UNSAVED)
 
-                #reset view
-                self.toggle_collection_menuitem.Check(True)
-                self.OnToggleCollection(None)
-                self.toggle_filtering_menuitem.Check(True)
-                self.OnToggleFiltering(None)
-                self.toggle_coding_menuitem.Check(True)
-                self.OnToggleCoding(None)
-
                 self.CloseProgressDialog(thaw=True)
         logger.info("Finished")
     
@@ -575,30 +353,19 @@ class MainFrame(wx.Frame):
         self.samples.update(event.data['samples'])
         self.codes.update(event.data['codes'])
 
-        self.toggle_collection_menuitem.Check(check=saved_data['collection_check'])
-        self.OnToggleCollection(None)
         self.collection_module.Load(saved_data['collection_module'])
-        self.toggle_filtering_menuitem.Check(check=saved_data['filtering_check'])
-        self.OnToggleFiltering(None)
         self.filtering_module.Load(saved_data['filtering_module'])
         self.sampling_module.Load(saved_data['sampling_module'])
         self.coding_module.Load(saved_data['coding_module'])
-        self.toggle_coding_menuitem.Check(check=saved_data['coding_check'])
-        self.OnToggleCoding(None)
-        if 'reviewing_module' in saved_data:
-            self.reviewing_module.Load(saved_data['reviewing_module'])
-        else:
-            self.reviewing_module.Load({})
-        if 'reviewing_check' in saved_data:
-            self.toggle_notes_menuitem.Check(check=saved_data['reviewing_check'])
-            self.OnToggleReviewing(None)
+        #if 'reviewing_module' in saved_data:
+        #    self.reviewing_module.Load(saved_data['reviewing_module'])
+        #else:
+        #    self.reviewing_module.Load({})
         if 'reporting_module' in saved_data:
             self.reporting_module.Load(saved_data['reporting_module'])
         else:
             self.reporting_module.Load({})
-        if 'reporting_check' in saved_data:
-            self.toggle_notes_menuitem.Check(check=saved_data['reporting_check'])
-            self.OnToggleReporting(None)
+        
         self.toggle_notes_menuitem.Check(check=saved_data['notes_check'])
         self.OnToggleNotes(None)
         self.notes_panel.Load(saved_data['notes'])
@@ -662,11 +429,6 @@ class MainFrame(wx.Frame):
 
             self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_CONFIG)
             config_data = {}
-            config_data['collection_check'] = self.toggle_collection_menuitem.IsChecked()
-            config_data['filtering_check'] = self.toggle_filtering_menuitem.IsChecked()
-            config_data['coding_check'] = self.toggle_coding_menuitem.IsChecked()
-            config_data['reviewing_check'] = self.toggle_coding_menuitem.IsChecked()
-            config_data['reporting_check'] = self.toggle_coding_menuitem.IsChecked()
             config_data['notes_check'] = self.toggle_notes_menuitem.IsChecked()
             config_data['notes'] = self.notes_panel.Save()
             config_data['datasets'] = list(self.datasets.keys())
@@ -677,7 +439,7 @@ class MainFrame(wx.Frame):
             config_data['filtering_module'] = self.filtering_module.Save()
             config_data['sampling_module'] = self.sampling_module.Save()
             config_data['coding_module'] = self.coding_module.Save()
-            config_data['reviewing_module'] = self.reviewing_module.Save()
+            #config_data['reviewing_module'] = self.reviewing_module.Save()
             config_data['reporting_module'] = self.reporting_module.Save()
 
             self.save_thread = MainThreads.SaveThread(self, self.save_path, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, notes_text, self.last_load_dt)
@@ -711,11 +473,6 @@ class MainFrame(wx.Frame):
 
         self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_CONFIG)
         config_data = {}
-        config_data['collection_check'] = self.toggle_collection_menuitem.IsChecked()
-        config_data['filtering_check'] = self.toggle_filtering_menuitem.IsChecked()
-        config_data['coding_check'] = self.toggle_coding_menuitem.IsChecked()
-        config_data['reviewing_check'] = self.toggle_coding_menuitem.IsChecked()
-        config_data['reporting_check'] = self.toggle_coding_menuitem.IsChecked()
         config_data['notes_check'] = self.toggle_notes_menuitem.IsChecked()
         config_data['notes'] = self.notes_panel.Save()
         config_data['datasets'] = list(self.datasets.keys())
@@ -726,7 +483,7 @@ class MainFrame(wx.Frame):
         config_data['filtering_module'] = self.filtering_module.Save()
         config_data['sampling_module'] = self.sampling_module.Save()
         config_data['coding_module'] = self.coding_module.Save()
-        config_data['reviewing_module'] = self.reviewing_module.Save()
+        #config_data['reviewing_module'] = self.reviewing_module.Save()
         config_data['reporting_module'] = self.reporting_module.Save()
 
         self.save_thread = MainThreads.SaveThread(self, Constants.AUTOSAVE_PATH, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, notes_text, self.last_load_dt)
@@ -907,7 +664,7 @@ class MainFrame(wx.Frame):
     def CodesUpdated(self):
         logger = logging.getLogger(__name__+".MainFrame.CodesUpdated")
         logger.info("Starting")
-        self.reviewing_module.CodesUpdated()
+        #self.reviewing_module.CodesUpdated()
         self.reporting_module.CodesUpdated()
         logger.info("Finished")
 
@@ -915,7 +672,7 @@ class MainFrame(wx.Frame):
         self.collection_module.ModeChange()
         self.sampling_module.ModeChange()
         self.coding_module.DocumentsUpdated()
-        self.reviewing_module.ModeChange()
+        #self.reviewing_module.ModeChange()
         self.reporting_module.ModeChange()
 
 class CustomProgressDialog(wx.Dialog):

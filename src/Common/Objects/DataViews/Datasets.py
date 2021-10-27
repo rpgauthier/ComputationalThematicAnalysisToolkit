@@ -133,8 +133,7 @@ class DatasetsViewCtrl(dv.DataViewCtrl):
         #model.DecRef()
 
         editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
-        column0 = dv.DataViewColumn(GUIText.NAME, editabletext_renderer, 0,
-                               flags=dv.DATAVIEW_CELL_EDITABLE, align=wx.ALIGN_LEFT)
+        column0 = dv.DataViewColumn(GUIText.NAME, editabletext_renderer, 0, align=wx.ALIGN_LEFT)
         self.AppendColumn(column0)
         text_renderer = dv.DataViewTextRenderer()
         column1 = dv.DataViewColumn(GUIText.SOURCE, text_renderer, 1, align=wx.ALIGN_LEFT)
@@ -170,6 +169,8 @@ class DatasetsViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
+        for column in self.Columns:
+            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def OnShowPopup(self, event):
         menu = wx.Menu()
@@ -705,8 +706,7 @@ class FieldsViewCtrl(dv.DataViewCtrl):
         #model.DecRef()
 
         editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)        
-        column0 = dv.DataViewColumn(GUIText.NAME, editabletext_renderer, 0,
-                                    flags=dv.DATAVIEW_CELL_EDITABLE, align=wx.ALIGN_LEFT)
+        column0 = dv.DataViewColumn(GUIText.NAME, editabletext_renderer, 0, align=wx.ALIGN_LEFT)
         self.AppendColumn(column0)
         text_renderer = dv.DataViewTextRenderer()
         column1 = dv.DataViewColumn(GUIText.SOURCE, text_renderer, 1, align=wx.ALIGN_LEFT)
@@ -741,6 +741,8 @@ class FieldsViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
+        for column in self.Columns:
+            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def OnCopyItems(self, event):
         selected_items = []

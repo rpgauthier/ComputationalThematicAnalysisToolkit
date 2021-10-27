@@ -759,7 +759,7 @@ class WordsPanel(wx.Panel):
         self.word_searchctrl.ShowCancelButton(True)
         #TODO check this on OSX
         extent = self.word_searchctrl.GetTextExtent(GUIText.FILTERS_WORD_SEARCH)
-        size = self.word_searchctrl.GetSizeFromTextSize(extent.GetWidth()+extent.GetHeight()*2, -1)
+        size = self.word_searchctrl.GetSizeFromTextSize(extent.GetWidth()*2, -1)
         self.word_searchctrl.SetMinSize(size)
         search_sizer.Add(self.word_searchctrl, 0, wx.ALL, 5)
         self.pos_searchctrl = wx.SearchCtrl(self)
@@ -769,7 +769,7 @@ class WordsPanel(wx.Panel):
         self.pos_searchctrl.ShowCancelButton(True)
         #TODO check this on OSX
         extent = self.pos_searchctrl.GetTextExtent(GUIText.FILTERS_POS_SEARCH)
-        size = self.pos_searchctrl.GetSizeFromTextSize(extent.GetWidth()+extent.GetHeight()*2, -1)
+        size = self.pos_searchctrl.GetSizeFromTextSize(extent.GetWidth()*1.5, -1)
         self.pos_searchctrl.SetMinSize(size)
         search_sizer.Add(self.pos_searchctrl, 0, wx.ALL, 5)
         self.search_count_text = wx.StaticText(self)

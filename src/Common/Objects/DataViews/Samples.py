@@ -243,6 +243,8 @@ class PartsViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
+        for column in self.Columns:
+            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def UpdateColumns(self):
         model = self.GetModel()
@@ -443,9 +445,7 @@ class TopicViewCtrl(dv.DataViewCtrl):
                                     align=wx.ALIGN_RIGHT)
         self.AppendColumn(column0)
         editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
-        column1 = dv.DataViewColumn(GUIText.LABEL, editabletext_renderer, 1,
-                                    flags=dv.DATAVIEW_CELL_EDITABLE,
-                                    align=wx.ALIGN_LEFT)
+        column1 = dv.DataViewColumn(GUIText.LABEL, editabletext_renderer, 1, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
         text_render = dv.DataViewTextRenderer()
         column2 = dv.DataViewColumn(GUIText.WORDS, text_render, 2,
@@ -476,6 +476,8 @@ class TopicViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
+        for column in self.Columns:
+            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def OnShowPopup(self, event):
         '''create popup menu with options that can be performed on the list'''
