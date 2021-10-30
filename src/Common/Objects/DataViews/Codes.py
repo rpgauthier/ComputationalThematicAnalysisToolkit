@@ -8,7 +8,6 @@ import wx.dataview as dv
 from Common.GUIText import Coding as GUIText
 import Common.Constants as Constants
 import Common.Objects.Codes as Codes
-import Common.Objects.Utilities.Codes as CodesUtilities
 import Common.Objects.GUIs.Codes as CodesGUIs
 import Common.Objects.Datasets as Datasets
 import Common.Objects.Samples as Samples
@@ -90,30 +89,15 @@ class CodesViewModel(dv.PyDataViewModel):
     def SetValue(self, value, item, col):
         '''only allowing updating of key as rest is connected to data retrieved'''
         node = self.ItemToObject(item)
-        if col == 0 and node.key != value:
+        if col == 0 and node.name != value:
             if value == "":
                 wx.MessageBox(GUIText.RENAME_CODE_BLANK_ERROR,
                               GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            elif CodesUtilities.CodeKeyUniqueCheck(value, self.codes):
-                old_key = node.key
-                node.key = value
+            else:
                 node.name = value
                 main_frame = wx.GetApp().GetTopWindow()
-                if node.parent == None:
-                    main_frame.codes[node.key] = node
-                    del main_frame.codes[old_key]
-                else:
-                    node.parent.subcodes[node.key] = node
-                    del node.parent.subcodes[old_key]
-                for obj in node.GetConnections(main_frame.datasets, main_frame.samples):
-                    obj.codes.remove(old_key)
-                    obj.codes.append(node.key)
-                    obj.last_changed_dt = datetime.now()
                 main_frame.DocumentsUpdated()
                 main_frame.CodesUpdated()
-            else:
-                wx.MessageBox(GUIText.RENAME_CODE_NOTUNIQUE_ERROR,
-                              GUIText.ERROR, wx.OK | wx.ICON_ERROR)
         return True
     
     def GetAttr(self, item, col, attr):
@@ -283,7 +267,7 @@ class CodesViewCtrl(dv.DataViewCtrl):
                     wx.MessageBox(GUIText.NEW_CODE_BLANK_ERROR,
                                   GUIText.ERROR, wx.OK | wx.ICON_ERROR)
                     new_name = None
-                elif CodesUtilities.CodeKeyUniqueCheck(new_name, main_frame.codes):
+                else:
                     main_frame.codes[new_name] = Codes.Code(new_name)
                     model.Cleared()
                     self.Expander(None)
@@ -291,10 +275,6 @@ class CodesViewCtrl(dv.DataViewCtrl):
                         column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
                     main_frame.CodesUpdated()
                     break
-                else:
-                    wx.MessageBox(GUIText.NEW_CODE_NOTUNIQUE_ERROR,
-                                  GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-                    new_name = None
             else:
                 break
         logger.info("Finished")
@@ -319,7 +299,7 @@ class CodesViewCtrl(dv.DataViewCtrl):
                     wx.MessageBox(GUIText.NEW_CODE_BLANK_ERROR,
                                   GUIText.ERROR, wx.OK | wx.ICON_ERROR)
                     new_name = None
-                elif CodesUtilities.CodeKeyUniqueCheck(new_name, main_frame.codes):
+                else:
                     node.subcodes[new_name] = Codes.Code(new_name)
                     node.subcodes[new_name].parent = node
                     model.Cleared()
@@ -328,10 +308,6 @@ class CodesViewCtrl(dv.DataViewCtrl):
                         column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
                     main_frame.CodesUpdated()
                     break
-                else:
-                    wx.MessageBox(GUIText.NEW_CODE_NOTUNIQUE_ERROR,
-                                  GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-                    new_name = None
             else:
                 break
         logger.info("Finished")
@@ -440,30 +416,15 @@ class ObjectCodesViewModel(CodesViewModel):
                 main_frame = wx.GetApp().GetTopWindow()
                 main_frame.DocumentsUpdated()
                 main_frame.CodesUpdated()
-        elif col == 1 and node.key != value:
+        elif col == 1 and node.name != value:
             if value == "":
                 wx.MessageBox(GUIText.RENAME_CODE_BLANK_ERROR,
                               GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            elif CodesUtilities.CodeKeyUniqueCheck(value, self.codes):
-                old_key = node.key
-                node.key = value
+            else:
                 node.name = value
                 main_frame = wx.GetApp().GetTopWindow()
-                if node.parent == None:
-                    main_frame.codes[node.key] = node
-                    del main_frame.codes[old_key]
-                else:
-                    node.parent.subcodes[node.key] = node
-                    del node.parent.subcodes[old_key]
-                for obj in node.GetConnections(main_frame.datasets, main_frame.samples):
-                    obj.codes.remove(old_key)
-                    obj.codes.append(node.key)
-                    obj.last_changed_dt = datetime.now()
                 main_frame.DocumentsUpdated()
                 main_frame.CodesUpdated()
-            else:
-                wx.MessageBox(GUIText.RENAME_CODE_NOTUNIQUE_ERROR,
-                              GUIText.ERROR, wx.OK | wx.ICON_ERROR)
         return True
 
 #this view enables displaying of fields for different datasets
@@ -628,7 +589,7 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
                     wx.MessageBox(GUIText.NEW_CODE_BLANK_ERROR,
                                   GUIText.ERROR, wx.OK | wx.ICON_ERROR)
                     new_name = None
-                elif CodesUtilities.CodeKeyUniqueCheck(new_name, main_frame.codes):
+                else:
                     main_frame.codes[new_name] = Codes.Code(new_name)
                     model.obj.AppendCode(new_name)
                     main_frame.codes[new_name].AddConnection(model.obj)
@@ -638,10 +599,6 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
                         column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
                     main_frame.CodesUpdated()
                     break
-                else:
-                    wx.MessageBox(GUIText.NEW_CODE_NOTUNIQUE_ERROR,
-                                  GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-                    new_name = None
             else:
                 break
         logger.info("Finished")
@@ -666,7 +623,7 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
                     wx.MessageBox(GUIText.NEW_CODE_BLANK_ERROR,
                                   GUIText.ERROR, wx.OK | wx.ICON_ERROR)
                     new_name = None
-                elif CodesUtilities.CodeKeyUniqueCheck(new_name, main_frame.codes):
+                else:
                     node.subcodes[new_name] = Codes.Code(new_name)
                     node.subcodes[new_name].parent = node
                     model.obj.AppendCode(new_name)
@@ -677,10 +634,6 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
                         column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
                     main_frame.CodesUpdated()
                     break
-                else:
-                    wx.MessageBox(GUIText.NEW_CODE_NOTUNIQUE_ERROR,
-                                  GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-                    new_name = None
             else:
                 break
         logger.info("Finished")
@@ -1522,9 +1475,9 @@ class DocumentPositionsViewModel(dv.PyDataViewModel):
                     children.append(self.ObjectToItem(self.datasets[dataset_key]))
                 return len(children)
             else:
-                for dataset_key, document_key in self.code.doc_positions:
-                    if dataset_key in self.datasets:
-                        children.append(self.ObjectToItem(self.datasets[dataset_key].documents[document_key]))
+                for obj in self.code.GetConnections(self.datasets, {}):
+                    if isinstance(obj, Datasets.Document):
+                        children.append(self.ObjectToItem(obj))
                 return len(children)
         
         node = self.ItemToObject(parent)
@@ -1736,7 +1689,7 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
         ''''Fetch the data object for this item's column.'''
         node = self.ItemToObject(item)
         if isinstance(node, Codes.Code):
-            mapper = { 0 : node.key,
+            mapper = { 0 : node.name,
                        1 : "",
                        2 : "",
                        3 : "",

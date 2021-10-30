@@ -17,7 +17,7 @@ class CodeConnectionsDialog(wx.Dialog):
     def __init__(self, parent, code, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".CodeConnectionsDialog["+str(code.key)+"].__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=str(code.key), size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
+        wx.Dialog.__init__(self, parent, title=str(code.name), size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
         sizer = wx.BoxSizer()
         self.document_panel = CodeConnectionsPanel(self, code, size=self.GetSize())
         sizer.Add(self.document_panel, 1, wx.EXPAND)
@@ -597,6 +597,8 @@ class DocumentPanel(wx.Panel):
             for position in reversed(code.doc_positions[(self.document.parent.key, self.document.key)]):
                 if position[0] == relative_field and position[1] <= relative_position <= position[2]:
                     code.doc_positions[(self.document.parent.key, self.document.key)].remove(position)
+                    if len(code.doc_positions[(self.document.parent.key, self.document.key)]) == 0:
+                        del code.doc_positions[(self.document.parent.key, self.document.key)]
         self.field_ctrl.SelectNone()
         self.OnShowCode(None)
     
@@ -612,7 +614,7 @@ class CreateQuotationDialog(wx.Dialog):
     def __init__(self, parent, code, datasets, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".CreateQuotationDialog["+str(code.key)+"].__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=str(code.key), size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
+        wx.Dialog.__init__(self, parent, title=str(code.name), size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.code = code

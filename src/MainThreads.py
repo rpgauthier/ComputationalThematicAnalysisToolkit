@@ -5,6 +5,7 @@ from threading import Thread
 import shutil
 from datetime import datetime
 from packaging import version
+import uuid
 
 import wx
 import pickle
@@ -13,6 +14,7 @@ import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
 from Common.GUIText import Main as GUIText
 import Common.Objects.Datasets as Datasets
+import Common.Objects.Samples as Samples
 import Common.Database as Database
 import Common.Objects.Codes as Codes
 
@@ -178,8 +180,7 @@ class LoadThread(Thread):
         for sample_key in result['samples']:
             self.UpgradeSample(result['samples'][sample_key], result['datasets'][result['samples'][sample_key].dataset_key], ver)
         #upgrade codes
-        for code_key in result['codes']:
-            self.UpgradeCode(result['codes'][code_key], result['datasets'], ver)
+        self.UpgradeCodes(result['codes'], result['datasets'], result['samples'], ver)
 
     def UpgradeConfig(self, config, ver):
         if ver < version.parse('0.8.1'):
@@ -240,6 +241,17 @@ class LoadThread(Thread):
                             new_rule = (rule[0], rule[1], rule[2], (rule[3][0], rule[3][1], rule[3][2]*100 ))
                             dataset.filter_rules[idx] = new_rule
                 dataset.last_changed_dt = datetime.now()
+        if ver < version.parse('0.8.5'):
+            dataset.uuid = str(uuid.uuid4())
+            for field_key in dataset.included_fields:
+                dataset.included_fields[field_key].uuid = str(uuid.uuid4())
+            for field_key in dataset.available_fields:
+                dataset.available_fields[field_key].uuid = str(uuid.uuid4())
+            for field_key in dataset.metadata_fields:
+                dataset.metadata_fields[field_key].uuid = str(uuid.uuid4())
+            for document_key in dataset.documents:
+                dataset.documents[document_key].uuid = str(uuid.uuid4())
+
 
     def UpgradeDatabase(self, result, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATABASE))
@@ -292,7 +304,8 @@ class LoadThread(Thread):
         elif ver < version.parse('0.8.2'):
             db_conn = Database.DatabaseConnection(self.current_workspace_path)
             db_conn.Upgrade()
-
+        if ver < version.parse('0.8.5'):
+            db_conn = Database.DatabaseConnection(self.current_workspace_path)
 
     def UpgradeSample(self, sample, dataset, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_SAMPLES))
@@ -308,26 +321,68 @@ class LoadThread(Thread):
             #reduce amount of data in each sample that has been generated to help speed up saving
             if hasattr(sample, "_tokenset") and isinstance(sample._tokenset, dict) and sample.generated_flag:
                 sample.tokensets = sample.tokensets.keys()
+        if ver < version.parse('0.8.5'):
+            sample.uuid = str(uuid.uuid4())
+            if isinstance(sample, Samples.Sample):
+                for part_key in sample.parts_dict:
+                    sample.parts_dict[part_key].uuid = str(uuid.uuid4())
+                    if isinstance(sample.parts_dict[part_key], Samples.MergedPart):
+                        for subpart_key in sample.parts_dict[part_key]:
+                            sample.parts_dict[part_key].parts_dict[subpart_key].uuid = str(uuid.uuid4())
 
-    def UpgradeCode(self, code, datasets, ver):
+    def UpgradeCodes(self, codes, datasets, samples, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_CODES))
-        if ver < version.parse('0.8.1'):
-            if not hasattr(code, "doc_positions"):
-                code.doc_positions = {}
+        for code_key in codes:
+            code = codes[code_key]
+            if ver < version.parse('0.8.1'):
+                if not hasattr(code, "doc_positions"):
+                    code.doc_positions = {}
+                    code.last_changed_dt = datetime.now()
+                if not hasattr(code, "_colour_rgb"):
+                    code._colour_rgb = (0,0,0,)
+                    code.last_changed_dt = datetime.now()
+            if ver < version.parse('0.8.3'):
+                new_doc_positions = {}
+                for key in code.doc_positions:
+                    new_doc_positions[(list(datasets.keys())[0], key)] =  code.doc_positions[key]
+                code.doc_positions = new_doc_positions
+                new_quotations = []
+                for quotation in code.quotations:
+                    new_quotations.append(Codes.Quotation(None, code, quotation.key[0], quotation.key[1], quotation.original_data, quotation.paraphrased_data))
+                code.quotations = new_quotations
                 code.last_changed_dt = datetime.now()
-            if not hasattr(code, "_colour_rgb"):
-                code._colour_rgb = (0,0,0,)
-                code.last_changed_dt = datetime.now()
-        if ver < version.parse('0.8.3'):
-            new_doc_positions = {}
-            for key in code.doc_positions:
-                new_doc_positions[(list(datasets.keys())[0], key)] =  code.doc_positions[key]
-            code.doc_positions = new_doc_positions
-            new_quotations = []
-            for quotation in code.quotations:
-                new_quotations.append(Codes.Quotation(None, code, quotation.key[0], quotation.key[1], quotation.original_data, quotation.paraphrased_data))
-            code.quotations = new_quotations
-            code.last_changed_dt = datetime.now()
+            if ver < version.parse('0.8.5'):
+                if not hasattr(code, "_uuid"):
+                    #recursively add a uuid to every object
+                    def UpdateCodeUUIDs(code):
+                        code.uuid = str(uuid.uuid4())
+                        for subcode_key in code.subcodes:
+                            UpdateCodeUUIDs(code.subcodes[subcode_key])
+                        for quotation in code.quotations:
+                            quotation.uuid = str(uuid.uuid4())
+                    UpdateCodeUUIDs(code)
+        if ver < version.parse('0.8.5'):
+            #changes code keys to use uuid instead of user name fields
+            def CodeRekey(codes):
+                code_keys = list(codes.keys())
+                for old_key in code_keys:
+                    code = codes[old_key]
+                    new_key = code.uuid
+                    code.key = new_key
+                    #updates codes
+                    codes[new_key] = code
+                    del codes[old_key]
+                    #update other objects
+                    for obj in code.GetConnections(datasets, samples):
+                        obj.codes.remove(old_key)
+                        obj.codes.append(code.key)
+                        obj.last_changed_dt = datetime.now()
+                    CodeRekey(code.subcodes)
+            CodeRekey(codes)
+
+
+                
+                
 
 
             

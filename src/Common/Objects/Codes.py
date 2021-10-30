@@ -20,24 +20,6 @@ class Code(GenericObject):
         self.quotations = []
     
     @property
-    def key(self):
-        return self._key
-    @key.setter
-    def key(self, value):
-        self._name = value
-        self._key = value
-        self._last_changed_dt = datetime.now()
-
-    @property
-    def name(self):
-        return self._name
-    @name.setter
-    def name(self, value):
-        self._name = value
-        self._key = value
-        self._last_changed_dt = datetime.now()
-    
-    @property
     def colour_rgb(self):
         return self._colour_rgb
     @colour_rgb.setter

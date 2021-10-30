@@ -760,12 +760,12 @@ class Coding(Main):
     LOAD_BUSY_MSG_CONFIG = "Loading Coding Configurations"
     SAVE_BUSY_MSG_CONFIG ="Saving Coding Configurations"
 
-    CODES_IMPORT = "Import Codes"
-    CODES_IMPORT_TOOLTIP = "Import Codes from file"
-    CODES_IMPORT_CONFIRMATION_REQUEST = "Please confirm you wish to import codes from a different project into this project."\
-                                        "\nWARNING: Any duplicate codes will have a number appended to them to make them unique."
-    CODES_EXPORT = "Export Codes"
-    CODES_EXPORT_TOOLTIP = "Export Codes to a file"
+    CODES_IMPORT = "Import REFI-QDA Codebook"
+    CODES_IMPORT_TOOLTIP = "Import Codes from file that follows the REFI-QDA Codebook specifications"
+    CODES_IMPORT_CONFIRMATION_REQUEST = "Please confirm you wish to import an external codebook file into this project."\
+                                        "\nWARNING: Existing codes may be updated if they had previously been exported or imported and are present in the external codebook"
+    CODES_EXPORT = "Export REFI-QDA Codebook"
+    CODES_EXPORT_TOOLTIP = "Export Codes to a file that follows the REFI-QDA Codebook specifications"
     
 
 class Reviewing(Main):
