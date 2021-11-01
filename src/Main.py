@@ -223,10 +223,14 @@ class MainFrame(wx.Frame):
                 for code_key in self.codes:
                     if self.codes[code_key].last_changed_dt > self.last_load_dt:
                         check_flag = True
-            confirm_dialog = wx.MessageDialog(self, GUIText.NEW_WARNING,
-                                              GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
-            confirm_dialog.SetOKLabel(GUIText.PROCEED_ANYWAYS)
-            if confirm_dialog.ShowModal() == wx.ID_OK:
+            if check_flag:
+                confirm_dialog = wx.MessageDialog(self, GUIText.NEW_WARNING,
+                                                GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+                confirm_dialog.SetOKLabel(GUIText.PROCEED_ANYWAYS)
+                confirm_flag = confirm_dialog.ShowModal()
+            else:
+                confirm_flag = wx.ID_OK
+            if confirm_flag == wx.ID_OK:
                 self.CreateProgressDialog(title=GUIText.NEW_BUSY_LABEL,
                                         warning=GUIText.SIZE_WARNING_MSG,
                                         freeze=True)

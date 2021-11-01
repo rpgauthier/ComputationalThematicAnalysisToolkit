@@ -39,6 +39,7 @@ Open src folder in an IDE (tested in VS Code)
 - pip install squarify
 - pip install networkx
 - pip install pyinstaller
+- pip install pytz
 
 ### Additional Steps
 - python -m spacy download fr_core_news_sm

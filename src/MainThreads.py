@@ -242,6 +242,18 @@ class LoadThread(Thread):
                             dataset.filter_rules[idx] = new_rule
                 dataset.last_changed_dt = datetime.now()
         if ver < version.parse('0.8.5'):
+            if dataset.dataset_source == 'Reddit':
+                if dataset.dataset_type == 'discussion':
+                    dataset.retrieval_details['submission_count'] = len(dataset.data)
+                    comment_count = 0
+                    for key in dataset.data:
+                        if 'comment.id' in dataset.data[key]:
+                            comment_count = comment_count + len(dataset.data[key]['comment.id'])
+                    dataset.retrieval_details['comment_count'] = comment_count
+                if dataset.dataset_type == 'discussion':
+                    dataset.retrieval_details['submission_count'] = len(dataset.data)
+                if dataset.dataset_type == 'comment':
+                    dataset.retrieval_details['comment_count'] = len(dataset.data)
             dataset.uuid = str(uuid.uuid4())
             for field_key in dataset.included_fields:
                 dataset.included_fields[field_key].uuid = str(uuid.uuid4())

@@ -52,17 +52,26 @@ class FilteringNotebook(FNB.FlatNotebook):
                 del self.filters[filter_key]
         
         for key in main_frame.datasets:
-            if key in self.filters:
-                self.filters[key].rules_panel.DisplayFilterRules(main_frame.datasets[key].filter_rules)
-                self.filters[key].UpdateImpact()
-            else:
-                self.filters[key] = FilterPanel(self, main_frame.datasets[key].name, main_frame.datasets[key], size=self.GetSize())
-                self.filters[key].rules_panel.DisplayFilterRules(main_frame.datasets[key].filter_rules)
-                self.filters[key].UpdateImpact()
+            if len(main_frame.datasets[key].included_fields) > 0:
+                if key in self.filters:
+                    self.filters[key].rules_panel.DisplayFilterRules(main_frame.datasets[key].filter_rules)
+                    self.filters[key].UpdateImpact()
+                else:
+                    self.filters[key] = FilterPanel(self, main_frame.datasets[key].name, main_frame.datasets[key], size=self.GetSize())
+                    self.filters[key].rules_panel.DisplayFilterRules(main_frame.datasets[key].filter_rules)
+                    self.filters[key].UpdateImpact()
 
-        
-                self.AddPage(self.filters[key], main_frame.datasets[key].name)
-                self.filters[key].actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filters[key].actions_menu, main_frame.datasets[key].name)
+            
+                    self.AddPage(self.filters[key], main_frame.datasets[key].name)
+                    self.filters[key].actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filters[key].actions_menu, main_frame.datasets[key].name)
+            else:
+                if key in self.filters:
+                    index = self.GetPageIndex(self.filters[key])
+                    if index is not wx.NOT_FOUND:
+                        self.RemovePage(index)
+                        self.actions_menu.Remove(self.filters[key].actions_menu_menuitem)
+                    self.filters[key].Hide()
+                    del self.filters[key]
         self.Thaw()
         logger.info("Finished")
 

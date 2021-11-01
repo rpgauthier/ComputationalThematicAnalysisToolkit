@@ -327,7 +327,10 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
             df_row = self.data_df.iloc[row]
             if self.metadata_col_types[col] == 'url':
                 segmented_url = df_row[col_name].split("/")
-                data = segmented_url[len(segmented_url)-1]
+                if segmented_url[len(segmented_url)-1] != '':
+                    data = segmented_url[len(segmented_url)-1]
+                else:
+                    data = segmented_url[len(segmented_url)-2]
             else:
                 data = df_row[col_name]
                 if isinstance(data, list):
@@ -353,7 +356,10 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
             #TODO rework to handle lists of dates, ints and urls
             if self.data_col_types[col] == 'url':
                 segmented_url = df_row[col_name].split("/")
-                data = segmented_url[len(segmented_url)-1]
+                if segmented_url[len(segmented_url)-1] != '':
+                    data = segmented_url[len(segmented_url)-1]
+                else:
+                    data = segmented_url[len(segmented_url)-2]
             else:
                 data = df_row[col_name]
                 if isinstance(data, list):

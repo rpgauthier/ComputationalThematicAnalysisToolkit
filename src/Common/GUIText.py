@@ -274,6 +274,9 @@ class Datasets(Common):
     RETRIEVING_BUSY_PREPARING_DISCUSSION_MSG = "Preparing Discussion Data for Application use"
     RETRIEVING_BUSY_PREPARING_SUBMISSION_MSG = "Preparing Submission Data for Application use"
     RETRIEVING_BUSY_PREPARING_COMMENT_MSG = "Preparing Comment Data for Application use."
+    RETRIEVING_BUSY_SEARCHING_DATA_MSG1 = "Selecting Data that contains ["
+    RETRIEVING_BUSY_SEARCHING_DATA_MSG2 = "] in a text field."
+    
     RETRIEVING_BUSY_PREPARING_CSV_MSG = "Preparing CSV Data for Application use."
     RETRIEVING_BUSY_PREPARING_TWITTER_MSG = "Preparing Twitter Data for Application use."
     RETRIEVING_BUSY_CONSTRUCTING_MSG = "Datasets are being constructed."
@@ -321,6 +324,8 @@ class Datasets(Common):
     REDDIT_SUBREDDIT_MISSING_ERROR = "You must enter a Subreddit."
     REDDIT_SUBMISSIONS = "Submissions"
     REDDIT_COMMENTS = "Comments"
+    REDDIT_SUBMISSIONS_NUM = "# of Submissions"
+    REDDIT_COMMENTS_NUM = "# of Comments"
 
     REDDIT_ARCHIVED = "Local Subreddit Archive"
     REDDIT_UPDATE_PUSHSHIFT = "Local Subreddit Archive updated using Pushshift.io"
@@ -330,6 +335,7 @@ class Datasets(Common):
     REDDIT_FULL_REDDITAPI = "Full retrieved from Pushshift.io and updated using Reddit API"
 
     TWITTER_LABEL = "Twitter"
+    TWITTER_TWEETS_NUM = "# of Tweets"
     TWITTER_QUERY_HYPERLINK = "https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
     TWITTER_QUERY_TOOLTIP = "Query must follow these rules: " + TWITTER_QUERY_HYPERLINK
     TWITTER_QUERY_RADIOBUTTON_TOOLTIP = "Use a Twitter query to create the dataset, using these rules: " + TWITTER_QUERY_HYPERLINK
@@ -342,6 +348,7 @@ class Datasets(Common):
     TWITTER_ACCOUNT_PLACEHOLDER = "ex. JustinTrudeau"
 
     CSV_LABEL = "CSV"
+    CSV_ROWS_NUM = "# of Rows"
     CSV_DATASETFIELD = "Dataset Field: "
     CSV_DATASETFIELD_TOOLTIP = "If the csv file contains data from a single source leave this field blank."\
                           "If the csv file contains multiple sources please choose a field differentiates those sources.\n"\

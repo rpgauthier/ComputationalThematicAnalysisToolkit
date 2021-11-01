@@ -802,8 +802,11 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
             return mapper[col]
         elif isinstance(node, Datasets.Document):
             if node.url != "":
-                node_url = node.url.split("/")
-                node_id = node_url[len(node_url)-1]
+                segmented_url = node.url.split("/")
+                if segmented_url[len(segmented_url)-1] != '':
+                    node_id = segmented_url[len(segmented_url)-1]
+                else:
+                    node_id = segmented_url[len(segmented_url)-2]
             else:
                 node_id = node.key[2]
             mapper = { 0 : node_id,
@@ -1224,7 +1227,11 @@ class DocumentViewModel(dv.PyDataViewModel):
                     value = node.parent.data[node.key][field_name]
                     if self.metadata_column_types[idx] == 'url':
                         segmented_url = value.split("/")
-                        value = "<span color=\"#0645ad\"><u>"+segmented_url[len(segmented_url)-1]+"</u></span>"
+                        if segmented_url[len(segmented_url)-1] != '':
+                            segment_id = segmented_url[len(segmented_url)-1]
+                        else:
+                            segment_id = segmented_url[len(segmented_url)-2]
+                        value = "<span color=\"#0645ad\"><u>"+segment_id+"</u></span>"
                     elif self.metadata_column_types[idx] == 'UTC-timestamp':
                         if isinstance(value, list):
                             value_str = ""
@@ -1262,7 +1269,11 @@ class DocumentViewModel(dv.PyDataViewModel):
                     value = node.parent.data[node.key][field_name]
                     if self.data_column_types[idx-len(self.metadata_column_types)] == 'url':
                         segmented_url = value.split("/")
-                        value = "<span color=\"#0645ad\"><u>"+segmented_url[len(segmented_url)-1]+"</u></span>"
+                        if segmented_url[len(segmented_url)-1] != '':
+                            segment_id = segmented_url[len(segmented_url)-1]
+                        else:
+                            segment_id = segmented_url[len(segmented_url)-2]
+                        value = "<span color=\"#0645ad\"><u>"+segment_id+"</u></span>"
                     elif self.data_column_types[idx-len(self.metadata_column_types)] == 'UTC-timestamp':
                         if isinstance(value, list):
                             value_str = ""
@@ -1549,8 +1560,11 @@ class DocumentPositionsViewModel(dv.PyDataViewModel):
                        }
         elif isinstance(node, Datasets.Document):
             if node.url != "":
-                node_url = node.url.split("/")
-                node_id = node_url[len(node_url)-1]
+                segmented_url = node.url.split("/")
+                if segmented_url[len(segmented_url)-1] != '':
+                    node_id = segmented_url[len(segmented_url)-1]
+                else:
+                    node_id = segmented_url[len(segmented_url)-2]
             else:
                 node_id = node.key[2]
             mapper = { 0 : str(node_id),
@@ -1699,8 +1713,11 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
             main_frame = wx.GetApp().GetTopWindow()
             document = main_frame.datasets[node.dataset_key].documents[node.document_key]
             if document.url != "":
-                document_url = document.url.split("/")
-                document_id = document_url[len(document_url)-1]
+                segmented_url = document.url.split("/")
+                if segmented_url[len(segmented_url)-1] != '':
+                    document_id = segmented_url[len(segmented_url)-1]
+                else:
+                    document_id = segmented_url[len(segmented_url)-2]
             else:
                 document_id = document.key[2]
             mapper = { 0 : str(document_id),

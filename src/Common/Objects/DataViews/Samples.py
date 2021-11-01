@@ -154,7 +154,11 @@ class PartsViewModel(dv.PyDataViewModel):
                     value = node.parent.data[node.key][field_name]
                     if self.metadata_column_types[idx-1] == 'url':
                         segmented_url = value.split("/")
-                        value = "<span color=\"#0645ad\"><u>"+segmented_url[len(segmented_url)-1]+"</u></span>"
+                        if segmented_url[len(segmented_url)-1] != '':
+                            segmented_id = segmented_url[len(segmented_url)-1]
+                        else:
+                            segmented_id = segmented_url[len(segmented_url)-2]
+                        value = "<span color=\"#0645ad\"><u>"+segmented_id+"</u></span>"
                     elif self.metadata_column_types[idx-1] == 'UTC-timestamp':
                         if isinstance(value, list):
                             value_str = ""

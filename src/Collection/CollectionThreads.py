@@ -8,6 +8,8 @@ from dateutil.relativedelta import relativedelta
 import dateparser
 from threading import Thread
 import tweepy
+import pytz
+import copy
 
 import wx
 
@@ -19,7 +21,7 @@ import Collection.TwitterDataRetriever as twr
 
 class RetrieveRedditDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, language, subreddit, start_date, end_date, replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type, available_fields_list, metadata_fields_list, included_fields_list):
+    def __init__(self, notify_window, main_frame, dataset_name, language, subreddit, search, start_date, end_date, replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type, available_fields_list, metadata_fields_list, included_fields_list):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
@@ -31,6 +33,7 @@ class RetrieveRedditDatasetThread(Thread):
         self.pushshift_flg = pushshift_flg
         self.redditapi_flg = redditapi_flg
         self.subreddit = subreddit
+        self.search = search
         self.start_date = start_date
         self.end_date = end_date
         self.available_fields_list = available_fields_list
@@ -45,6 +48,7 @@ class RetrieveRedditDatasetThread(Thread):
         dataset_key = (self.dataset_name, "Reddit", self.dataset_type)
         retrieval_details = {
                 'subreddit': self.subreddit,
+                'search': self.search,
                 'start_date': self.start_date,
                 'end_date': self.end_date,
                 'replace_archive_flg': self.replace_archive_flg,
@@ -81,7 +85,7 @@ class RetrieveRedditDatasetThread(Thread):
                     discussion_data[key]['data_source'] = "Reddit"
                     discussion_data[key]['data_type'] = "discussion"
                     discussion_data[key]['id'] = submission['id']
-                    discussion_data[key]["url"] = "https://www.reddit.com/"+submission['id']
+                    discussion_data[key]["url"] = "https://www.reddit.com/r/"+self.subreddit+"/comments/"+submission['id']+"/"
                     discussion_data[key]['created_utc'] = submission['created_utc']
                     if 'title' in submission:
                         discussion_data[key]['title'] = submission['title']
@@ -97,8 +101,10 @@ class RetrieveRedditDatasetThread(Thread):
                     submission_id = comment['link_id'].split('_')[1]
                     key = ("Reddit", "discussion", submission_id)
                     if key in discussion_data:
-                        if 'body' in comment:
+                        if 'body' in comment and 'text' in discussion_data[key]:
                             discussion_data[key]['text'].append(comment['body'])
+                        else:
+                            discussion_data[key]['text'] = [comment['body']]
                         for field in comment:
                             if "comment."+field in discussion_data[key]:
                                 discussion_data[key]["comment."+field].append(comment[field])
@@ -106,6 +112,8 @@ class RetrieveRedditDatasetThread(Thread):
                                 discussion_data[key]["comment."+field] = [comment[field]]
                 #save as a discussion dataset
                 data = discussion_data
+                retrieval_details['submission_count'] = len(submission_data)
+                retrieval_details['comment_count'] = len(comment_data)
         elif self.dataset_type == "submission":
             if self.pushshift_flg:
                 try:
@@ -124,8 +132,9 @@ class RetrieveRedditDatasetThread(Thread):
                     submission_data[key] = submission
                     submission_data[key]["data_source"] = "Reddit"
                     submission_data[key]["data_type"] = "submission"
-                    submission_data[key]["url"] = "https://www.reddit.com/"+submission['id']
+                    submission_data[key]["url"] = "https://www.reddit.com/r/"+self.subreddit+"/comments/"+submission['id']+"/"
                 data = submission_data
+                retrieval_details['submission_count'] = len(submission_data)
         elif self.dataset_type == "comment":
             if self.pushshift_flg:
                 try:
@@ -146,8 +155,49 @@ class RetrieveRedditDatasetThread(Thread):
                     comment_data[key]["data_type"] = "comment"
                     link_id = comment['link_id'].split('_')
                     comment_data[key]["submission_id"] = link_id[1]
-                    comment_data[key]["url"] = "https://www.reddit.com/"+link_id[1]+"/_/"+comment['id']+"/"
+                    comment_data[key]["url"] = "https://www.reddit.com/r/"+self.subreddit+"/comments/"+link_id[1]+"/_/"+comment['id']+"/"
                 data = comment_data
+                retrieval_details['comment_count'] = len(comment_data)
+        if self.search != "":
+            wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_SEARCHING_DATA_MSG1 + self.search + GUIText.RETRIEVING_BUSY_SEARCHING_DATA_MSG2))
+            full_data = data
+            data = {}
+            if self.dataset_type == 'discussion':
+                comment_count = 0
+                for key in full_data:
+                    found = False
+                    if self.search in full_data[key]['title']:
+                        found = True
+                    if not found:
+                        for entry in full_data[key]['text']:
+                            if self.search in entry:
+                                found = True
+                                break
+                    if found:
+                        data[key] = full_data[key]
+                        if 'comment.id' in data[key]:
+                            comment_count = comment_count + len(data[key]['comment.id'])
+                retrieval_details['submission_count'] = len(data)
+                retrieval_details['comment_count'] = comment_count
+            elif self.dataset_type == 'submission':
+                for key in full_data:
+                    found = False
+                    if self.search in full_data[key]['title']:
+                        found = True
+                    if not found and self.search in full_data[key]['text']:
+                        found = True
+                    if found:
+                        data[key] = full_data[key]
+                retrieval_details['submission_count'] = len(data)
+            elif self.dataset_type == 'comment':
+                for key in full_data:
+                    found = False
+                    if self.search in full_data[key]['text']:
+                        found = True
+                    if found:
+                        data[key] = full_data[key]
+                retrieval_details['comment_count'] = len(data)
+        
         if status_flag:
             if len(data) > 0:
                 wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
@@ -510,8 +560,9 @@ class RetrieveCSVDatasetThread(Thread):
         if self.dataset_field == "":
             dataset_key = (self.dataset_name, "CSV", self.dataset_type)
             
-            row_num = 1
+            row_num = 0
             for row in file_data:
+                row_num = row_num + 1
                 if self.id_field in row:
                     document_id = row[self.id_field]
                 else:
@@ -531,7 +582,10 @@ class RetrieveCSVDatasetThread(Thread):
                     else:
                         datetime_value = row[self.datetime_field]
                         if datetime_value != '':
-                            datetime_obj = dateparser.parse(datetime_value, settings={'TIMEZONE': self.datetime_tz})
+                            tmp_obj = dateparser.parse(datetime_value)
+                            datetime_obj = datetime(tmp_obj.year, tmp_obj.month, tmp_obj.day,
+                                                    tmp_obj.hour, tmp_obj.minute, tmp_obj.second,
+                                                    tmp_obj.microsecond, pytz.timezone(self.datetime_tz))
                             if datetime_obj != None:
                                 datetime_obj = datetime_obj.astimezone(timezone.utc)
                                 datetime_utc = datetime_obj.replace(tzinfo=timezone.utc).timestamp()
@@ -550,9 +604,9 @@ class RetrieveCSVDatasetThread(Thread):
                             data[key][field_name] = [row[field]]
                         else:
                             data[key][field_name] = row[field]
-                row_num = row_num + 1
             #save as a document dataset
             if len(data) > 0:
+                retrieval_details['row_count'] = row_num
                 wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 dataset = DatasetsUtilities.CreateDataset(dataset_key, self.language, retrieval_details, data, self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
@@ -561,11 +615,16 @@ class RetrieveCSVDatasetThread(Thread):
                 error_msg = GUIText.NO_DATA_AVALIABLE_ERROR
         else:
             new_dataset_key = []
-            row_num = 1 
+            row_num = 0
+            dataset_row_num = {}
             for row in file_data:
+                row_num = row_num + 1
                 new_dataset_key = (self.dataset_name, "CSV", row[self.dataset_field])
                 if new_dataset_key not in data:
                     data[new_dataset_key] = {}
+                    dataset_row_num[new_dataset_key] = 1
+                else:
+                    dataset_row_num[new_dataset_key] = dataset_row_num[new_dataset_key] + 1
 
                 if self.id_field in row:
                     document_id = row[self.id_field]
@@ -603,11 +662,12 @@ class RetrieveCSVDatasetThread(Thread):
                             data[new_dataset_key][key]["csv."+field].append(row[field])
                         else:
                             data[new_dataset_key][key]["csv."+field] = [row[field]]
-                row_num = row_num + 1
             #save as a document dataset
             if len(data) > 0:
                 wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 for new_dataset_key in data:
+                    cur_retrieval_details = copy.deepcopy(retrieval_details)
+                    cur_retrieval_details['row_count'] = dataset_row_num[new_dataset_key]
                     datasets[new_dataset_key] = DatasetsUtilities.CreateDataset(new_dataset_key, self.language, retrieval_details, data[new_dataset_key], self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
                     DatasetsUtilities.TokenizeDataset(datasets[new_dataset_key], self._notify_window, self.main_frame)
             else:

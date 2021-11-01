@@ -193,8 +193,10 @@ class DatasetPanel(wx.Panel):
 
         details_sizer1 = wx.BoxSizer(wx.HORIZONTAL)
         details_sizer2 = wx.BoxSizer(wx.HORIZONTAL)
+        details_sizer3 = wx.BoxSizer(wx.HORIZONTAL)    
         self.sizer.Add(details_sizer1, 0, wx.ALL, 5)
         self.sizer.Add(details_sizer2, 0, wx.ALL, 5)
+        self.sizer.Add(details_sizer3, 0, wx.ALL, 5)
 
         main_frame = wx.GetApp().GetTopWindow()
         if main_frame.options_dict['multipledatasets_mode']:
@@ -276,19 +278,48 @@ class DatasetPanel(wx.Panel):
             details_sizer2.Add(end_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer2.AddSpacer(10)
 
+            document_num_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
+            details_sizer3.Add(document_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            details_sizer3.AddSpacer(10)
+
+            if 'submission_count' in dataset.retrieval_details:
+                submission_count_label = wx.StaticText(self, label=GUIText.REDDIT_SUBMISSIONS_NUM + ": "
+                                           + str(dataset.retrieval_details['submission_count']))
+                details_sizer3.Add(submission_count_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                details_sizer3.AddSpacer(10)
+
+            if 'comment_count' in dataset.retrieval_details:
+                comment_count_label = wx.StaticText(self, label=GUIText.REDDIT_COMMENTS_NUM + ": "
+                                           + str(dataset.retrieval_details['comment_count']))
+                details_sizer3.Add(comment_count_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                details_sizer3.AddSpacer(10)
+
         retrieved_date_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": "
                                              + dataset.created_dt.strftime("%Y-%m-%d, %H:%M:%S"))
         details_sizer2.Add(retrieved_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        details_sizer2.AddSpacer(10)
-        document_num_label = wx.StaticText(
-            self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
-        details_sizer2.Add(document_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details_sizer2.AddSpacer(10)
 
         if dataset.dataset_source == 'Twitter':
             if dataset.retrieval_details['query']:
                 query_label = wx.StaticText(self, label=GUIText.QUERY + ": " + dataset.retrieval_details['query'])
-                details_sizer2.Add(query_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                details_sizer3.Add(query_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                details_sizer3.AddSpacer(10)
+    
+            #TODO check if tweets ca be merged
+            tweet_num_label = wx.StaticText(self, label=GUIText.TWITTER_TWEETS_NUM+": " + str(len(self.dataset.data)))
+            details_sizer3.Add(tweet_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            details_sizer3.AddSpacer(10)
+        
+        if dataset.dataset_source == 'CSV':
+            document_num_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
+            details_sizer2.Add(document_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            details_sizer2.AddSpacer(10)
+
+            if 'row_count' in dataset.retrieval_details:
+                row_num_label = wx.StaticText(self, label=GUIText.CSV_ROWS_NUM+": " + str(dataset.retrieval_details['row_count']))
+                details_sizer2.Add(row_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                details_sizer2.AddSpacer(10)
+        
 
         customizemetdata_ctrl = wx.Button(self, label=GUIText.CUSTOMIZE_METADATAFIELDS)
         customizemetdata_ctrl.Bind(wx.EVT_BUTTON, self.OnCustomizeMetadataFields)

@@ -68,6 +68,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             name_sizer.Add(self.name_ctrl)
             sizer.Add(name_sizer, 0, wx.ALL, 5)
 
+        #TODO enhance to integrate ability to incldued multiple subreddits
         subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT)
         self.subreddit_ctrl = wx.TextCtrl(self)
         self.subreddit_ctrl.SetToolTip(GUIText.REDDIT_SUBREDDIT_TOOLTIP)
@@ -75,6 +76,14 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         subreddit_sizer.Add(subreddit_label)
         subreddit_sizer.Add(self.subreddit_ctrl)
         sizer.Add(subreddit_sizer, 0, wx.ALL, 5)
+
+        #TODO enhance integration of search to allow complex queries (currently only supports literial string entered in text box)
+        search_label = wx.StaticText(self, label=GUIText.SEARCH)
+        self.search_ctrl = wx.TextCtrl(self)
+        search_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        search_sizer.Add(search_label)
+        search_sizer.Add(self.search_ctrl)
+        sizer.Add(search_sizer, 0, wx.ALL, 5)
 
         self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1)
         self.ethics_community2_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY2)
@@ -252,6 +261,8 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             logger.warning('No subreddit entered')
             status_flag = False
         
+        search = self.search_ctrl.GetValue()
+        
         language = Constants.AVALIABLE_DATASET_LANGUAGES1[self.language_ctrl.GetSelection()]
 
         if not self.ethics_community1_ctrl.IsChecked():
@@ -350,7 +361,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.Disable()
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
-            self.retrieval_thread = CollectionThreads.RetrieveRedditDatasetThread(self, main_frame, name, language, subreddit, start_date, end_date,
+            self.retrieval_thread = CollectionThreads.RetrieveRedditDatasetThread(self, main_frame, name, language, subreddit, search, start_date, end_date,
                                                                                   replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type,
                                                                                   list(self.available_fields.items()), metadata_fields_list, included_fields_list)
         logger.info("Finished")
