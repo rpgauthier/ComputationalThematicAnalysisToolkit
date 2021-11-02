@@ -239,6 +239,12 @@ class DatasetPanel(wx.Panel):
         details_sizer2.InsertSpacer(1, 10)
 
         if dataset.dataset_source == 'Reddit':
+
+            if 'search' in dataset.retrieval_details and dataset.retrieval_details['search'] != "":
+                search_label = wx.StaticText(self, label=GUIText.SEARCH+": \""+dataset.retrieval_details['search']+"\"")
+                details_sizer2.Insert(0, search_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                details_sizer2.InsertSpacer(1, 10)
+
             subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT+dataset.retrieval_details['subreddit'])
             if main_frame.options_dict['multipledatasets_mode']:
                 details_sizer2.Insert(0, subreddit_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
