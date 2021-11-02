@@ -21,7 +21,7 @@ import Collection.TwitterDataRetriever as twr
 
 class RetrieveRedditDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, language, subreddit, search, start_date, end_date, replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type, available_fields_list, metadata_fields_list, included_fields_list):
+    def __init__(self, notify_window, main_frame, dataset_name, language, subreddits, search, start_date, end_date, replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type, available_fields_list, label_fields_list, computation_fields_list):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
@@ -32,13 +32,13 @@ class RetrieveRedditDatasetThread(Thread):
         self.replace_archive_flg = replace_archive_flg
         self.pushshift_flg = pushshift_flg
         self.redditapi_flg = redditapi_flg
-        self.subreddit = subreddit
+        self.subreddits = subreddits
         self.search = search
         self.start_date = start_date
         self.end_date = end_date
         self.available_fields_list = available_fields_list
-        self.metadata_fields_list = metadata_fields_list
-        self.included_fields_list = included_fields_list
+        self.label_fields_list = label_fields_list
+        self.computation_fields_list = computation_fields_list
         self.start()
     
     def run(self):
@@ -47,7 +47,7 @@ class RetrieveRedditDatasetThread(Thread):
         status_flag = True
         dataset_key = (self.dataset_name, "Reddit", self.dataset_type)
         retrieval_details = {
-                'subreddit': self.subreddit,
+                'subreddit': ', '.join(self.subreddits),
                 'search': self.search,
                 'start_date': self.start_date,
                 'end_date': self.end_date,
@@ -59,105 +59,116 @@ class RetrieveRedditDatasetThread(Thread):
         dataset = None
         error_msg = ""
         if self.replace_archive_flg:
-            wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_REMOVE_SUBREDDIT_ARCHIVE_MSG + self.subreddit))
-            rdr.DeleteFiles(self.subreddit)
+            for subreddit in self.subreddits:
+                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_REMOVE_SUBREDDIT_ARCHIVE_MSG + subreddit))
+                rdr.DeleteFiles(subreddit)
         if self.dataset_type == "discussion":
-            if self.pushshift_flg:
-                try:
-                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_MSG))
-                    self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
-                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_COMMENTS_MSG))
-                    self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
-                except RuntimeError:
-                    status_flag = False
-                    error_msg = GUIText.RETRIEVAL_FAILED_ERROR
-            if status_flag:
-                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_SUBMISSION_MSG))
-                submission_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
-                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_COMMENT_MSG))
-                comment_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
-                #convert data to discussion
-                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_DISCUSSION_MSG))
-                discussion_data = {}
-                for submission in submission_data:
-                    key = ("Reddit", "discussion", submission['id'])
-                    discussion_data[key] = {}
-                    discussion_data[key]['data_source'] = "Reddit"
-                    discussion_data[key]['data_type'] = "discussion"
-                    discussion_data[key]['id'] = submission['id']
-                    discussion_data[key]["url"] = "https://www.reddit.com/r/"+self.subreddit+"/comments/"+submission['id']+"/"
-                    discussion_data[key]['created_utc'] = submission['created_utc']
-                    if 'title' in submission:
-                        discussion_data[key]['title'] = submission['title']
-                    else:
-                        discussion_data[key]['title'] = ""
-                    if 'selftext' in submission:
-                        discussion_data[key]['text'] = [submission['selftext']]
-                    else:
-                        discussion_data[key]['text'] = [""]
-                    for field in submission:
-                        discussion_data[key]["submission."+field] = submission[field]
-                for comment in comment_data:
-                    submission_id = comment['link_id'].split('_')[1]
-                    key = ("Reddit", "discussion", submission_id)
-                    if key in discussion_data:
-                        if 'body' in comment and 'text' in discussion_data[key]:
-                            discussion_data[key]['text'].append(comment['body'])
+            data = {}
+            retrieval_details['submission_count'] = 0
+            retrieval_details['comment_count'] = 0
+            for subreddit in self.subreddits:
+                if self.pushshift_flg:
+                    try:
+                        wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_MSG))
+                        self.UpdateDataFiles(subreddit, self.start_date, self.end_date, "RS_")
+                        wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_COMMENTS_MSG))
+                        self.UpdateDataFiles(subreddit, self.start_date, self.end_date, "RC_")
+                    except RuntimeError:
+                        status_flag = False
+                        error_msg = GUIText.RETRIEVAL_FAILED_ERROR
+                if status_flag:
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_SUBMISSION_MSG))
+                    submission_data = self.ImportDataFiles(subreddit, self.start_date, self.end_date, "RS_")
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_COMMENT_MSG))
+                    comment_data = self.ImportDataFiles(subreddit, self.start_date, self.end_date, "RC_")
+                    #convert data to discussion
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_DISCUSSION_MSG))
+                    discussion_data = {}
+                    for submission in submission_data:
+                        key = ("Reddit", "discussion", submission['id'])
+                        discussion_data[key] = {}
+                        discussion_data[key]['data_source'] = "Reddit"
+                        discussion_data[key]['data_type'] = "discussion"
+                        discussion_data[key]['id'] = submission['id']
+                        discussion_data[key]["url"] = "https://www.reddit.com/r/"+subreddit+"/comments/"+submission['id']+"/"
+                        discussion_data[key]['created_utc'] = submission['created_utc']
+                        if 'title' in submission:
+                            discussion_data[key]['title'] = submission['title']
                         else:
-                            discussion_data[key]['text'] = [comment['body']]
-                        for field in comment:
-                            if "comment."+field in discussion_data[key]:
-                                discussion_data[key]["comment."+field].append(comment[field])
+                            discussion_data[key]['title'] = ""
+                        if 'selftext' in submission:
+                            discussion_data[key]['text'] = [submission['selftext']]
+                        else:
+                            discussion_data[key]['text'] = [""]
+                        for field in submission:
+                            discussion_data[key]["submission."+field] = submission[field]
+                    for comment in comment_data:
+                        submission_id = comment['link_id'].split('_')[1]
+                        key = ("Reddit", "discussion", submission_id)
+                        if key in discussion_data:
+                            if 'body' in comment and 'text' in discussion_data[key]:
+                                discussion_data[key]['text'].append(comment['body'])
                             else:
-                                discussion_data[key]["comment."+field] = [comment[field]]
-                #save as a discussion dataset
-                data = discussion_data
-                retrieval_details['submission_count'] = len(submission_data)
-                retrieval_details['comment_count'] = len(comment_data)
+                                discussion_data[key]['text'] = [comment['body']]
+                            for field in comment:
+                                if "comment."+field in discussion_data[key]:
+                                    discussion_data[key]["comment."+field].append(comment[field])
+                                else:
+                                    discussion_data[key]["comment."+field] = [comment[field]]
+                    #save to the discussion dataset
+                    data.update(discussion_data)
+                    retrieval_details['submission_count'] = retrieval_details['submission_count'] + len(submission_data)
+                    retrieval_details['comment_count'] = retrieval_details['comment_count'] + len(comment_data)
         elif self.dataset_type == "submission":
-            if self.pushshift_flg:
-                try:
-                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_MSG))
-                    self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
-                except RuntimeError:
-                    status_flag = False
-                    error_msg = GUIText.RETRIEVAL_FAILED_ERROR
-            if status_flag:
-                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_SUBMISSION_MSG))
-                raw_submission_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
-                submission_data = {}
-                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_SUBMISSION_MSG))
-                for submission in raw_submission_data:
-                    key = ("Reddit", "submission", submission["id"])
-                    submission_data[key] = submission
-                    submission_data[key]["data_source"] = "Reddit"
-                    submission_data[key]["data_type"] = "submission"
-                    submission_data[key]["url"] = "https://www.reddit.com/r/"+self.subreddit+"/comments/"+submission['id']+"/"
-                data = submission_data
-                retrieval_details['submission_count'] = len(submission_data)
+            data = {}
+            retrieval_details['submission_count'] = 0
+            for subreddit in self.subreddits:
+                if self.pushshift_flg:
+                    try:
+                        wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_MSG))
+                        self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
+                    except RuntimeError:
+                        status_flag = False
+                        error_msg = GUIText.RETRIEVAL_FAILED_ERROR
+                if status_flag:
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_SUBMISSION_MSG))
+                    raw_submission_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
+                    submission_data = {}
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_SUBMISSION_MSG))
+                    for submission in raw_submission_data:
+                        key = ("Reddit", "submission", submission["id"])
+                        submission_data[key] = submission
+                        submission_data[key]["data_source"] = "Reddit"
+                        submission_data[key]["data_type"] = "submission"
+                        submission_data[key]["url"] = "https://www.reddit.com/r/"+self.subreddit+"/comments/"+submission['id']+"/"
+                    data.update(submission_data)
+                    retrieval_details['submission_count'] = retrieval_details['submission_count'] + len(submission_data)
         elif self.dataset_type == "comment":
-            if self.pushshift_flg:
-                try:
-                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_COMMENTS_MSG))
-                    self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
-                except RuntimeError:
-                    status_flag = False
-                    error_msg = GUIText.RETRIEVAL_FAILED_ERROR
-            if status_flag:
-                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_COMMENT_MSG))
-                raw_comment_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
-                comment_data = {}
-                wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_COMMENT_MSG))
-                for comment in raw_comment_data:
-                    key = ("Reddit", "comment", comment["id"])
-                    comment_data[key] = comment
-                    comment_data[key]["data_source"] = "Reddit"
-                    comment_data[key]["data_type"] = "comment"
-                    link_id = comment['link_id'].split('_')
-                    comment_data[key]["submission_id"] = link_id[1]
-                    comment_data[key]["url"] = "https://www.reddit.com/r/"+self.subreddit+"/comments/"+link_id[1]+"/_/"+comment['id']+"/"
-                data = comment_data
-                retrieval_details['comment_count'] = len(comment_data)
+            data = {}
+            retrieval_details['comment_count'] = 0
+            for subreddit in self.subreddits:
+                if self.pushshift_flg:
+                    try:
+                        wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_COMMENTS_MSG))
+                        self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
+                    except RuntimeError:
+                        status_flag = False
+                        error_msg = GUIText.RETRIEVAL_FAILED_ERROR
+                if status_flag:
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_COMMENT_MSG))
+                    raw_comment_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
+                    comment_data = {}
+                    wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_COMMENT_MSG))
+                    for comment in raw_comment_data:
+                        key = ("Reddit", "comment", comment["id"])
+                        comment_data[key] = comment
+                        comment_data[key]["data_source"] = "Reddit"
+                        comment_data[key]["data_type"] = "comment"
+                        link_id = comment['link_id'].split('_')
+                        comment_data[key]["submission_id"] = link_id[1]
+                        comment_data[key]["url"] = "https://www.reddit.com/r/"+self.subreddit+"/comments/"+link_id[1]+"/_/"+comment['id']+"/"
+                    data.update(comment_data)
+                    retrieval_details['comment_count'] = retrieval_details['comment_count'] + len(comment_data)
         if self.search != "":
             wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_SEARCHING_DATA_MSG1 + self.search + GUIText.RETRIEVING_BUSY_SEARCHING_DATA_MSG2))
             full_data = data
@@ -166,11 +177,11 @@ class RetrieveRedditDatasetThread(Thread):
                 comment_count = 0
                 for key in full_data:
                     found = False
-                    if self.search in full_data[key]['title']:
+                    if str(self.search).lower() in str(full_data[key]['title']).lower():
                         found = True
                     if not found:
                         for entry in full_data[key]['text']:
-                            if self.search in entry:
+                            if str(self.search).lower() in str(entry).lower():
                                 found = True
                                 break
                     if found:
@@ -182,9 +193,9 @@ class RetrieveRedditDatasetThread(Thread):
             elif self.dataset_type == 'submission':
                 for key in full_data:
                     found = False
-                    if self.search in full_data[key]['title']:
+                    if str(self.search).lower() in str(full_data[key]['title']).lower():
                         found = True
-                    if not found and self.search in full_data[key]['text']:
+                    if not found and str(self.search).lower() in str(full_data[key]['text']).lower():
                         found = True
                     if found:
                         data[key] = full_data[key]
@@ -192,7 +203,7 @@ class RetrieveRedditDatasetThread(Thread):
             elif self.dataset_type == 'comment':
                 for key in full_data:
                     found = False
-                    if self.search in full_data[key]['text']:
+                    if str(self.search).lower() in str(full_data[key]['body']).lower():
                         found = True
                     if found:
                         data[key] = full_data[key]
@@ -201,7 +212,7 @@ class RetrieveRedditDatasetThread(Thread):
         if status_flag:
             if len(data) > 0:
                 wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, self.language, retrieval_details, data, self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, self.language, retrieval_details, data, self.available_fields_list, self.label_fields_list, self.computation_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -311,7 +322,7 @@ class RetrieveRedditDatasetThread(Thread):
 
 class RetrieveTwitterDatasetThread(Thread):
     """Retrieve Reddit Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, language, keys, query, start_date, end_date, dataset_type, available_fields_list, metadata_fields_list, included_fields_list):
+    def __init__(self, notify_window, main_frame, dataset_name, language, keys, query, start_date, end_date, dataset_type, available_fields_list, label_fields_list, computation_fields_list):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
@@ -325,8 +336,8 @@ class RetrieveTwitterDatasetThread(Thread):
         self.end_date = end_date
         self.dataset_type = dataset_type
         self.available_fields_list = available_fields_list
-        self.metadata_fields_list = metadata_fields_list
-        self.included_fields_list = included_fields_list
+        self.label_fields_list = label_fields_list
+        self.computation_fields_list = computation_fields_list
         # This starts the thread running on creation, but you could
         # also make the GUI thread responsible for calling this
         self.start()
@@ -413,7 +424,7 @@ class RetrieveTwitterDatasetThread(Thread):
         if status_flag:
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, self.language, retrieval_details, data, self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, self.language, retrieval_details, data, self.available_fields_list, self.label_fields_list, self.computation_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -519,7 +530,7 @@ class RetrieveTwitterDatasetThread(Thread):
 
 class RetrieveCSVDatasetThread(Thread):
     """Retrieve CSV Dataset Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset_name, language, dataset_field, dataset_type, id_field, url_field, datetime_field, datetime_tz, available_fields_list, metadata_fields_list, included_fields_list, combined_fields_list, filename):
+    def __init__(self, notify_window, main_frame, dataset_name, language, dataset_field, dataset_type, id_field, url_field, datetime_field, datetime_tz, available_fields_list, label_fields_list, computation_fields_list, combined_fields_list, filename):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
@@ -533,8 +544,8 @@ class RetrieveCSVDatasetThread(Thread):
         self.datetime_field = datetime_field
         self.datetime_tz = datetime_tz
         self.available_fields_list = available_fields_list
-        self.metadata_fields_list = metadata_fields_list
-        self.included_fields_list = included_fields_list
+        self.label_fields_list = label_fields_list
+        self.computation_fields_list = computation_fields_list
         self.combined_fields_list = combined_fields_list
 
         self.filename = filename
@@ -608,7 +619,7 @@ class RetrieveCSVDatasetThread(Thread):
             if len(data) > 0:
                 retrieval_details['row_count'] = row_num
                 wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, self.language, retrieval_details, data, self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
+                dataset = DatasetsUtilities.CreateDataset(dataset_key, self.language, retrieval_details, data, self.available_fields_list, self.label_fields_list, self.computation_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
@@ -668,7 +679,7 @@ class RetrieveCSVDatasetThread(Thread):
                 for new_dataset_key in data:
                     cur_retrieval_details = copy.deepcopy(retrieval_details)
                     cur_retrieval_details['row_count'] = dataset_row_num[new_dataset_key]
-                    datasets[new_dataset_key] = DatasetsUtilities.CreateDataset(new_dataset_key, self.language, retrieval_details, data[new_dataset_key], self.available_fields_list, self.metadata_fields_list, self.included_fields_list, self.main_frame)
+                    datasets[new_dataset_key] = DatasetsUtilities.CreateDataset(new_dataset_key, self.language, retrieval_details, data[new_dataset_key], self.available_fields_list, self.label_fields_list, self.computation_fields_list, self.main_frame)
                     DatasetsUtilities.TokenizeDataset(datasets[new_dataset_key], self._notify_window, self.main_frame)
             else:
                 status_flag = False

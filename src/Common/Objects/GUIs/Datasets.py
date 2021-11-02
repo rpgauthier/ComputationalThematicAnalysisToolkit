@@ -321,14 +321,14 @@ class DatasetPanel(wx.Panel):
                 details_sizer2.AddSpacer(10)
         
 
-        customizemetdata_ctrl = wx.Button(self, label=GUIText.CUSTOMIZE_METADATAFIELDS)
-        customizemetdata_ctrl.Bind(wx.EVT_BUTTON, self.OnCustomizeMetadataFields)
-        details_sizer1.Add(customizemetdata_ctrl, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        customize_label_fields_ctrl = wx.Button(self, label=GUIText.CUSTOMIZE_LABEL_FIELDS)
+        customize_label_fields_ctrl.Bind(wx.EVT_BUTTON, self.OnCustomizeLabelFields)
+        details_sizer1.Add(customize_label_fields_ctrl, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details_sizer1.AddSpacer(10)
         
-        customizeincluded_ctrl = wx.Button(self, label=GUIText.CUSTOMIZE_INCLUDEDFIELDS)
-        customizeincluded_ctrl.Bind(wx.EVT_BUTTON, self.OnCustomizeIncludedFields)
-        details_sizer1.Add(customizeincluded_ctrl, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        customize_computation_fields_ctrl = wx.Button(self, label=GUIText.CUSTOMIZE_COMPUTATIONAL_FIELDS)
+        customize_computation_fields_ctrl.Bind(wx.EVT_BUTTON, self.OnCustomizeComputationalFields)
+        details_sizer1.Add(customize_computation_fields_ctrl, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details_sizer1.AddSpacer(10)
 
         self.SetSizer(self.sizer)
@@ -336,25 +336,25 @@ class DatasetPanel(wx.Panel):
 
         CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnTokenizerEnd)
 
-    def OnCustomizeMetadataFields(self, event):
-        logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeMetadataFields")
+    def OnCustomizeLabelFields(self, event):
+        logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeLabelFields")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         SubModuleFields.FieldsDialog(parent=main_frame,
-                                    title=str(self.dataset.key)+" "+GUIText.CUSTOMIZE_METADATAFIELDS,
+                                    title=str(self.dataset.key)+" "+GUIText.CUSTOMIZE_LABEL_FIELDS,
                                     dataset=self.dataset,
-                                    fields=self.dataset.metadata_fields,
-                                    metadata_fields=True).Show()
+                                    fields=self.dataset.label_fields,
+                                    label_fields=True).Show()
         logger.info("Finished")
 
-    def OnCustomizeIncludedFields(self, event):
-        logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeIncludedFields")
+    def OnCustomizeComputationalFields(self, event):
+        logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeComputationalFields")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         SubModuleFields.FieldsDialog(parent=main_frame,
-                                     title=str(self.dataset.key)+" "+GUIText.CUSTOMIZE_INCLUDEDFIELDS,
+                                     title=str(self.dataset.key)+" "+GUIText.CUSTOMIZE_COMPUTATIONAL_FIELDS,
                                      dataset=self.dataset,
-                                     fields=self.dataset.included_fields).Show()
+                                     fields=self.dataset.computational_fields).Show()
         logger.info("Finished")
 
     def OnChangeDatasetKey(self, event):

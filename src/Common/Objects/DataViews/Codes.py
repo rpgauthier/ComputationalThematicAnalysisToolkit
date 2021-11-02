@@ -706,7 +706,7 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
 #   0. Code:   string
 #   1. References:  int
 #   2. Notes: string
-#TODO need to rework ViewModel to show dynamic metadata columns instead of just system ids
+#TODO need to rework ViewModel to show dynamic label columns instead of just system ids
 class CodeConnectionsViewModel(dv.PyDataViewModel):
     def __init__(self, objs):
         dv.PyDataViewModel.__init__(self)
@@ -714,27 +714,27 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
         self.UseWeakRefs(True)
     
     def UpdateColumnNames(self):
-        if hasattr(self.dataset, 'metadata_fields'):
-            if len(self.dataset.metadata_fields) == 0:
-                self.metadata_column_names.append('id')
-                self.metadata_column_types.append('string')
+        if hasattr(self.dataset, 'label_fields'):
+            if len(self.dataset.label_fields) == 0:
+                self.label_column_names.append('id')
+                self.label_column_types.append('string')
             else:
-                for field_name in self.dataset.metadata_fields:
-                    self.metadata_column_names.append(field_name)
-                    self.metadata_column_types.append(self.dataset.metadata_fields[field_name].field_type)
+                for field_name in self.dataset.label_fields:
+                    self.label_column_names.append(field_name)
+                    self.label_column_types.append(self.dataset.label_fields[field_name].field_type)
         else:
             if self.dataset.dataset_source == "Reddit":
-                self.metadata_column_names.append('url')
-                self.metadata_column_types.append('url')
+                self.label_column_names.append('url')
+                self.label_column_types.append('url')
                 if self.dataset.dataset_type == "discussion" or self.dataset.dataset_type == "submission":
-                    self.metadata_column_names.append('title')
-                    self.metadata_column_types.append('string')
+                    self.label_column_names.append('title')
+                    self.label_column_types.append('string')
                 elif self.dataset.dataset_type == "comment":
-                    self.metadata_column_names.append('body')
-                    self.metadata_column_types.append('string')
+                    self.label_column_names.append('body')
+                    self.label_column_types.append('string')
             else:
-                self.metadata_column_names.append('id')
-                self.metadata_column_types.append('string')
+                self.label_column_names.append('id')
+                self.label_column_types.append('string')
         
         self.column_names.clear()
         self.column_names.extend([GUIText.NOTES])
@@ -848,7 +848,7 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
             raise RuntimeError("unknown node type")
 
 #this view enables displaying of fields for different datasets
-#TODO need to rework ViewModel to show dynamic metadata columns instead of just system ids
+#TODO need to rework ViewModel to show dynamic label columns instead of just system ids
 class CodeConnectionsViewCtrl(dv.DataViewCtrl):
     def __init__(self, parent, model, style=dv.DV_MULTIPLE|dv.DV_ROW_LINES):
         dv.DataViewCtrl.__init__(self, parent, style=style)
@@ -940,37 +940,37 @@ class DocumentViewModel(dv.PyDataViewModel):
         self.usefulness_filter = []
         self.samples_filter = []
 
-        self.metadata_column_names = []
-        self.metadata_column_types = []
+        self.label_column_names = []
+        self.label_column_types = []
         self.data_column_names = []
         self.data_column_types = []
         self.column_names = []
         self.UpdateColumnNames()
 
     def UpdateColumnNames(self):
-        self.metadata_column_names.clear()
-        self.metadata_column_types.clear()
-        if len(self.dataset.metadata_fields) == 0:
-            self.metadata_column_names.append('id')
-            self.metadata_column_types.append('string')
+        self.label_column_names.clear()
+        self.label_column_types.clear()
+        if len(self.dataset.label_fields) == 0:
+            self.label_column_names.append('id')
+            self.label_column_types.append('string')
         else:
-            for field_name in self.dataset.metadata_fields:
-                self.metadata_column_names.append(field_name)
-                self.metadata_column_types.append(self.dataset.metadata_fields[field_name].fieldtype)
+            for field_name in self.dataset.label_fields:
+                self.label_column_names.append(field_name)
+                self.label_column_types.append(self.dataset.label_fields[field_name].fieldtype)
 
         self.data_column_names.clear()
         self.data_column_types.clear()
-        for field_name in self.dataset.included_fields:
-            if field_name not in self.metadata_column_names and field_name not in self.data_column_names:
+        for field_name in self.dataset.computational_fields:
+            if field_name not in self.label_column_names and field_name not in self.data_column_names:
                 self.data_column_names.append(field_name)
-                self.data_column_types.append(self.dataset.included_fields[field_name].fieldtype)
+                self.data_column_types.append(self.dataset.computational_fields[field_name].fieldtype)
 
         self.column_names.clear()
         self.column_names.extend([GUIText.NOTES, GUIText.CODES])
 
     def GetColumnCount(self):
         '''Report how many columns this model provides data for.'''
-        return len(self.metadata_column_names) +  len(self.data_column_names) + len(self.column_names)
+        return len(self.label_column_names) +  len(self.data_column_names) + len(self.column_names)
 
     def GetChildren(self, parent, children):
         # If the parent item is invalid then it represents the hidden root
@@ -1009,9 +1009,9 @@ class DocumentViewModel(dv.PyDataViewModel):
             for document_key in node.selected_documents:
                 include = False
                 if self.search_filter != '':
-                    for i in range(0, len(self.metadata_column_names)):
-                        col_name = self.metadata_column_names[i]
-                        col_type = self.metadata_column_types[i]
+                    for i in range(0, len(self.label_column_names)):
+                        col_name = self.label_column_names[i]
+                        col_type = self.label_column_types[i]
                         value = node.data[document_key][col_name]
                         if isinstance(value, list):
                             value_str = ""
@@ -1074,9 +1074,9 @@ class DocumentViewModel(dv.PyDataViewModel):
                 if hasattr(sample, 'selected_documents') and document_key in sample.selected_documents:
                     include = False
                     if self.search_filter != '':
-                        for i in range(0, len(self.metadata_column_names)):
-                            col_name = self.metadata_column_names[i]
-                            col_type = self.metadata_column_types[i]
+                        for i in range(0, len(self.label_column_names)):
+                            col_name = self.label_column_names[i]
+                            col_type = self.label_column_types[i]
                             value = node.documents[document_key][col_name]
                             if isinstance(value, list):
                                 value_str = ""
@@ -1181,58 +1181,58 @@ class DocumentViewModel(dv.PyDataViewModel):
         ''''Fetch the data object for this item's column.'''
         node = self.ItemToObject(item)
         if isinstance(node, Datasets.Dataset):
-            col_start = len(self.metadata_column_names)+len(self.data_column_names)
+            col_start = len(self.label_column_names)+len(self.data_column_names)
             mapper = { 0 : str(node.name)+" / "+str(node.dataset_source)+" / "+str(node.dataset_type),
                        col_start+0 : "\U0001F6C8" if node.notes != "" else "",
                        col_start+1 : len(node.codes)
                        }
-            for i in range(1, len(self.metadata_column_names)+len(self.data_column_names)):
+            for i in range(1, len(self.label_column_names)+len(self.data_column_names)):
                 mapper[i] = ""
             return mapper[col]
         elif isinstance(node, Samples.Sample):
-            col_start = len(self.metadata_column_names)+len(self.data_column_names)
+            col_start = len(self.label_column_names)+len(self.data_column_names)
             mapper = { 0 : repr(node),
                        col_start+0 : "\U0001F6C8" if node.notes != "" else "",
                        col_start+1 : len(node.codes)
                        }
-            for i in range(1, len(self.metadata_column_names)+len(self.data_column_names)):
+            for i in range(1, len(self.label_column_names)+len(self.data_column_names)):
                 mapper[i] = ""
             return mapper[col]
         elif isinstance(node, Samples.MergedPart):
-            col_start = len(self.metadata_column_names)+len(self.data_column_names)
+            col_start = len(self.label_column_names)+len(self.data_column_names)
             mapper = { 0 : repr(node),
                        col_start+0 : "\U0001F6C8" if node.notes != "" else "",
                        col_start+1 : len(node.codes)
                        }
-            for i in range(1, len(self.metadata_column_names)+len(self.data_column_names)):
+            for i in range(1, len(self.label_column_names)+len(self.data_column_names)):
                 mapper[i] = ""
             return mapper[col]
         elif isinstance(node, Samples.Part):
-            col_start = len(self.metadata_column_names)+len(self.data_column_names)
+            col_start = len(self.label_column_names)+len(self.data_column_names)
             mapper = { 0 : repr(node),
                        col_start+0 : "\U0001F6C8" if node.notes != "" else "",
                        col_start+1 : len(node.codes)
                        }
-            for i in range(1, len(self.metadata_column_names)+len(self.data_column_names)):
+            for i in range(1, len(self.label_column_names)+len(self.data_column_names)):
                 mapper[i] = ""
             return mapper[col]
         elif isinstance(node, Datasets.Document):
-            col_start = len(self.metadata_column_names)+len(self.data_column_names)
+            col_start = len(self.label_column_names)+len(self.data_column_names)
             mapper = { col_start+0 : "\U0001F6C8" if node.notes != "" else "",
                        col_start+1 : len(node.codes),
                        }
             idx = 0
-            for field_name in self.metadata_column_names:
+            for field_name in self.label_column_names:
                 if field_name in node.parent.data[node.key]:
                     value = node.parent.data[node.key][field_name]
-                    if self.metadata_column_types[idx] == 'url':
+                    if self.label_column_types[idx] == 'url':
                         segmented_url = value.split("/")
                         if segmented_url[len(segmented_url)-1] != '':
                             segment_id = segmented_url[len(segmented_url)-1]
                         else:
                             segment_id = segmented_url[len(segmented_url)-2]
                         value = "<span color=\"#0645ad\"><u>"+segment_id+"</u></span>"
-                    elif self.metadata_column_types[idx] == 'UTC-timestamp':
+                    elif self.label_column_types[idx] == 'UTC-timestamp':
                         if isinstance(value, list):
                             value_str = ""
                             for entry in value:
@@ -1244,7 +1244,7 @@ class DocumentViewModel(dv.PyDataViewModel):
                                 value = value_str
                         else:
                             value = datetime.utcfromtimestamp(value).strftime(Constants.DATETIME_FORMAT)+"UTC"
-                    elif self.metadata_column_types[idx] == 'int':
+                    elif self.label_column_types[idx] == 'int':
                         if isinstance(value, list):
                             value = value[0]
                         else:
@@ -1265,16 +1265,16 @@ class DocumentViewModel(dv.PyDataViewModel):
                 mapper[idx] = value
                 idx = idx+1
             for field_name in self.data_column_names:
-                if field_name not in self.metadata_column_names and field_name in node.parent.data[node.key]:
+                if field_name not in self.label_column_names and field_name in node.parent.data[node.key]:
                     value = node.parent.data[node.key][field_name]
-                    if self.data_column_types[idx-len(self.metadata_column_types)] == 'url':
+                    if self.data_column_types[idx-len(self.label_column_types)] == 'url':
                         segmented_url = value.split("/")
                         if segmented_url[len(segmented_url)-1] != '':
                             segment_id = segmented_url[len(segmented_url)-1]
                         else:
                             segment_id = segmented_url[len(segmented_url)-2]
                         value = "<span color=\"#0645ad\"><u>"+segment_id+"</u></span>"
-                    elif self.data_column_types[idx-len(self.metadata_column_types)] == 'UTC-timestamp':
+                    elif self.data_column_types[idx-len(self.label_column_types)] == 'UTC-timestamp':
                         if isinstance(value, list):
                             value_str = ""
                             for entry in value:
@@ -1286,7 +1286,7 @@ class DocumentViewModel(dv.PyDataViewModel):
                                 value = value_str
                         else:
                             value = datetime.utcfromtimestamp(value).strftime(Constants.DATETIME_FORMAT)+"UTC"
-                    elif self.data_column_types[idx-len(self.metadata_column_types)] == 'int':
+                    elif self.data_column_types[idx-len(self.label_column_types)] == 'int':
                         if isinstance(value, list):
                             value = value[0]
                         else:
@@ -1364,10 +1364,10 @@ class DocumentViewCtrl(dv.DataViewCtrl):
                 self.DeleteColumn(self.GetColumn(i))
 
         idx = 0
-        for field_name in model.metadata_column_names:
-            if model.metadata_column_types[idx] == 'int':
+        for field_name in model.label_column_names:
+            if model.label_column_types[idx] == 'int':
                 renderer = dv.DataViewTextRenderer(varianttype="long")
-            elif model.metadata_column_types[idx] == 'url':
+            elif model.label_column_types[idx] == 'url':
                 renderer = dv.DataViewTextRenderer()
                 renderer.EnableMarkup()
             else:
@@ -1378,9 +1378,9 @@ class DocumentViewCtrl(dv.DataViewCtrl):
             idx = idx+1
 
         for field_name in model.data_column_names:
-            if model.data_column_types[idx-len(model.metadata_column_names)] == 'int':
+            if model.data_column_types[idx-len(model.label_column_names)] == 'int':
                 renderer = dv.DataViewTextRenderer(varianttype="long")
-            elif model.data_column_types[idx-len(model.metadata_column_names)] == 'url':
+            elif model.data_column_types[idx-len(model.label_column_names)] == 'url':
                 renderer = dv.DataViewTextRenderer()
                 renderer.EnableMarkup()
             else:
@@ -1434,7 +1434,7 @@ class DocumentViewCtrl(dv.DataViewCtrl):
 
         if isinstance(node, Datasets.Document):
             col = event.GetColumn()
-            if col < len(model.metadata_column_names) and model.metadata_column_types[col] == 'url':
+            if col < len(model.label_column_names) and model.label_column_types[col] == 'url':
                 logger.info("Call to access url[%s]", node.url)
                 webbrowser.open_new_tab(node.url)
             elif event.GetColumn() == 3:
@@ -1451,7 +1451,7 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         model = self.GetModel()
         for row in self.GetSelections():
             line = ''
-            for col in range(0, model.metadata_column_names):
+            for col in range(0, model.label_column_names):
                 line = line + str(model.GetValue(row, col)) + '\t'
             selected_items.append(line.strip())
         clipdata = wx.TextDataObject()

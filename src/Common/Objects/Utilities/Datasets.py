@@ -13,7 +13,7 @@ import Common.Database as Database
 from Common.GUIText import Datasets as GUIText
 from Common.GUIText import Filtering as GUITextFiltering
 
-def CreateDataset(dataset_key, language, retrieval_details, data, available_fields_list, metadata_fields_list, included_fields_list, main_frame):
+def CreateDataset(dataset_key, language, retrieval_details, data, available_fields_list, label_fields, computational_fields, main_frame):
     dataset = Datasets.Dataset(dataset_key,
                                dataset_key[0],
                                dataset_key[1],
@@ -29,13 +29,13 @@ def CreateDataset(dataset_key, language, retrieval_details, data, available_fiel
     
     db_conn.InsertDocuments(dataset_key, dataset.data.keys())
     
-    for field_name, field_info in metadata_fields_list:
+    for field_name, field_info in label_fields:
         new_field = Datasets.Field(dataset,
                                    field_name,
                                    dataset,
                                    field_info['desc'],
                                    field_info['type'])
-        dataset.metadata_fields[field_name] = new_field
+        dataset.label_fields[field_name] = new_field
     for field_name, field_info in available_fields_list:
         new_field = Datasets.Field(dataset,
                                    field_name,
@@ -43,13 +43,13 @@ def CreateDataset(dataset_key, language, retrieval_details, data, available_fiel
                                    field_info['desc'],
                                    field_info['type'])
         dataset.available_fields[field_name] = new_field
-    for field_name, field_info in included_fields_list:
+    for field_name, field_info in computational_fields:
         new_field = Datasets.Field(dataset,
                                    field_name,
                                    dataset,
                                    field_info['desc'],
                                    field_info['type'])
-        dataset.included_fields[field_name] = new_field
+        dataset.computational_fields[field_name] = new_field
     return dataset
 
 def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
@@ -136,18 +136,18 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
             field.tokenset = field_data
 
     stringfield_count = 0
-    for included_field_key in dataset.included_fields:
+    for computational_field_key in dataset.computational_fields:
         has_data = False
-        if dataset.included_fields[included_field_key].fieldtype == 'string':
+        if dataset.computational_fields[computational_field_key].fieldtype == 'string':
             if rerun:
-                db_conn.DeleteField(dataset.key, included_field_key)
+                db_conn.DeleteField(dataset.key, computational_field_key)
             else:
-                has_data = db_conn.CheckIfFieldExists(dataset.key, included_field_key)
+                has_data = db_conn.CheckIfFieldExists(dataset.key, computational_field_key)
             if not has_data:
-                FieldTokenizer(dataset.included_fields[included_field_key])
+                FieldTokenizer(dataset.computational_fields[computational_field_key])
                 stringfield_count = stringfield_count + 1
-        elif dataset.included_fields[included_field_key].tokenset == None or rerun:
-            FieldTokenizer(dataset.included_fields[included_field_key])
+        elif dataset.computational_fields[computational_field_key].tokenset == None or rerun:
+            FieldTokenizer(dataset.computational_fields[computational_field_key])
 
     #calculate tfidf scores for all stored string tokens if any changes occured
     if stringfield_count > 0:

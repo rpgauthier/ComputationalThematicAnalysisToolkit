@@ -354,66 +354,66 @@ class DocumentPanel(wx.Panel):
         self.field_ctrl.BeginSuppressUndo()
 
         cur_pos = 0
-        for field_name in document.parent.metadata_fields:
+        for field_name in document.parent.label_fields:
             if field_name in document.parent.data[document.key]:
                 field_data = document.parent.data[document.key][field_name]
                 self.field_ctrl.WriteText('------'+str(field_name)+'------\n')
                 if isinstance(field_data, list):
                     for entry in field_data:
-                        if document.parent.metadata_fields[field_name].fieldtype == 'url':
+                        if document.parent.label_fields[field_name].fieldtype == 'url':
                             self.field_ctrl.BeginStyle(urlStyle)
                             self.field_ctrl.BeginURL(entry)
                             self.field_ctrl.WriteText(entry)
                             self.field_ctrl.EndURL()
                             self.field_ctrl.EndStyle()
                             self.field_ctrl.WriteText('\n------------\n')
-                        elif document.parent.metadata_fields[field_name].fieldtype == 'UTC-timestamp':
+                        elif document.parent.label_fields[field_name].fieldtype == 'UTC-timestamp':
                             value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
                             self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
                         else:
                             self.field_ctrl.WriteText(str(entry)+'\n------------\n')
                 else:
-                    if document.parent.metadata_fields[field_name].fieldtype == 'url':
+                    if document.parent.label_fields[field_name].fieldtype == 'url':
                         self.field_ctrl.BeginStyle(urlStyle)
                         self.field_ctrl.BeginURL(field_data)
                         self.field_ctrl.WriteText(field_data)
                         self.field_ctrl.EndURL()
                         self.field_ctrl.EndStyle()
                         self.field_ctrl.WriteText('\n------------\n')
-                    elif document.parent.metadata_fields[field_name].fieldtype == 'UTC-timestamp':
+                    elif document.parent.label_fields[field_name].fieldtype == 'UTC-timestamp':
                         value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
                         self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
                     else:
                         self.field_ctrl.WriteText(str(field_data)+'\n------------\n')
             self.field_positions[field_name] = (cur_pos, self.field_ctrl.GetInsertionPoint()-1)
             cur_pos = self.field_ctrl.GetInsertionPoint()
-        for field_name in document.parent.included_fields:
-            if field_name not in document.parent.metadata_fields and field_name in document.parent.data[document.key]:
+        for field_name in document.parent.computational_fields:
+            if field_name not in document.parent.label_fields and field_name in document.parent.data[document.key]:
                 field_data = document.parent.data[document.key][field_name]
                 self.field_ctrl.WriteText('------'+str(field_name)+'------\n')
                 if isinstance(field_data, list):
                     for entry in field_data:
-                        if document.parent.included_fields[field_name].fieldtype == 'url':
+                        if document.parent.computational_fields[field_name].fieldtype == 'url':
                             self.field_ctrl.BeginStyle(urlStyle)
                             self.field_ctrl.BeginURL(entry)
                             self.field_ctrl.WriteText(entry)
                             self.field_ctrl.EndURL()
                             self.field_ctrl.EndStyle()
                             self.field_ctrl.WriteText('\n------------\n')
-                        elif document.parent.included_fields[field_name].fieldtype == 'UTC-timestamp':
+                        elif document.parent.computational_fields[field_name].fieldtype == 'UTC-timestamp':
                             value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
                             self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
                         else:
                             self.field_ctrl.WriteText(str(entry)+'\n------------\n')
                 else:
-                    if document.parent.included_fields[field_name].fieldtype == 'url':
+                    if document.parent.computational_fields[field_name].fieldtype == 'url':
                         self.field_ctrl.BeginStyle(urlStyle)
                         self.field_ctrl.BeginURL(field_data)
                         self.field_ctrl.WriteText(field_data)
                         self.field_ctrl.EndURL()
                         self.field_ctrl.EndStyle()
                         self.field_ctrl.WriteText('\n------------\n')
-                    elif document.parent.included_fields[field_name].fieldtype == 'UTC-timestamp':
+                    elif document.parent.computational_fields[field_name].fieldtype == 'UTC-timestamp':
                         value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
                         self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
                     else:

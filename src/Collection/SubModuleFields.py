@@ -13,19 +13,19 @@ import Common.Objects.Threads.Datasets as DatasetsThreads
 import Common.Database as Database
 
 class FieldsDialog(wx.Dialog):
-    def __init__(self, parent, title, dataset, fields, metadata_fields=False, size=wx.DefaultSize):
+    def __init__(self, parent, title, dataset, fields, label_fields=False, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".FieldsDialog["+str(dataset.key)+"].__init__")
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=title, size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
         sizer = wx.BoxSizer()
 
-        self.fields_panel = FieldsPanel(self, dataset, fields, metadata_fields=metadata_fields,  size=self.GetSize())
+        self.fields_panel = FieldsPanel(self, dataset, fields, label_fields=label_fields,  size=self.GetSize())
         sizer.Add(self.fields_panel, 1, wx.EXPAND)
         self.SetSizer(sizer)
         logger.info("Finished")
 
 class FieldsPanel(wx.Panel):
-    def __init__(self, parent, dataset, fields, metadata_fields=False, size=wx.DefaultSize):
+    def __init__(self, parent, dataset, fields, label_fields=False, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".FieldsNotebook.__init__")
         logger.info("Starting")
         wx.Panel.__init__(self, parent, size=size)
@@ -34,7 +34,7 @@ class FieldsPanel(wx.Panel):
 
         self.dataset = dataset
         self.fields = fields
-        self.metadata_fields = metadata_fields
+        self.label_fields = label_fields
         self.tokenization_thread = None
 
         available_panel = wx.lib.scrolledpanel.ScrolledPanel(splitter)
@@ -61,9 +61,9 @@ class FieldsPanel(wx.Panel):
         chosen_toolbar.Bind(wx.EVT_MENU, self.OnRemoveFields, remove_tool)
         chosen_toolbar.Realize()
         chosen_sizer.Add(chosen_toolbar, proportion=0, flag=wx.ALL, border=5)
-        self.included_fields_model = DatasetsDataViews.ChosenFieldsViewModel(fields)
-        self.included_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(chosen_panel, self.included_fields_model)
-        chosen_sizer.Add(self.included_fields_ctrl, proportion=1, flag=wx.EXPAND, border=5)
+        self.computational_fields_model = DatasetsDataViews.ChosenFieldsViewModel(fields)
+        self.computational_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(chosen_panel, self.computational_fields_model)
+        chosen_sizer.Add(self.computational_fields_ctrl, proportion=1, flag=wx.EXPAND, border=5)
         chosen_panel.SetSizer(chosen_sizer)
         chosen_panel.SetupScrolling()
 
@@ -95,7 +95,7 @@ class FieldsPanel(wx.Panel):
                 new_field.last_changed_dt = datetime.now()
                 self.fields[new_field.key] = new_field
                 nonlocal tokenize_fields
-                if not self.metadata_fields:
+                if not self.label_fields:
                     tokenize_fields.append(new_field)
                 else:
                     nonlocal performed_flag
@@ -107,12 +107,12 @@ class FieldsPanel(wx.Panel):
             wx.MessageBox(GUIText.MULTIPROCESSING_WARNING_MSG,
                           GUIText.WARNING, wx.OK | wx.ICON_WARNING)
             return
-        if not self.metadata_fields:
-            main_frame.CreateProgressDialog(GUIText.ADDING_INCLUDED_FIELDS_BUSY_LABEL,
+        if not self.label_fields:
+            main_frame.CreateProgressDialog(GUIText.ADDING_COMPUTATIONAL_FIELDS_BUSY_LABEL,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
         else:
-            main_frame.CreateProgressDialog(GUIText.ADDING_METADATA_FIELDS_BUSY_LABEL,
+            main_frame.CreateProgressDialog(GUIText.ADDING_LABEL_FIELDS_BUSY_LABEL,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
 
@@ -141,10 +141,10 @@ class FieldsPanel(wx.Panel):
         db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
 
         def FieldRemover(field):
-            item = self.included_fields_model.ObjectToItem(field)
-            parent_item = self.included_fields_model.GetParent(item)
-            self.included_fields_model.ItemDeleted(parent_item, item)
-            if not self.metadata_fields:
+            item = self.computational_fields_model.ObjectToItem(field)
+            parent_item = self.computational_fields_model.GetParent(item)
+            self.computational_fields_model.ItemDeleted(parent_item, item)
+            if not self.label_fields:
                 db_conn.DeleteField(self.dataset.key, field.key)
                 nonlocal tokenize_flag
                 tokenize_flag = True
@@ -153,18 +153,18 @@ class FieldsPanel(wx.Panel):
                 performed_flag = True
             field.DestroyObject()
 
-        if not self.metadata_fields:    
-            main_frame.CreateProgressDialog(GUIText.REMOVING_INCLUDED_FIELDS_BUSY_LABEL,
+        if not self.label_fields:    
+            main_frame.CreateProgressDialog(GUIText.REMOVING_COMPUTATIONAL_FIELDS_BUSY_LABEL,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
         else:
-            main_frame.CreateProgressDialog(GUIText.REMOVING_METADATA_FIELDS_BUSY_LABEL,
+            main_frame.CreateProgressDialog(GUIText.REMOVING_LABEL_FIELDS_BUSY_LABEL,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
         
         main_frame.PulseProgressDialog(GUIText.REMOVING_FIELDS_BUSY_PREPARING_MSG)
-        for item in self.included_fields_ctrl.GetSelections():
-            node = self.included_fields_model.ItemToObject(item)
+        for item in self.computational_fields_ctrl.GetSelections():
+            node = self.computational_fields_model.ItemToObject(item)
             main_frame.PulseProgressDialog(GUIText.REMOVING_FIELDS_BUSY_MSG+str(node.key))
             if isinstance(node, Datasets.Field):
                 FieldRemover(node)
@@ -185,8 +185,8 @@ class FieldsPanel(wx.Panel):
         if self.tokenization_thread != None:
             self.tokenization_thread.join()
             self.tokenization_thread = None
-        self.included_fields_model.Cleared()
-        self.included_fields_ctrl.Expander(None)
+        self.computational_fields_model.Cleared()
+        self.computational_fields_ctrl.Expander(None)
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.DatasetsUpdated()
         main_frame.CloseProgressDialog(thaw=True)

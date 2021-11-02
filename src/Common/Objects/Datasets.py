@@ -39,8 +39,8 @@ class Dataset(GenericObject):
 
         #objects that have their own last_changed_dt and thus need to be checked dynamically
         self.available_fields = {}
-        self.metadata_fields = {}
-        self.included_fields = {}
+        self.label_fields = {}
+        self.computational_fields = {}
         self.selected_documents = []
         self.documents = {}
 
@@ -97,8 +97,8 @@ class Dataset(GenericObject):
     @tokenization_choice.setter
     def tokenization_choice(self, value):
         self._tokenization_choice = value
-        for field in self.included_fields:
-            self.included_fields[field].tokenization_choice = value
+        for field in self.computational_fields:
+            self.computational_fields[field].tokenization_choice = value
         self.last_changed_dt = datetime.now()
     
     @property
@@ -163,8 +163,8 @@ class Dataset(GenericObject):
             tmp_last_changed_dt = self.available_fields[key].last_changed_dt
             if tmp_last_changed_dt > self._last_changed_dt:
                 self._last_changed_dt = tmp_last_changed_dt
-        for key in self.included_fields:
-            tmp_last_changed_dt = self.included_fields[key].last_changed_dt
+        for key in self.computational_fields:
+            tmp_last_changed_dt = self.computational_fields[key].last_changed_dt
             if tmp_last_changed_dt > self._last_changed_dt:
                 self._last_changed_dt = tmp_last_changed_dt
         for key in self.documents:
@@ -178,10 +178,12 @@ class Dataset(GenericObject):
     
     def DestroyObject(self):
         #any children Fields
-        for included_field_name in list(self.included_fields.keys()):
-            self.included_fields[included_field_name].DestroyObject()
         for available_field_name in list(self.available_fields.keys()):
             self.available_fields[available_field_name].DestroyObject()
+        for computational_field_name in list(self.computational_fields.keys()):
+            self.computational_fields[computational_field_name].DestroyObject()
+        for label_field_name in list(self.label_fields.keys()):
+            self.label_fields[label_field_name].DestroyObject()
         #any children Documents:
         for document_key in list(self.documents.keys()):
             self.documents[document_key].DestroyObject()
@@ -276,15 +278,15 @@ class Field(GenericObject):
     
     def DestroyObject(self):
         #remove self from Dataset
-        if self in self.dataset.included_fields.values():
-            if self.dataset.included_fields[self.key] == self:
-                del self.dataset.included_fields[self.key]
+        if self in self.dataset.computational_fields.values():
+            if self.dataset.computational_fields[self.key] == self:
+                del self.dataset.computational_fields[self.key]
         if self in self.dataset.available_fields.values():
             if self.dataset.available_fields[self.key] == self:
                 del self.dataset.available_fields[self.key]
-        if self in self.dataset.metadata_fields.values():
-            if self.dataset.metadata_fields[self.key] == self:
-                del self.dataset.metadata_fields[self.key]    
+        if self in self.dataset.label_fields.values():
+            if self.dataset.label_fields[self.key] == self:
+                del self.dataset.label_fields[self.key]    
         self.parent = None
         self.dataset = None
 
@@ -330,7 +332,7 @@ class Document(GenericObject):
             self.parent = None
 
     #def SetDocumentFields(self):
-    #    for field_key in self.parent.included_fields:
+    #    for field_key in self.parent.computational_fields:
     #        if field_key in self.parent.data[self.key]:
     #            self.data_dict[field_key] = self.parent.data[self.key][field_key]
     #    self.last_changed_dt = datetime.now()

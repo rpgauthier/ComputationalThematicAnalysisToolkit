@@ -157,6 +157,7 @@ class LoadThread(Thread):
             else:
                 ver = version.parse('0.0.0')
 
+            #if ver <  version.parse('0.8.6'):
             if ver <  version.parse(Constants.CUR_VER):
                 self.UpgradeWorkspace(result, ver)
 
@@ -190,27 +191,34 @@ class LoadThread(Thread):
             else:
                 config['options']['multipledatasets_mode'] = False
             if 'adjustable_metadata_mode' in config:
-                config['options']['adjustable_metadata_mode'] = config['adjustable_metadata_mode']
+                config['options']['adjustable_label_fields_mode'] = config['adjustable_metadata_mode']
             else:
-                config['options']['adjustable_metadata_mode'] = False
+                config['options']['adjustable_label_fields_mode'] = False
             if 'adjustable_includedfields_mode' in config:
-                config['options']['adjustable_includedfields_mode'] = config['adjustable_includedfields_mode']
+                config['options']['adjustable_computation_fields_mode'] = config['adjustable_includedfields_mode']
             else:
-                config['options']['adjustable_includedfields_mode'] = False
+                config['options']['adjustable_computation_fields_mode'] = False
+        if ver < version.parse('0.8.5'):
+            if 'adjustable_metadata_mode' in config['options']:
+                config['options']['adjustable_label_fields_mode'] = config['options']['adjustable_metadata_mode']
+                del config['options']['adjustable_metadata_mode']
+            if 'adjustable_includedfields_mode' in config:
+                config['options']['adjustable_computation_fields_mode'] = config['options']['adjustable_includedfields_mode']
+                del config['options']['adjustable_includedfields_mode']
 
     def UpgradeDataset(self, dataset, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATASETS))
         if ver < version.parse('0.8.1'):
-            #convert metdata fields list to dict of objects
+            #convert metadata fields list to dict of objects
             if hasattr(dataset, "_metadata_fields_list"):
-                dataset.metadata_fields = {}
+                dataset.label_fields = {}
                 for field_name, field_info in dataset._metadata_fields_list:
                     new_field = Datasets.Field(dataset,
                                             field_name,
                                             dataset,
                                             field_info['desc'],
                                             field_info['type'])
-                    dataset.metadata_fields[field_name] = new_field
+                    dataset.label_fields[field_name] = new_field
                 del dataset._metadata_fields_list
                 #update rules
                 dataset.last_changed_dt = datetime.now()
@@ -226,7 +234,7 @@ class LoadThread(Thread):
                 dataset.available_fields = dataset.avaliable_fields
                 dataset.last_changed_dt = datetime.now()
             if hasattr(dataset, 'chosen_fields'):
-                dataset.included_fields = dataset.chosen_fields
+                dataset.computational_fields = dataset.chosen_fields
                 dataset.last_changed_dt = datetime.now()
 
             #cleanup attributes changed by switching to database
@@ -254,15 +262,24 @@ class LoadThread(Thread):
                     dataset.retrieval_details['submission_count'] = len(dataset.data)
                 if dataset.dataset_type == 'comment':
                     dataset.retrieval_details['comment_count'] = len(dataset.data)
+            
+            if hasattr(dataset, 'metadata_fields'):
+                dataset.label_fields = dataset.metadata_fields
+                del dataset.metadata_fields
+            if hasattr(dataset, 'included_fields'):
+                dataset.computational_fields = dataset.included_fields
+                del dataset.included_fields
+
             dataset.uuid = str(uuid.uuid4())
-            for field_key in dataset.included_fields:
-                dataset.included_fields[field_key].uuid = str(uuid.uuid4())
             for field_key in dataset.available_fields:
                 dataset.available_fields[field_key].uuid = str(uuid.uuid4())
-            for field_key in dataset.metadata_fields:
-                dataset.metadata_fields[field_key].uuid = str(uuid.uuid4())
+            for field_key in dataset.label_fields:
+                dataset.label_fields[field_key].uuid = str(uuid.uuid4())
+            for field_key in dataset.computational_fields:
+                dataset.computational_fields[field_key].uuid = str(uuid.uuid4())
             for document_key in dataset.documents:
                 dataset.documents[document_key].uuid = str(uuid.uuid4())
+            
 
 
     def UpgradeDatabase(self, result, ver):
@@ -282,11 +299,11 @@ class LoadThread(Thread):
                     elif word_idx == Constants.TOKEN_STEM_IDX:
                         db_conn.InsertDataset(dataset_key, 'lemma')
                     db_conn.InsertDocuments(dataset_key, result['datasets'][dataset_key].data.keys())
-                    for field_key in result['datasets'][dataset_key].included_fields:
+                    for field_key in result['datasets'][dataset_key].computational_fields:
                         db_conn.InsertField(dataset_key, field_key)
-                        if result['datasets'][dataset_key].included_fields[field_key].fieldtype == "string":
-                            db_conn.InsertStringTokens(dataset_key, field_key, result['datasets'][dataset_key].included_fields[field_key].tokenset)
-                            result['datasets'][dataset_key].included_fields[field_key].tokenset = None
+                        if result['datasets'][dataset_key].computational_fields[field_key].fieldtype == "string":
+                            db_conn.InsertStringTokens(dataset_key, field_key, result['datasets'][dataset_key].computational_fields[field_key].tokenset)
+                            result['datasets'][dataset_key].computational_fields[field_key].tokenset = None
                     db_conn.UpdateStringTokensTFIDF(dataset_key)
                     db_conn.ApplyAllDatasetRules(dataset_key, result['datasets'][dataset_key].filter_rules)
                     db_conn.RefreshStringTokensIncluded(dataset_key)
@@ -323,7 +340,7 @@ class LoadThread(Thread):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_SAMPLES))
         if ver < version.parse('0.8.1'):
             if not hasattr(sample, "_field_list"):
-                sample._fields_list = list(dataset.included_fields.keys())
+                sample._fields_list = list(dataset.computational_fields.keys())
                 sample.last_changed_dt = datetime.now()
             
             if hasattr(sample, 'metadataset_key_list'):

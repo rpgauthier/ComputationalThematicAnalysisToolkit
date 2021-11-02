@@ -530,11 +530,11 @@ class SampleRulesDialog(wx.Dialog):
                                        thaw=True)
         logger.info("Finished")
 
-class SampleIncludedFieldsDialog(wx.Dialog):
+class SampleComputationalFieldsDialog(wx.Dialog):
     def __init__(self, parent, sample, dataset, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER):
-        logger = logging.getLogger(__name__+".SampleIncludedFieldsDialog["+str(sample.key)+"].__init__")
+        logger = logging.getLogger(__name__+".SampleComputationalFieldsDialog["+str(sample.key)+"].__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=FilteringGUIText.INCLUDEDFIELDS+": "+repr(sample), style=style, size=wx.Size(600,400))
+        wx.Dialog.__init__(self, parent, title=FilteringGUIText.COMPUTATIONAL_FIELDS+": "+repr(sample), style=style, size=wx.Size(600,400))
         self.sample = sample
         self.dataset = dataset
         self.tokenization_thread = None
@@ -546,17 +546,17 @@ class SampleIncludedFieldsDialog(wx.Dialog):
             self.fields[field_key] = self.dataset.available_fields[field_key]
         
         self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
-        restore_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.RESTORE_INCLUDEDFIELDS,
+        restore_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.RESTORE_COMPUTATIONAL_FIELDS,
                                             bitmap=wx.Bitmap(1, 1),
-                                            shortHelp=GUIText.RESTORE_INCLUDEDFIELDS_TOOLTIP)
+                                            shortHelp=GUIText.RESTORE_COMPUTATIONAL_FIELDS_TOOLTIP)
         self.toolbar.Bind(wx.EVT_MENU, self.OnRestoreStart, restore_tool)
         CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnRestoreFinish)
         self.toolbar.Realize()
         sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
 
-        self.included_fields_model = DatasetsDataViews.ChosenFieldsViewModel(self.fields)
-        self.included_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(self, self.included_fields_model)
-        sizer.Add(self.included_fields_ctrl, proportion=1, flag=wx.EXPAND, border=5)
+        self.computational_fields_model = DatasetsDataViews.ChosenFieldsViewModel(self.fields)
+        self.computational_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(self, self.computational_fields_model)
+        sizer.Add(self.computational_fields_ctrl, proportion=1, flag=wx.EXPAND, border=5)
 
         self.SetSizer(sizer)
         self.Layout()
@@ -564,13 +564,13 @@ class SampleIncludedFieldsDialog(wx.Dialog):
         logger.info("Finished")
     
     def OnRestoreStart(self, event):
-        logger = logging.getLogger(__name__+".SampleIncludedFieldsDialog["+str(self.sample.key)+"].OnRestoreStart")
+        logger = logging.getLogger(__name__+".SampleComputationalFieldsDialog["+str(self.sample.key)+"].OnRestoreStart")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
 
-        confirm_dialog = wx.MessageDialog(self, GUIText.CONFIRM_RESTORE_INCLUDEDFIELDS,
+        confirm_dialog = wx.MessageDialog(self, GUIText.CONFIRM_RESTORE_COMPUTATIONAL_FIELDS,
                                           GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
-        confirm_dialog.SetOKLabel(GUIText.RESTORE_INCLUDEDFIELDS, GUIText.CANCEL)
+        confirm_dialog.SetOKLabel(GUIText.RESTORE_COMPUTATIONAL_FIELDS)
         if confirm_dialog.ShowModal() == wx.ID_OK:
             main_frame.CreateProgressDialog(GUIText.RESTORE_RULES,
                                             warning=GUIText.SIZE_WARNING_MSG,
@@ -581,21 +581,21 @@ class SampleIncludedFieldsDialog(wx.Dialog):
 
             main_frame.PulseProgressDialog(GUIText.RESTORE_REPLACINGFIELDS_MSG)
             #1) remove from the dataset any currently included fields
-            for field_key in list(self.dataset.included_fields.keys()):
+            for field_key in list(self.dataset.computational_fields.keys()):
                 if field_key not in self.fields:
                     db_conn.DeleteField(self.dataset.key, field_key)
-                self.dataset.included_fields[field_key].DestroyObject()
+                self.dataset.computational_fields[field_key].DestroyObject()
             #2) add to the dataset any fields from sample's field_list that are not included fields dataset
             for field_key in self.fields:
-                self.dataset.included_fields[field_key] = copy.copy(self.fields[field_key])
-                self.dataset.included_fields[field_key].last_changed_dt = datetime.now()
+                self.dataset.computational_fields[field_key] = copy.copy(self.fields[field_key])
+                self.dataset.computational_fields[field_key].last_changed_dt = datetime.now()
                 
             main_frame.multiprocessing_inprogress_flag = True
             self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, self.dataset)
         logger.info("Finished")
 
     def OnRestoreFinish(self, event):
-        logger = logging.getLogger(__name__+".SampleIncludedFieldsDialog["+str(self.sample.key)+"].OnRestoreFinish")
+        logger = logging.getLogger(__name__+".SampleComputationalFieldsDialog["+str(self.sample.key)+"].OnRestoreFinish")
         logger.info("Starting")
         self.tokenization_thread.join()
         self.tokenization_thread = None
@@ -768,8 +768,8 @@ class TopicSamplePanel(AbstractSamplePanel):
         rules_button = wx.Button(self, label=FilteringGUIText.FILTERS_RULES)
         rules_button.Bind(wx.EVT_BUTTON, self.OnShowRules)
         details2_sizer.Add(rules_button, 0, wx.ALL, 5)
-        includefields_button = wx.Button(self, label=FilteringGUIText.INCLUDEDFIELDS)
-        includefields_button.Bind(wx.EVT_BUTTON, self.OnShowIncludedFields)
+        includefields_button = wx.Button(self, label=FilteringGUIText.COMPUTATIONAL_FIELDS)
+        includefields_button.Bind(wx.EVT_BUTTON, self.OnShowComputationalFields)
         details2_sizer.Add(includefields_button, 0, wx.ALL, 5)
         self.sizer.Add(details2_sizer, 0, wx.ALL, 5)
 
@@ -818,10 +818,10 @@ class TopicSamplePanel(AbstractSamplePanel):
         SampleRulesDialog(self, self.sample, self.dataset).Show()
         logger.info("Finished")
 
-    def OnShowIncludedFields(self, event):
-        logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].OnShowIncludedFields")
+    def OnShowComputationalFields(self, event):
+        logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].OnShowComputationalFields")
         logger.info("Starting")
-        SampleIncludedFieldsDialog(self, self.sample, self.dataset).Show()
+        SampleComputationalFieldsDialog(self, self.sample, self.dataset).Show()
         logger.info("Finished")
     
     def OnChangeTopicWordNum(self, event):
@@ -1265,8 +1265,8 @@ class TopicListPanel(wx.Panel):
         rules_button = wx.Button(self, label=FilteringGUIText.FILTERS_RULES)
         rules_button.Bind(wx.EVT_BUTTON, self.OnShowRules)
         details2_sizer.Add(rules_button, 0, wx.ALL, 5)
-        includefields_button = wx.Button(self, label=FilteringGUIText.INCLUDEDFIELDS)
-        includefields_button.Bind(wx.EVT_BUTTON, self.OnShowIncludedFields)
+        includefields_button = wx.Button(self, label=FilteringGUIText.COMPUTATIONAL_FIELDS)
+        includefields_button.Bind(wx.EVT_BUTTON, self.OnShowComputationalFields)
         details2_sizer.Add(includefields_button, 0, wx.ALL, 5)
         topic_list_sizer.Add(details2_sizer, 0, wx.ALL, 5)
 
@@ -1323,10 +1323,10 @@ class TopicListPanel(wx.Panel):
         SampleRulesDialog(self, self.sample, self.dataset).Show()
         logger.info("Finished")
 
-    def OnShowIncludedFields(self, event):
-        logger = logging.getLogger(__name__+".TopicListPanel["+str(self.sample.key)+"].OnShowIncludedFields")
+    def OnShowComputationalFields(self, event):
+        logger = logging.getLogger(__name__+".TopicListPanel["+str(self.sample.key)+"].OnShowComputationalFields")
         logger.info("Starting")
-        SampleIncludedFieldsDialog(self, self.sample, self.dataset).Show()
+        SampleComputationalFieldsDialog(self, self.sample, self.dataset).Show()
         logger.info("Finished")
 
 class LDAModelCreateDialog(wx.Dialog):
@@ -1351,7 +1351,7 @@ class LDAModelCreateDialog(wx.Dialog):
         self.usable_datasets = []
         main_frame = wx.GetApp().GetTopWindow()
         for dataset in main_frame.datasets.values():
-            if len(dataset.included_fields) > 0:
+            if len(dataset.computational_fields) > 0:
                 self.usable_datasets.append(dataset.key)
         if len(self.usable_datasets) > 1: 
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
@@ -1464,7 +1464,7 @@ class BitermModelCreateDialog(wx.Dialog):
         
         main_frame = wx.GetApp().GetTopWindow()
         for dataset in main_frame.datasets.values():
-            if len(dataset.included_fields) > 0:
+            if len(dataset.computational_fields) > 0:
                 self.usable_datasets.append(dataset.key)
         if len(self.usable_datasets) > 1: 
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")
@@ -1575,7 +1575,7 @@ class NMFModelCreateDialog(wx.Dialog):
         
         main_frame = wx.GetApp().GetTopWindow()
         for dataset in main_frame.datasets.values():
-            if len(dataset.included_fields) > 0:
+            if len(dataset.computational_fields) > 0:
                 self.usable_datasets.append(dataset.key)
         if len(self.usable_datasets) > 1: 
             dataset_label = wx.StaticText(self, label=GUIText.DATASET+":")

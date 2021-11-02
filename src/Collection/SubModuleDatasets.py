@@ -78,18 +78,18 @@ class DatasetsListPanel(wx.Panel):
         menu = wx.Menu()
         details_menuitem = menu.Append(wx.ID_ANY, GUIText.VIEW_DETAILS)
         menu.Bind(wx.EVT_MENU, self.OnAccessDetails, details_menuitem)
-        metadatafields_menuitem = menu.Append(wx.ID_ANY, GUIText.CUSTOMIZE_METADATAFIELDS)
-        menu.Bind(wx.EVT_MENU, self.OnCustomizeMetadataFields, metadatafields_menuitem)
-        includedfields_menuitem = menu.Append(wx.ID_ANY, GUIText.CUSTOMIZE_INCLUDEDFIELDS)
-        menu.Bind(wx.EVT_MENU, self.OnCustomizeIncludedFields, includedfields_menuitem)
+        label_fields_menuitem = menu.Append(wx.ID_ANY, GUIText.CUSTOMIZE_LABEL_FIELDS)
+        menu.Bind(wx.EVT_MENU, self.OnCustomizeLabelFields, label_fields_menuitem)
+        computation_fields_menuitem = menu.Append(wx.ID_ANY, GUIText.CUSTOMIZE_COMPUTATIONAL_FIELDS)
+        menu.Bind(wx.EVT_MENU, self.OnCustomizeComputationalFields, computation_fields_menuitem)
         menu.AppendSeparator()
         copy_menu_item = menu.Append(wx.ID_ANY, GUIText.COPY)
         menu.Bind(wx.EVT_MENU, self.datasets_ctrl.OnCopyItems, copy_menu_item)
         self.PopupMenu(menu)
         logger.info("Finished")
 
-    def OnCustomizeMetadataFields(self, event):
-        logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeMetadataFields")
+    def OnCustomizeLabelFields(self, event):
+        logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeLabelFields")
         logger.info("Starting")
         selections = self.datasets_ctrl.GetSelections()
         for item in selections:
@@ -97,14 +97,14 @@ class DatasetsListPanel(wx.Panel):
             while node.parent is not None:
                 node = node.parent
             SubModuleFields.FieldsDialog(parent=self,
-                                         title=str(node.key)+" "+GUIText.CUSTOMIZE_METADATAFIELDS,
+                                         title=str(node.key)+" "+GUIText.CUSTOMIZE_LABEL_FIELDS,
                                          dataset=node,
-                                         fields=node.metadata_fields,
-                                         metadata_fields=True).Show()
+                                         fields=node.label_fields,
+                                         label_fields=True).Show()
         logger.info("Finished")
 
-    def OnCustomizeIncludedFields(self, event):
-        logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeIncludedFields")
+    def OnCustomizeComputationalFields(self, event):
+        logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeComputationalFields")
         logger.info("Starting")
         selections = self.datasets_ctrl.GetSelections()
         for item in selections:
@@ -112,9 +112,9 @@ class DatasetsListPanel(wx.Panel):
             while node.parent is not None:
                 node = node.parent
             SubModuleFields.FieldsDialog(parent=self,
-                                         title=str(node.key)+" "+GUIText.CUSTOMIZE_INCLUDEDFIELDS,
+                                         title=str(node.key)+" "+GUIText.CUSTOMIZE_COMPUTATIONAL_FIELDS,
                                          dataset=node,
-                                         fields=node.included_fields).Show()
+                                         fields=node.computational_fields).Show()
         logger.info("Finished")
 
     def OnAccessDetails(self, event):

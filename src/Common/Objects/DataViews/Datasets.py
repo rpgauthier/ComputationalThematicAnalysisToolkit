@@ -48,8 +48,8 @@ class DatasetsViewModel(dv.PyDataViewModel):
         # item and make DV items for each of it's child objects.
         node = self.ItemToObject(parent)
         if isinstance(node, Datasets.Dataset):
-            for included_field_name in node.included_fields:
-                children.append(self.ObjectToItem(node.included_fields[included_field_name]))
+            for computational_field_name in node.computational_fields:
+                children.append(self.ObjectToItem(node.computational_fields[computational_field_name]))
             return len(children)
         return 0
 
@@ -198,19 +198,19 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
         wx.grid.GridTableBase.__init__(self)
         self.dataset = dataset
         self.data_df = pd.DataFrame(self.dataset.data.values())
-        self.metadata_column_names = []
-        self.metadata_col_types = []
+        self.label_column_names = []
+        self.label_col_types = []
         self.data_column_names = []
         
         self.GetColNames()
 
-        if not hasattr(self.dataset, 'metadata_fields'):
+        if not hasattr(self.dataset, 'label_fields'):
             self.data_df['created_utc']= pd.to_datetime(self.data_df['created_utc'], unit='s', utc=True).dt.strftime(Constants.DATETIME_FORMAT)
         else:
-            for col_num in range(0, len(self.metadata_column_names)):
-                if self.metadata_col_types[col_num] == 'UTC-timestamp':
+            for col_num in range(0, len(self.label_column_names)):
+                if self.label_col_types[col_num] == 'UTC-timestamp':
                     try:
-                        self.data_df[self.metadata_column_names[col_num]] = pd.to_datetime(self.data_df[self.metadata_column_names[col_num]], unit='s', utc=True).dt.strftime(Constants.DATETIME_FORMAT)
+                        self.data_df[self.label_column_names[col_num]] = pd.to_datetime(self.data_df[self.label_column_names[col_num]], unit='s', utc=True).dt.strftime(Constants.DATETIME_FORMAT)
                     except ValueError:
                         def ListConvert(list_):
                             value_list = []
@@ -218,19 +218,19 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
                                 for value in list_:
                                     value_list.append(str(datetime.utcfromtimestamp(value).strftime(Constants.DATETIME_FORMAT))+'UTC')
                             return value_list
-                        self.data_df[self.metadata_column_names[col_num]] = self.data_df[self.metadata_column_names[col_num]].apply(ListConvert)
+                        self.data_df[self.label_column_names[col_num]] = self.data_df[self.label_column_names[col_num]].apply(ListConvert)
         
         self._rows = len(self.data_df)
-        self._cols = 1+len(self.metadata_column_names)+len(self.data_column_names)
+        self._cols = 1+len(self.label_column_names)+len(self.data_column_names)
 
     def GetColNames(self):
-        self.metadata_column_names = []
-        self.metadata_col_types = []
+        self.label_column_names = []
+        self.label_col_types = []
         self.data_column_names = []
         self.data_col_types = []
 
-        if not hasattr(self.dataset, 'metadata_fields'):
-            #CODE for datasets created before metadata enhancements
+        if not hasattr(self.dataset, 'label_fields'):
+            #CODE for datasets created before label enhancements
             if self.dataset.dataset_source != 'CSV':
                 self.data_column_names.append(("", "url"))
                 self.data_col_types.append("url") 
@@ -240,26 +240,26 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
             self.data_column_names.append(("", 'created_utc'))
             self.data_col_types.append("UTC-timestamp")
         else:
-            #CODE for datasets created after metadata enhancements
-            for field_name in self.dataset.metadata_fields:
-                self.metadata_column_names.append(field_name)
-                self.metadata_col_types.append(self.dataset.metadata_fields[field_name].fieldtype)
+            #CODE for datasets created after label enhancements
+            for field_name in self.dataset.label_fields:
+                self.label_column_names.append(field_name)
+                self.label_col_types.append(self.dataset.label_fields[field_name].fieldtype)
     
         #CODE to collect approriate fields based on what has been chosen to be included and/or merged
-        for field_name in self.dataset.included_fields:
-            if field_name not in self.metadata_column_names and field_name not in self.data_column_names:
+        for field_name in self.dataset.computational_fields:
+            if field_name not in self.label_column_names and field_name not in self.data_column_names:
                 self.data_column_names.append(field_name)
-                self.data_col_types.append(self.dataset.included_fields[field_name].fieldtype)
+                self.data_col_types.append(self.dataset.computational_fields[field_name].fieldtype)
 
     def GetColLabelValue(self, col):
         name = ""
         if col == 0:
             name = ""
-        elif 0 < col < len(self.metadata_column_names)+1:
+        elif 0 < col < len(self.label_column_names)+1:
             col = col-1
-            name = self.metadata_column_names[col]
+            name = self.label_column_names[col]
         else:
-            col = col - (len(self.metadata_column_names)+1)
+            col = col - (len(self.label_column_names)+1)
             if self.data_column_names[col][0] == "":
                 name = self.data_column_names[col][1]
             else:
@@ -272,11 +272,11 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
     def GetColTupleValue(self, col):
         if col == 0:
             return ""
-        elif 0 < col < len(self.metadata_column_names)+1:
+        elif 0 < col < len(self.label_column_names)+1:
             col = col-1
-            return self.metadata_column_names[col]
+            return self.label_column_names[col]
         else:
-            col = col - (len(self.metadata_column_names)+1)
+            col = col - (len(self.label_column_names)+1)
             if self.data_column_names[col][0] == "":
                 return self.data_column_names[col][1]
             else:
@@ -291,17 +291,17 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
 
     def GetNumberCols(self):
         """Return the number of columns in the grid"""
-        return 1+len(self.metadata_column_names)+len(self.data_column_names)
+        return 1+len(self.label_column_names)+len(self.data_column_names)
 
     def GetTypeName(self, row, col):
         """Return the name of the data type of the value in the cell"""
         if col == 0:
             field_type = "boolean"
-        elif 0 < col < len(self.metadata_column_names)+1:
+        elif 0 < col < len(self.label_column_names)+1:
             col = col-1
-            field_type = self.metadata_col_types[col]
+            field_type = self.label_col_types[col]
         else:
-            col = col - (len(self.metadata_column_names)+1)
+            col = col - (len(self.label_column_names)+1)
             field_type = self.data_col_types[col]
         if field_type == 'integer':
             grid_field_type = wx.grid.GRID_VALUE_LONG
@@ -321,11 +321,11 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
             key = (row_data['data_source'], row_data['data_type'], row_data['id'])
             if key in self.dataset.selected_documents:
                 data = '1'
-        elif col < len(self.metadata_column_names)+1:
+        elif col < len(self.label_column_names)+1:
             col = col-1
-            col_name = self.metadata_column_names[col]
+            col_name = self.label_column_names[col]
             df_row = self.data_df.iloc[row]
-            if self.metadata_col_types[col] == 'url':
+            if self.label_col_types[col] == 'url':
                 segmented_url = df_row[col_name].split("/")
                 if segmented_url[len(segmented_url)-1] != '':
                     data = segmented_url[len(segmented_url)-1]
@@ -348,7 +348,7 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
                         else:
                             data = first_entry
         else:
-            col = col - (len(self.metadata_column_names)+1)
+            col = col - (len(self.label_column_names)+1)
             col_name = self.data_column_names[col]
             if isinstance(col_name, tuple):
                 col_name = col_name[1]
@@ -493,10 +493,10 @@ class DatasetsDataGrid(wx.grid.Grid):
         col = event.GetCol()
         row = event.GetRow()
         col_name = self.GetColLabelValue(col)
-        if col > 0 and col <= len(self.gridtable.metadata_col_types):
-            col_type = self.gridtable.metadata_col_types[col-1]
-        elif col > len(self.gridtable.metadata_col_types):
-            col_type = self.gridtable.data_col_types[col-(len(self.gridtable.metadata_col_types)+1)]
+        if col > 0 and col <= len(self.gridtable.label_col_types):
+            col_type = self.gridtable.label_col_types[col-1]
+        elif col > len(self.gridtable.label_col_types):
+            col_type = self.gridtable.data_col_types[col-(len(self.gridtable.label_col_types)+1)]
         else:
             col_type = 'boolean'
         if col_type == "url":
@@ -524,8 +524,8 @@ class DatasetsDataGrid(wx.grid.Grid):
             max_size = max_size - content_size
 
             col_count = 1
-            for col_name in self.gridtable.metadata_column_names:
-                col_type = self.gridtable.metadata_col_types[col_count-1]
+            for col_name in self.gridtable.label_column_names:
+                col_type = self.gridtable.label_col_types[col_count-1]
                 if col_type == 'url':
                     attr = wx.grid.GridCellAttr()
                     attr.SetTextColour(wx.Colour(6,69,173))
@@ -554,12 +554,12 @@ class DatasetsDataGrid(wx.grid.Grid):
 
     def Search(self, value):
         self.gridtable.data_df = pd.DataFrame(self.gridtable.dataset.data.values())
-        if not hasattr(self.dataset, 'metadata_fields'):
+        if not hasattr(self.dataset, 'label_fields'):
             self.data_df['created_utc']= pd.to_datetime(self.gridtable.data_df['created_utc'], unit='s', utc=True).dt.strftime(Constants.DATETIME_FORMAT)
         else:
-            for col_num in range(0, len(self.gridtable.metadata_column_names)):
-                if self.gridtable.metadata_col_types[col_num] == 'UTC-timestamp':
-                    self.gridtable.data_df[self.gridtable.metadata_column_names[col_num]]= pd.to_datetime(self.gridtable.data_df[self.gridtable.metadata_column_names[col_num]], unit='s', utc=True).dt.strftime(Constants.DATETIME_FORMAT)
+            for col_num in range(0, len(self.gridtable.label_column_names)):
+                if self.gridtable.label_col_types[col_num] == 'UTC-timestamp':
+                    self.gridtable.data_df[self.gridtable.label_column_names[col_num]]= pd.to_datetime(self.gridtable.data_df[self.gridtable.label_column_names[col_num]], unit='s', utc=True).dt.strftime(Constants.DATETIME_FORMAT)
         
         if value != "":
             self.gridtable.data_df = self.gridtable.data_df[self.gridtable.data_df.applymap(lambda x: value in str(x)).any(1)]

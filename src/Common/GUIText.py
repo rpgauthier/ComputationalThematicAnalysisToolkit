@@ -163,8 +163,8 @@ class Main(Common):
     
     OPTIONS_ADVANCED_MODES = "Advanced Modes"
     OPTIONS_MULTIPLEDATASETS = "Allow Multiple Datasets Mode (not yet fully tested)"
-    OPTIONS_ADJUSTABLE_METADATA = "Allow adjusting metadata during retrieval"
-    OPTIONS_ADJUSTABLE_INCLUDEDFIELDS = "Allow adjusting included fields during retrieval"
+    OPTIONS_ADJUSTABLE_LABEL_FIELDS = "Allow adjusting label fields during retrieval"
+    OPTIONS_ADJUSTABLE_COMPUTATIONAL_FIELDS = "Allow adjusting computational fields during retrieval"
 
     #Menu related text
     MODE_MENU = "Mode"
@@ -365,20 +365,20 @@ class Datasets(Common):
     CSV_DATETIMEFIELD_TOOLTIP = "Choose a field to use as datetime to documents."
     CSV_DATETIMETZ_MISSING_ERROR = "Need to choose the time zone for the contents of the datatime field"
     
-    METADATAFIELDS = "Metdata Fields: "
-    METADATAFIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
+    LABEL_FIELDS = "Label Fields: "
+    LABEL_FIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
                              "\nIf a field occurs multiple times for the same id, the first occurance will be used."
-    COMBINED_METADATAFIELDS = "Combined Metdata Fields: "
-    COMBINED_METADATAFIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
+    COMBINED_LABEL_FIELDS = "Combined Label Fields: "
+    COMBINED_LABEL_FIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
                                       "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
-    INCLUDEDFIELDS = "Included Fields"
-    INCLUDEDFIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the CSV file."\
+    COMPUTATIONAL_FIELDS = "Computational Fields"
+    COMPUTATIONAL_FIELDS_TOOLTIP = "Choose fields you want computational methods to use when identifing samples of interest from the data."\
                              "\nIf a field occurs multiple times for the same id, the first occurance will be used."
-    COMBINED_INCLUDEDFIELDS = "Combined Included Fields: "
-    COMBINED_INCLUDEDFIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the CSV file."\
+    COMBINED_COMPUTATIONAL_FIELDS = "Combined Computational Fields: "
+    COMBINED_COMPUTATIONAL_FIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the data."\
                                       "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
-    CUSTOMIZE_METADATAFIELDS = "Customize Metadata Fields"
-    CUSTOMIZE_INCLUDEDFIELDS = "Customize Included Fields"
+    CUSTOMIZE_LABEL_FIELDS = "Customize Label Fields"
+    CUSTOMIZE_COMPUTATIONAL_FIELDS = "Customize Computational Fields"
 
 class Samples(Main):
     #Model types
@@ -437,12 +437,12 @@ class Samples(Main):
     RESTORE_RULES = "Restore Rules"
     RESTORE_RULES_TOOLTIP = "Restores the rules of the dataset back to the version used when this sample was generated."
     CONFIRM_RESTORE_RULES = "Are you sure that you want to replace all existing filter rules with the rules used when generating this sample."
-    RESTORE_INCLUDEDFIELDS = "Restore Included Fields"
-    RESTORE_INCLUDEDFIELDS_TOOLTIP = "Restores the included fields of the dataset back to the version used when this sample was generated."
-    CONFIRM_RESTORE_INCLUDEDFIELDS = "Are you sure that you want to replace all existing included fields of the dataset with the fields used when generating this sample."
+    RESTORE_COMPUTATIONAL_FIELDS = "Restore Computational Fields"
+    RESTORE_COMPUTATIONAL_FIELDS_TOOLTIP = "Restores the computational fields of the dataset back to the version used when this sample was generated."
+    CONFIRM_RESTORE_COMPUTATIONAL_FIELDS = "Are you sure that you want to replace all existing computational fields of the dataset with the fields used when generating this sample."
     RESTORE_BEGINNING_MSG = "Beginning Restore"
     RESTORE_REPLACINGRULES_MSG = "Replacing Rules"
-    RESTORE_REPLACINGFIELDS_MSG = "Replacing Included Fields"
+    RESTORE_REPLACINGFIELDS_MSG = "Replacing Computational Fields"
     RESTORE_COMPLETED_MSG = "Restore Completed"
 
 
@@ -558,36 +558,22 @@ class Collection(Main, Datasets):
 
     FIELDS_LABEL = "Fields"
     FIELDS_AVALIABLE_LABEL = "Avaliable Fields"
-    FIELDS_CHOSEN_LABEL = 'Included Fields'
-    FIELDS_ADD_TOOLTIP = "Selected fields will be added to Included Fields"
-    FIELDS_REMOVE_TOOLTIP = "Selected fields will be removed from Included Fields"
-    FIELDS_EXISTS_ERROR = "Included Fields already has field: "
-    
-    GROUPING_BUSY_LABEL = "Grouping Datasets"
-    GROUPING_BUSY_PREPARING_MSG = "Preparing to Group Selected Datasets"
-    GROUPING_BUSY_CREATING_MSG = "Creating new Grouped Dataset: "
-    GROUPING_BUSY_ADDING_MSG1 = "Adding Dataset: "
-    GROUPING_BUSY_ADDING_MSG2 = " to Grouped Dataset: "
-    GROUPING_BUSY_UPDATING_MSG = "Updating metadata for Grouped Dataset: "
-
-    UNGROUPING_BUSY_LABEL = "Ungrouping Datasets"
-    UNGROUPING_BUSY_PREPARING_MSG = "Preparing to Ungroup Selected Datasets"
-    UNGROUPING_BUSY_REMOVING_MSG1 = "Ungrouping Dataset: "
-    UNGROUPING_BUSY_REMOVING_MSG2 = " from Grouped Dataset: "
-    UNGROUPING_BUSY_UPDATING_MSG = "Updating metadata for Grouped Dataset: "
+    FIELDS_INCLUDED_LABEL = 'Included Fields'
+    FIELDS_ADD_TOOLTIP = "Selected fields will be added to "
+    FIELDS_REMOVE_TOOLTIP = "Selected fields will be removed from "
+    FIELDS_EXISTS_ERROR = "You have already included the field: "
 
     DELETING_BUSY_LABEL = "Deleting Datasets"
     DELETING_BUSY_PREPARING_MSG = "Preparing to Delete Selected Datasets"
     DELETING_BUSY_REMOVING_MSG = "Deleting Dataset: "
-    DELETING_BUSY_UPDATING_MSG = "Updating metadata for Grouped Dataset: "
 
-    ADDING_INCLUDED_FIELDS_BUSY_LABEL = "Adding Included Fields"
-    ADDING_METADATA_FIELDS_BUSY_LABEL = "Adding Metadata Fields"
+    ADDING_COMPUTATIONAL_FIELDS_BUSY_LABEL = "Adding Computational Fields"
+    ADDING_LABEL_FIELDS_BUSY_LABEL = "Adding Label Fields"
     ADDING_FIELDS_BUSY_PREPARING_MSG = "Preparing to Add Selected Fields"
     ADDING_FIELDS_BUSY_MSG = "Adding Selection: "
 
-    REMOVING_INCLUDED_FIELDS_BUSY_LABEL = "Removing Included Fields"
-    REMOVING_METADATA_FIELDS_BUSY_LABEL = "Removing Metadata Fields"
+    REMOVING_COMPUTATIONAL_FIELDS_BUSY_LABEL = "Removing Computational Fields"
+    REMOVING_LABEL_FIELDS_BUSY_LABEL = "Removing Label Fields"
     REMOVING_FIELDS_BUSY_PREPARING_MSG = "Preparing to Remove Selected Fields"
     REMOVING_FIELDS_BUSY_MSG = "Removing Selection: "
 

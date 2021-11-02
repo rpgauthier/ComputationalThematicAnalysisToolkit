@@ -161,35 +161,35 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         date_sizer.Add(self.end_date_ctrl)
         sizer.Add(date_sizer, 0, wx.ALL, 5)
 
-        metadata_fields_label = wx.StaticText(self, label=GUIText.METADATAFIELDS)
-        self.metadata_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
-        self.metadata_fields_ctrl.AppendColumn(GUIText.FIELD)
-        self.metadata_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
-        self.metadata_fields_ctrl.AppendColumn(GUIText.TYPE)
-        self.metadata_fields_ctrl.SetToolTip(GUIText.METADATAFIELDS_TOOLTIP)
-        self.metadata_fields_ctrl.EnableCheckBoxes()
-        metadata_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        metadata_fields_sizer.Add(metadata_fields_label, 0, wx.ALL)
-        metadata_fields_sizer.Add(self.metadata_fields_ctrl, 1, wx.EXPAND)
-        if main_frame.options_dict['adjustable_metadata_mode']:
-            sizer.Add(metadata_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        label_fields_label = wx.StaticText(self, label=GUIText.LABEL_FIELDS)
+        self.label_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.label_fields_ctrl.AppendColumn(GUIText.FIELD)
+        self.label_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
+        self.label_fields_ctrl.AppendColumn(GUIText.TYPE)
+        self.label_fields_ctrl.SetToolTip(GUIText.LABEL_FIELDS_TOOLTIP)
+        self.label_fields_ctrl.EnableCheckBoxes()
+        label_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        label_fields_sizer.Add(label_fields_label, 0, wx.ALL)
+        label_fields_sizer.Add(self.label_fields_ctrl, 1, wx.EXPAND)
+        if main_frame.options_dict['adjustable_label_fields_mode']:
+            sizer.Add(label_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
         else:
-            metadata_fields_sizer.ShowItems(False)
+            label_fields_sizer.ShowItems(False)
 
-        included_fields_label = wx.StaticText(self, label=GUIText.INCLUDEDFIELDS+":")
-        self.included_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
-        self.included_fields_ctrl.AppendColumn(GUIText.FIELD)
-        self.included_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
-        self.included_fields_ctrl.AppendColumn(GUIText.TYPE)
-        self.included_fields_ctrl.SetToolTip(GUIText.INCLUDEDFIELDS_TOOLTIP)
-        self.included_fields_ctrl.EnableCheckBoxes()
-        included_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        included_fields_sizer.Add(included_fields_label, 0, wx.ALL)
-        included_fields_sizer.Add(self.included_fields_ctrl, 1, wx.EXPAND)
-        if main_frame.options_dict['adjustable_includedfields_mode']:
-            sizer.Add(included_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        computational_fields_label = wx.StaticText(self, label=GUIText.COMPUTATIONAL_FIELDS+":")
+        self.computational_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.computational_fields_ctrl.AppendColumn(GUIText.FIELD)
+        self.computational_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
+        self.computational_fields_ctrl.AppendColumn(GUIText.TYPE)
+        self.computational_fields_ctrl.SetToolTip(GUIText.COMPUTATIONAL_FIELDS_TOOLTIP)
+        self.computational_fields_ctrl.EnableCheckBoxes()
+        computational_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        computational_fields_sizer.Add(computational_fields_label, 0, wx.ALL)
+        computational_fields_sizer.Add(self.computational_fields_ctrl, 1, wx.EXPAND)
+        if main_frame.options_dict['adjustable_computation_fields_mode']:
+            sizer.Add(computational_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
         else:
-            included_fields_sizer.ShowItems(False)
+            computational_fields_sizer.ShowItems(False)
 
         #Retriever button to collect the requested data
         controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
@@ -223,16 +223,16 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         self.available_fields = Constants.available_fields[('Reddit', dataset_type,)]
 
-        self.metadata_fields_ctrl.DeleteAllItems()
-        self.included_fields_ctrl.DeleteAllItems()
+        self.label_fields_ctrl.DeleteAllItems()
+        self.computational_fields_ctrl.DeleteAllItems()
         idx = 0
         for key in self.available_fields:
-            self.metadata_fields_ctrl.Append([key, self.available_fields[key]['desc'], self.available_fields[key]['type']])
-            if self.available_fields[key]['metadata_default']:
-                self.metadata_fields_ctrl.CheckItem(idx)
-            self.included_fields_ctrl.Append([key, self.available_fields[key]['desc'], self.available_fields[key]['type']])
-            if self.available_fields[key]['included_default']:
-                self.included_fields_ctrl.CheckItem(idx)
+            self.label_fields_ctrl.Append([key, self.available_fields[key]['desc'], self.available_fields[key]['type']])
+            if self.available_fields[key]['label_fields_default']:
+                self.label_fields_ctrl.CheckItem(idx)
+            self.computational_fields_ctrl.Append([key, self.available_fields[key]['desc'], self.available_fields[key]['type']])
+            if self.available_fields[key]['computation_fields_default']:
+                self.computational_fields_ctrl.CheckItem(idx)
             idx = idx+1
 
         self.Layout()
@@ -260,6 +260,11 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('No subreddit entered')
             status_flag = False
+        else:
+            subreddits = str(subreddit).split(',')
+            if len(subreddits) > 0:
+                for i in range(len(subreddits)):
+                    subreddits[i] = str(subreddits[i]).strip()
         
         search = self.search_ctrl.GetValue()
         
@@ -338,21 +343,26 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             logger.warning("Data with same name[%s] already exists", name)
             status_flag = False
         
-        metadata_fields_list = []
-        item = self.metadata_fields_ctrl.GetNextItem(-1)
+        label_fields_list = []
+        item = self.label_fields_ctrl.GetNextItem(-1)
+        if len(subreddits) > 1 and not main_frame.options_dict['adjustable_label_fields_mode']:
+            if dataset_type == 'discussion':
+                label_fields_list.append(('submission.subreddit', self.available_fields['submission.subreddit'],))
+            elif dataset_type == 'submission' or dataset_type == 'submission':
+                label_fields_list.append(('subreddit', self.available_fields['subreddit'],))
         while item != -1:
-            if self.metadata_fields_ctrl.IsItemChecked(item):
-                field_name = self.metadata_fields_ctrl.GetItemText(item, 0)
-                metadata_fields_list.append((field_name, self.available_fields[field_name],))
-            item = self.metadata_fields_ctrl.GetNextItem(item)
+            if self.label_fields_ctrl.IsItemChecked(item):
+                field_name = self.label_fields_ctrl.GetItemText(item, 0)
+                label_fields_list.append((field_name, self.available_fields[field_name],))
+            item = self.label_fields_ctrl.GetNextItem(item)
         
-        included_fields_list = []
-        item = self.included_fields_ctrl.GetNextItem(-1)
+        computational_fields_list = []
+        item = self.computational_fields_ctrl.GetNextItem(-1)
         while item != -1:
-            if self.included_fields_ctrl.IsItemChecked(item):
-                field_name = self.included_fields_ctrl.GetItemText(item, 0)
-                included_fields_list.append((field_name, self.available_fields[field_name],))
-            item = self.included_fields_ctrl.GetNextItem(item)
+            if self.computational_fields_ctrl.IsItemChecked(item):
+                field_name = self.computational_fields_ctrl.GetItemText(item, 0)
+                computational_fields_list.append((field_name, self.available_fields[field_name],))
+            item = self.computational_fields_ctrl.GetNextItem(item)
 
         if status_flag:
             main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+name,
@@ -361,9 +371,9 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.Disable()
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
-            self.retrieval_thread = CollectionThreads.RetrieveRedditDatasetThread(self, main_frame, name, language, subreddit, search, start_date, end_date,
+            self.retrieval_thread = CollectionThreads.RetrieveRedditDatasetThread(self, main_frame, name, language, subreddits, search, start_date, end_date,
                                                                                   replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type,
-                                                                                  list(self.available_fields.items()), metadata_fields_list, included_fields_list)
+                                                                                  list(self.available_fields.items()), label_fields_list, computational_fields_list)
         logger.info("Finished")
 
 class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
@@ -536,35 +546,35 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         notice = wx.StaticText(self, label=GUIText.RETRIEVAL_NOTICE_TWITTER)
         sizer.Add(notice, 0, wx.EXPAND | wx.ALL, 5)
         
-        metadata_fields_label = wx.StaticText(self, label=GUIText.METADATAFIELDS)
-        self.metadata_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
-        self.metadata_fields_ctrl.AppendColumn(GUIText.FIELD)
-        self.metadata_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
-        self.metadata_fields_ctrl.AppendColumn(GUIText.TYPE)
-        self.metadata_fields_ctrl.SetToolTip(GUIText.METADATAFIELDS_TOOLTIP)
-        self.metadata_fields_ctrl.EnableCheckBoxes()
-        metadata_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        metadata_fields_sizer.Add(metadata_fields_label, 0, wx.ALL)
-        metadata_fields_sizer.Add(self.metadata_fields_ctrl, 1, wx.EXPAND)
-        if main_frame.options_dict['adjustable_metadata_mode']:
-            sizer.Add(metadata_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        label_fields_label = wx.StaticText(self, label=GUIText.LABEL_FIELDS)
+        self.label_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.label_fields_ctrl.AppendColumn(GUIText.FIELD)
+        self.label_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
+        self.label_fields_ctrl.AppendColumn(GUIText.TYPE)
+        self.label_fields_ctrl.SetToolTip(GUIText.LABEL_FIELDS_TOOLTIP)
+        self.label_fields_ctrl.EnableCheckBoxes()
+        label_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        label_fields_sizer.Add(label_fields_label, 0, wx.ALL)
+        label_fields_sizer.Add(self.label_fields_ctrl, 1, wx.EXPAND)
+        if main_frame.options_dict['adjustable_label_fields_mode']:
+            sizer.Add(label_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
         else:
-            metadata_fields_sizer.ShowItems(False)
+            label_fields_sizer.ShowItems(False)
 
-        included_fields_label = wx.StaticText(self, label=GUIText.INCLUDEDFIELDS+":")
-        self.included_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
-        self.included_fields_ctrl.AppendColumn(GUIText.FIELD)
-        self.included_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
-        self.included_fields_ctrl.AppendColumn(GUIText.TYPE)
-        self.included_fields_ctrl.SetToolTip(GUIText.INCLUDEDFIELDS_TOOLTIP)
-        self.included_fields_ctrl.EnableCheckBoxes()
-        included_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        included_fields_sizer.Add(included_fields_label, 0, wx.ALL)
-        included_fields_sizer.Add(self.included_fields_ctrl, 1, wx.EXPAND)
-        if main_frame.options_dict['adjustable_includedfields_mode']:
-            sizer.Add(included_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        computational_fields_label = wx.StaticText(self, label=GUIText.COMPUTATIONAL_FIELDS+":")
+        self.computational_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.computational_fields_ctrl.AppendColumn(GUIText.FIELD)
+        self.computational_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
+        self.computational_fields_ctrl.AppendColumn(GUIText.TYPE)
+        self.computational_fields_ctrl.SetToolTip(GUIText.COMPUTATIONAL_FIELDS_TOOLTIP)
+        self.computational_fields_ctrl.EnableCheckBoxes()
+        computational_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        computational_fields_sizer.Add(computational_fields_label, 0, wx.ALL)
+        computational_fields_sizer.Add(self.computational_fields_ctrl, 1, wx.EXPAND)
+        if main_frame.options_dict['adjustable_computation_fields_mode']:
+            sizer.Add(computational_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
         else:
-            included_fields_sizer.ShowItems(False)
+            computational_fields_sizer.ShowItems(False)
 
         #TODO: defaults to tweet type for now, could add more (like with reddit) if needed
         self.OnDatasetTypeChosen(None)
@@ -591,16 +601,16 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
 
         self.available_fields = Constants.available_fields[('Twitter', dataset_type,)]
 
-        self.metadata_fields_ctrl.DeleteAllItems()
-        self.included_fields_ctrl.DeleteAllItems()
+        self.label_fields_ctrl.DeleteAllItems()
+        self.computational_fields_ctrl.DeleteAllItems()
         idx = 0
         for key in self.available_fields:
-            self.metadata_fields_ctrl.Append([key, self.available_fields[key]['desc'], self.available_fields[key]['type']])
-            if self.available_fields[key]['metadata_default']:
-                self.metadata_fields_ctrl.CheckItem(idx)
-            self.included_fields_ctrl.Append([key, self.available_fields[key]['desc'], self.available_fields[key]['type']])
-            if self.available_fields[key]['included_default']:
-                self.included_fields_ctrl.CheckItem(idx)
+            self.label_fields_ctrl.Append([key, self.available_fields[key]['desc'], self.available_fields[key]['type']])
+            if self.available_fields[key]['label_fields_default']:
+                self.label_fields_ctrl.CheckItem(idx)
+            self.computational_fields_ctrl.Append([key, self.available_fields[key]['desc'], self.available_fields[key]['type']])
+            if self.available_fields[key]['computation_fields_default']:
+                self.computational_fields_ctrl.CheckItem(idx)
             idx = idx+1
 
         self.Layout()
@@ -765,21 +775,21 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             logger.warning("Data with same name[%s] already exists", query)
             status_flag = False
 
-        metadata_fields_list = []
-        item = self.metadata_fields_ctrl.GetNextItem(-1)
+        label_fields_list = []
+        item = self.label_fields_ctrl.GetNextItem(-1)
         while item != -1:
-            if self.metadata_fields_ctrl.IsItemChecked(item):
-                field_name = self.metadata_fields_ctrl.GetItemText(item, 0)
-                metadata_fields_list.append((field_name, self.available_fields[field_name],))
-            item = self.metadata_fields_ctrl.GetNextItem(item)
+            if self.label_fields_ctrl.IsItemChecked(item):
+                field_name = self.label_fields_ctrl.GetItemText(item, 0)
+                label_fields_list.append((field_name, self.available_fields[field_name],))
+            item = self.label_fields_ctrl.GetNextItem(item)
         
-        included_fields_list = []
-        item = self.included_fields_ctrl.GetNextItem(-1)
+        computational_fields_list = []
+        item = self.computational_fields_ctrl.GetNextItem(-1)
         while item != -1:
-            if self.included_fields_ctrl.IsItemChecked(item):
-                field_name = self.included_fields_ctrl.GetItemText(item, 0)
-                included_fields_list.append((field_name, self.available_fields[field_name],))
-            item = self.included_fields_ctrl.GetNextItem(item)
+            if self.computational_fields_ctrl.IsItemChecked(item):
+                field_name = self.computational_fields_ctrl.GetItemText(item, 0)
+                computational_fields_list.append((field_name, self.available_fields[field_name],))
+            item = self.computational_fields_ctrl.GetNextItem(item)
 
         if status_flag:
             main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+query,
@@ -789,7 +799,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
             self.retrieval_thread = CollectionThreads.RetrieveTwitterDatasetThread(self, main_frame, name, language, keys, query, start_date, end_date, self.dataset_type,
-                                                                                    list(self.available_fields.items()), metadata_fields_list, included_fields_list)
+                                                                                    list(self.available_fields.items()), label_fields_list, computational_fields_list)
         logger.info("Finished")
 
     # given a sizer, disables all child elements
@@ -940,56 +950,56 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         datetime_field_sizer.Add(self.datetime_tz_ctrl)
         sizer.Add(datetime_field_sizer, 0, wx.ALL, 5)
 
-        metadata_first_label = wx.StaticText(self, label=GUIText.METADATAFIELDS)
-        self.metadata_first_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
-        self.metadata_first_ctrl.SetToolTip(GUIText.METADATAFIELDS_TOOLTIP)
-        self.metadata_first_ctrl.EnableCheckBoxes()
-        metadata_first_sizer = wx.BoxSizer(wx.VERTICAL)
-        metadata_first_sizer.Add(metadata_first_label)
-        metadata_first_sizer.Add(self.metadata_first_ctrl, 1, wx.EXPAND)
-        metadata_combined_label = wx.StaticText(self, label=GUIText.COMBINED_METADATAFIELDS)
-        self.metadata_combined_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
-        self.metadata_combined_ctrl.SetToolTip(GUIText.COMBINED_METADATAFIELDS_TOOLTIP)
-        self.metadata_combined_ctrl.EnableCheckBoxes()
-        metadata_combined_sizer = wx.BoxSizer(wx.VERTICAL)
-        metadata_combined_sizer.Add(metadata_combined_label)
-        metadata_combined_sizer.Add(self.metadata_combined_ctrl, 1, wx.EXPAND)
-        metadata_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        metadata_fields_sizer.Add(metadata_first_sizer, 1, wx.EXPAND)
-        metadata_fields_sizer.Add(metadata_combined_sizer, 1, wx.EXPAND)
-        sizer.Add(metadata_fields_sizer, 1, wx.EXPAND|wx.ALL, 5)
+        label_fields_first_label = wx.StaticText(self, label=GUIText.LABEL_FIELDS)
+        self.label_fields_first_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
+        self.label_fields_first_ctrl.SetToolTip(GUIText.LABEL_FIELDS_TOOLTIP)
+        self.label_fields_first_ctrl.EnableCheckBoxes()
+        label_fields_first_sizer = wx.BoxSizer(wx.VERTICAL)
+        label_fields_first_sizer.Add(label_fields_first_label)
+        label_fields_first_sizer.Add(self.label_fields_first_ctrl, 1, wx.EXPAND)
+        label_fields_combined_label = wx.StaticText(self, label=GUIText.COMBINED_LABEL_FIELDS)
+        self.label_fields_combined_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
+        self.label_fields_combined_ctrl.SetToolTip(GUIText.COMBINED_LABEL_FIELDS_TOOLTIP)
+        self.label_fields_combined_ctrl.EnableCheckBoxes()
+        label_fields_combined_sizer = wx.BoxSizer(wx.VERTICAL)
+        label_fields_combined_sizer.Add(label_fields_combined_label)
+        label_fields_combined_sizer.Add(self.label_fields_combined_ctrl, 1, wx.EXPAND)
+        label_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        label_fields_sizer.Add(label_fields_first_sizer, 1, wx.EXPAND)
+        label_fields_sizer.Add(label_fields_combined_sizer, 1, wx.EXPAND)
+        sizer.Add(label_fields_sizer, 1, wx.EXPAND|wx.ALL, 5)
 
-        included_first_label = wx.StaticText(self, label=GUIText.INCLUDEDFIELDS+":")
-        self.included_first_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
-        self.included_first_ctrl.SetToolTip(GUIText.INCLUDEDFIELDS_TOOLTIP)
-        self.included_first_ctrl.EnableCheckBoxes()
-        included_first_sizer = wx.BoxSizer(wx.VERTICAL)
-        included_first_sizer.Add(included_first_label)
-        included_first_sizer.Add(self.included_first_ctrl, 1, wx.EXPAND)
-        included_combined_label = wx.StaticText(self, label=GUIText.COMBINED_INCLUDEDFIELDS)
-        self.included_combined_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
-        self.included_combined_ctrl.SetToolTip(GUIText.COMBINED_INCLUDEDFIELDS_TOOLTIP)
-        self.included_combined_ctrl.EnableCheckBoxes()
-        included_combined_sizer = wx.BoxSizer(wx.VERTICAL)
-        included_combined_sizer.Add(included_combined_label)
-        included_combined_sizer.Add(self.included_combined_ctrl, 1, wx.EXPAND)
-        included_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        included_fields_sizer.Add(included_first_sizer, 1, wx.EXPAND)
-        included_fields_sizer.Add(included_combined_sizer, 1, wx.EXPAND)
-        sizer.Add(included_fields_sizer, 1, wx.EXPAND|wx.ALL, 5)
+        computation_fields_first_label = wx.StaticText(self, label=GUIText.COMPUTATIONAL_FIELDS+":")
+        self.computation_fields_first_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
+        self.computation_fields_first_ctrl.SetToolTip(GUIText.COMPUTATIONAL_FIELDS_TOOLTIP)
+        self.computation_fields_first_ctrl.EnableCheckBoxes()
+        computation_fields_first_sizer = wx.BoxSizer(wx.VERTICAL)
+        computation_fields_first_sizer.Add(computation_fields_first_label)
+        computation_fields_first_sizer.Add(self.computation_fields_first_ctrl, 1, wx.EXPAND)
+        computation_fields_combined_label = wx.StaticText(self, label=GUIText.COMBINED_COMPUTATIONAL_FIELDS)
+        self.computation_fields_combined_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
+        self.computation_fields_combined_ctrl.SetToolTip(GUIText.COMBINED_COMPUTATIONAL_FIELDS_TOOLTIP)
+        self.computation_fields_combined_ctrl.EnableCheckBoxes()
+        computation_fields_combined_sizer = wx.BoxSizer(wx.VERTICAL)
+        computation_fields_combined_sizer.Add(computation_fields_combined_label)
+        computation_fields_combined_sizer.Add(self.computation_fields_combined_ctrl, 1, wx.EXPAND)
+        computation_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        computation_fields_sizer.Add(computation_fields_first_sizer, 1, wx.EXPAND)
+        computation_fields_sizer.Add(computation_fields_combined_sizer, 1, wx.EXPAND)
+        sizer.Add(computation_fields_sizer, 1, wx.EXPAND|wx.ALL, 5)
         
-        self.Bind(wx.EVT_LIST_BEGIN_DRAG, self.OnDragInit, self.included_first_ctrl)
-        self.Bind(wx.EVT_LIST_BEGIN_DRAG, self.OnDragInit, self.included_combined_ctrl)
-        self.Bind(wx.EVT_LIST_BEGIN_DRAG, self.OnDragInit, self.metadata_first_ctrl)
-        self.Bind(wx.EVT_LIST_BEGIN_DRAG, self.OnDragInit, self.metadata_combined_ctrl)
-        metadata_first_dt = FieldDropTarget(self.included_first_ctrl, self.metadata_first_ctrl, self.included_combined_ctrl, self.metadata_combined_ctrl)
-        self.metadata_first_ctrl.SetDropTarget(metadata_first_dt)
-        metadata_combined_dt = FieldDropTarget(self.included_combined_ctrl, self.metadata_combined_ctrl, self.included_first_ctrl, self.metadata_first_ctrl)
-        self.metadata_combined_ctrl.SetDropTarget(metadata_combined_dt)
-        include_first_dt = FieldDropTarget(self.included_first_ctrl, self.metadata_first_ctrl, self.included_combined_ctrl, self.metadata_combined_ctrl)
-        self.included_first_ctrl.SetDropTarget(include_first_dt)
-        include_combined_dt = FieldDropTarget(self.included_combined_ctrl, self.metadata_combined_ctrl, self.included_first_ctrl, self.metadata_first_ctrl)
-        self.included_combined_ctrl.SetDropTarget(include_combined_dt)
+        self.Bind(wx.EVT_LIST_BEGIN_DRAG, self.OnDragInit, self.computation_fields_first_ctrl)
+        self.Bind(wx.EVT_LIST_BEGIN_DRAG, self.OnDragInit, self.computation_fields_combined_ctrl)
+        self.Bind(wx.EVT_LIST_BEGIN_DRAG, self.OnDragInit, self.label_fields_first_ctrl)
+        self.Bind(wx.EVT_LIST_BEGIN_DRAG, self.OnDragInit, self.label_fields_combined_ctrl)
+        label_fields_first_dt = FieldDropTarget(self.computation_fields_first_ctrl, self.label_fields_first_ctrl, self.computation_fields_combined_ctrl, self.label_fields_combined_ctrl)
+        self.label_fields_first_ctrl.SetDropTarget(label_fields_first_dt)
+        label_fields_combined_dt = FieldDropTarget(self.computation_fields_combined_ctrl, self.label_fields_combined_ctrl, self.computation_fields_first_ctrl, self.label_fields_first_ctrl)
+        self.label_fields_combined_ctrl.SetDropTarget(label_fields_combined_dt)
+        computation_fields_first_dt = FieldDropTarget(self.computation_fields_first_ctrl, self.label_fields_first_ctrl, self.computation_fields_combined_ctrl, self.label_fields_combined_ctrl)
+        self.computation_fields_first_ctrl.SetDropTarget(computation_fields_first_dt)
+        computation_fields_combined_dt = FieldDropTarget(self.computation_fields_combined_ctrl, self.label_fields_combined_ctrl, self.computation_fields_first_ctrl, self.label_fields_first_ctrl)
+        self.computation_fields_combined_ctrl.SetDropTarget(computation_fields_combined_dt)
 
         #Retriever button to collect the requested data
         controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
@@ -1023,10 +1033,10 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                 self.url_field_ctrl.Append("")
                 self.datetime_field_ctrl.Clear()
                 self.datetime_field_ctrl.Append("")
-                self.metadata_first_ctrl.DeleteAllItems()
-                self.metadata_combined_ctrl.DeleteAllItems()
-                self.included_first_ctrl.DeleteAllItems()
-                self.included_combined_ctrl.DeleteAllItems()
+                self.label_fields_first_ctrl.DeleteAllItems()
+                self.label_fields_combined_ctrl.DeleteAllItems()
+                self.computation_fields_first_ctrl.DeleteAllItems()
+                self.computation_fields_combined_ctrl.DeleteAllItems()
                 self.available_fields.clear()
                 main_frame = wx.GetApp().GetTopWindow()
                 if main_frame.options_dict['multipledatasets_mode']:
@@ -1035,9 +1045,9 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                 idx = 0
                 for field_name in Constants.available_fields[('CSV', 'documents',)]:
                     self.available_fields[field_name] = Constants.available_fields[('CSV', 'documents',)][field_name]
-                    self.metadata_first_ctrl.Append([field_name])
-                    if self.available_fields[field_name]['metadata_default']:
-                        self.metadata_first_ctrl.CheckItem(idx)
+                    self.label_fields_first_ctrl.Append([field_name])
+                    if self.available_fields[field_name]['label_fields_default']:
+                        self.label_fields_first_ctrl.CheckItem(idx)
                     idx = idx+1
                 for column_name in header_row:
                     if main_frame.options_dict['multipledatasets_mode']:
@@ -1045,8 +1055,8 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                     self.id_field_ctrl.Append(column_name)
                     self.url_field_ctrl.Append(column_name)
                     self.datetime_field_ctrl.Append(column_name)
-                    self.metadata_first_ctrl.Append(["csv."+column_name])
-                    self.included_first_ctrl.Append(["csv."+column_name])
+                    self.label_fields_first_ctrl.Append(["csv."+column_name])
+                    self.computation_fields_first_ctrl.Append(["csv."+column_name])
                     self.available_fields["csv."+column_name] = {"desc":"CSV Field", "type":"string"}
                 self.Layout()
                 self.Fit()
@@ -1118,69 +1128,69 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
                 logger.warning('No datetime tz chosen')
                 status_flag = False
-            if not main_frame.options_dict['adjustable_metadata_mode']:
-                idx = self.metadata_first_ctrl.FindItem(-1, "created_utc")
-                self.metadata_first_ctrl.CheckItem(idx, True)
+            if not main_frame.options_dict['adjustable_label_fields_mode']:
+                idx = self.label_fields_first_ctrl.FindItem(-1, "created_utc")
+                self.label_fields_first_ctrl.CheckItem(idx, True)
 
         url_field = self.url_field_ctrl.GetStringSelection()
-        if url_field != "" and not main_frame.options_dict['adjustable_metadata_mode']:
-            idx = self.metadata_first_ctrl.FindItem(-1, "id")
-            self.metadata_first_ctrl.CheckItem(idx, False)
-            idx = self.metadata_first_ctrl.FindItem(-1, "url")
-            self.metadata_first_ctrl.CheckItem(idx, True)
+        if url_field != "" and not main_frame.options_dict['adjustable_label_fields_mode']:
+            idx = self.label_fields_first_ctrl.FindItem(-1, "id")
+            self.label_fields_first_ctrl.CheckItem(idx, False)
+            idx = self.label_fields_first_ctrl.FindItem(-1, "url")
+            self.label_fields_first_ctrl.CheckItem(idx, True)
 
-        metadata_field_list = []
-        included_field_list = []
+        label_fields_list = []
+        computation_fields_list = []
         combined_list = []
         item_idx = -1
         while 1:
-            item_idx = self.metadata_first_ctrl.GetNextItem(item_idx)
+            item_idx = self.label_fields_first_ctrl.GetNextItem(item_idx)
             if item_idx == -1:
                 break
             else:
-                if self.metadata_first_ctrl.IsItemChecked(item_idx):
-                    field_name = self.metadata_first_ctrl.GetItemText(item_idx)
-                    metadata_field_list.append((field_name, self.available_fields[field_name],))
+                if self.label_fields_first_ctrl.IsItemChecked(item_idx):
+                    field_name = self.label_fields_first_ctrl.GetItemText(item_idx)
+                    label_fields_list.append((field_name, self.available_fields[field_name],))
         
         item_idx = -1
         while 1:
-            item_idx = self.metadata_combined_ctrl.GetNextItem(item_idx)
+            item_idx = self.label_fields_combined_ctrl.GetNextItem(item_idx)
             if item_idx == -1:
                 break
             else:
-                field_name = self.metadata_combined_ctrl.GetItemText(item_idx)    
+                field_name = self.label_fields_combined_ctrl.GetItemText(item_idx)    
                 if (field_name, self.available_fields[field_name],) not in combined_list:
                     combined_list.append(field_name)
-                if self.metadata_combined_ctrl.IsItemChecked(item_idx):
-                    metadata_field_list.append((field_name, self.available_fields[field_name],))
+                if self.label_fields_combined_ctrl.IsItemChecked(item_idx):
+                    label_fields_list.append((field_name, self.available_fields[field_name],))
         
         item_idx = -1
         while 1:
-            item_idx = self.included_first_ctrl.GetNextItem(item_idx)
+            item_idx = self.computation_fields_first_ctrl.GetNextItem(item_idx)
             if item_idx == -1:
                 break
             else:
-                if self.included_first_ctrl.IsItemChecked(item_idx):
-                    field_name = self.included_first_ctrl.GetItemText(item_idx)
-                    included_field_list.append((field_name, self.available_fields[field_name],))
-                    if not main_frame.options_dict['adjustable_metadata_mode']:
-                        if (field_name, self.available_fields[field_name],) not in metadata_field_list:
-                            included_field_list.append((field_name, self.available_fields[field_name],))
+                if self.computation_fields_first_ctrl.IsItemChecked(item_idx):
+                    field_name = self.computation_fields_first_ctrl.GetItemText(item_idx)
+                    computation_fields_list.append((field_name, self.available_fields[field_name],))
+                    if not main_frame.options_dict['adjustable_label_fields_mode']:
+                        if (field_name, self.available_fields[field_name],) not in label_fields_list:
+                            computation_fields_list.append((field_name, self.available_fields[field_name],))
         
         item_idx = -1
         while 1:
-            item_idx = self.included_combined_ctrl.GetNextItem(item_idx)
+            item_idx = self.computation_fields_combined_ctrl.GetNextItem(item_idx)
             if item_idx == -1:
                 break
             else:
-                field_name = self.included_combined_ctrl.GetItemText(item_idx)
+                field_name = self.computation_fields_combined_ctrl.GetItemText(item_idx)
                 if (field_name, self.available_fields[field_name],) not in combined_list:
                     combined_list.append(field_name)
-                if self.included_combined_ctrl.IsItemChecked(item_idx):
-                    included_field_list.append((field_name, self.available_fields[field_name],))
-                    if not main_frame.options_dict['adjustable_metadata_mode']:
-                        if (field_name, self.available_fields[field_name],) not in metadata_field_list:
-                            metadata_field_list.append((field_name, self.available_fields[field_name],))
+                if self.computation_fields_combined_ctrl.IsItemChecked(item_idx):
+                    computation_fields_list.append((field_name, self.available_fields[field_name],))
+                    if not main_frame.options_dict['adjustable_label_fields_mode']:
+                        if (field_name, self.available_fields[field_name],) not in label_fields_list:
+                            label_fields_list.append((field_name, self.available_fields[field_name],))
 
         dataset_source = "CSV"
         if main_frame.options_dict['multipledatasets_mode']:
@@ -1207,7 +1217,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
             self.retrieval_thread = CollectionThreads.RetrieveCSVDatasetThread(self, main_frame, name, language, dataset_field, dataset_type,
                                                                                id_field, url_field, datetime_field, datetime_tz,
-                                                                               list(self.available_fields.items()), metadata_field_list, included_field_list, combined_list, filename)
+                                                                               list(self.available_fields.items()), label_fields_list, computation_fields_list, combined_list, filename)
         logger.info("Finished")
     
 class FieldDropTarget(wx.TextDropTarget):

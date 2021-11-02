@@ -55,11 +55,12 @@ class MainFrame(wx.Frame):
         self.progress_dialog = None
         self.progress_dialog_references = 0
         self.closing = False
+        self.autosave_flag = False
 
         #Workspace's Options
         self.options_dict = {'multipledatasets_mode': False,
-                             'adjustable_metadata_mode': False,
-                             'adjustable_includedfields_mode': False}
+                             'adjustable_label_fields_mode': False,
+                             'adjustable_computation_fields_mode': False}
         #used to control order of modules. not currently used but needed in future customization options to support other thematic analysis approaches
         self.module_order = ['collection',
                              'filtering',
@@ -440,7 +441,10 @@ class MainFrame(wx.Frame):
         logger = logging.getLogger(__name__+".MainFrame.OnSaveEnd")
         logger.info("Starting")
         #once load thread has finished loading data files into memory run the GUI with the loaded data
-        self.last_load_dt = datetime.now()
+        if self.autosave_flag == False:
+            self.last_load_dt = datetime.now()
+        else:
+            self.autosave_flag = False
         self.save_thread.join()
         self.save_thread = None
         self.CloseProgressDialog(thaw=True)
@@ -452,6 +456,7 @@ class MainFrame(wx.Frame):
         '''function for auto saving data after completing important operations'''
         logger = logging.getLogger(__name__+".MainFrame.OnAutoSaveStart")
         logger.info("Starting")
+        self.autosave_flag = True
         self.CreateProgressDialog(title=GUIText.SAVE_BUSY_LABEL,
                                   warning=GUIText.SIZE_WARNING_MSG,
                                   freeze=True)
@@ -595,11 +600,11 @@ class MainFrame(wx.Frame):
             for code in field_codes:
                 code.GetConnections(self.datasets, self.samples)
                 code.AddConnection(self.datasets[new_key].available_fields[field_key])
-        for field_key in self.datasets[new_key].included_fields:
-            field_codes = self.datasets[new_key].included_fields[field_key].GetCodeConnections(self.codes)
+        for field_key in self.datasets[new_key].computational_fields:
+            field_codes = self.datasets[new_key].computational_fields[field_key].GetCodeConnections(self.codes)
             for code in field_codes:
                 code.GetConnections(self.datasets, self.samples)
-                code.AddConnection(self.datasets[new_key].included_fields[field_key])
+                code.AddConnection(self.datasets[new_key].computational_fields[field_key])
         for document_key in self.datasets[new_key].documents:
             document_codes = self.datasets[new_key].documents[document_key].GetCodeConnections(self.codes)
             for code in document_codes:
@@ -735,15 +740,15 @@ class OptionsDialog(wx.Dialog):
         self.multipledatasets_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeMultipleDatasetMode)
         advanced_sizer.Add(self.multipledatasets_ctrl, 0, wx.ALL, 5)
 
-        self.adjustable_metadata_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_ADJUSTABLE_METADATA)
-        self.adjustable_metadata_ctrl.SetValue(main_frame.options_dict['adjustable_metadata_mode'])
-        self.adjustable_metadata_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeAdjustableMetadataMode)
-        advanced_sizer.Add(self.adjustable_metadata_ctrl, 0, wx.ALL, 5)
+        self.adjustable_label_fields_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_ADJUSTABLE_LABEL_FIELDS)
+        self.adjustable_label_fields_ctrl.SetValue(main_frame.options_dict['adjustable_labefields_mode'])
+        self.adjustable_label_fields_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeAdjustableLabelFieldsMode)
+        advanced_sizer.Add(self.adjustable_label_fields_ctrl, 0, wx.ALL, 5)
 
-        self.adjustable_includedfields_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_ADJUSTABLE_INCLUDEDFIELDS)
-        self.adjustable_includedfields_ctrl.SetValue(main_frame.options_dict['adjustable_includedfields_mode'])
-        self.adjustable_includedfields_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeAdjustableIncludedFieldsMode)
-        advanced_sizer.Add(self.adjustable_includedfields_ctrl, 0, wx.ALL, 5)
+        self.adjustable_computation_fields_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_ADJUSTABLE_COMPUTATIONAL_FIELDS)
+        self.adjustable_computation_fields_ctrl.SetValue(main_frame.options_dict['adjustable_computation_fields_mode'])
+        self.adjustable_computation_fields_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeAdjustableComputationalFieldsMode)
+        advanced_sizer.Add(self.adjustable_computation_fields_ctrl, 0, wx.ALL, 5)
 
         twitter_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.TWITTER_LABEL+" "+GUIText.OPTIONS_LABEL)
         sizer.Add(twitter_sizer, 0, wx.EXPAND | wx.ALL, 5)
@@ -752,7 +757,7 @@ class OptionsDialog(wx.Dialog):
         self.twitter_consumer_key_ctrl = wx.TextCtrl(self)
         if 'twitter_consumer_key' in main_frame.options_dict:
             self.twitter_consumer_key_ctrl.SetValue(main_frame.options_dict['twitter_consumer_key'])
-        self.adjustable_includedfields_ctrl.Bind(wx.EVT_TEXT_ENTER, self.ChangeTwitterFields)
+        self.adjustable_computation_fields_ctrl.Bind(wx.EVT_TEXT_ENTER, self.ChangeTwitterFields)
         twitter_consumer_key_sizer = wx.BoxSizer(wx.HORIZONTAL)
         twitter_consumer_key_sizer.Add(twitter_consumer_key_label)
         twitter_consumer_key_sizer.Add(self.twitter_consumer_key_ctrl, wx.EXPAND)
@@ -762,7 +767,7 @@ class OptionsDialog(wx.Dialog):
         self.twitter_consumer_secret_ctrl = wx.TextCtrl(self)
         if 'twitter_consumer_secret' in main_frame.options_dict:
             self.twitter_consumer_secret_ctrl.SetValue(main_frame.options_dict['twitter_consumer_secret'])
-        self.adjustable_includedfields_ctrl.Bind(wx.EVT_TEXT_ENTER, self.ChangeTwitterFields)
+        self.adjustable_computation_fields_ctrl.Bind(wx.EVT_TEXT_ENTER, self.ChangeTwitterFields)
         twitter_consumer_secret_sizer = wx.BoxSizer(wx.HORIZONTAL)
         twitter_consumer_secret_sizer.Add(twitter_consumer_secret_label)
         twitter_consumer_secret_sizer.Add(self.twitter_consumer_secret_ctrl, wx.EXPAND)
@@ -775,15 +780,15 @@ class OptionsDialog(wx.Dialog):
             main_frame.options_dict['multipledatasets_mode'] = new_mode
             main_frame.ModeChange()
         
-    def ChangeAdjustableMetadataMode(self, event):
+    def ChangeAdjustableLabelFieldsMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
-        new_mode = self.adjustable_metadata_ctrl.GetValue()
-        main_frame.options_dict['adjustable_metadata_mode'] = new_mode
+        new_mode = self.adjustable_label_fields_ctrl.GetValue()
+        main_frame.options_dict['adjustable_label_fields_mode'] = new_mode
     
-    def ChangeAdjustableIncludedFieldsMode(self, event):
+    def ChangeAdjustableComputationalFieldsMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
-        new_mode = self.adjustable_includedfields_ctrl.GetValue()
-        main_frame.options_dict['adjustable_includedfields_mode'] = new_mode
+        new_mode = self.adjustable_computation_fields_ctrl.GetValue()
+        main_frame.options_dict['adjustable_computation_fields_mode'] = new_mode
     
     def ChangeTwitterFields(self, event):
         main_frame = wx.GetApp().GetTopWindow()

@@ -25,40 +25,40 @@ class PartsViewModel(dv.PyDataViewModel):
         self.dataset = dataset
         self.UseWeakRefs(True)
 
-        self.metadata_column_names = []
-        self.metadata_column_types = []
+        self.label_column_names = []
+        self.label_column_types = []
         self.column_names = []
         self.UpdateColumnNames()
     
     def UpdateColumnNames(self):
-        if hasattr(self.dataset, 'metadata_fields'):
-            if len(self.dataset.metadata_fields) == 0:
-                self.metadata_column_names.append('id')
-                self.metadata_column_types.append('string')
+        if hasattr(self.dataset, 'label_fields'):
+            if len(self.dataset.label_fields) == 0:
+                self.label_column_names.append('id')
+                self.label_column_types.append('string')
             else:
-                for field_name in self.dataset.metadata_fields:
-                    self.metadata_column_names.append(field_name)
-                    self.metadata_column_types.append(self.dataset.metadata_fields[field_name].fieldtype)
+                for field_name in self.dataset.label_fields:
+                    self.label_column_names.append(field_name)
+                    self.label_column_types.append(self.dataset.label_fields[field_name].fieldtype)
         else:
             if self.dataset.dataset_source == "Reddit":
-                self.metadata_column_names.append('url')
-                self.metadata_column_types.append('url')
+                self.label_column_names.append('url')
+                self.label_column_types.append('url')
                 if self.dataset.dataset_type == "discussion" or self.dataset.dataset_type == "submission":
-                    self.metadata_column_names.append('title')
-                    self.metadata_column_types.append('string')
+                    self.label_column_names.append('title')
+                    self.label_column_types.append('string')
                 elif self.dataset.dataset_type == "comment":
-                    self.metadata_column_names.append('body')
-                    self.metadata_column_types.append('string')
+                    self.label_column_names.append('body')
+                    self.label_column_types.append('string')
             else:
-                self.metadata_column_names.append('id')
-                self.metadata_column_types.append('string')
+                self.label_column_names.append('id')
+                self.label_column_types.append('string')
         
         self.column_names.clear()
         self.column_names.extend([GUIText.NOTES])
 
     def GetColumnCount(self):
         '''Report how many columns this model provides data for.'''
-        return len(self.metadata_column_names) + len(self.column_names)
+        return len(self.label_column_names) + len(self.column_names)
 
     def GetChildren(self, parent, children):
         row_num = 0
@@ -127,17 +127,17 @@ class PartsViewModel(dv.PyDataViewModel):
         if isinstance(node, Samples.MergedPart):
             mapper = { 0 : node.selected if hasattr(node, "selected") and node.selected == True  else False,
                        1 : str(node.name) +": "+str(node.label),
-                       len(self.metadata_column_names)+1 : "\U0001F6C8" if node.notes != "" else "",
+                       len(self.label_column_names)+1 : "\U0001F6C8" if node.notes != "" else "",
                        }
-            for i in range(2, len(self.metadata_column_names)+1):
+            for i in range(2, len(self.label_column_names)+1):
                 mapper[i] = ""
             return mapper[col]
         elif isinstance(node, Samples.Part):
             mapper = { 0 : node.selected if hasattr(node, "selected") and node.selected == True else False,
                        1 : str(node.name) +": "+str(node.label),
-                       len(self.metadata_column_names)+1 : "\U0001F6C8" if node.notes != "" else "",
+                       len(self.label_column_names)+1 : "\U0001F6C8" if node.notes != "" else "",
                        }
-            for i in range(2, len(self.metadata_column_names)+1):
+            for i in range(2, len(self.label_column_names)+1):
                 mapper[i] = ""
             return mapper[col]
         elif isinstance(node, Datasets.Document):
@@ -147,19 +147,19 @@ class PartsViewModel(dv.PyDataViewModel):
                 selected = False
 
             mapper = { 0 : selected,
-                       len(self.metadata_column_names)+1 : "\U0001F6C8" if node.notes != "" else "", }
+                       len(self.label_column_names)+1 : "\U0001F6C8" if node.notes != "" else "", }
             idx = 1
-            for field_name in self.metadata_column_names:
+            for field_name in self.label_column_names:
                 if field_name in node.parent.data[node.key]:
                     value = node.parent.data[node.key][field_name]
-                    if self.metadata_column_types[idx-1] == 'url':
+                    if self.label_column_types[idx-1] == 'url':
                         segmented_url = value.split("/")
                         if segmented_url[len(segmented_url)-1] != '':
                             segmented_id = segmented_url[len(segmented_url)-1]
                         else:
                             segmented_id = segmented_url[len(segmented_url)-2]
                         value = "<span color=\"#0645ad\"><u>"+segmented_id+"</u></span>"
-                    elif self.metadata_column_types[idx-1] == 'UTC-timestamp':
+                    elif self.label_column_types[idx-1] == 'UTC-timestamp':
                         if isinstance(value, list):
                             value_str = ""
                             for entry in value:
@@ -171,7 +171,7 @@ class PartsViewModel(dv.PyDataViewModel):
                                 value = value_str
                         else:
                             value = datetime.utcfromtimestamp(value).strftime(Constants.DATETIME_FORMAT)+"UTC"
-                    elif self.metadata_column_types[idx-1] == 'int':
+                    elif self.label_column_types[idx-1] == 'int':
                         if isinstance(value, list):
                             value = value[0]
                         else:
@@ -263,10 +263,10 @@ class PartsViewCtrl(dv.DataViewCtrl):
 
         #add data columns
         idx = 1
-        for field_name in model.metadata_column_names:
-            if model.metadata_column_types[idx-1] == 'int':
+        for field_name in model.label_column_names:
+            if model.label_column_types[idx-1] == 'int':
                 renderer = dv.DataViewTextRenderer(varianttype="long")
-            elif model.metadata_column_types[idx-1] == 'url':
+            elif model.label_column_types[idx-1] == 'url':
                 renderer = dv.DataViewTextRenderer()
                 renderer.EnableMarkup()
             else:
@@ -308,7 +308,7 @@ class PartsViewCtrl(dv.DataViewCtrl):
 
         if isinstance(node, Datasets.Document):
             col = event.GetColumn()
-            if 0 < col < len(model.metadata_column_names)+1 and model.metadata_column_types[col-1] == 'url':
+            if 0 < col < len(model.label_column_names)+1 and model.label_column_types[col-1] == 'url':
                 logger.info("Call to access url[%s]", node.url)
                 webbrowser.open_new_tab(node.url)
             else:
@@ -322,7 +322,7 @@ class PartsViewCtrl(dv.DataViewCtrl):
         model = self.GetModel()
         for row in self.GetSelections():
             line = ''
-            for col in range(0, model.metadata_column_names):
+            for col in range(0, model.label_column_names):
                 line = line + str(model.GetValue(row, col)) + '\t'
             selected_items.append(line.strip())
         clipdata = wx.TextDataObject()

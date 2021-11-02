@@ -52,7 +52,7 @@ class FilteringNotebook(FNB.FlatNotebook):
                 del self.filters[filter_key]
         
         for key in main_frame.datasets:
-            if len(main_frame.datasets[key].included_fields) > 0:
+            if len(main_frame.datasets[key].computational_fields) > 0:
                 if key in self.filters:
                     self.filters[key].rules_panel.DisplayFilterRules(main_frame.datasets[key].filter_rules)
                     self.filters[key].UpdateImpact()
@@ -1118,7 +1118,7 @@ class CreateCountFilterDialog(wx.Dialog):
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=GUIText.FILTERS_CREATE_COUNT_RULE)
 
-        field_options = list(dataset.included_fields.keys())
+        field_options = list(dataset.computational_fields.keys())
         field_options.insert(0, "")
         action_options = [Constants.FILTER_RULE_REMOVE,
                           Constants.FILTER_RULE_INCLUDE]
@@ -1230,7 +1230,7 @@ class CreateTfidfFilterDialog(wx.Dialog):
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=GUIText.FILTERS_CREATE_TFIDF_RULE)
 
-        field_options = list(dataset.included_fields.keys())
+        field_options = list(dataset.computational_fields.keys())
         field_options.insert(0, "")
         action_options1 = [Constants.FILTER_TFIDF_REMOVE,
                            Constants.FILTER_TFIDF_INCLUDE]
