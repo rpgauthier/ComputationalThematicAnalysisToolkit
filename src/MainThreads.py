@@ -1,8 +1,9 @@
 import logging
-import os.path
+import os
 import tarfile
 from threading import Thread
 import shutil
+from distutils.dir_util import copy_tree
 from datetime import datetime
 from packaging import version
 import uuid
@@ -21,7 +22,7 @@ import Common.Objects.Codes as Codes
 # Thread class that executes processing
 class SaveThread(Thread):
     """Load Thread Class."""
-    def __init__(self, notify_window, save_path, current_workspace_path, config_data, datasets, samples, codes, notes_text, last_load_dt):
+    def __init__(self, notify_window, save_path, current_workspace_path, config_data, datasets, samples, codes, notes_text, last_load_dt, autosave=False):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
@@ -33,6 +34,7 @@ class SaveThread(Thread):
         self.codes = codes
         self.notes_text = notes_text
         self.last_load_dt = last_load_dt
+        self.autosave = autosave
         # This starts the thread running on creation, but you could
         # also make the GUI thread responsible for calling this
         self.start()
@@ -87,13 +89,15 @@ class SaveThread(Thread):
             with open(self.current_workspace_path+"/codes.pk", 'wb') as outfile:
                 pickle.dump(self.codes, outfile)
 
-            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_COMPRESSING))
-            logger.info("Archiving and compressing Files")
-            with tarfile.open(self.save_path, 'w|gz') as tar_file:
-                tar_file.add(self.current_workspace_path, arcname='.')
-
-            with open(self.save_path + "_notes.txt", 'w') as text_file:
-                text_file.write(self.notes_text)
+            if not self.autosave:
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_COMPRESSING))
+                logger.info("Archiving and compressing Files")
+                with tarfile.open(self.save_path, 'w|gz') as tar_file:
+                    tar_file.add(self.current_workspace_path, arcname='.')
+                with open(self.save_path + "_notes.txt", 'w') as text_file:
+                    text_file.write(self.notes_text)
+            else:
+                copy_tree(self.current_workspace_path, self.save_path)
 
         except (FileExistsError):
             wx.LogError(GUIText.SAVE_FAILURE + self.save_path)
@@ -103,12 +107,13 @@ class SaveThread(Thread):
 
 class LoadThread(Thread):
     """Load Thread Class."""
-    def __init__(self, notify_window, save_path, current_workspace_path):
+    def __init__(self, notify_window, save_path, current_workspace_path, restoreload=False):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
         self.save_path = save_path
         self.current_workspace_path = current_workspace_path
+        self.restoreload = restoreload
         # This starts the thread running on creation, but you could
         # also make the GUI thread responsible for calling this
         self.start()
@@ -118,8 +123,11 @@ class LoadThread(Thread):
         logger.info("Starting")
         result = {}
         try:
-            with tarfile.open(self.save_path, "r") as tar_file:
-                tar_file.extractall(self.current_workspace_path)
+            if not self.restoreload:
+                with tarfile.open(self.save_path, "r") as tar_file:
+                    tar_file.extractall(self.current_workspace_path)
+            else:
+                copy_tree(self.save_path, self.current_workspace_path)
 
             wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_CONFIG))
             with open(self.current_workspace_path+"/config.pk", 'rb') as infile:
@@ -258,17 +266,22 @@ class LoadThread(Thread):
                         if 'comment.id' in dataset.data[key]:
                             comment_count = comment_count + len(dataset.data[key]['comment.id'])
                     dataset.retrieval_details['comment_count'] = comment_count
+                    dataset.last_changed_dt = datetime.now()
                 if dataset.dataset_type == 'discussion':
                     dataset.retrieval_details['submission_count'] = len(dataset.data)
+                    dataset.last_changed_dt = datetime.now()
                 if dataset.dataset_type == 'comment':
                     dataset.retrieval_details['comment_count'] = len(dataset.data)
+                    dataset.last_changed_dt = datetime.now()
             
             if hasattr(dataset, 'metadata_fields'):
                 dataset.label_fields = dataset.metadata_fields
                 del dataset.metadata_fields
+                dataset.last_changed_dt = datetime.now()
             if hasattr(dataset, 'included_fields'):
                 dataset.computational_fields = dataset.included_fields
                 del dataset.included_fields
+                dataset.last_changed_dt = datetime.now()
 
             dataset.uuid = str(uuid.uuid4())
             for field_key in dataset.available_fields:

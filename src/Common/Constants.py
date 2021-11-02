@@ -48,6 +48,7 @@ if not os.path.exists(APP_DATA_PATH):
 SAVED_WORKSPACES_PATH = os.path.realpath(os.path.join(SAVE_DATA_PATH, 'Saved_Workspaces'))
 if not os.path.exists(SAVED_WORKSPACES_PATH):
     os.makedirs(SAVED_WORKSPACES_PATH)
+
 DATA_PATH = os.path.realpath(os.path.join(SAVE_DATA_PATH, 'Data'))
 if not os.path.exists(DATA_PATH):
     old_DATA = os.path.realpath(os.path.join(APP_DATA_PATH, 'Data'))
@@ -56,8 +57,6 @@ if not os.path.exists(DATA_PATH):
     else:
         os.makedirs(DATA_PATH)
 
-AUTOSAVE_PATH = os.path.realpath(os.path.join(SAVED_WORKSPACES_PATH, 'AutoSave.mta'))
-
 CURRENT_WORKSPACE_PATH = os.path.realpath(os.path.join(APP_DATA_PATH, 'Current_Workspace'))
 old_CURRENT_WORKSPACE = os.path.realpath(os.path.join(SAVE_DATA_PATH, 'Current_Workspace'))
 if not os.path.exists(CURRENT_WORKSPACE_PATH):
@@ -65,6 +64,9 @@ if not os.path.exists(CURRENT_WORKSPACE_PATH):
         shutil.move(old_CURRENT_WORKSPACE, APP_DATA_PATH)
     else:
         os.makedirs(CURRENT_WORKSPACE_PATH)
+
+AUTOSAVE_PATH = os.path.realpath(os.path.join(CURRENT_WORKSPACE_PATH, 'AutoSave'))
+
 LOG_PATH = os.path.realpath(os.path.join(APP_DATA_PATH, 'Logs'))
 old_LOG = os.path.realpath(os.path.join(SAVE_DATA_PATH, 'Logs'))
 if not os.path.exists(LOG_PATH):

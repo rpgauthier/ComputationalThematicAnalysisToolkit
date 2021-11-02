@@ -278,17 +278,21 @@ class Field(GenericObject):
     
     def DestroyObject(self):
         #remove self from Dataset
-        if self in self.dataset.computational_fields.values():
-            if self.dataset.computational_fields[self.key] == self:
-                del self.dataset.computational_fields[self.key]
-        if self in self.dataset.available_fields.values():
-            if self.dataset.available_fields[self.key] == self:
-                del self.dataset.available_fields[self.key]
-        if self in self.dataset.label_fields.values():
-            if self.dataset.label_fields[self.key] == self:
-                del self.dataset.label_fields[self.key]    
-        self.parent = None
-        self.dataset = None
+        if self.dataset != None:
+            if self in self.dataset.computational_fields.values():
+                if self.dataset.computational_fields[self.key] == self:
+                    del self.dataset.computational_fields[self.key]
+            if self in self.dataset.available_fields.values():
+                if self.dataset.available_fields[self.key] == self:
+                    del self.dataset.available_fields[self.key]
+            if self in self.dataset.label_fields.values():
+                if self.dataset.label_fields[self.key] == self:
+                    del self.dataset.label_fields[self.key]
+            self.dataset.last_changed_dt = datetime.now()
+            self.dataset = None
+        if self.parent != None:
+            self.parent.last_changed_dt = datetime.now()
+            self.parent = None
 
 class Document(GenericObject):
     '''instances of Document.'''

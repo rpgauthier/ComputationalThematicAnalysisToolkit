@@ -104,6 +104,8 @@ class Main(Common):
     NEW_WARNING = "You have unsaved changes."\
                   "\nAre you sure you want to creating a new workspace?"\
                   "\nAny unsaved changes will be lost."
+    NO_AUTOSAVE_ERROR = "There is no autosave in the app directory."\
+                        "\nIf you recently upgraded there may be a save file you can import using the normal load."
     LOAD_WARNING = "You have unsaved changes."\
                    "\nAre you sure you want to load a different workspace?" \
                    "\nAny unsaved changes will be lost."
@@ -172,6 +174,8 @@ class Main(Common):
     FILE_MENU = "File"
     NEW = "New"
     NEW_TOOLTIP = "Create a New Workspace"
+    RESUME = "Resume"
+    RESUME_TOOLTIP = "Resume the last autosaved workspace"
     LOAD = "Load"
     LOAD_TOOLTIP = "Load an Existing Workspace"
     SAVE = "Save"

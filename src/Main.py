@@ -120,6 +120,11 @@ class MainFrame(wx.Frame):
                                              GUIText.NEW_TOOLTIP)
         self.Bind(wx.EVT_MENU, self.OnNew, new_file_menuitem)
         file_menu.AppendSeparator()
+        resume_file_menuitem = file_menu.Append(wx.ID_ANY,
+                                             GUIText.RESUME,
+                                             GUIText.RESUME_TOOLTIP)
+        self.Bind(wx.EVT_MENU, self.OnRestoreLoadStart, resume_file_menuitem)
+        file_menu.AppendSeparator()
         load_file_menuitem = file_menu.Append(wx.ID_OPEN,
                                               GUIText.LOAD,
                                               GUIText.LOAD_TOOLTIP)
@@ -483,8 +488,72 @@ class MainFrame(wx.Frame):
         #config_data['reviewing_module'] = self.reviewing_module.Save()
         config_data['reporting_module'] = self.reporting_module.Save()
 
-        self.save_thread = MainThreads.SaveThread(self, Constants.AUTOSAVE_PATH, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, notes_text, self.last_load_dt)
+        self.save_thread = MainThreads.SaveThread(self, Constants.AUTOSAVE_PATH, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, notes_text, self.last_load_dt, autosave=True)
     
+    def OnRestoreLoadStart(self, event):
+        '''function to resume from last autosave'''
+        logger = logging.getLogger(__name__+".MainFrame.OnRestoreLoadStart")
+        logger.info("Starting")
+
+        if os.path.isdir(Constants.AUTOSAVE_PATH):
+            check_flag = False
+            #check if current workspace is not recently saved
+            if not check_flag and len(self.datasets) != 0:
+                for dataset_key in self.datasets:
+                    if self.datasets[dataset_key].last_changed_dt > self.last_load_dt:
+                        check_flag = True
+            if not check_flag and len(self.samples) != 0:
+                for sample_key in self.samples:
+                    if self.samples[sample_key].last_changed_dt > self.last_load_dt:
+                        check_flag = True
+            if not check_flag and len(self.codes) != 0:
+                for code_key in self.codes:
+                    if self.codes[code_key].last_changed_dt > self.last_load_dt:
+                        check_flag = True
+            if check_flag:
+                confirm_dialog = wx.MessageDialog(self, GUIText.LOAD_WARNING,
+                                                    GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+                confirm_dialog.SetOKLabel(GUIText.LOAD_ANYWAYS)
+                confirm_flag = confirm_dialog.ShowModal()
+            else:
+                confirm_flag = wx.ID_OK
+            if confirm_flag == wx.ID_OK:
+                self.CreateProgressDialog(title=GUIText.LOAD_BUSY_LABEL,
+                                        warning=GUIText.SIZE_WARNING_MSG,
+                                        freeze=True)
+                self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG)
+
+                self.save_path = ""
+                self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG_FILE + str(Constants.AUTOSAVE_PATH))
+                logger.info("loading file: %s", Constants.AUTOSAVE_PATH)
+                self.SetTitle(GUIText.APP_NAME+" - Last AutoSave")
+
+                #reset objects
+                for key in self.datasets:
+                    self.datasets[key].DestroyObject()
+                self.datasets.clear()
+                for key in self.samples:
+                    self.samples[key].DestroyObject()
+                self.samples.clear()
+                for key in self.codes:
+                    self.codes[key].DestroyObject()
+                self.codes.clear()
+
+                #update gui based on reset objects to prevent errors
+                self.DatasetsUpdated(autosave=False)
+                self.SamplesUpdated()
+                self.DocumentsUpdated()
+                self.CodesUpdated()
+
+                self.current_workspace.cleanup()
+                self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
+
+                self.last_load_dt = datetime.now()
+                self.load_thread = MainThreads.LoadThread(self, Constants.AUTOSAVE_PATH, self.current_workspace.name, restoreload=True)
+        else:
+            wx.MessageBox(GUIText.NO_AUTOSAVE_ERROR)
+        logger.info("Finished")
+
     def OnProgress(self, event):
         self.PulseProgressDialog(event.data)
 
