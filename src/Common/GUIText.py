@@ -324,7 +324,8 @@ class Datasets(Common):
 
     REDDIT_LABEL = "Reddit"
     REDDIT_SUBREDDIT = "www.reddit.com/r/"
-    REDDIT_SUBREDDIT_TOOLTIP = "Exact case-sensitive spelling of the subreddit for retrieval"
+    REDDIT_SUBREDDIT_TOOLTIP = "Exact case-sensitive spelling of the subreddit for retrieval."\
+                               "\nIf you require multiple subreddits in the same dataset then seperate the subreddit names by comma."
     REDDIT_SUBREDDIT_MISSING_ERROR = "You must enter a Subreddit."
     REDDIT_SUBMISSIONS = "Submissions"
     REDDIT_COMMENTS = "Comments"
