@@ -1,6 +1,7 @@
 import xmlschema
 import xml.etree.ElementTree as ET
 import Common.Objects.Codes as Codes
+import platform
 
 def QDACodeExporter(codes, pathname):
     codebook_element = ET.Element('CodeBook')
@@ -33,13 +34,17 @@ def QDACodeExporter(codes, pathname):
     tree = ET.ElementTree(codebook_element)
 
     tree.write(pathname)
-    codebook_schema = xmlschema.XMLSchema('./External/REFI-QDA/Codebook-mrt2019.xsd')
-    codebook_schema.validate(pathname)
+    #TODO figure out why caused the process to fail with no exception on OSX after pyinstaller
+    if platform.system() == 'Windows':
+        codebook_schema = xmlschema.XMLSchema('./External/REFI-QDA/Codebook-mrt2019.xsd')
+        codebook_schema.validate(pathname)
 
 def QDACodeImporter(pathname):
     codes = {}
-    codebook_schema = xmlschema.XMLSchema('./External/REFI-QDA/Codebook-mrt2019.xsd')
-    codebook_schema.validate(pathname)
+    #TODO figure out why caused the process to fail with no exception on OSX after pyinstaller
+    if platform.system() == 'Windows':
+        codebook_schema = xmlschema.XMLSchema('./External/REFI-QDA/Codebook-mrt2019.xsd')
+        codebook_schema.validate(pathname)
 
     tree = ET.parse(pathname)
     codebook_element = tree.getroot()
