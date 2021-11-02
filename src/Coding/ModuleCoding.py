@@ -98,13 +98,16 @@ class CodingNotebook(FNB.FlatNotebook):
                             found_code = FindCode(new_code, main_frame.codes)
                             if found_code != None:
                                 #if it does exist ask user if they want to keep both, merge import into imported, merge existing into existing
-                                action = "keep both"
-                                if action == "keep both":
+                                action_dialog = wx.MessageDialog(self, "Code ["+found_code.name+"] already exists.\nWhat action would you like to take?",  GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+                                action_dialog.SetYesNoCancelLabels("Import as new Code", "Update Existing Code", "Skip")
+                                action = action_dialog.ShowModal()
+
+                                if action == wx.ID_YES:
                                     old_key = new_code.key
                                     new_code.key = str(uuid.uuid4())
                                     new_codes[new_code.key] = new_code
                                     del new_codes[old_key]
-                                elif action == "merge into imported":
+                                elif action == wx.ID_NO:
                                     for existing_subcode_key in list(found_code.subcodes.keys()):
                                         existing_subcode = found_code.subcodes[existing_subcode_key]
                                         if FindCode(existing_subcode, imported_codes) == None:
@@ -120,13 +123,7 @@ class CodingNotebook(FNB.FlatNotebook):
                                         quotation.parent = new_code
                                     found_code.quotations = []
                                     found_code.DestroyObject()
-                                elif action == "merge into existing":
-                                    for new_subcode_key in list(new_code.subcodes.keys()):
-                                        new_subcode = new_code.subcodes[existing_subcode_key]
-                                        if FindCode(new_subcode, main_frame.codes) == None:
-                                            new_subcode.parent = found_code
-                                            found_code.subcodes[new_subcode.key] = new_subcode
-                                            del new_code.subcodes[new_subcode_key]
+                                elif action == wx.CANCEL:
                                     new_code.DestroyObject()
 
 
@@ -136,11 +133,14 @@ class CodingNotebook(FNB.FlatNotebook):
                         main_frame.codes[code_key] = imported_codes[code_key]
                 
                     self.codes_model.Cleared()
+                    self.codes_ctrl.Expander(None)
                     for dataset_key in self.coding_datasets_panels:
                         self.coding_datasets_panels[dataset_key].DocumentsUpdated()
                         self.coding_datasets_panels[dataset_key].codes_model.Cleared()
+                        self.coding_datasets_panels[dataset_key].codes_ctrl.Expander(None)
                         for document_key in self.coding_datasets_panels[dataset_key].document_windows:
                             self.coding_datasets_panels[dataset_key].document_windows[document_key].codes_model.Cleared()
+                            self.coding_datasets_panels[dataset_key].document_windows[document_key].codes_ctrl.Expander(None)
                     main_frame.CodesUpdated()
                 
                 except xmlschema.XMLSchemaValidationError:
@@ -153,23 +153,27 @@ class CodingNotebook(FNB.FlatNotebook):
     def OnExportCodes(self, event):
         logger = logging.getLogger(__name__+".CodingNotebook["+str(self.name)+"].OnExportCodes")
         logger.info("Starting")
-        with wx.FileDialog(self, GUIText.CODES_EXPORT, defaultDir=Constants.SAVED_WORKSPACES_PATH,
-                           wildcard="Codebook Exchange Format (*.qdc)|*.qdc",
-                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
-            # cancel if the user changed their mind
-            if file_dialog.ShowModal() == wx.ID_CANCEL:
-                return
-            # save the current contents in the file
-            pathname = file_dialog.GetPath()
-            try:
-                main_frame = wx.GetApp().GetTopWindow()
-                CodesUtilities.QDACodeExporter(main_frame.codes, pathname)
-            except xmlschema.XMLSchemaValidationError:
-                wx.LogError("XML Validation Error Occured when checking created file '%s'", pathname)
-                logger.error("XML Validation Failed for file '%s'", pathname)
-            except IOError:
-                wx.LogError("Cannot save codebook to file '%s'", pathname)
-                logger.error("Failed to save removal to file '%s'", pathname)
+        main_frame = wx.GetApp().GetTopWindow()
+        if len(main_frame.codes) > 0:
+            with wx.FileDialog(self, GUIText.CODES_EXPORT, defaultDir=Constants.SAVED_WORKSPACES_PATH,
+                            wildcard="Codebook Exchange Format (*.qdc)|*.qdc",
+                            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
+                # cancel if the user changed their mind
+                if file_dialog.ShowModal() == wx.ID_CANCEL:
+                    return
+                # save the current contents in the file
+                pathname = file_dialog.GetPath()
+                try:
+                    main_frame = wx.GetApp().GetTopWindow()
+                    CodesUtilities.QDACodeExporter(main_frame.codes, pathname)
+                except xmlschema.XMLSchemaValidationError:
+                    wx.LogError("XML Validation Error Occured when checking created file '%s'", pathname)
+                    logger.error("XML Validation Failed for file '%s'", pathname)
+                except IOError:
+                    wx.LogError("Cannot save codebook to file '%s'", pathname)
+                    logger.error("Failed to save removal to file '%s'", pathname)
+        else:
+            wx.MessageBox("No Codes avaliable to export")
         logger.info("Finished")
 
     def DatasetsUpdated(self):

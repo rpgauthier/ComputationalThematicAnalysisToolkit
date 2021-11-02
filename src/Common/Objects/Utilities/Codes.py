@@ -24,7 +24,7 @@ def QDACodeExporter(codes, pathname):
         else:
             desc.text = code.notes
         for subcode_key in code.subcodes:
-            CodeToCodeElement(new_code_element, codes[subcode_key])
+            CodeToCodeElement(new_code_element, code.subcodes[subcode_key])
 
     for code_key in codes:
         if codes[code_key].parent == None:
@@ -43,7 +43,6 @@ def QDACodeImporter(pathname):
 
     tree = ET.parse(pathname)
     codebook_element = tree.getroot()
-    print(ET.tostring(codebook_element, encoding='utf8').decode('utf8'))
 
     def CodeElementToCode(code_element):
         code = Codes.Code(code_element.attrib['name'])

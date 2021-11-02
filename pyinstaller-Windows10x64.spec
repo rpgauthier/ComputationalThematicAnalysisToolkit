@@ -10,7 +10,12 @@ block_cipher = None
 
 a = Analysis(['src/Main.py'],
              binaries=[],
-             datas=[('src/Images/*', 'Images'), ('src/Fonts/*', 'Fonts'), ('C:/Program Files/Python39/Lib/site-packages/wordcloud/stopwords', 'wordcloud' ), ('C:/Program Files/Python39/Lib/site-packages/wordcloud/DroidSansMono.ttf', 'wordcloud' )],
+             datas=[('src/Images/*', 'Images'),
+                    ('src/Fonts/*', 'Fonts'),
+                    ('src/External/REFI-QDA/*', 'External/REFI-QDA'),
+                    ('C:/Program Files/Python39/Lib/site-packages/wordcloud/stopwords', 'wordcloud' ),
+                    ('C:/Program Files/Python39/Lib/site-packages/wordcloud/DroidSansMono.ttf', 'wordcloud' ),
+                    ('C:/Program Files/Python39/Lib/site-packages/xmlschema/schemas', 'xmlschema/schemas')],
              hiddenimports=['sklearn.utils._weight_vector', 'wx._xml', 'PIL.ImageFont'],
              hookspath=['.'],
              runtime_hooks=[],
