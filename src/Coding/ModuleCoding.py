@@ -149,6 +149,7 @@ class CodingNotebook(FNB.FlatNotebook):
                 except IOError:
                     wx.LogError("Cannot open file '%s'", pathname)
                     logger.error("Failed to open file '%s'", pathname)
+        logger.info("Finished")
 
     def OnExportCodes(self, event):
         logger = logging.getLogger(__name__+".CodingNotebook["+str(self.name)+"].OnExportCodes")
@@ -156,8 +157,8 @@ class CodingNotebook(FNB.FlatNotebook):
         main_frame = wx.GetApp().GetTopWindow()
         if len(main_frame.codes) > 0:
             with wx.FileDialog(self, GUIText.CODES_EXPORT, defaultDir=Constants.SAVED_WORKSPACES_PATH,
-                            wildcard="Codebook Exchange Format (*.qdc)|*.qdc",
-                            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
+                               wildcard="Codebook Exchange Format (*.qdc)|*.qdc",
+                               style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
                 # cancel if the user changed their mind
                 if file_dialog.ShowModal() == wx.ID_CANCEL:
                     return
