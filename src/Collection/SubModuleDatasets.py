@@ -22,7 +22,8 @@ class DatasetsListPanel(wx.Panel):
         wx.Panel.__init__(self, parent, size=size)
 
         self.parent = parent
-
+        main_frame = wx.GetApp().GetTopWindow()
+        
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         toolbar_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -38,11 +39,12 @@ class DatasetsListPanel(wx.Panel):
                                               bitmap=wx.Bitmap(1, 1),
                                               shortHelp=GUIText.DATASETS_RETRIEVE_CSV_TOOLTIP)
         create_toolbar.Bind(wx.EVT_MENU, self.OnAddCSVDataset, add_csv_tool)
-        add_twitter_tool = create_toolbar.AddTool(wx.ID_ANY,
-                                    label=GUIText.DATASETS_RETRIEVE_TWITTER,
-                                    bitmap=wx.Bitmap(1, 1),
-                                    shortHelp=GUIText.DATASETS_RETRIEVE_TWITTER_TOOLTIP)
-        create_toolbar.Bind(wx.EVT_MENU, self.OnAddTwitterDataset, add_twitter_tool)
+        if 'twitter_enabled' in main_frame.options_dict:
+            add_twitter_tool = create_toolbar.AddTool(wx.ID_ANY,
+                                        label=GUIText.DATASETS_RETRIEVE_TWITTER,
+                                        bitmap=wx.Bitmap(1, 1),
+                                        shortHelp=GUIText.DATASETS_RETRIEVE_TWITTER_TOOLTIP)
+            create_toolbar.Bind(wx.EVT_MENU, self.OnAddTwitterDataset, add_twitter_tool)
         create_toolbar.Realize()
         create_sizer.Add(create_toolbar)
         toolbar_sizer.Add(create_sizer, 0, wx.ALL, 5)
@@ -57,7 +59,6 @@ class DatasetsListPanel(wx.Panel):
         toolbar_sizer.Add(modify_sizer, 0, wx.ALL, 5)
         sizer.Add(toolbar_sizer)
 
-        main_frame = wx.GetApp().GetTopWindow()
         self.datasets_model = DatasetsDataViews.DatasetsViewModel(main_frame.datasets.values())
         self.datasets_ctrl = DatasetsDataViews.DatasetsViewCtrl(self, self.datasets_model)
         self.datasets_ctrl.Bind(dv.EVT_DATAVIEW_ITEM_EDITING_DONE, self.OnChangeDatasetKey)
@@ -78,10 +79,12 @@ class DatasetsListPanel(wx.Panel):
         menu = wx.Menu()
         details_menuitem = menu.Append(wx.ID_ANY, GUIText.VIEW_DETAILS)
         menu.Bind(wx.EVT_MENU, self.OnAccessDetails, details_menuitem)
-        label_fields_menuitem = menu.Append(wx.ID_ANY, GUIText.CUSTOMIZE_LABEL_FIELDS)
-        menu.Bind(wx.EVT_MENU, self.OnCustomizeLabelFields, label_fields_menuitem)
-        computation_fields_menuitem = menu.Append(wx.ID_ANY, GUIText.CUSTOMIZE_COMPUTATIONAL_FIELDS)
-        menu.Bind(wx.EVT_MENU, self.OnCustomizeComputationalFields, computation_fields_menuitem)
+        if main_frame.options_dict['adjustable_label_fields_mode']:
+            label_fields_menuitem = menu.Append(wx.ID_ANY, GUIText.CUSTOMIZE_LABEL_FIELDS)
+            menu.Bind(wx.EVT_MENU, self.OnCustomizeLabelFields, label_fields_menuitem)
+        if main_frame.options_dict['adjustable_computation_fields_mode']:
+            computation_fields_menuitem = menu.Append(wx.ID_ANY, GUIText.CUSTOMIZE_COMPUTATIONAL_FIELDS)
+            menu.Bind(wx.EVT_MENU, self.OnCustomizeComputationalFields, computation_fields_menuitem)
         menu.AppendSeparator()
         copy_menu_item = menu.Append(wx.ID_ANY, GUIText.COPY)
         menu.Bind(wx.EVT_MENU, self.datasets_ctrl.OnCopyItems, copy_menu_item)
@@ -321,11 +324,12 @@ class DatasetDetailsPanel(wx.Panel):
                                             bitmap=wx.Bitmap(1, 1),
                                             shortHelp=GUIText.DATASETS_RETRIEVE_REDDIT_TOOLTIP)
             toolbar.Bind(wx.EVT_MENU, self.OnAddRedditDataset, add_reddit_tool)
-            add_twitter_tool = toolbar.AddTool(wx.ID_ANY,
-                                          label=GUIText.DATASETS_RETRIEVE_TWITTER,
-                                          bitmap=wx.Bitmap(1, 1),
-                                          shortHelp=GUIText.DATASETS_RETRIEVE_TWITTER_TOOLTIP)
-            toolbar.Bind(wx.EVT_MENU, self.OnAddTwitterDataset, add_twitter_tool)
+            if 'twitter_enabled' in main_frame.options_dict:
+                add_twitter_tool = toolbar.AddTool(wx.ID_ANY,
+                                            label=GUIText.DATASETS_RETRIEVE_TWITTER,
+                                            bitmap=wx.Bitmap(1, 1),
+                                            shortHelp=GUIText.DATASETS_RETRIEVE_TWITTER_TOOLTIP)
+                toolbar.Bind(wx.EVT_MENU, self.OnAddTwitterDataset, add_twitter_tool)
             add_csv_tool = toolbar.AddTool(wx.ID_ANY,
                                            label=GUIText.DATASETS_RETRIEVE_CSV,
                                            bitmap=wx.Bitmap(1, 1),

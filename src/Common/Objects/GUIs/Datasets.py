@@ -326,16 +326,17 @@ class DatasetPanel(wx.Panel):
                 details_sizer2.Add(row_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
                 details_sizer2.AddSpacer(10)
         
-
-        customize_label_fields_ctrl = wx.Button(self, label=GUIText.CUSTOMIZE_LABEL_FIELDS)
-        customize_label_fields_ctrl.Bind(wx.EVT_BUTTON, self.OnCustomizeLabelFields)
-        details_sizer1.Add(customize_label_fields_ctrl, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        details_sizer1.AddSpacer(10)
+        if main_frame.options_dict['adjustable_label_fields_mode']:
+            customize_label_fields_ctrl = wx.Button(self, label=GUIText.CUSTOMIZE_LABEL_FIELDS)
+            customize_label_fields_ctrl.Bind(wx.EVT_BUTTON, self.OnCustomizeLabelFields)
+            details_sizer1.Add(customize_label_fields_ctrl, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            details_sizer1.AddSpacer(10)
         
-        customize_computation_fields_ctrl = wx.Button(self, label=GUIText.CUSTOMIZE_COMPUTATIONAL_FIELDS)
-        customize_computation_fields_ctrl.Bind(wx.EVT_BUTTON, self.OnCustomizeComputationalFields)
-        details_sizer1.Add(customize_computation_fields_ctrl, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        details_sizer1.AddSpacer(10)
+        if main_frame.options_dict['adjustable_computation_fields_mode']:
+            customize_computation_fields_ctrl = wx.Button(self, label=GUIText.CUSTOMIZE_COMPUTATIONAL_FIELDS)
+            customize_computation_fields_ctrl.Bind(wx.EVT_BUTTON, self.OnCustomizeComputationalFields)
+            details_sizer1.Add(customize_computation_fields_ctrl, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            details_sizer1.AddSpacer(10)
 
         self.SetSizer(self.sizer)
         self.Layout()

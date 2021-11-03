@@ -863,6 +863,11 @@ class OptionsDialog(wx.Dialog):
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.options_dict['twitter_consumer_key'] = self.twitter_consumer_key_ctrl.GetValue()
         main_frame.options_dict['twitter_consumer_secret'] = self.twitter_consumer_secret_ctrl.GetValue()
+        if main_frame.options_dict['twitter_consumer_key'] != "" and main_frame.options_dict['twitter_consumer_secret'] != "":
+            main_frame.options_dict['twitter_enabled'] = True
+        else:
+            if 'twitter_allowed' in main_frame.options_dict:
+                del main_frame.options_dict['twitter_enabled']
 
 class AboutDialog(wx.Dialog):
     def __init__(self, parent):
