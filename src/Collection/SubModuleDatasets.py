@@ -79,6 +79,7 @@ class DatasetsListPanel(wx.Panel):
         menu = wx.Menu()
         details_menuitem = menu.Append(wx.ID_ANY, GUIText.VIEW_DETAILS)
         menu.Bind(wx.EVT_MENU, self.OnAccessDetails, details_menuitem)
+        main_frame = wx.GetApp().GetTopWindow()
         if main_frame.options_dict['adjustable_label_fields_mode']:
             label_fields_menuitem = menu.Append(wx.ID_ANY, GUIText.CUSTOMIZE_LABEL_FIELDS)
             menu.Bind(wx.EVT_MENU, self.OnCustomizeLabelFields, label_fields_menuitem)

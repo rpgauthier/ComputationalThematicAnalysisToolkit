@@ -165,7 +165,6 @@ class LoadThread(Thread):
             else:
                 ver = version.parse('0.0.0')
 
-            #if ver <  version.parse('0.8.6'):
             if ver <  version.parse(Constants.CUR_VER):
                 self.UpgradeWorkspace(result, ver)
 
@@ -210,7 +209,9 @@ class LoadThread(Thread):
             if 'adjustable_metadata_mode' in config['options']:
                 config['options']['adjustable_label_fields_mode'] = config['options']['adjustable_metadata_mode']
                 del config['options']['adjustable_metadata_mode']
-            if 'adjustable_includedfields_mode' in config:
+        if ver < version.parse('0.8.6'):
+            #corrected type that may have caused verion 0.8.5 upgrades to be incomplete
+            if 'adjustable_includedfields_mode' in config['options']:
                 config['options']['adjustable_computation_fields_mode'] = config['options']['adjustable_includedfields_mode']
                 del config['options']['adjustable_includedfields_mode']
 

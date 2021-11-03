@@ -2,6 +2,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+import platform
 import tempfile
 import multiprocessing
 import psutil
@@ -110,11 +111,6 @@ class MainFrame(wx.Frame):
         #Initializing Static Menus
         self.menu_bar = wx.MenuBar()
         file_menu = wx.Menu()
-        #options
-        options_file_menuitem = file_menu.Append(wx.ID_ANY,
-                                                 GUIText.OPTIONS_LABEL)
-        self.Bind(wx.EVT_MENU, self.OnOptions, options_file_menuitem)
-        file_menu.AppendSeparator()
         new_file_menuitem = file_menu.Append(wx.ID_ANY,
                                              GUIText.NEW,
                                              GUIText.NEW_TOOLTIP)
@@ -164,11 +160,27 @@ class MainFrame(wx.Frame):
         #self.reporting_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.reporting_module.actions_menu, GUIText.REPORTING_LABEL)
         self.menu_bar.Append(self.actions_menu, GUIText.ACTIONS)
 
-        self.help_menu = wx.Menu()
-        about_menuitem = self.help_menu.Append(wx.ID_ANY, GUIText.ABOUT)
-        self.Bind(wx.EVT_MENU, self.OnAbout, about_menuitem)
-        self.menu_bar.Append(self.help_menu, GUIText.HELP)
-
+        if platform.system() == 'Darwin':
+            app_menu = self.menu_bar.OSXGetAppleMenu()
+            about_menuitem = app_menu.Insert(0, wx.ID_ANY, GUIText.ABOUT)
+            self.Bind(wx.EVT_MENU, self.OnAbout, about_menuitem)
+            app_menu.InsertSeparator(1)
+            options_file_menuitem = app_menu.Insert(2, wx.ID_ANY,
+                                                    GUIText.OPTIONS_LABEL)
+            self.Bind(wx.EVT_MENU, self.OnOptions, options_file_menuitem)
+            app_menu.InsertSeparator(3)
+        else:
+            #Help menu
+            self.help_menu = wx.Menu()
+            about_menuitem = self.help_menu.Append(wx.ID_ANY, GUIText.ABOUT)
+            self.Bind(wx.EVT_MENU, self.OnAbout, about_menuitem)
+            self.menu_bar.Append(self.help_menu, GUIText.HELP)
+            #Option Menu Item
+            options_file_menuitem = file_menu.Insert(0, wx.ID_ANY,
+                                                    GUIText.OPTIONS_LABEL)
+            self.Bind(wx.EVT_MENU, self.OnOptions, options_file_menuitem)
+            file_menu.InsertSeparator(1)
+        
         self.SetMenuBar(self.menu_bar)
 
         CustomEvents.EVT_PROGRESS(self, self.OnProgress)
