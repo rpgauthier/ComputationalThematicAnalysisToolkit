@@ -810,7 +810,7 @@ class OptionsDialog(wx.Dialog):
         advanced_sizer.Add(self.multipledatasets_ctrl, 0, wx.ALL, 5)
 
         self.adjustable_label_fields_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_ADJUSTABLE_LABEL_FIELDS)
-        self.adjustable_label_fields_ctrl.SetValue(main_frame.options_dict['adjustable_labefields_mode'])
+        self.adjustable_label_fields_ctrl.SetValue(main_frame.options_dict['adjustable_label_fields_mode'])
         self.adjustable_label_fields_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeAdjustableLabelFieldsMode)
         advanced_sizer.Add(self.adjustable_label_fields_ctrl, 0, wx.ALL, 5)
 
