@@ -43,6 +43,7 @@ class AbstractRetrieverDialog(wx.Dialog):
                           wx.OK | wx.ICON_ERROR)
             self.Thaw()
             self.Enable()
+            self.Show()
             self.SetFocus()
         self.retrieval_thread = None
         main_frame.CloseProgressDialog(thaw=True)
@@ -368,6 +369,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+name,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
+            self.Hide()
             self.Disable()
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
@@ -795,6 +797,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+query,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
+            self.Hide()
             self.Disable()
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
@@ -1212,6 +1215,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+name,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
+            self.Hide()
             self.Disable()
             self.Freeze()
             main_frame.PulseProgressDialog(GUIText.RETRIEVING_BEGINNING_MSG)
