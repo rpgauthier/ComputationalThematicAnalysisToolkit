@@ -34,6 +34,7 @@ class Dataset(GenericObject):
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, 'SPACE', Constants.FILTER_RULE_REMOVE))
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, 'PUNCT', Constants.FILTER_RULE_REMOVE))
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, 'NUM', Constants.FILTER_RULE_REMOVE))
+        self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, 'SYM', Constants.FILTER_RULE_REMOVE))
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS))
         self.filter_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, (Constants.FILTER_TFIDF_REMOVE, Constants.FILTER_TFIDF_LOWER, 75.0)))
 
