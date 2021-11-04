@@ -137,7 +137,7 @@ class Main(Common):
     SAVE_BUSY_MSG_DATASETS = "Saving Dataset: "
     SAVE_BUSY_MSG_SAMPLES = "Saving Sample: "
     SAVE_BUSY_MSG_CODES = "Saving Codes"
-    SAVE_BUSY_MSG_COMPRESSING = "Compressing Saved Data"
+    SAVE_BUSY_MSG_COMPRESSING = "Writing Saved Data"
 
     UPGRADE_BUSY_MSG_WORKSPACE1 = "Upgrading Workspace version from  "
     UPGRADE_BUSY_MSG_WORKSPACE2 = " to "
