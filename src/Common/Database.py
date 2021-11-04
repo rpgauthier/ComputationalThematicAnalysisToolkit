@@ -176,7 +176,7 @@ class DatabaseConnection():
                                        SET dataset_key = ?
                                        WHERE dataset_key = ?
                                        """
-            c.execute(sql_update_datasetkey, (str(old_dataset_key), str(new_dataset_key)))
+            c.execute(sql_update_datasetkey, (str(new_dataset_key), str(old_dataset_key)))
             self.__conn.commit()
 
             c.close()
