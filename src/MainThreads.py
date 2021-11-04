@@ -56,7 +56,8 @@ class SaveThread(Thread):
                     dataset_filename = str(key[0])+"_"+str(key[1])+"_"+str(key[2])+".pk"
                 existing_datasets.append(dataset_filename)
                 if self.datasets[key].last_changed_dt > self.last_load_dt:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_DATASETS+str(key)))
+                    if not self.autosave:
+                        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_DATASETS+str(key)))
                     with open(self.current_workspace_path+"/Datasets/"+dataset_filename, 'wb') as outfile:
                         pickle.dump(self.datasets[key], outfile)
             #remove any datasets that no longer exist
@@ -72,7 +73,8 @@ class SaveThread(Thread):
                 sample_dirname = str(key)
                 existing_samples.append(sample_dirname)
                 if self.samples[key].last_changed_dt > self.last_load_dt:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_SAMPLES+str(key)))
+                    if not self.autosave:
+                        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_SAMPLES+str(key)))
                     if not os.path.exists(self.current_workspace_path+"/Samples/"+sample_dirname):
                         os.mkdir(self.current_workspace_path+"/Samples/"+sample_dirname)
                     with open(self.current_workspace_path+"/Samples/"+sample_dirname+"/sample.pk", 'wb') as outfile:
@@ -85,18 +87,20 @@ class SaveThread(Thread):
                 if sample_dirname not in existing_samples:
                     shutil.rmtree(self.current_workspace_path+"/Samples/"+sample_dirname)
 
-            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_CODES))
+            if not self.autosave:
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_CODES))
             with open(self.current_workspace_path+"/codes.pk", 'wb') as outfile:
                 pickle.dump(self.codes, outfile)
 
             if not self.autosave:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_COMPRESSING))
-                logger.info("Archiving and compressing Files")
-                with tarfile.open(self.save_path, 'w|gz') as tar_file:
+                logger.info("Archiving Files to tar")
+                with tarfile.open(self.save_path, 'w') as tar_file:
                     tar_file.add(self.current_workspace_path, arcname='.')
                 with open(self.save_path + "_notes.txt", 'w') as text_file:
                     text_file.write(self.notes_text)
             else:
+                logger.info("Moving Files to autsave folder")
                 copy_tree(self.current_workspace_path, self.save_path)
 
         except (FileExistsError):
