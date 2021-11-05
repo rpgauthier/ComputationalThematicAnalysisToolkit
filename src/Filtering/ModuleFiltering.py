@@ -737,7 +737,6 @@ class WordsPanel(wx.Panel):
                           GUIText.FILTERS_PER_WORDS,
                           GUIText.FILTERS_NUM_DOCS,
                           GUIText.FILTERS_PER_DOCS,
-                          #GUIText.FILTERS_SPACY_AUTO_STOPWORDS,
                           GUIText.FILTERS_TFIDF_MIN,
                           GUIText.FILTERS_TFIDF_MAX]
 
@@ -899,7 +898,6 @@ class RulesPanel(wx.Panel):
         self.tokenization_choice = wx.Choice(self, choices=package_list)
         self.tokenization_choice.SetSelection(self.parent_frame.dataset.tokenization_choice)
         self.tokenization_choice.Bind(wx.EVT_CHOICE, self.parent_frame.OnTokenizationChoiceStart)
-        self.tokenization_choice.SetSelection(0)
         tokenization_sizer.Add(self.tokenization_choice, proportion=0, flag=wx.ALL, border=5)
         
         self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)

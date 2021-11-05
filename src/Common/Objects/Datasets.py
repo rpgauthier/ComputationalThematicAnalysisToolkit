@@ -17,7 +17,7 @@ class Dataset(GenericObject):
         self._retrieval_details = retrieval_details
         self._data = {}
         self._language = language
-        self._tokenization_choice = 0
+        self._tokenization_choice = 2
         self._tokenization_package_versions = None
         self._total_docs = 0
         self._total_tokens = 0

@@ -221,8 +221,9 @@ class RetrieveRedditDatasetThread(Thread):
         #return dataset and associated information
         result = {}
         result['status_flag'] = status_flag
-        result['dataset_key'] = dataset.key
-        result['dataset'] = dataset
+        if dataset != None:
+            result['dataset_key'] = dataset.key
+            result['dataset'] = dataset
         result['error_msg'] = error_msg
         wx.PostEvent(self._notify_window, CustomEvents.RetrieveResultEvent(result))
         logger.info("Finished")
@@ -433,8 +434,9 @@ class RetrieveTwitterDatasetThread(Thread):
         #return dataset and associated information
         result = {}
         result['status_flag'] = status_flag
-        result['dataset_key'] = dataset.key
-        result['dataset'] = dataset
+        if dataset != None:
+            result['dataset_key'] = dataset.key
+            result['dataset'] = dataset
         result['error_msg'] = error_msg
         wx.PostEvent(self._notify_window, CustomEvents.RetrieveResultEvent(result))
         logger.info("Finished")
