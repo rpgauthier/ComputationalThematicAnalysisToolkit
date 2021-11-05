@@ -48,8 +48,8 @@ class DatasetsViewModel(dv.PyDataViewModel):
         # item and make DV items for each of it's child objects.
         node = self.ItemToObject(parent)
         if isinstance(node, Datasets.Dataset):
-            for computational_field_name in node.computational_fields:
-                children.append(self.ObjectToItem(node.computational_fields[computational_field_name]))
+            for key in node.computational_fields:
+                children.append(self.ObjectToItem(node.computational_fields[key]))
             return len(children)
         return 0
 
@@ -74,7 +74,7 @@ class DatasetsViewModel(dv.PyDataViewModel):
                        }
             return mapper[col]
         elif isinstance(node, Datasets.Field):
-            mapper = { 0 : node.key,
+            mapper = { 0 : node.name,
                        1 : "",
                        2 : "",
                        3 : 0,
@@ -88,9 +88,10 @@ class DatasetsViewModel(dv.PyDataViewModel):
         '''retrieves custom attributes for item'''
         node = self.ItemToObject(item)
         if col == 0:
-            attr.SetColour('blue')
-            attr.SetBold(True)
-            return True
+            if isinstance(node, Datasets.Dataset):
+                attr.SetColour('blue')
+                attr.SetBold(True)
+                return True
         return False
 
     def HasContainerColumns(self, item):
@@ -116,12 +117,8 @@ class DatasetsViewModel(dv.PyDataViewModel):
             if isinstance(node, Datasets.Dataset):
                 main_frame = wx.GetApp().GetTopWindow()
                 if value != node.name:
-                    if value not in main_frame.datasets:
-                        node.name = value
-                        main_frame.DatasetsUpdated()
-                    else:
-                        wx.MessageBox(GUIText.NAME_EXISTS_ERROR,
-                                    GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                    node.name = value
+                    main_frame.DatasetsUpdated()
         return True
 
 #This view enables displaying datasets and how they are grouped
@@ -241,15 +238,17 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
             self.data_col_types.append("UTC-timestamp")
         else:
             #CODE for datasets created after label enhancements
-            for field_name in self.dataset.label_fields:
-                self.label_column_names.append(field_name)
-                self.label_col_types.append(self.dataset.label_fields[field_name].fieldtype)
+            for key in self.dataset.label_fields:
+                field = self.dataset.label_fields[key]
+                self.label_column_names.append(field.name)
+                self.label_col_types.append(field.fieldtype)
     
         #CODE to collect approriate fields based on what has been chosen to be included and/or merged
-        for field_name in self.dataset.computational_fields:
-            if field_name not in self.label_column_names and field_name not in self.data_column_names:
-                self.data_column_names.append(field_name)
-                self.data_col_types.append(self.dataset.computational_fields[field_name].fieldtype)
+        for key in self.dataset.computational_fields:
+            field = self.dataset.computational_fields[key]
+            if field.name not in self.label_column_names and field.name not in self.data_column_names:
+                self.data_column_names.append(field.name)
+                self.data_col_types.append(field.fieldtype)
 
     def GetColLabelValue(self, col):
         name = ""
@@ -318,8 +317,9 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
         data = ""
         if col == 0:
             row_data = self.data_df.iloc[row]
-            key = (row_data['data_source'], row_data['data_type'], row_data['id'])
-            if key in self.dataset.selected_documents:
+            doc_id = (row_data['data_source'], row_data['data_type'], row_data['id'])
+            doc = self.dataset.GetDocument(doc_id)
+            if doc.key in self.dataset.selected_documents:
                 data = '1'
         elif col < len(self.label_column_names)+1:
             col = col-1
@@ -390,16 +390,16 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
         """Set the value of a cell"""
         if col == 0:
             row_data = self.data_df.iloc[row]
-            key = (row_data['data_source'], row_data['data_type'], row_data['id'])
-            if key not in self.dataset.selected_documents:
-                self.dataset.SetupDocument(key)
-                self.dataset.selected_documents.append(key)
+            doc_id = (row_data['data_source'], row_data['data_type'], row_data['id'])
+            doc = self.dataset.GetDocument(doc_id)
+            if doc.key not in self.dataset.selected_documents:
+                self.dataset.selected_documents.append(doc.key)
                 self.dataset.last_changed_dt = datetime.now()
             else:
-                self.dataset.selected_documents.remove(key)
+                self.dataset.selected_documents.remove(doc.key)
                 self.dataset.last_changed_dt = datetime.now()
             main_frame = wx.GetApp().GetTopWindow()
-            main_frame.DocumentsUpdated()
+            main_frame.DocumentsUpdated(self)
         else:
             pass
 
@@ -507,9 +507,12 @@ class DatasetsDataGrid(wx.grid.Grid):
             row_data = self.gridtable.data_df.iloc[row]
             key = (row_data['data_source'], row_data['data_type'], row_data['id'])
             
-            document = self.dataset.SetupDocument(key)
+            document = self.dataset.GetDocument(key)
             main_frame = wx.GetApp().GetTopWindow()
-            CodesGUIs.DocumentDialog(main_frame, document).Show()
+            if document.key not in main_frame.document_dialogs:
+                main_frame.document_dialogs[document.key] = CodesGUIs.DocumentDialog(main_frame, document)
+            main_frame.document_dialogs[document.key].Show()
+            main_frame.document_dialogs[document.key].SetFocus()
         logger.info("Finish")
 
     def AutoSize(self):
@@ -577,7 +580,7 @@ class DatasetsDataGrid(wx.grid.Grid):
 #   2. Type:   string
 #   3. Field:    string
 #   4. Description: string   
-class AvaliableFieldsViewModel(dv.PyDataViewModel):
+class AvailableFieldsViewModel(dv.PyDataViewModel):
     def __init__(self, dataset):
         dv.PyDataViewModel.__init__(self)
         self.dataset = dataset
@@ -592,8 +595,8 @@ class AvaliableFieldsViewModel(dv.PyDataViewModel):
         # item, so we'll use the genre objects as its children and they will
         # end up being the collection of visible roots in our tree.
         if not parent:
-            for field_name in self.dataset.available_fields:
-                children.append(self.ObjectToItem(self.dataset.available_fields[field_name]))
+            for key in self.dataset.available_fields:
+                children.append(self.ObjectToItem(self.dataset.available_fields[key]))
             return len(children)
         return 0
 
@@ -626,7 +629,7 @@ class AvaliableFieldsViewModel(dv.PyDataViewModel):
             mapper = { 0 : node.parent.name,
                        1 : node.parent.dataset_source,
                        2 : node.parent.dataset_type,
-                       3 : node.key,
+                       3 : node.name,
                        4 : node.desc
                        }
             return mapper[col]
@@ -691,7 +694,7 @@ class ChosenFieldsViewModel(dv.PyDataViewModel):
             mapper = { 0 : node.dataset.name,
                        1 : node.dataset.dataset_source,
                        2 : node.dataset.dataset_type,
-                       3 : node.key,
+                       3 : node.name,
                        4 : node.desc
                        }
             return mapper[col]

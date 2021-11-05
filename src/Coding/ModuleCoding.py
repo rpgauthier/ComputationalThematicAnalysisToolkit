@@ -174,7 +174,7 @@ class CodingNotebook(FNB.FlatNotebook):
                     wx.LogError("Cannot save codebook to file '%s'", pathname)
                     logger.error("Failed to save removal to file '%s'", pathname)
         else:
-            wx.MessageBox("No Codes avaliable to export")
+            wx.MessageBox("No Codes available to export")
         logger.info("Finished")
 
     def DatasetsUpdated(self):
@@ -221,11 +221,20 @@ class CodingNotebook(FNB.FlatNotebook):
         self.Thaw()
         logger.info("Finished")
 
-    def DocumentsUpdated(self):
+    def DocumentsUpdated(self, source):
         logger = logging.getLogger(__name__+".CodingPanel.DocumentsUpdated")
         logger.info("Starting")
         for dataset_key in self.coding_datasets_panels:
-            self.coding_datasets_panels[dataset_key].DocumentsUpdated()
+            self.coding_datasets_panels[dataset_key].DocumentsUpdated(source)
+        logger.info("Finished")
+    
+    def CodesUpdated(self):
+        logger = logging.getLogger(__name__+".CodingPanel.CodesUpdated")
+        logger.info("Starting")
+        for dataset_key in self.coding_datasets_panels:
+            self.coding_datasets_panels[dataset_key].CodesUpdated()
+        self.codes_model.Cleared()
+
         logger.info("Finished")
 
     def Load(self, saved_data):
@@ -234,7 +243,6 @@ class CodingNotebook(FNB.FlatNotebook):
         logger.info("Starting")
         self.Freeze()
         main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.LOAD_BUSY_MSG_CONFIG)
         #remove any datasets that were present
         for dataset_key in list(self.coding_datasets_panels.keys()):
             idx = self.GetPageIndex(self.coding_datasets_panels[dataset_key])
@@ -259,7 +267,7 @@ class CodingNotebook(FNB.FlatNotebook):
         if 'notes' in saved_data:
             self.notes_panel.Load(saved_data['notes'])
         
-        self.DocumentsUpdated()
+        self.DocumentsUpdated(self)
         self.Thaw()
         logger.info("Finished")
 
@@ -267,8 +275,6 @@ class CodingNotebook(FNB.FlatNotebook):
         '''saves current Coding Module's data'''
         logger = logging.getLogger(__name__+".CodingPanel.Save")
         logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_CONFIG)
         saved_data = {}
         #trigger saves of submodules
         saved_data['notes'] = self.notes_panel.Save()
@@ -323,7 +329,7 @@ class CodingDatasetPanel(wx.Panel):
                 bottom_window = self.splitter.GetWindow2()
                 bottom_window.Hide()
                 self.splitter.ReplaceWindow(bottom_window, self.document_windows[node.key])
-                self.document_windows[node.key].DocumentUpdated()
+                self.document_windows[node.key].RefreshDetails()
                 self.document_windows[node.key].Show()
                 
                 self.splitter.Refresh()
@@ -355,15 +361,30 @@ class CodingDatasetPanel(wx.Panel):
         self.Thaw()
         logger.info("Finished")
 
-    def DocumentsUpdated(self):
+    def DocumentsUpdated(self, source):
         #Triggered by any function from this module or sub modules.
         #updates the datasets to perform a global refresh
-        logger = logging.getLogger(__name__+".CodingDatasetPanel.DatasetsUpdated")
+        logger = logging.getLogger(__name__+".CodingDatasetPanel.DocumentsUpdated")
         logger.info("Starting")
         #sets time that dataset was updated to flag for saving
         #trigger updates of any submodules that use the datasets for rendering
         self.documentlist_panel.DocumentsUpdated()
 
         for node_key in self.document_windows:
-            self.document_windows[node_key].DocumentUpdated()
+            if source != self.document_windows[node_key]:
+                self.document_windows[node_key].RefreshDetails()
+        logger.info("Finished")
+    
+    def CodesUpdated(self):
+        #Triggered by any function from this module or sub modules.
+        #updates the datasets to perform a global refresh
+        logger = logging.getLogger(__name__+".CodingDatasetPanel.CodesUpdated")
+        logger.info("Starting")
+        #sets time that dataset was updated to flag for saving
+        #trigger updates of any submodules that use the datasets for rendering
+        self.documentlist_panel.DocumentsUpdated()
+
+        for node_key in self.document_windows:
+            self.document_windows[node_key].RefreshDetails()
+        self.codes_model.Cleared()
         logger.info("Finished")

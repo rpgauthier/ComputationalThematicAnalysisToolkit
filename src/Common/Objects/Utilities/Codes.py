@@ -14,7 +14,7 @@ def QDACodeExporter(codes, pathname):
 
     def CodeToCodeElement(parent_element, code):
         new_code_element = ET.SubElement(parent_element, 'Code')
-        new_code_element.set('guid', code.uuid)
+        new_code_element.set('guid', code.key)
         new_code_element.set('name', code.name)
         new_code_element.set('isCodable', 'true')
         new_code_element.set('color', '#%02x%02x%02x' % code.colour_rgb)
@@ -50,9 +50,7 @@ def QDACodeImporter(pathname):
     codebook_element = tree.getroot()
 
     def CodeElementToCode(code_element):
-        code = Codes.Code(code_element.attrib['name'])
-        code.key = code_element.attrib['guid']
-        code.uuid = code_element.attrib['guid']
+        code = Codes.Code(code_element.attrib['name'], code_element.attrib['guid'])
         color_hex = code_element.attrib['color'].lstrip('#')
         code.colour_rgb = tuple(int(color_hex[i:i+2], 16) for i in (0, 2, 4))
         notes = ""
@@ -62,6 +60,7 @@ def QDACodeImporter(pathname):
                     notes = notes + child.text
             if child.tag == '{urn:QDA-XML:codebook:1.0}Code':
                 subcode = CodeElementToCode(child)
+                subcode.parent = code
                 code.subcodes[subcode.key] = subcode
         code.notes = notes
         return code

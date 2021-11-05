@@ -17,10 +17,8 @@ import Common.Objects.Datasets as Datasets
 
 class Sample(GenericObject):
     '''Instances of Sample objects'''
-    def __init__(self, key, dataset_key, sample_type):
-        logger = logging.getLogger(__name__+".Sample["+str(key)+"].__init__")
-        logger.info("Starting")
-        GenericObject.__init__(self, key)
+    def __init__(self, name, dataset_key, sample_type):
+        GenericObject.__init__(self, name=name)
 
         #properties that automatically update last_changed_dt
         self._dataset_key = dataset_key
@@ -39,11 +37,9 @@ class Sample(GenericObject):
         #objects that have their own last_changed_dt and thus need to be checked dynamically
         self.parts_dict = OrderedDict()
         self.selected_documents = []
-        
-        logger.info("Finished")
 
     def __repr__(self):
-        return 'Sample: %s' % (self.key,)
+        return 'Sample[%s][%s]' % (self.name, self.key,)
 
     @property
     def dataset_key(self):
@@ -147,12 +143,12 @@ class Sample(GenericObject):
         self._last_changed_dt = value
 
     def Generate(self):
-        logger = logging.getLogger(__name__+".Sample["+str(self.key)+"].Generate")
+        logger = logging.getLogger(__name__+"."+repr(self)+".Generate")
         logger.info("Starting")
         logger.info("Finished")
 
     def DestroyObject(self):
-        logger = logging.getLogger(__name__+".Sample["+str(self.key)+"].DestroyObject")
+        logger = logging.getLogger(__name__+"."+repr(self)+".DestroyObject")
         logger.info("Starting")
         #any children models or reviews
         for part_key in list(self.parts_dict.keys()):
@@ -160,51 +156,46 @@ class Sample(GenericObject):
         logger.info("Finished")
 
     def Reload(self):
-        logger = logging.getLogger(__name__+".Sample["+str(self.key)+"].Reload")
+        logger = logging.getLogger(__name__+""+repr(self)+".Reload")
         logger.info("Starting")
         logger.info("Finished")
 
     def Load(self, current_workspace):
-        logger = logging.getLogger(__name__+".Sample["+str(self.key)+"].Load")
+        logger = logging.getLogger(__name__+"."+repr(self)+".Load")
         logger.info("Starting")
         logger.info("Finished")
 
     def Save(self, current_workspace):
-        logger = logging.getLogger(__name__+".Sample["+str(self.key)+"].Save")
+        logger = logging.getLogger(__name__+"."+repr(self)+".Save")
         logger.info("Starting")
         logger.info("Finished")
 
 class RandomSample(Sample):
-    def __init__(self, key, dataset_key, model_parameters):
-        logger = logging.getLogger(__name__+".RandomSample["+str(key)+"].__init__")
-        logger.info("Starting")
-        Sample.__init__(self, key, dataset_key, "Random")
+    def __init__(self, name, dataset_key, model_parameters):
+        Sample.__init__(self, name, dataset_key, "Random")
 
         #list that is not managed thus need lastchanged_dt to be updated when changed
-        self.document_keys = model_parameters['document_keys']
-
-        logger.info("Finished")
+        self.doc_ids = model_parameters['doc_ids']
 
     def __repr__(self):
-        return 'Random Sample: %s' % (self.key,)
+        return 'RandomSample[%s][%s]' % (self.name, self.key,)
 
     def Generate(self, datasets):
-        logger = logging.getLogger(__name__+".RandomSample["+str(self.key)+"].Generate")
+        logger = logging.getLogger(__name__+"."+repr(self)+".Generate")
         logger.info("Starting")
         self.start_dt = datetime.now()
         if not self.generated_flag:
-            random.shuffle(self.document_keys)
+            random.shuffle(self.doc_ids)
             self.last_changed_dt = datetime.now()
             self.generated_flag = True
-            self.parts_dict["Randomly Ordered Documents"] = ModelPart(self, "Randomly Ordered Documents", self.document_keys, datasets)
+            model_part = ModelPart(self, "Randomly Ordered Documents", self.doc_ids, datasets)
+            self.parts_dict[model_part.key] = model_part
         self.end_dt = datetime.now()
         logger.info("Finished")
 
 class TopicSample(Sample):
-    def __init__(self, key, dataset_key, sample_type, model_parameters):
-        logger = logging.getLogger(__name__+".TopicSample["+str(key)+"].__init__")
-        logger.info("Starting")
-        Sample.__init__(self, key, dataset_key, sample_type)
+    def __init__(self, name, dataset_key, sample_type, model_parameters):
+        Sample.__init__(self, name, dataset_key, sample_type)
 
         #properties that automatically update last_changed_dt
         self._word_num = 0
@@ -221,7 +212,7 @@ class TopicSample(Sample):
         #variable that should only be used internally and are never accessed from outside
 
     def __repr__(self):
-        return 'Topic Sample: %s' % (self.key,)
+        return 'TopicSample[%s][%s]' % (self.name, self.key,)
     
     @property
     def key(self):
@@ -267,7 +258,7 @@ class TopicSample(Sample):
         return self._tokensets
 
     def ApplyDocumentCutoff(self):
-        logger = logging.getLogger(__name__+".TopicSample["+str(self.key)+"].ApplyDocumentCutoff")
+        logger = logging.getLogger(__name__+"."+repr(self)+".ApplyDocumentCutoff")
         logger.info("Starting")
         document_set = set()
         document_topic_prob_df = pd.DataFrame(data=self.document_topic_prob).transpose()
@@ -300,10 +291,8 @@ class TopicSample(Sample):
         logger.info("Finished")
 
 class LDASample(TopicSample):
-    def __init__(self, key, dataset_key, model_parameters):
-        logger = logging.getLogger(__name__+".LDASample["+str(key)+"].__init__")
-        logger.info("Starting")
-        TopicSample.__init__(self, key, dataset_key, "LDA", model_parameters)
+    def __init__(self, name, dataset_key, model_parameters):
+        TopicSample.__init__(self, name, dataset_key, "LDA", model_parameters)
 
         #fixed properties that may be externally accessed but do not change after being initialized
         self._num_passes = model_parameters['num_passes']
@@ -316,10 +305,9 @@ class LDASample(TopicSample):
         self.dictionary = None
         self.corpus = None
         self.model = None
-        logger.info("Finished")
 
     def __repr__(self):
-        return 'LDA Sample: %s' % (self.key,)
+        return 'LDASample[%s][%s]' % (self.name, self.key,)
 
     def __getstate__(self):
         state = dict(self.__dict__)
@@ -329,8 +317,6 @@ class LDASample(TopicSample):
         state['corpus'] = None
         state['model'] = None
         return state
-    def __repr__(self):
-        return 'LDASample: %s' % (self.key,)
     
     @property
     def num_passes(self):
@@ -345,7 +331,7 @@ class LDASample(TopicSample):
         return self._eta
 
     def GenerateStart(self, notify_window, current_workspace_path, start_dt):
-        logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].GenerateStart")
+        logger = logging.getLogger(__name__+"."+repr(self)+".GenerateStart")
         logger.info("Starting")
         self.start_dt = start_dt
         self.training_thread = SamplesThreads.LDATrainingThread(notify_window,
@@ -359,7 +345,7 @@ class LDASample(TopicSample):
         logger.info("Finished")
     
     def GenerateFinish(self, result, dataset, current_workspace):
-        logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].GenerateFinish")
+        logger = logging.getLogger(__name__+"."+repr(self)+".GenerateFinish")
         logger.info("Starting")
         self.generated_flag = True
         self.training_thread.join()
@@ -383,7 +369,7 @@ class LDASample(TopicSample):
         logger.info("Finished")
 
     def Load(self, current_workspace):
-        logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].Load")
+        logger = logging.getLogger(__name__+"."+repr(self)+".Load")
         logger.info("Starting")
         if self.generated_flag:
             self.dictionary = gensim.corpora.Dictionary.load(current_workspace+"/Samples/"+self.key+'/ldadictionary.dict')
@@ -392,7 +378,7 @@ class LDASample(TopicSample):
         logger.info("Finished")
 
     def Save(self, current_workspace):
-        logger = logging.getLogger(__name__+".LDASample["+str(self.key)+"].Save")
+        logger = logging.getLogger(__name__+"."+repr(self)+".Save")
         logger.info("Starting")
         if self.model is not None:
             self.model.save(current_workspace+"/Samples/"+self.key+'/ldamodel.lda', 'wb')
@@ -403,10 +389,8 @@ class LDASample(TopicSample):
         logger.info("Finished")
 
 class BitermSample(TopicSample):
-    def __init__(self, key, dataset_key, model_parameters):
-        logger = logging.getLogger(__name__+".BitermSample["+str(key)+"].__init__")
-        logger.info("Starting")
-        TopicSample.__init__(self, key, dataset_key, "Biterm", model_parameters)
+    def __init__(self, name, dataset_key, model_parameters):
+        TopicSample.__init__(self, name, dataset_key, "Biterm", model_parameters)
 
         #fixed properties that may be externally accessed but do not change after being initialized
         self._num_passes = model_parameters['num_passes']
@@ -417,10 +401,9 @@ class BitermSample(TopicSample):
         self.transformed_texts = None
         self.vocab = None
         self.model = None
-        logger.info("Finished")
 
     def __repr__(self):
-        return 'Biterm Sample: %s' % (self.key,)
+        return 'Biterm Sample[%s][%s]' % (self.name, self.key,)
 
     def __getstate__(self):
         state = dict(self.__dict__)
@@ -437,7 +420,7 @@ class BitermSample(TopicSample):
         return self._num_passes
     
     def GenerateStart(self, notify_window, current_workspace_path, start_dt):
-        logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].GenerateStart")
+        logger = logging.getLogger(__name__+"."+repr(self)+".GenerateStart")
         logger.info("Starting")
         self.start_dt = start_dt
         self.training_thread = SamplesThreads.BitermTrainingThread(notify_window,
@@ -449,7 +432,7 @@ class BitermSample(TopicSample):
         logger.info("Finished")
     
     def GenerateFinish(self, result, dataset, current_workspace):
-        logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].GenerateFinish")
+        logger = logging.getLogger(__name__+"."+repr(self)+".GenerateFinish")
         logger.info("Starting")
         self.generated_flag = True
         self.training_thread.join()
@@ -476,7 +459,7 @@ class BitermSample(TopicSample):
         logger.info("Finished")
 
     def Load(self, current_workspace):
-        logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].Load")
+        logger = logging.getLogger(__name__+"."+repr(self)+".Load")
         logger.info("Starting")
         if self.generated_flag:
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/transformed_texts.pk', 'rb') as infile:
@@ -488,7 +471,7 @@ class BitermSample(TopicSample):
         logger.info("Finished")
 
     def Save(self, current_workspace):
-        logger = logging.getLogger(__name__+".BitermSample["+str(self.key)+"].Save")
+        logger = logging.getLogger(__name__+"."+repr(self)+".Save")
         logger.info("Starting")
         if self.transformed_texts is not None:
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/transformed_texts.pk', 'wb') as outfile:
@@ -502,10 +485,8 @@ class BitermSample(TopicSample):
         logger.info("Finished")
 
 class NMFSample(TopicSample):
-    def __init__(self, key, dataset_key, model_parameters):
-        logger = logging.getLogger(__name__+".NMFSample["+str(key)+"].__init__")
-        logger.info("Starting")
-        TopicSample.__init__(self, key, dataset_key, "NMF", model_parameters)
+    def __init__(self, name, dataset_key, model_parameters):
+        TopicSample.__init__(self, name, dataset_key, "NMF", model_parameters)
 
         #fixed properties that may be externally accessed but do not change after being initialized
 
@@ -515,7 +496,6 @@ class NMFSample(TopicSample):
         self.vectorizer = None
         self.transformed_texts = None
         self.model = None
-        logger.info("Finished")
 
     def __getstate__(self):
         state = dict(self.__dict__)
@@ -524,11 +504,12 @@ class NMFSample(TopicSample):
         state['transformed_texts'] = None
         state['model'] = None
         return state
+
     def __repr__(self):
-        return 'NMFSample: %s' % (self.key,)
+        return 'NMFSample[%s][%s]' % (self.name, self.key,)
     
     def GenerateStart(self, notify_window, current_workspace_path, start_dt):
-        logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].GenerateStart")
+        logger = logging.getLogger(__name__+"."+repr(self)+".GenerateStart")
         logger.info("Starting")
         self.start_dt = start_dt
         self.training_thread = SamplesThreads.NMFTrainingThread(notify_window,
@@ -539,7 +520,7 @@ class NMFSample(TopicSample):
         logger.info("Finished")
     
     def GenerateFinish(self, result, dataset, current_workspace):
-        logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].GenerateFinish")
+        logger = logging.getLogger(__name__+"."+repr(self)+".GenerateFinish")
         logger.info("Starting")
         self.generated_flag = True
         self.training_thread.join()
@@ -566,7 +547,7 @@ class NMFSample(TopicSample):
         logger.info("Finished")
 
     def OldLoad(self, workspace_path):
-        logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].Load")
+        logger = logging.getLogger(__name__+"."+repr(self)+".Load")
         logger.info("Starting")
         self._workspace_path = workspace_path
         if self.generated_flag:
@@ -579,7 +560,7 @@ class NMFSample(TopicSample):
         logger.info("Finished")
 
     def Load(self, current_workspace):
-        logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].Load")
+        logger = logging.getLogger(__name__+"."+repr(self)+".Load")
         logger.info("Starting")
         if self.generated_flag:
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf_vectorizer.pk', 'rb') as infile:
@@ -591,7 +572,7 @@ class NMFSample(TopicSample):
         logger.info("Finished")
 
     def Save(self, current_workspace):
-        logger = logging.getLogger(__name__+".NMFSample["+str(self.key)+"].Save")
+        logger = logging.getLogger(__name__+"."+repr(self)+".Save")
         logger.info("Starting")
         if self.vectorizer is not None:
             with bz2.BZ2File(current_workspace+"/Samples/"+self.key+'/tfidf_vectorizer.pk', 'wb') as outfile:
@@ -606,8 +587,6 @@ class NMFSample(TopicSample):
 
 class MergedPart(GenericObject):
     def __init__(self, parent, key, name=None):
-        logger = logging.getLogger(__name__+".MergedPart["+str(key)+"].__init__")
-        logger.info("Starting")
         if name is None:
             name="Merged Part "+str(key)
         GenericObject.__init__(self, key, parent=parent, name=name)
@@ -618,7 +597,6 @@ class MergedPart(GenericObject):
         #objects that have their own last_changed_dt and thus need to be checked dynamically
         self.parts_dict = OrderedDict()
 
-        logger.info("Finished")
     def __repr__(self):
         return 'Merged Part %s' % (self.key,)
 
@@ -665,16 +643,12 @@ class ModelMergedPart(MergedPart):
 class TopicMergedPart(ModelMergedPart):
     '''Instances of Merged LDA Topic objects'''
     def __init__(self, parent, key, name=None):
-        logger = logging.getLogger(__name__+".TopicMergedPart["+str(key)+"].__init__")
-        logger.info("Starting")
         if name is None:
             name = "Merged Topic: "+str(key)
         ModelMergedPart.__init__(self, parent, key, name=name)
 
         #properties that automatically update last_changed_dt
         self._word_num = 0
-
-        logger.info("Finished")
 
     def __repr__(self):
         return 'Merged Topic %s' % (self.key,) if self.label == "" else 'Merged Topic %s: %s' % (self.key, self.label,)
@@ -698,8 +672,6 @@ class TopicMergedPart(ModelMergedPart):
 
 class Part(GenericObject):
     def __init__(self, parent, key, name=None):
-        logger = logging.getLogger(__name__+".Part["+str(key)+"].__init__")
-        logger.info("Starting")
         if name is None:
             name = "Part "+str(key)
         GenericObject.__init__(self, key, parent=parent, name=name)
@@ -710,9 +682,6 @@ class Part(GenericObject):
         
         #dictionary that is managed with setters
         self.documents = []
-        
-        #properties that track datetime of creation and change
-        logger.info("Finished")
 
     def __repr__(self):
         return 'Part %s' % (self.key,)
@@ -742,8 +711,6 @@ class Part(GenericObject):
 class ModelPart(Part):
     '''Instances of a part'''
     def __init__(self, parent, key, part_data, dataset, name=None):
-        logger = logging.getLogger(__name__+".ModelPart["+str(key)+"].__init__")
-        logger.info("Starting")
         if name is None:
             name = "Model Part "+str(key)
         Part.__init__(self, parent, key, name=name)
@@ -752,10 +719,9 @@ class ModelPart(Part):
         self._part_data = part_data
 
         self.UpdateDocumentNum(10, dataset)
-        logger.info("Finished")
 
     def __repr__(self):
-        return 'ModelPart %s' % (self.key,)
+        return 'Model Part %s' % (self.key,)
 
     @property
     def part_data(self):
@@ -769,11 +735,6 @@ class ModelPart(Part):
         logger = logging.getLogger(__name__+".ModelPart["+str(self.key)+"].UpdateDocumentNum")
         logger.info("Starting")
 
-        if isinstance(self.parent, ModelMergedPart):
-            sample_key = self.parent.parent.key
-        else:
-            sample_key = self.parent.key
-
         #cannot have more documents than what is available
         if document_num > len(self.part_data):
             document_num = len(self.part_data)
@@ -785,13 +746,11 @@ class ModelPart(Part):
         #grow if approrpriate
         elif document_num > self.document_num:
             for i in range(self.document_num, document_num):
-                key = self.part_data[i]
+                doc_id = self.part_data[i]
                 if isinstance(dataset, Datasets.Dataset):
-                    if key not in dataset.documents:
-                        dataset.SetupDocument(key)
-                    document = dataset.documents[key]
+                    document = dataset.GetDocument(doc_id)
                 if document is not None:
-                    self.documents.append(key)
+                    self.documents.append(document.key)
                     document.AddSampleConnections(self)
                     self.last_changed_dt = datetime.now()
             self.document_num = document_num
@@ -800,8 +759,6 @@ class ModelPart(Part):
 class TopicPart(ModelPart):
     '''Instances of Topic objects'''
     def __init__(self, parent, key, dataset, name=None):
-        logger = logging.getLogger(__name__+".TopicPart["+str(key)+"].__init__")
-        logger.info("Starting")
         if name is None:
             name = "Topic "+str(key)
         ModelPart.__init__(self, parent, key, [], dataset, name)
@@ -809,8 +766,6 @@ class TopicPart(ModelPart):
         #properties that automatically update last_changed_dt
         self._word_num = 0
         self._word_list = []
-
-        logger.info("Finished")
 
     def __repr__(self):
         return 'Topic %s' % (self.key,) if self.label == "" else 'Topic %s: %s' % (self.key, self.label,)
@@ -835,13 +790,6 @@ class TopicPart(ModelPart):
         return self.word_list[0:self.word_num]
 
 class LDATopicPart(TopicPart):
-    '''Instances of LDA Topic objects'''
-    def __init__(self, parent, key, dataset, name=None):
-        logger = logging.getLogger(__name__+".LDATopicPart["+str(key)+"].__init__")
-        logger.info("Starting")
-        TopicPart.__init__(self, parent, key, dataset, name=name)
-        logger.info("Finished")
-
     @property
     def word_num(self):
         return self._word_num
@@ -860,13 +808,6 @@ class LDATopicPart(TopicPart):
         logger.info("Finished")
 
 class BitermTopicPart(TopicPart):
-    '''Instances of Biterm Topic objects'''
-    def __init__(self, parent, key, dataset, name=None):
-        logger = logging.getLogger(__name__+".BitermTopicPart["+str(key)+"].__init__")
-        logger.info("Starting")
-        TopicPart.__init__(self, parent, key, dataset, name=name)
-        logger.info("Finished")
-
     @property
     def word_num(self):
         return self._word_num
@@ -897,13 +838,6 @@ class BitermTopicPart(TopicPart):
         logger.info("Finished")
 
 class NMFTopicPart(TopicPart):
-    '''Instances of NMF Topic objects'''
-    def __init__(self, parent, key, dataset, name=None):
-        logger = logging.getLogger(__name__+".NMFTopicPart["+str(key)+"].__init__")
-        logger.info("Starting")
-        TopicPart.__init__(self, parent, key, dataset, name=name)
-        logger.info("Finished")
-
     @property
     def word_num(self):
         return self._word_num
@@ -934,14 +868,11 @@ class NMFTopicPart(TopicPart):
 class TopicUnknownPart(ModelPart):
     '''Instances of Topic Unknown Part objects'''
     def __init__(self, parent, key, word_list, dataset, name="Unknown"):
-        logger = logging.getLogger(__name__+".TopicUnknownPart["+str(key)+"].__init__")
-        logger.info("Starting")
         ModelPart.__init__(self, parent, key, [], dataset, name=name)
         
         #properties that automatically update last_changed_dt
         self._word_num = 0
         self._word_list = []
-        logger.info("Finished")
 
     @property
     def word_num(self):

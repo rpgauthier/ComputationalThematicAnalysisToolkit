@@ -96,7 +96,7 @@ class CodesViewModel(dv.PyDataViewModel):
             else:
                 node.name = value
                 main_frame = wx.GetApp().GetTopWindow()
-                main_frame.DocumentsUpdated()
+                main_frame.DocumentsUpdated(self)
                 main_frame.CodesUpdated()
         return True
     
@@ -213,7 +213,10 @@ class CodesViewCtrl(dv.DataViewCtrl):
             model = self.GetModel()
             node = model.ItemToObject(item)
             main_frame = wx.GetApp().GetTopWindow()
-            CodesGUIs.CodeConnectionsDialog(main_frame, node, size=wx.Size(400,400)).Show()
+            if node.key not in main_frame.codeconnections_dialogs:
+                main_frame.codeconnections_dialogs[node.key] = CodesGUIs.CodeConnectionsDialog(main_frame, node, size=wx.Size(400,400))
+            main_frame.codeconnections_dialogs[node.key].Show()
+            main_frame.codeconnections_dialogs[node.key].SetFocus()
         logger.info("Finished")
 
     def OnShowPopup(self, event):
@@ -268,7 +271,8 @@ class CodesViewCtrl(dv.DataViewCtrl):
                                   GUIText.ERROR, wx.OK | wx.ICON_ERROR)
                     new_name = None
                 else:
-                    main_frame.codes[new_name] = Codes.Code(new_name)
+                    new_code = Codes.Code(new_name)
+                    main_frame.codes[new_code.key] = new_code
                     model.Cleared()
                     self.Expander(None)
                     for column in self.GetColumns():
@@ -300,8 +304,8 @@ class CodesViewCtrl(dv.DataViewCtrl):
                                   GUIText.ERROR, wx.OK | wx.ICON_ERROR)
                     new_name = None
                 else:
-                    node.subcodes[new_name] = Codes.Code(new_name)
-                    node.subcodes[new_name].parent = node
+                    new_subcode = Codes.Code(new_name, parent=node)
+                    node.subcodes[new_subcode.key] = new_subcode
                     model.Cleared()
                     self.Expander(None)
                     for column in self.GetColumns():
@@ -407,14 +411,14 @@ class ObjectCodesViewModel(CodesViewModel):
                 self.obj.last_changed_dt = datetime.now()
                 node.AddConnection(self.obj)
                 main_frame = wx.GetApp().GetTopWindow()
-                main_frame.DocumentsUpdated()
+                main_frame.DocumentsUpdated(self)
                 main_frame.CodesUpdated()
             elif  node.key in self.obj.codes:
                 self.obj.codes.remove(node.key)
                 self.obj.last_changed_dt = datetime.now()
                 node.RemoveConnection(self.obj)
                 main_frame = wx.GetApp().GetTopWindow()
-                main_frame.DocumentsUpdated()
+                main_frame.DocumentsUpdated(self)
                 main_frame.CodesUpdated()
         elif col == 1 and node.name != value:
             if value == "":
@@ -423,7 +427,7 @@ class ObjectCodesViewModel(CodesViewModel):
             else:
                 node.name = value
                 main_frame = wx.GetApp().GetTopWindow()
-                main_frame.DocumentsUpdated()
+                main_frame.DocumentsUpdated(self)
                 main_frame.CodesUpdated()
         return True
 
@@ -535,7 +539,10 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
             model = self.GetModel()
             node = model.ItemToObject(item)
             main_frame = wx.GetApp().GetTopWindow()
-            CodesGUIs.CodeConnectionsDialog(main_frame, node, size=wx.Size(400,400)).Show()
+            if node.key not in main_frame.codeconnections_dialogs:
+                main_frame.codeconnections_dialogs[node.key] = CodesGUIs.CodeConnectionsDialog(main_frame, node, size=wx.Size(400,400))
+            main_frame.codeconnections_dialogs[node.key].Show()
+            main_frame.codeconnections_dialogs[node.key].SetFocus()
         logger.info("Finished")
 
     def OnShowPopup(self, event):
@@ -561,10 +568,11 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         selected_items = []
         model = self.GetModel()
         for item in self.GetSelections():
-            name = model.GetValue(item, 0)
-            notes = model.GetValue(item, 1)
-            num_connections = model.GetValue(item, 2)
-            selected_items.append('\t'.join([name, notes, num_connections]).strip())
+            included = str(model.GetValue(item, 0))
+            name = model.GetValue(item, 1)
+            notes = model.GetValue(item, 2)
+            num_connections = str(model.GetValue(item, 3))
+            selected_items.append('\t'.join([included, name, notes, num_connections]).strip())
         clipdata = wx.TextDataObject()
         clipdata.SetText("\n".join(selected_items))
         wx.TheClipboard.Open()
@@ -590,9 +598,10 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
                                   GUIText.ERROR, wx.OK | wx.ICON_ERROR)
                     new_name = None
                 else:
-                    main_frame.codes[new_name] = Codes.Code(new_name)
-                    model.obj.AppendCode(new_name)
-                    main_frame.codes[new_name].AddConnection(model.obj)
+                    new_code = Codes.Code(new_name)
+                    main_frame.codes[new_code.key] = new_code
+                    model.obj.AppendCode(new_code.key)
+                    main_frame.codes[new_code.key].AddConnection(model.obj)
                     model.Cleared()
                     self.Expander(None)
                     for column in self.GetColumns():
@@ -624,10 +633,10 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
                                   GUIText.ERROR, wx.OK | wx.ICON_ERROR)
                     new_name = None
                 else:
-                    node.subcodes[new_name] = Codes.Code(new_name)
-                    node.subcodes[new_name].parent = node
-                    model.obj.AppendCode(new_name)
-                    node.subcodes[new_name].AddConnection(model.obj)
+                    new_subcode = Codes.Code(new_name, parent=node)
+                    node.subcodes[new_subcode.key] = new_subcode
+                    model.obj.AppendCode(new_subcode.key)
+                    node.subcodes[new_subcode.key].AddConnection(model.obj)
                     model.Cleared()
                     self.Expander(None)
                     for column in self.GetColumns():
@@ -697,8 +706,9 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
             node.colour_rgb = (new_colour.Red(), new_colour.Green(), new_colour.Blue(),)
             main_frame = wx.GetApp().GetTopWindow()
             main_frame.CodesUpdated()
-            self.UnselectAll()
-            wx.PostEvent(self.GetEventHandler(), dv.DataViewEvent(dv.EVT_DATAVIEW_SELECTION_CHANGED.typeId, self, dv.DataViewItem()))
+            if self:
+                self.UnselectAll()
+                wx.PostEvent(self.GetEventHandler(), dv.DataViewEvent(dv.EVT_DATAVIEW_SELECTION_CHANGED.typeId, self, dv.DataViewItem()))
         logger.info("Finished")
 
 # This model acts as a bridge between the CodeConnectionsViewCtrl and the codes.
@@ -708,9 +718,11 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
 #   2. Notes: string
 #TODO need to rework ViewModel to show dynamic label columns instead of just system ids
 class CodeConnectionsViewModel(dv.PyDataViewModel):
-    def __init__(self, objs):
+    def __init__(self, code, datasets, samples):
         dv.PyDataViewModel.__init__(self)
-        self.objs = objs
+        self.code = code
+        self.datasets = datasets
+        self.samples = samples
         self.UseWeakRefs(True)
     
     def UpdateColumnNames(self):
@@ -719,9 +731,10 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
                 self.label_column_names.append('id')
                 self.label_column_types.append('string')
             else:
-                for field_name in self.dataset.label_fields:
-                    self.label_column_names.append(field_name)
-                    self.label_column_types.append(self.dataset.label_fields[field_name].field_type)
+                for key in self.dataset.label_fields:
+                    field = self.dataset.label_fields[key]
+                    self.label_column_names.append(field.name)
+                    self.label_column_types.append(field.field_type)
         else:
             if self.dataset.dataset_source == "Reddit":
                 self.label_column_names.append('url')
@@ -747,8 +760,9 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
         # If the parent item is invalid then it represents the hidden root
         # item, so we'll use the genre objects as its children and they will
         # end up being the collection of visible roots in our tree.
+        objs = self.code.GetConnections(self.datasets, self.samples)
         if not parent:
-            for obj in self.objs:
+            for obj in objs:
                 while obj.parent != None:
                     obj = obj.parent
                 child_item = self.ObjectToItem(obj)
@@ -758,12 +772,12 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
         node = self.ItemToObject(parent)
         if isinstance(node, Datasets.Dataset):
             for key in node.documents:
-                if node.documents[key] in self.objs:
+                if node.documents[key] in objs:
                     children.append(self.ObjectToItem(node.documents[key]))
             return len(children)
         if isinstance(node, Samples.Sample):
             for key in node.parts_dict:
-                if node.parts_dict[key] in self.objs:
+                if node.parts_dict[key] in objs:
                     children.append(self.ObjectToItem(node.parts_dict[key]))
             return len(children)
         return 0
@@ -795,7 +809,7 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
         ''''Fetch the data object for this item's column.'''
         node = self.ItemToObject(item)
         if isinstance(node, Datasets.Dataset):
-            mapper = { 0 : repr(node),
+            mapper = { 0 : node.name,
                        1 : "",
                        2 : "\U0001F6C8" if node.notes != "" else "",
                        }
@@ -808,14 +822,14 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
                 else:
                     node_id = segmented_url[len(segmented_url)-2]
             else:
-                node_id = node.key[2]
+                node_id = node.doc_id[2]
             mapper = { 0 : node_id,
                        1 : "",
                        2 : "\U0001F6C8" if node.notes != "" else "",
                        }
             return mapper[col]
         elif isinstance(node, Samples.Sample):
-            mapper = { 0 : repr(node),
+            mapper = { 0 : node.name,
                        1 : "",
                        2 : "\U0001F6C8" if node.notes != "" else "",
                        }
@@ -899,7 +913,10 @@ class CodeConnectionsViewCtrl(dv.DataViewCtrl):
         node = model.ItemToObject(item)
         main_frame = wx.GetApp().GetTopWindow()
         if isinstance(node, Datasets.Document):
-            CodesGUIs.DocumentDialog(main_frame, node).Show()
+            if node.key not in main_frame.document_dialogs:
+                main_frame.document_dialogs[node.key] = CodesGUIs.DocumentDialog(main_frame, node)
+            main_frame.document_dialogs[node.key].Show()
+            main_frame.document_dialogs[node.key].SetFocus()
         logger.info("Finished")
 
     def OnShowPopup(self, event):
@@ -954,16 +971,18 @@ class DocumentViewModel(dv.PyDataViewModel):
             self.label_column_names.append('id')
             self.label_column_types.append('string')
         else:
-            for field_name in self.dataset.label_fields:
-                self.label_column_names.append(field_name)
-                self.label_column_types.append(self.dataset.label_fields[field_name].fieldtype)
+            for key in self.dataset.label_fields:
+                field = self.dataset.label_fields[key]
+                self.label_column_names.append(field.name)
+                self.label_column_types.append(field.fieldtype)
 
         self.data_column_names.clear()
         self.data_column_types.clear()
-        for field_name in self.dataset.computational_fields:
-            if field_name not in self.label_column_names and field_name not in self.data_column_names:
-                self.data_column_names.append(field_name)
-                self.data_column_types.append(self.dataset.computational_fields[field_name].fieldtype)
+        for key in self.dataset.computational_fields:
+            field = self.dataset.computational_fields[key]
+            if field.name not in self.label_column_names and field.name not in self.data_column_names:
+                self.data_column_names.append(field.name)
+                self.data_column_types.append(field.fieldtype)
 
         self.column_names.clear()
         self.column_names.extend([GUIText.NOTES, GUIText.CODES])
@@ -986,9 +1005,9 @@ class DocumentViewModel(dv.PyDataViewModel):
                 if len(dataset_children) > 0:
                     subchildren.extend(dataset_children)
                     possible_children.append(item)
-            for sample_key in self.samples_data:
-                if sample_key in self.samples_filter:
-                    item = self.ObjectToItem(self.samples_data[sample_key])
+            for key in self.samples_data:
+                if key in self.samples_filter:
+                    item = self.ObjectToItem(self.samples_data[key])
                     sample_children = []
                     self.GetChildren(item, sample_children)
                     if len(sample_children) > 0:
@@ -1191,7 +1210,7 @@ class DocumentViewModel(dv.PyDataViewModel):
             return mapper[col]
         elif isinstance(node, Samples.Sample):
             col_start = len(self.label_column_names)+len(self.data_column_names)
-            mapper = { 0 : repr(node),
+            mapper = { 0 : node.name,
                        col_start+0 : "\U0001F6C8" if node.notes != "" else "",
                        col_start+1 : len(node.codes)
                        }
@@ -1223,8 +1242,8 @@ class DocumentViewModel(dv.PyDataViewModel):
                        }
             idx = 0
             for field_name in self.label_column_names:
-                if field_name in node.parent.data[node.key]:
-                    value = node.parent.data[node.key][field_name]
+                if field_name in node.parent.data[node.doc_id]:
+                    value = node.parent.data[node.doc_id][field_name]
                     if self.label_column_types[idx] == 'url':
                         segmented_url = value.split("/")
                         if segmented_url[len(segmented_url)-1] != '':
@@ -1265,8 +1284,8 @@ class DocumentViewModel(dv.PyDataViewModel):
                 mapper[idx] = value
                 idx = idx+1
             for field_name in self.data_column_names:
-                if field_name not in self.label_column_names and field_name in node.parent.data[node.key]:
-                    value = node.parent.data[node.key][field_name]
+                if field_name not in self.label_column_names and field_name in node.parent.data[node.doc_id]:
+                    value = node.parent.data[node.doc_id][field_name]
                     if self.data_column_types[idx-len(self.label_column_types)] == 'url':
                         segmented_url = value.split("/")
                         if segmented_url[len(segmented_url)-1] != '':
@@ -1441,7 +1460,10 @@ class DocumentViewCtrl(dv.DataViewCtrl):
                 #open sample list
                 print(node.GetSampleConnections(main_frame.samples, selected=True))
             else:
-                CodesGUIs.DocumentDialog(self, node).Show()
+                if node.key not in main_frame.document_dialogs:
+                    main_frame.document_dialogs[node.key] = CodesGUIs.DocumentDialog(main_frame, node)
+                main_frame.document_dialogs[node.key].Show()
+                main_frame.document_dialogs[node.key].SetFocus()
         logger.info("Finished")
 
     def OnCopyItems(self, event):
@@ -1498,30 +1520,31 @@ class DocumentPositionsViewModel(dv.PyDataViewModel):
                     children.append(self.ObjectToItem(self.datasets[dataset_key].documents[document_key]))
             return len(children)
         elif isinstance(node, Datasets.Document):
-            positions = self.code.doc_positions[(node.parent.key, node.key)]
-            for field_key, start, end in positions:
-                field_type = self.datasets[node.parent.key].available_fields[field_key].fieldtype
-                field_data = self.datasets[node.parent.key].data[node.key][field_key]
-                field_string = '------'+str(field_key)+'------\n'
-                if isinstance(field_data, list):
-                    for entry in field_data:
-                        if field_type == 'url':
-                            field_string = field_string + entry + '\n------------\n'
-                        elif field_type == 'UTC-timestamp':
-                            value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
-                            field_string = field_string + value_str + ' UTC\n------------\n'
-                        else:
-                            field_string = field_string + str(entry) + '\n------------\n'
-                else:
-                    if field_type == 'url':
-                        field_string = field_string + field_data + '\n------------\n'
-                    elif field_type == 'UTC-timestamp':
-                        value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
-                        field_string = field_string + value_str+' UTC\n------------\n'
+            if (node.parent.key, node.key) in self.code.doc_positions:
+                positions = self.code.doc_positions[(node.parent.key, node.key)]
+                for field_key, start, end in positions:
+                    field = self.datasets[node.parent.key].available_fields[field_key]
+                    field_data = self.datasets[node.parent.key].data[node.doc_id][field.name]
+                    field_string = '------'+str(field.name)+'------\n'
+                    if isinstance(field_data, list):
+                        for entry in field_data:
+                            if field.fieldtype == 'url':
+                                field_string = field_string + entry + '\n------------\n'
+                            elif field.fieldtype == 'UTC-timestamp':
+                                value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
+                                field_string = field_string + value_str + ' UTC\n------------\n'
+                            else:
+                                field_string = field_string + str(entry) + '\n------------\n'
                     else:
-                        field_string = field_string + field_data + '\n------------\n'
-                selected_text = (node.parent.key, node.key, field_key, field_string[start:end])
-                children.append(self.ObjectToItem(selected_text))
+                        if field.fieldtype == 'url':
+                            field_string = field_string + field_data + '\n------------\n'
+                        elif field.fieldtype == 'UTC-timestamp':
+                            value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
+                            field_string = field_string + value_str+' UTC\n------------\n'
+                        else:
+                            field_string = field_string + field_data + '\n------------\n'
+                    selected_text = (node.parent.key, node.key, field.name, field_string[start:end])
+                    children.append(self.ObjectToItem(selected_text))
             return len(children)
         return 0
 
@@ -1566,7 +1589,7 @@ class DocumentPositionsViewModel(dv.PyDataViewModel):
                 else:
                     node_id = segmented_url[len(segmented_url)-2]
             else:
-                node_id = node.key[2]
+                node_id = node.doc_id[2]
             mapper = { 0 : str(node_id),
                        1 : "",
                        2 : "",
@@ -1620,9 +1643,16 @@ class DocumentPositionsViewCtrl(dv.DataViewCtrl):
         node = model.ItemToObject(item)
         main_frame = wx.GetApp().GetTopWindow()
         if isinstance(node, Datasets.Document):
-            CodesGUIs.DocumentDialog(main_frame, node).Show()
+            if node.key not in main_frame.document_dialogs:
+                main_frame.document_dialogs[node.key] = CodesGUIs.DocumentDialog(main_frame, node)
+            main_frame.document_dialogs[node.key].Show()
+            main_frame.document_dialogs[node.key].SetFocus()
         elif isinstance(node, tuple):
-            CodesGUIs.DocumentDialog(main_frame, model.dataset.documents[node[0]]).Show()
+            doc = model.dataset.documents[node[0]]
+            if doc.key not in main_frame.document_dialogs:
+                main_frame.document_dialogs[doc.key] = CodesGUIs.DocumentDialog(main_frame, doc)
+            main_frame.document_dialogs[doc.key].Show()
+            main_frame.document_dialogs[doc.key].SetFocus()
         logger.info("Finished")
 
     def OnShowPopup(self, event):
@@ -1711,7 +1741,8 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
             return mapper[col]
         elif isinstance(node, Codes.Quotation):
             main_frame = wx.GetApp().GetTopWindow()
-            document = main_frame.datasets[node.dataset_key].documents[node.document_key]
+            dataset = main_frame.datasets[node.dataset_key]
+            document = dataset.documents[node.document_key]
             if document.url != "":
                 segmented_url = document.url.split("/")
                 if segmented_url[len(segmented_url)-1] != '':
@@ -1719,9 +1750,9 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
                 else:
                     document_id = segmented_url[len(segmented_url)-2]
             else:
-                document_id = document.key[2]
+                document_id = document.doc_id[2]
             mapper = { 0 : str(document_id),
-                       1 : str(node.dataset_key),
+                       1 : str(dataset.name),
                        2 : str(node.original_data),
                        3 : str(node.paraphrased_data),
                        }
@@ -1733,9 +1764,9 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
         '''only allowing updating of key as rest is connected to data retrieved'''
         node = self.ItemToObject(item)
         if isinstance(node, Codes.Quotation):
-            if col == 1:
+            if col == 2:
                 node.original_data = value
-            elif col == 2:
+            elif col == 3:
                 node.paraphrased_data = value
         return True
     
@@ -1817,10 +1848,16 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
         node = model.ItemToObject(item)
         main_frame = wx.GetApp().GetTopWindow()
         if isinstance(node, Codes.Code):
-            CodesGUIs.CodeConnectionsDialog(main_frame, node, size=wx.Size(400,400)).Show()
+            if node.key not in main_frame.codeconnections_dialogs:
+                main_frame.codeconnections_dialogs[node.key] = CodesGUIs.CodeConnectionsDialog(main_frame, node, size=wx.Size(400,400))
+            main_frame.codeconnections_dialogs[node.key].Show()
+            main_frame.codeconnections_dialogs[node.key].SetFocus()
         elif isinstance(node, Codes.Quotation):
             document = main_frame.datasets[node.dataset_key].documents[node.document_key]
-            CodesGUIs.DocumentDialog(main_frame, document).Show()
+            if node.key not in main_frame.document_dialogs:
+                main_frame.document_dialogs[document.key] = CodesGUIs.DocumentDialog(main_frame, document)
+            main_frame.document_dialogs[document.key].Show()
+            main_frame.document_dialogs[document.key].SetFocus()
         logger.info("Finished")
 
     def OnShowPopup(self, event):
@@ -1876,9 +1913,9 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
                 quote_item = dialog.positions_ctrl.GetSelection()
                 quote_node = dialog.positions_model.ItemToObject(quote_item)
                 if isinstance(quote_node, Datasets.Document):
-                    node.quotations.append(Codes.Quotation(None, node, quote_node.parent.key, quote_node.key))
+                    node.quotations.append(Codes.Quotation(node, quote_node.parent.key, quote_node.key))
                 elif isinstance(quote_node, tuple):
-                    node.quotations.append(Codes.Quotation(None, node, quote_node[0], quote_node[1], quote_node[3]))
+                    node.quotations.append(Codes.Quotation(node, quote_node[0], quote_node[1], quote_node[3]))
                     
             model.Cleared()
             self.Expander(None)

@@ -2,10 +2,14 @@ from datetime import datetime
 import uuid
 
 class GenericObject(object):
-    def __init__(self, key, parent=None, name=None):
+    def __init__(self, key=None, parent=None, name=None):
         #properties that automatically update last_changed_dt
-        self._key = key
-        self._uuid = str(uuid.uuid4())
+        if key != None:
+            self._uuid = str(uuid.uuid4())
+            self._key = key
+        else:
+            self._uuid = str(uuid.uuid4())
+            self._key = self._uuid
         self._parent = parent
         self._name = name
         self._label = ""
@@ -27,14 +31,6 @@ class GenericObject(object):
     @key.setter
     def key(self, value):
         self._key = value
-        self.last_changed_dt = datetime.now()
-
-    @property
-    def uuid(self):
-        return self._uuid
-    @uuid.setter
-    def uuid(self, value):
-        self._uuid = value
         self.last_changed_dt = datetime.now()
 
     @property

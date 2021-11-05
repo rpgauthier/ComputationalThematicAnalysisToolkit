@@ -11,7 +11,7 @@ from dateutil.relativedelta import relativedelta
 import Common.Constants as Constants
 
 def DeleteFiles(name):
-    logger = logging.getLogger(__name__+".FilesAvaliable["+name+"]")
+    logger = logging.getLogger(__name__+".FilesAvailable["+name+"]")
     logger.info("Starting")
     path = os.path.join(Constants.DATA_PATH,'Twitter', name)
     if os.path.exists(path):
@@ -21,8 +21,8 @@ def DeleteFiles(name):
                 os.remove(os.path.join(path+filename))
     logger.info("Finished")
 
-def FilesAvaliable(name, start_date, end_date, prefix):
-    logger = logging.getLogger(__name__+".FilesAvaliable["+name+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
+def FilesAvailable(name, start_date, end_date, prefix):
+    logger = logging.getLogger(__name__+".FilesAvailable["+name+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
     logger.info("Starting")
     start_month = start_date[0:7]
     end_month = end_date[0:7]

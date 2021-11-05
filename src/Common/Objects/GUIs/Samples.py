@@ -112,28 +112,44 @@ class SampleCreatePanel(wx.Panel):
             wx.MessageBox(GUIText.MULTIPROCESSING_WARNING_MSG,
                           GUIText.WARNING, wx.OK | wx.ICON_WARNING)
         elif model_type == 'Random':
-            with RandomModelCreateDialog(self) as create_dialog:
-                if create_dialog.ShowModal() == wx.ID_OK:
-                    self.Freeze()
-                    main_frame.CreateProgressDialog(GUIText.GENERATING_DEFAULT_LABEL,
-                                        warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
-                                        freeze=False)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_DEFAULT_MSG)
-                    model_parameters = create_dialog.model_parameters
-                    name = model_parameters['name']
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_RANDOM_SUBLABEL+str(name))
-                    dataset_key = model_parameters['dataset_key']
-                    dataset = main_frame.datasets[dataset_key]
-                    model_parameters['document_keys'] = list(dataset.data.keys())
-                    new_sample = Samples.RandomSample(name, dataset_key, model_parameters)
-                    new_sample.Generate(dataset)
-                    new_sample_panel = RandomSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())
-                    main_frame.samples[new_sample.key] = new_sample
-                    parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
-                    parent_notebook.sample_panels[new_sample.key] = new_sample_panel
-                    main_frame.DocumentsUpdated()
-                    main_frame.CloseProgressDialog(thaw=False)
-                    self.Thaw()
+            usable_datasets = list(main_frame.datasets.keys())
+            status_flag = False
+            if len(usable_datasets) > 1:
+                with RandomModelCreateDialog(self) as create_dialog:
+                    if create_dialog.ShowModal() == wx.ID_OK:
+                        model_parameters = create_dialog.model_parameters
+                        status_flag = True
+            elif len(usable_datasets) == 1:
+                main_frame.model_iter += 1
+                model_name = "Model_"+str(main_frame.model_iter)
+                model_parameters = {'name':model_name, 'dataset_key': usable_datasets[0]}
+                status_flag = True
+            else:
+                wx.MessageBox(GUIText.DATASET_NOTAVAILABLE_ERROR,
+                            GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                logger.warning('no dataset available')
+                status_flag = False
+            
+            if status_flag:
+                self.Freeze()
+                main_frame.CreateProgressDialog(GUIText.GENERATING_DEFAULT_LABEL,
+                                    warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
+                                    freeze=False)
+                main_frame.PulseProgressDialog(GUIText.GENERATING_DEFAULT_MSG)
+                name = model_parameters['name']
+                main_frame.PulseProgressDialog(GUIText.GENERATING_RANDOM_SUBLABEL+str(name))
+                dataset_key = model_parameters['dataset_key']
+                dataset = main_frame.datasets[dataset_key]
+                model_parameters['doc_ids'] = list(dataset.data.keys())
+                new_sample = Samples.RandomSample(name, dataset_key, model_parameters)
+                new_sample.Generate(dataset)
+                new_sample_panel = RandomSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())
+                main_frame.samples[new_sample.key] = new_sample
+                parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.name, select=True)
+                parent_notebook.sample_panels[new_sample.key] = new_sample_panel
+                main_frame.DocumentsUpdated(self)
+                main_frame.CloseProgressDialog(thaw=False)
+                self.Thaw()
         elif model_type == 'LDA':
             with LDAModelCreateDialog(self) as create_dialog:
                 if create_dialog.ShowModal() == wx.ID_OK:
@@ -212,7 +228,7 @@ class SampleCreatePanel(wx.Panel):
             main_frame.samples[new_sample.key] = new_sample
             new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt)
             main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG3)
-            parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
+            parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.name, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
             main_frame.CloseProgressDialog(message=GUIText.GENERATED_LDA_COMPLETED_PART1,
                                            thaw=False)
@@ -227,7 +243,7 @@ class SampleCreatePanel(wx.Panel):
             main_frame.samples[new_sample.key] = new_sample
             new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt)
             main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG3)
-            parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
+            parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.name, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
             main_frame.CloseProgressDialog(message=GUIText.GENERATED_BITERM_COMPLETED_PART1,
                                            thaw=False)
@@ -242,7 +258,7 @@ class SampleCreatePanel(wx.Panel):
             main_frame.samples[new_sample.key] = new_sample
             new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt)
             main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_MSG3)
-            parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.key, select=True)
+            parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.name, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
             main_frame.CloseProgressDialog(message=GUIText.GENERATED_NMF_COMPLETED_PART1,
                                            thaw=False)
@@ -279,6 +295,11 @@ class AbstractSamplePanel(wx.Panel):
         logger.info("Starting")
         if self.parts_panel != None:
             self.parts_panel.DocumentsUpdated()
+        logger.info("Finished")
+    
+    def ModeChange(self):
+        logger = logging.getLogger(__name__+".AbstractSamplePanel["+self.sample.key+"].ModeChanged")
+        logger.info("Starting")
         logger.info("Finished")
 
     def Load(self, saved_data):
@@ -365,7 +386,7 @@ class PartPanel(wx.Panel):
             node.usefulness_flag = None
             self.parts_model.ItemChanged(item)
         main_frame = wx.GetApp().GetTopWindow()
-        main_frame.DocumentsUpdated()
+        main_frame.DocumentsUpdated(self)
         logger.info("Finished")
 
     def OnUseful(self, event):
@@ -376,7 +397,7 @@ class PartPanel(wx.Panel):
             node.usefulness_flag = True
             self.parts_model.ItemChanged(item)
         main_frame = wx.GetApp().GetTopWindow()
-        main_frame.DocumentsUpdated()
+        main_frame.DocumentsUpdated(self)
         logger.info("Finished")
 
     def OnNotUseful(self, event):
@@ -387,7 +408,7 @@ class PartPanel(wx.Panel):
             node.usefulness_flag = False
             self.parts_model.ItemChanged(item)
         main_frame = wx.GetApp().GetTopWindow()
-        main_frame.DocumentsUpdated()
+        main_frame.DocumentsUpdated(self)
         logger.info("Finished")
 
     def ChangeSelectedParts(self, selected_parts):
@@ -534,12 +555,13 @@ class SampleComputationalFieldsDialog(wx.Dialog):
     def __init__(self, parent, sample, dataset, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER):
         logger = logging.getLogger(__name__+".SampleComputationalFieldsDialog["+str(sample.key)+"].__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=FilteringGUIText.COMPUTATIONAL_FIELDS+": "+repr(sample), style=style, size=wx.Size(600,400))
+        wx.Dialog.__init__(self, parent, title=FilteringGUIText.COMPUTATIONAL_FIELDS+": "+sample.name, style=style, size=wx.Size(600,400))
         self.sample = sample
         self.dataset = dataset
         self.tokenization_thread = None
+        main_frame = wx.GetApp().GetTopWindow()
         
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.fields = {}
         for field_key in self.sample.fields_list:
@@ -552,13 +574,17 @@ class SampleComputationalFieldsDialog(wx.Dialog):
         self.toolbar.Bind(wx.EVT_MENU, self.OnRestoreStart, restore_tool)
         CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnRestoreFinish)
         self.toolbar.Realize()
-        sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
+        self.sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
+        if main_frame.options_dict['adjustable_computation_fields_mode']:
+            self.toolbar.Show()
+        else:
+            self.toolbar.Hide()
 
         self.computational_fields_model = DatasetsDataViews.ChosenFieldsViewModel(self.fields)
         self.computational_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(self, self.computational_fields_model)
-        sizer.Add(self.computational_fields_ctrl, proportion=1, flag=wx.EXPAND, border=5)
+        self.sizer.Add(self.computational_fields_ctrl, proportion=1, flag=wx.EXPAND, border=5)
 
-        self.SetSizer(sizer)
+        self.SetSizer(self.sizer)
         self.Layout()
 
         logger.info("Finished")
@@ -584,10 +610,10 @@ class SampleComputationalFieldsDialog(wx.Dialog):
             for field_key in list(self.dataset.computational_fields.keys()):
                 if field_key not in self.fields:
                     db_conn.DeleteField(self.dataset.key, field_key)
-                self.dataset.computational_fields[field_key].DestroyObject()
+            self.dataset.computational_fields.clear()
             #2) add to the dataset any fields from sample's field_list that are not included fields dataset
             for field_key in self.fields:
-                self.dataset.computational_fields[field_key] = copy.copy(self.fields[field_key])
+                self.dataset.computational_fields[field_key] = self.fields[field_key]
                 self.dataset.computational_fields[field_key].last_changed_dt = datetime.now()
                 
             main_frame.multiprocessing_inprogress_flag = True
@@ -605,6 +631,17 @@ class SampleComputationalFieldsDialog(wx.Dialog):
         main_frame.CloseProgressDialog(message=GUIText.RESTORE_COMPLETED_MSG,
                                        thaw=True)
         logger.info("Finished")
+        
+    def ModeChange(self):
+        logger = logging.getLogger(__name__+".SampleComputationalFieldsDialog["+self.sample.key+"].ModeChanged")
+        logger.info("Starting")
+        main_frame = wx.GetApp().GetTopWindow()
+        if main_frame.options_dict['adjustable_computation_fields_mode']:
+            self.toolbar.Show()
+        else:
+            self.toolbar.Hide()
+        self.Layout()
+        logger.info("Finished")
 
 class RandomSamplePanel(AbstractSamplePanel):
     '''general class for features RandomSample panels should have'''
@@ -621,7 +658,7 @@ class RandomSamplePanel(AbstractSamplePanel):
         details_sizer.Add(type_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details_sizer.AddSpacer(10)
         if main_frame.options_dict['multipledatasets_mode']:
-            dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(sample.dataset_key))
+            dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(self.dataset.name))
             details_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer.AddSpacer(10)
         created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.start_dt.strftime("%Y-%m-%d %H:%M:%S"))
@@ -656,14 +693,7 @@ class RandomModelCreateDialog(wx.Dialog):
         self.model_parameters = {}
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        name_label = wx.StaticText(self, label=GUIText.NAME+":")
-        self.name_ctrl = wx.TextCtrl(self)
-        self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        name_sizer.Add(self.name_ctrl, 0, wx.ALL, 5)
-        sizer.Add(name_sizer)
-
+        
         main_frame = wx.GetApp().GetTopWindow()
         self.usable_datasets = list(main_frame.datasets.keys())
         usable_datasets_strings = [str(dataset_key) for dataset_key in self.usable_datasets]
@@ -690,24 +720,12 @@ class RandomModelCreateDialog(wx.Dialog):
     def OnOK(self, event):
         logger = logging.getLogger(__name__+".ModelCreateDialog.OnOK")
         logger.info("Starting")
-        app = wx.GetApp()
         main_frame = wx.GetApp().GetTopWindow()
         #check that name exists and is unique
         status_flag = True
 
-        model_name = self.name_ctrl.GetValue()
-        model_name = model_name.replace(" ", "_")
-        if model_name != "":
-            if model_name in main_frame.samples:
-                wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
-                              GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-                logger.warning('name[%s] is not unique', model_name)
-                status_flag = False
-        else:
-            wx.MessageBox(GUIText.NAME_MISSING_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('name field is empty')
-            status_flag = False
+        main_frame.model_iter += 1
+        model_name = "Model_"+str(main_frame.model_iter)
 
         if len(self.usable_datasets) > 1: 
             dataset_id = self.dataset_ctrl.GetSelection()
@@ -719,7 +737,7 @@ class RandomModelCreateDialog(wx.Dialog):
         elif len(self.usable_datasets) == 1:
             dataset_id = 0
         else:
-            wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
+            wx.MessageBox(GUIText.DATASET_NOTAVAILABLE_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('no dataset available')
             status_flag = False
@@ -739,6 +757,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         AbstractSamplePanel.__init__(self, parent, sample, dataset, size=size)
 
         self.selected_parts = None
+        self.computationfields_dialog = None
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -748,7 +767,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         details1_sizer.Add(type_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details1_sizer.AddSpacer(10)
         if main_frame.options_dict['multipledatasets_mode']:
-            dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(sample.dataset_key))
+            dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(self.dataset.name))
             details1_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details1_sizer.AddSpacer(10)
         created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.created_dt.strftime("%Y-%m-%d %H:%M:%S"))
@@ -799,13 +818,13 @@ class TopicSamplePanel(AbstractSamplePanel):
                                         warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
                                         freeze=False)
         try:
-            main_frame.PulseProgressDialog(GUIText.GENERATED_DEFAULT_LABEL+": "+str(self.sample.key))
+            main_frame.PulseProgressDialog(GUIText.GENERATED_DEFAULT_LABEL+": "+str(self.sample.name))
             dataset = None
             if self.sample.dataset_key in main_frame.datasets:
                 dataset = main_frame.datasets[self.sample.dataset_key]
             self.sample.GenerateFinish(event.data, dataset, main_frame.current_workspace.name)
             self.DisplayModel()
-            main_frame.DocumentsUpdated()
+            main_frame.DocumentsUpdated(self)
         finally:
             main_frame.multiprocessing_inprogress_flag = False
             main_frame.CloseProgressDialog(thaw=False)
@@ -821,7 +840,10 @@ class TopicSamplePanel(AbstractSamplePanel):
     def OnShowComputationalFields(self, event):
         logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].OnShowComputationalFields")
         logger.info("Starting")
-        SampleComputationalFieldsDialog(self, self.sample, self.dataset).Show()
+        if self.computationfields_dialog == None:
+            self.computationfields_dialog = SampleComputationalFieldsDialog(self, self.sample, self.dataset)
+        self.computationfields_dialog.Show()
+        self.computationfields_dialog.SetFocus()
         logger.info("Finished")
     
     def OnChangeTopicWordNum(self, event):
@@ -1060,7 +1082,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         self.horizontal_splitter = wx.SplitterWindow(self.vertical_splitter)
         self.horizontal_splitter.SetMinimumPaneSize(20)
 
-        self.topiclist_panel = TopicListPanel(self.horizontal_splitter, self.sample, self.dataset)
+        self.topiclist_panel = TopicListPanel(self.horizontal_splitter, self, self.sample, self.dataset)
         self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnMergeTopics, self.topiclist_panel.merge_topics_tool)
         self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnSplitTopics, self.topiclist_panel.split_topics_tool)
         self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnRemoveTopics, self.topiclist_panel.remove_topics_tool)
@@ -1133,6 +1155,13 @@ class TopicSamplePanel(AbstractSamplePanel):
 
         self.visualization_panel.Draw(model_documenttopart_prob=list(self.sample.document_topic_prob.values()),
                                       parts=included_topics, cutoff=self.sample.document_cutoff, word_cloud_freq=weight_map)
+        logger.info("Finished")
+
+        
+    def ModeChange(self):
+        logger = logging.getLogger(__name__+".AbstractSamplePanel["+self.sample.key+"].ModeChanged")
+        logger.info("Starting")
+        self.computationfields_dialog.ModeChange()
         logger.info("Finished")
 
     def Load(self, saved_data):
@@ -1226,11 +1255,12 @@ class TopicVisualizationsNotebook(FNB.FlatNotebook):
         self.DrawLDAPlots(selected_parts)
 
 class TopicListPanel(wx.Panel):
-    def __init__(self, parent, sample, dataset):
+    def __init__(self, parent, sample_panel, sample, dataset):
         logger = logging.getLogger(__name__+".TopicListPanel["+str(sample.key)+"].__init__")
         logger.info("Starting")
         wx.Panel.__init__(self, parent)
 
+        self.sample_panel = sample_panel
         self.sample = sample
         self.dataset = dataset
 
@@ -1242,7 +1272,7 @@ class TopicListPanel(wx.Panel):
         details1_sizer.Add(type_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details1_sizer.AddSpacer(10)
         if main_frame.options_dict['multipledatasets_mode']:
-            dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(self.sample.dataset_key))
+            dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(self.dataset.name))
             details1_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details1_sizer.AddSpacer(10)
         created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.start_dt.strftime("%Y-%m-%d %H:%M:%S"))
@@ -1326,7 +1356,11 @@ class TopicListPanel(wx.Panel):
     def OnShowComputationalFields(self, event):
         logger = logging.getLogger(__name__+".TopicListPanel["+str(self.sample.key)+"].OnShowComputationalFields")
         logger.info("Starting")
-        SampleComputationalFieldsDialog(self, self.sample, self.dataset).Show()
+        
+        if self.sample_panel.computationfields_dialog == None:
+            self.sample_panel.computationfields_dialog = SampleComputationalFieldsDialog(self, self.sample, self.dataset)
+        self.sample_panel.computationfields_dialog.Show()
+        self.sample_panel.computationfields_dialog.SetFocus()
         logger.info("Finished")
 
 class LDAModelCreateDialog(wx.Dialog):
@@ -1338,14 +1372,6 @@ class LDAModelCreateDialog(wx.Dialog):
         self.model_parameters = {}
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-
-        name_label = wx.StaticText(self, label=GUIText.NAME+":")
-        self.name_ctrl = wx.TextCtrl(self)
-        self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        name_sizer.Add(self.name_ctrl, 0, wx.ALL, 5)
-        sizer.Add(name_sizer)
 
         #need to only show tokensets that have fields containing data
         self.usable_datasets = []
@@ -1400,20 +1426,8 @@ class LDAModelCreateDialog(wx.Dialog):
         #check that name exists and is unique
         status_flag = True
 
-        model_name = self.name_ctrl.GetValue()
-        model_name = model_name.replace(" ", "_")
-        model_name = model_name.lower()
-        if model_name != "":
-            if model_name in main_frame.samples:
-                wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
-                              GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-                logger.warning('name[%s] is not unique', model_name)
-                status_flag = False
-        else:
-            wx.MessageBox(GUIText.NAME_MISSING_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('name field is empty')
-            status_flag = False
+        main_frame.model_iter += 1
+        model_name = "Model_"+str(main_frame.model_iter)
 
         if len(self.usable_datasets) > 1:
             dataset_id = self.dataset_ctrl.GetSelection()
@@ -1425,7 +1439,7 @@ class LDAModelCreateDialog(wx.Dialog):
         elif len(self.usable_datasets) == 1:
             dataset_id = 0
         else:
-            wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
+            wx.MessageBox(GUIText.DATASET_NOTAVAILABLE_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('no dataset available')
             status_flag = False
@@ -1450,14 +1464,6 @@ class BitermModelCreateDialog(wx.Dialog):
         self.model_parameters = {}
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-
-        name_label = wx.StaticText(self, label=GUIText.NAME+":")
-        self.name_ctrl = wx.TextCtrl(self)
-        self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        name_sizer.Add(self.name_ctrl, 0, wx.ALL, 5)
-        sizer.Add(name_sizer)
 
         #need to only show tokensets that have fields containing data
         self.usable_datasets = []
@@ -1513,20 +1519,8 @@ class BitermModelCreateDialog(wx.Dialog):
         #check that name exists and is unique
         status_flag = True
 
-        model_name = self.name_ctrl.GetValue()
-        model_name = model_name.replace(" ", "_")
-        model_name = model_name.lower()
-        if model_name != "":
-            if model_name in main_frame.samples:
-                wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
-                              GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-                logger.warning('name[%s] is not unique', model_name)
-                status_flag = False
-        else:
-            wx.MessageBox(GUIText.NAME_MISSING_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('name field is empty')
-            status_flag = False
+        main_frame.model_iter += 1
+        model_name = "Model_"+str(main_frame.model_iter)
 
         if len(self.usable_datasets) > 1:
             dataset_id = self.dataset_ctrl.GetSelection()
@@ -1538,7 +1532,7 @@ class BitermModelCreateDialog(wx.Dialog):
         elif len(self.usable_datasets) == 1:
             dataset_id = 0
         else:
-            wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
+            wx.MessageBox(GUIText.DATASET_NOTAVAILABLE_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('no dataset available')
             status_flag = False
@@ -1561,14 +1555,6 @@ class NMFModelCreateDialog(wx.Dialog):
         self.model_parameters = {}
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-
-        name_label = wx.StaticText(self, label=GUIText.NAME+":")
-        self.name_ctrl = wx.TextCtrl(self)
-        self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label, 0, wx.ALL, 5)
-        name_sizer.Add(self.name_ctrl, 0, wx.ALL, 5)
-        sizer.Add(name_sizer)
 
         #need to only show tokensets that have fields containing data
         self.usable_datasets = []
@@ -1616,20 +1602,8 @@ class NMFModelCreateDialog(wx.Dialog):
         #check that name exists and is unique
         status_flag = True
 
-        model_name = self.name_ctrl.GetValue()
-        model_name = model_name.replace(" ", "_")
-        model_name = model_name.lower()
-        if model_name != "":
-            if model_name in main_frame.samples:
-                wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
-                              GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-                logger.warning('name[%s] is not unique', model_name)
-                status_flag = False
-        else:
-            wx.MessageBox(GUIText.NAME_MISSING_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('name field is empty')
-            status_flag = False
+        main_frame.model_iter += 1
+        model_name = "Model_"+str(main_frame.model_iter)
 
         if len(self.usable_datasets) > 1:
             dataset_id = self.dataset_ctrl.GetSelection()
@@ -1641,7 +1615,7 @@ class NMFModelCreateDialog(wx.Dialog):
         elif len(self.usable_datasets) == 1:
             dataset_id = 0
         else:
-            wx.MessageBox(GUIText.DATASET_NOTAVALIABLE_ERROR,
+            wx.MessageBox(GUIText.DATASET_NOTAVAILABLE_ERROR,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('no dataset available')
             status_flag = False

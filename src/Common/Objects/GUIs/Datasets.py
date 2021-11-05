@@ -41,7 +41,7 @@ class DataNotebook(FNB.FlatNotebook):
                 self.DeletePage(index)
             del self.dataset_data_tabs[key]
         for key in main_frame.datasets:
-            main_frame.PulseProgressDialog(GUIText.REFRESHING_DATASETS_BUSY_MSG+str(key))
+            main_frame.PulseProgressDialog(GUIText.REFRESHING_DATASETS_BUSY_MSG+str(main_frame.datasets[key].name))
             if key in self.dataset_data_tabs:
                 self.dataset_data_tabs[key].Update()
             else:
@@ -90,11 +90,12 @@ class DataNotebook(FNB.FlatNotebook):
         return saved_data
 
 class DatasetDetailsDialog(wx.Dialog):
-    def __init__(self, parent, dataset):
+    def __init__(self, parent, module, dataset):
         logger = logging.getLogger(__name__+".DatasetDetailsDialog.__init__")
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title="", style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
 
+        self.module = module
         self.dataset = dataset
         self.tokenization_thread = None
 
@@ -104,7 +105,7 @@ class DatasetDetailsDialog(wx.Dialog):
             self.SetTitle(GUIText.RETRIEVED_REDDIT_LABEL)
         elif dataset.dataset_source == "CSV":
             self.SetTitle(GUIText.RETRIEVED_CSV_LABEL)
-        dataset_panel = DatasetPanel(self, dataset)
+        dataset_panel = DatasetPanel(self, self.module, dataset)
         self.sizer.Add(dataset_panel)
 
         self.SetSizer(self.sizer)
@@ -112,81 +113,19 @@ class DatasetDetailsDialog(wx.Dialog):
         self.Layout()
         self.Fit()
 
-        CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnTokenizerEnd)
         logger.info("Finished")
-    
-    def OnChangeDatasetKey(self, event):
-        logger = logging.getLogger(__name__+".DatasetDetailsDialog.OnChangeDatasetKey")
-        logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        if main_frame.multiprocessing_inprogress_flag:
-            wx.MessageBox(GUIText.MULTIPROCESSING_WARNING_MSG,
-                          GUIText.WARNING, wx.OK | wx.ICON_WARNING)
-            return
 
-        main_frame.CreateProgressDialog(GUIText.CHANGING_NAME_BUSY_LABEL,
-                                        freeze=True)
-        updated_flag = False
-        tokenizing_flag = False
-        try:
-            main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_PREPARING_MSG)
-            node = self.dataset
-            if isinstance(node, Datasets.Dataset):
-                new_name = self.name_ctrl.GetValue()
-                
-                if node.name != new_name:
-                    old_key = node.key
-                    new_key = (new_name, node.dataset_source, node.dataset_type,)
-                    if new_key in main_frame.datasets:
-                        wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
-                                        GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-                        logger.error("Duplicate name[%s] entered by user", str(new_key))
-                    else:
-                        main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_MSG1+str(node.key)\
-                                                      +GUIText.CHANGING_NAME_BUSY_MSG2+str(new_key))
-
-                        node.key = new_key
-                        node.name = new_name
-                        if old_key in main_frame.datasets:
-                            main_frame.datasets[new_key] = main_frame.datasets[old_key]
-                            del main_frame.datasets[old_key]
-                        elif node.parent is not None:
-                            node.parent.datasets[new_key] = node
-                            del node.parent.datasets[old_key]
-                        Database.DatabaseConnection(main_frame.current_workspace.name).UpdateDatasetKey(old_key, new_key)
-                        main_frame.DatasetKeyChange(old_key, new_key)
-                        updated_flag = True
-                language_index = self.language_ctrl.GetSelection()
-                if node.language != Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]:
-                    main_frame.PulseProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_PREPARING_MSG)
-                    node.language = Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]
-                    main_frame.multiprocessing_inprogress_flag = True
-                    self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, node, True)
-                    tokenizing_flag = True
-        finally:
-            if not tokenizing_flag:
-                if updated_flag:
-                    main_frame.DatasetsUpdated()
-                main_frame.CloseProgressDialog(thaw=True)
-                self.Close()
-        logger.info("Finished")
-    
-    def OnTokenizerEnd(self, event):
-        logger = logging.getLogger(__name__+".DatasetDetailsDialog.OnTokenizerEnd")
-        logger.info("Starting")
-        self.tokenization_thread.join()
-        self.tokenization_thread = None
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.DatasetsUpdated()
-        main_frame.CloseProgressDialog(thaw=True)
-        main_frame.multiprocessing_inprogress_flag = False
-        self.Close()
-        logger.info("Finished")
+    def RefreshDetails(self):
+        self.sizer.Clear(True)
+        dataset_panel = DatasetPanel(self, self.module, self.dataset)
+        self.sizer.Add(dataset_panel)
+        self.Layout()
 
 class DatasetPanel(wx.Panel):
-    def __init__(self, parent, dataset, header=False, size=wx.DefaultSize):
+    def __init__(self, parent, module, dataset, header=False, size=wx.DefaultSize):
         wx.Panel.__init__(self, parent, size=size)
 
+        self.module = module
         self.dataset = dataset
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -206,18 +145,18 @@ class DatasetPanel(wx.Panel):
             self.name_ctrl = wx.TextCtrl(
                 self, value=dataset.name, style=wx.TE_PROCESS_ENTER)
             self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-            self.name_ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnChangeDatasetKey)
+            self.name_ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnChangeDatasetName)
             name_sizer.Add(self.name_ctrl)
             details_sizer1.Add(name_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer1.AddSpacer(10)
 
         if dataset.parent is None:
-            selected_lang = Constants.AVALIABLE_DATASET_LANGUAGES1.index(
+            selected_lang = Constants.AVAILABLE_DATASET_LANGUAGES1.index(
                 dataset.language)
             language_label = wx.StaticText(
                 self, label=GUIText.LANGUAGE + ": ")
             self.language_ctrl = wx.Choice(
-                self, choices=Constants.AVALIABLE_DATASET_LANGUAGES2)
+                self, choices=Constants.AVAILABLE_DATASET_LANGUAGES2)
             self.language_ctrl.Select(selected_lang)
             language_sizer = wx.BoxSizer(wx.HORIZONTAL)
             language_sizer.Add(language_label, 0, wx.ALIGN_CENTRE_VERTICAL)
@@ -226,10 +165,10 @@ class DatasetPanel(wx.Panel):
             details_sizer1.AddSpacer(10)
             self.language_ctrl.Bind(wx.EVT_CHOICE, self.OnChangeDatasetLanguage)
         else:
-            selected_lang = Constants.AVALIABLE_DATASET_LANGUAGES1.index(
+            selected_lang = Constants.AVAILABLE_DATASET_LANGUAGES1.index(
                 dataset.language)
             language_label = wx.StaticText(
-                self, label=GUIText.LANGUAGE + ": " + Constants.AVALIABLE_DATASET_LANGUAGES2[selected_lang])
+                self, label=GUIText.LANGUAGE + ": " + Constants.AVAILABLE_DATASET_LANGUAGES2[selected_lang])
             details_sizer1.Add(language_label, 0, wx.ALL, 5)
             details_sizer1.AddSpacer(10)
 
@@ -347,56 +286,39 @@ class DatasetPanel(wx.Panel):
         logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeLabelFields")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
-        SubModuleFields.FieldsDialog(parent=main_frame,
-                                    title=str(self.dataset.key)+" "+GUIText.CUSTOMIZE_LABEL_FIELDS,
-                                    dataset=self.dataset,
-                                    fields=self.dataset.label_fields,
-                                    label_fields=True).Show()
+        if self.dataset.key not in self.module.labelfields_dialogs:
+            self.module.labelfields_dialogs[self.dataset.key] = SubModuleFields.FieldsDialog(parent=main_frame,
+                                                                                             title=str(self.dataset.name)+" "+GUIText.CUSTOMIZE_LABEL_FIELDS,
+                                                                                             dataset=self.dataset,
+                                                                                             fields=self.dataset.label_fields)
+        self.module.labelfields_dialogs[self.dataset.key].Show()
+        self.module.labelfields_dialogs[self.dataset.key].SetFocus()
         logger.info("Finished")
 
     def OnCustomizeComputationalFields(self, event):
         logger = logging.getLogger(__name__+".DatasetsPanel.OnCustomizeComputationalFields")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
-        SubModuleFields.FieldsDialog(parent=main_frame,
-                                     title=str(self.dataset.key)+" "+GUIText.CUSTOMIZE_COMPUTATIONAL_FIELDS,
-                                     dataset=self.dataset,
-                                     fields=self.dataset.computational_fields).Show()
+        if self.dataset.key not in self.module.computationfields_dialogs:
+            self.module.computationfields_dialogs[self.dataset.key] = SubModuleFields.FieldsDialog(parent=main_frame,
+                                                                                                   title=str(self.dataset.name)+" "+GUIText.CUSTOMIZE_COMPUTATIONAL_FIELDS,
+                                                                                                   dataset=self.dataset,
+                                                                                                   fields=self.dataset.computational_fields)
+        self.module.computationfields_dialogs[self.dataset.key].Show()
+        self.module.computationfields_dialogs[self.dataset.key].SetFocus()
         logger.info("Finished")
 
-    def OnChangeDatasetKey(self, event):
-        logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnChangeDatasetKey")
+    def OnChangeDatasetName(self, event):
+        logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnChangeDatasetName")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
-        main_frame.CreateProgressDialog(GUIText.CHANGING_NAME_BUSY_LABEL,
-                                        freeze=True)
         try:
-            main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_PREPARING_MSG)
             node = self.dataset
             if isinstance(node, Datasets.Dataset):
                 new_name = self.name_ctrl.GetValue()
                 if node.name != new_name:
-                    old_key = node.key
-                    new_key = (new_name, node.dataset_source, node.dataset_type,)
-                    if new_key in main_frame.datasets:
-                        wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
-                                        GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-                        logger.error("Duplicate name[%s] entered by user", str(new_key))
-                    else:
-                        main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_MSG1+str(node.key)\
-                                                      +GUIText.CHANGING_NAME_BUSY_MSG2+str(new_key))
-
-                        node.key = new_key
-                        node.name = new_name
-                        if old_key in main_frame.datasets:
-                            main_frame.datasets[new_key] = main_frame.datasets[old_key]
-                            del main_frame.datasets[old_key]
-                        elif node.parent is not None:
-                            node.parent.datasets[new_key] = node
-                            del node.parent.datasets[old_key]
-                        Database.DatabaseConnection(main_frame.current_workspace.name).UpdateDatasetKey(old_key, new_key)
-                        main_frame.DatasetKeyChange(old_key, new_key)
-                        main_frame.DatasetsUpdated()
+                    node.name = new_name
+                    main_frame.DatasetsUpdated()
         finally:
             main_frame.CloseProgressDialog(thaw=True)
         logger.info("Finished")
@@ -411,15 +333,14 @@ class DatasetPanel(wx.Panel):
             return
         node = self.dataset
         language_index = self.language_ctrl.GetSelection()
-        if node.language != Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]:
+        if node.language != Constants.AVAILABLE_DATASET_LANGUAGES1[language_index]:
             main_frame.CreateProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_LABEL, freeze=True)
             main_frame.PulseProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_PREPARING_MSG)
-            node.language = Constants.AVALIABLE_DATASET_LANGUAGES1[language_index]
+            node.language = Constants.AVAILABLE_DATASET_LANGUAGES1[language_index]
             main_frame.multiprocessing_inprogress_flag = True
             self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, node, rerun=True)
         logger.info("Finished")
 
-        
     def OnTokenizerEnd(self, event):
         logger = logging.getLogger(__name__+".DatasetDetailsDialog.OnTokenizerEnd")
         logger.info("Starting")
@@ -430,6 +351,8 @@ class DatasetPanel(wx.Panel):
         main_frame.CloseProgressDialog(thaw=True)
         main_frame.multiprocessing_inprogress_flag = False
         logger.info("Finished")
+
+
 
 class DatasetDataPanel(wx.Panel):
     def __init__(self, parent, dataset, size=wx.DefaultSize):

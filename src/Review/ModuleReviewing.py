@@ -42,8 +42,6 @@ class ReviewingPanel(wx.Panel):
         logger = logging.getLogger(__name__+".ReviewingPanel.Load")
         logger.info("Starting")
         self.Freeze()
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.LOAD_BUSY_MSG_CONFIG)
         if 'notes' in saved_data:
             self.notes_panel.Load(saved_data['notes'])
         self.Thaw()
@@ -53,8 +51,6 @@ class ReviewingPanel(wx.Panel):
         '''saves current Collection Module's data'''
         logger = logging.getLogger(__name__+".ReviewingPanel.Save")
         logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_CONFIG)
         saved_data = {}
         saved_data['notes'] = self.notes_panel.Save()
         logger.info("Finished")

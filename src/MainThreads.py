@@ -3,10 +3,10 @@ import os
 import tarfile
 from threading import Thread
 import shutil
-from distutils.dir_util import copy_tree
 from datetime import datetime
 from packaging import version
 import uuid
+from scipy.sparse import data
 
 import wx
 import pickle
@@ -53,11 +53,11 @@ class SaveThread(Thread):
             existing_datasets = []
             for key in self.datasets:
                 if isinstance(self.datasets[key], Datasets.Dataset):
-                    dataset_filename = str(key[0])+"_"+str(key[1])+"_"+str(key[2])+".pk"
+                    dataset_filename = str(key)+".pk"
                 existing_datasets.append(dataset_filename)
                 if self.datasets[key].last_changed_dt > self.last_load_dt:
                     if not self.autosave:
-                        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_DATASETS+str(key)))
+                        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_DATASETS+str(self.datasets[key].name)))
                     with open(self.current_workspace_path+"/Datasets/"+dataset_filename, 'wb') as outfile:
                         pickle.dump(self.datasets[key], outfile)
             #remove any datasets that no longer exist
@@ -74,7 +74,7 @@ class SaveThread(Thread):
                 existing_samples.append(sample_dirname)
                 if self.samples[key].last_changed_dt > self.last_load_dt:
                     if not self.autosave:
-                        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_SAMPLES+str(key)))
+                        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_SAMPLES+str(self.samples[key].name)))
                     if not os.path.exists(self.current_workspace_path+"/Samples/"+sample_dirname):
                         os.mkdir(self.current_workspace_path+"/Samples/"+sample_dirname)
                     with open(self.current_workspace_path+"/Samples/"+sample_dirname+"/sample.pk", 'wb') as outfile:
@@ -101,7 +101,9 @@ class SaveThread(Thread):
                     text_file.write(self.notes_text)
             else:
                 logger.info("Moving Files to autsave folder")
-                copy_tree(self.current_workspace_path, self.save_path)
+                if os.path.exists(self.save_path):
+                    shutil.rmtree(self.save_path)
+                shutil.copytree(self.current_workspace_path, self.save_path)
 
         except (FileExistsError):
             wx.LogError(GUIText.SAVE_FAILURE + self.save_path)
@@ -131,7 +133,7 @@ class LoadThread(Thread):
                 with tarfile.open(self.save_path, "r") as tar_file:
                     tar_file.extractall(self.current_workspace_path)
             else:
-                copy_tree(self.save_path, self.current_workspace_path)
+                shutil.copytree(self.save_path, self.current_workspace_path, dirs_exist_ok=True)
 
             wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_CONFIG))
             with open(self.current_workspace_path+"/config.pk", 'rb') as infile:
@@ -140,22 +142,30 @@ class LoadThread(Thread):
             result['datasets'] = {}
             if "datasets" in result['config']:
                 for key in result['config']['datasets']:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_DATASET+str(key)))
-                    dataset_filename = '_'.join(key)
+                    if not isinstance(key, str):
+                        dataset_filename = '_'.join(key)
+                    else:
+                        dataset_filename = key
                     dataset_filename = dataset_filename + ".pk"
                     if os.path.isfile(self.current_workspace_path+"/Datasets/"+dataset_filename):
                         with open(self.current_workspace_path+"/Datasets/"+dataset_filename, 'rb') as infile:
                             result['datasets'][key] = pickle.load(infile)
+                        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_DATASET+str(result['datasets'][key].name)))
+                    
 
             result['samples'] = {}
             if 'samples' in result['config']:
                 for key in result['config']['samples']:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_SAMPLE+str(key)))
                     sample_dirname = str(key)
                     if os.path.exists(self.current_workspace_path+"/Samples/"+sample_dirname):
                         with open(self.current_workspace_path+"/Samples/"+sample_dirname+"/sample.pk", 'rb') as infile:
                             result['samples'][key] = pickle.load(infile)
                             result['samples'][key].Load(self.current_workspace_path)
+                        if result['samples'][key].name != None:
+                            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_SAMPLE+str(result['samples'][key].name)))
+                        else:
+                            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_SAMPLE+str(key)))
+                    
 
             result['codes'] = {}
             if "codes" in result['config']:
@@ -163,14 +173,15 @@ class LoadThread(Thread):
                 with open(self.current_workspace_path+"/codes.pk", 'rb') as infile:
                     result['codes'] = pickle.load(infile)
         
-            
             if 'version' in result['config']:
                 ver = version.parse(result['config']['version'])
             else:
                 ver = version.parse('0.0.0')
 
-            if ver <  version.parse(Constants.CUR_VER):
-                self.UpgradeWorkspace(result, ver)
+            if ver < version.parse('0.8.5'):
+                self.Upgrade0_8_5(result, ver)
+            if ver < version.parse('0.8.6'):
+                self.Upgrade0_8_6(result)
 
         except (FileNotFoundError):
             wx.LogError(GUIText.LOAD_FAILURE + self.save_path)
@@ -179,20 +190,19 @@ class LoadThread(Thread):
         logger.info("Finished")
         wx.PostEvent(self._notify_window, CustomEvents.LoadResultEvent(result))
 
-    def UpgradeWorkspace(self, result, ver):
+    #TODO upgrade to use uuid as keys for objects
+    def Upgrade0_8_5(self, result, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_WORKSPACE1 + str(ver) \
                                                                      + GUIText.UPGRADE_BUSY_MSG_WORKSPACE2 + Constants.CUR_VER))
         self.UpgradeConfig(result['config'], ver)
         #upgrade datasets
-        for dataset_key in result['datasets']:
-            self.UpgradeDataset(result['datasets'][dataset_key], ver)
+        self.UpgradeDatasets(result, ver)
         #upgrade database
         self.UpgradeDatabase(result, ver)
         #upgrade samples
-        for sample_key in result['samples']:
-            self.UpgradeSample(result['samples'][sample_key], result['datasets'][result['samples'][sample_key].dataset_key], ver)
+        self.UpgradeSamples(result, ver)
         #upgrade codes
-        self.UpgradeCodes(result['codes'], result['datasets'], result['samples'], ver)
+        self.UpgradeCodes(result, ver)
 
     def UpgradeConfig(self, config, ver):
         if ver < version.parse('0.8.1'):
@@ -213,92 +223,86 @@ class LoadThread(Thread):
             if 'adjustable_metadata_mode' in config['options']:
                 config['options']['adjustable_label_fields_mode'] = config['options']['adjustable_metadata_mode']
                 del config['options']['adjustable_metadata_mode']
-        if ver < version.parse('0.8.6'):
-            #corrected type that may have caused verion 0.8.5 upgrades to be incomplete
-            if 'adjustable_includedfields_mode' in config['options']:
-                config['options']['adjustable_computation_fields_mode'] = config['options']['adjustable_includedfields_mode']
-                del config['options']['adjustable_includedfields_mode']
 
-    def UpgradeDataset(self, dataset, ver):
-        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATASETS))
-        if ver < version.parse('0.8.1'):
-            #convert metadata fields list to dict of objects
-            if hasattr(dataset, "_metadata_fields_list"):
-                dataset.label_fields = {}
-                for field_name, field_info in dataset._metadata_fields_list:
-                    new_field = Datasets.Field(dataset,
-                                            field_name,
-                                            dataset,
-                                            field_info['desc'],
-                                            field_info['type'])
-                    dataset.label_fields[field_name] = new_field
-                del dataset._metadata_fields_list
-                #update rules
-                dataset.last_changed_dt = datetime.now()
-
-            #update variables names
-            if hasattr(dataset, '_total_unique_tokens'):
-                dataset._total_uniquetokens = dataset._total_unique_tokens
-                dataset.last_changed_dt = datetime.now()
-            if hasattr(dataset, '_total_unique_tokens_remaining'):
-                dataset._total_uniquetokens_remaining = dataset._total_unique_tokens_remaining
-                dataset.last_changed_dt = datetime.now()
-            if hasattr(dataset, 'avaliable_fields'):
-                dataset.available_fields = dataset.avaliable_fields
-                dataset.last_changed_dt = datetime.now()
-            if hasattr(dataset, 'chosen_fields'):
-                dataset.computational_fields = dataset.chosen_fields
-                dataset.last_changed_dt = datetime.now()
-
-            #cleanup attributes changed by switching to database
-            if hasattr(dataset, "_metadata"):
-                del dataset._metadata
-                dataset.last_changed_dt = datetime.now()
-            if hasattr(dataset, '_words_df'):
-                del dataset._words_df
-                for idx, rule in enumerate(dataset.filter_rules):
-                    if isinstance(rule[3], tuple):
-                        if rule[3][0] == Constants.FILTER_TFIDF_REMOVE or rule[3][0] == Constants.FILTER_TFIDF_INCLUDE:
-                            new_rule = (rule[0], rule[1], rule[2], (rule[3][0], rule[3][1], rule[3][2]*100 ))
-                            dataset.filter_rules[idx] = new_rule
-                dataset.last_changed_dt = datetime.now()
-        if ver < version.parse('0.8.5'):
-            if dataset.dataset_source == 'Reddit':
-                if dataset.dataset_type == 'discussion':
-                    dataset.retrieval_details['submission_count'] = len(dataset.data)
-                    comment_count = 0
-                    for key in dataset.data:
-                        if 'comment.id' in dataset.data[key]:
-                            comment_count = comment_count + len(dataset.data[key]['comment.id'])
-                    dataset.retrieval_details['comment_count'] = comment_count
+    def UpgradeDatasets(self, result, ver):
+        for dataset in result['datasets'].values():
+            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATASETS))
+            if ver < version.parse('0.8.1'):
+                #convert metadata fields list to dict of objects
+                if hasattr(dataset, "_metadata_fields_list"):
+                    dataset.label_fields = {}
+                    for field_name, field_info in dataset._metadata_fields_list:
+                        new_field = Datasets.Field(dataset,
+                                                field_name,
+                                                dataset,
+                                                field_info['desc'],
+                                                field_info['type'])
+                        dataset.label_fields[field_name] = new_field
+                    del dataset._metadata_fields_list
+                    #update rules
                     dataset.last_changed_dt = datetime.now()
-                if dataset.dataset_type == 'discussion':
-                    dataset.retrieval_details['submission_count'] = len(dataset.data)
-                    dataset.last_changed_dt = datetime.now()
-                if dataset.dataset_type == 'comment':
-                    dataset.retrieval_details['comment_count'] = len(dataset.data)
-                    dataset.last_changed_dt = datetime.now()
-            
-            if hasattr(dataset, 'metadata_fields'):
-                dataset.label_fields = dataset.metadata_fields
-                del dataset.metadata_fields
-                dataset.last_changed_dt = datetime.now()
-            if hasattr(dataset, 'included_fields'):
-                dataset.computational_fields = dataset.included_fields
-                del dataset.included_fields
-                dataset.last_changed_dt = datetime.now()
 
-            dataset.uuid = str(uuid.uuid4())
-            for field_key in dataset.available_fields:
-                dataset.available_fields[field_key].uuid = str(uuid.uuid4())
-            for field_key in dataset.label_fields:
-                dataset.label_fields[field_key].uuid = str(uuid.uuid4())
-            for field_key in dataset.computational_fields:
-                dataset.computational_fields[field_key].uuid = str(uuid.uuid4())
-            for document_key in dataset.documents:
-                dataset.documents[document_key].uuid = str(uuid.uuid4())
-            
+                #update variables names
+                if hasattr(dataset, '_total_unique_tokens'):
+                    dataset._total_uniquetokens = dataset._total_unique_tokens
+                    dataset.last_changed_dt = datetime.now()
+                if hasattr(dataset, '_total_unique_tokens_remaining'):
+                    dataset._total_uniquetokens_remaining = dataset._total_unique_tokens_remaining
+                    dataset.last_changed_dt = datetime.now()
+                if hasattr(dataset, 'available_fields'):
+                    dataset.available_fields = dataset.available_fields
+                    dataset.last_changed_dt = datetime.now()
+                if hasattr(dataset, 'chosen_fields'):
+                    dataset.computational_fields = dataset.chosen_fields
+                    dataset.last_changed_dt = datetime.now()
 
+                #cleanup attributes changed by switching to database
+                if hasattr(dataset, "_metadata"):
+                    del dataset._metadata
+                    dataset.last_changed_dt = datetime.now()
+                if hasattr(dataset, '_words_df'):
+                    del dataset._words_df
+                    for idx, rule in enumerate(dataset.filter_rules):
+                        if isinstance(rule[3], tuple):
+                            if rule[3][0] == Constants.FILTER_TFIDF_REMOVE or rule[3][0] == Constants.FILTER_TFIDF_INCLUDE:
+                                new_rule = (rule[0], rule[1], rule[2], (rule[3][0], rule[3][1], rule[3][2]*100 ))
+                                dataset.filter_rules[idx] = new_rule
+                    dataset.last_changed_dt = datetime.now()
+            if ver < version.parse('0.8.5'):
+                if dataset.dataset_source == 'Reddit':
+                    if dataset.dataset_type == 'discussion':
+                        dataset.retrieval_details['submission_count'] = len(dataset.data)
+                        comment_count = 0
+                        for field_name in dataset.data:
+                            if 'comment.id' in dataset.data[field_name]:
+                                comment_count = comment_count + len(dataset.data[field_name]['comment.id'])
+                        dataset.retrieval_details['comment_count'] = comment_count
+                        dataset.last_changed_dt = datetime.now()
+                    if dataset.dataset_type == 'discussion':
+                        dataset.retrieval_details['submission_count'] = len(dataset.data)
+                        dataset.last_changed_dt = datetime.now()
+                    if dataset.dataset_type == 'comment':
+                        dataset.retrieval_details['comment_count'] = len(dataset.data)
+                        dataset.last_changed_dt = datetime.now()
+                
+                if hasattr(dataset, 'metadata_fields'):
+                    dataset.label_fields = dataset.metadata_fields
+                    del dataset.metadata_fields
+                    dataset.last_changed_dt = datetime.now()
+                if hasattr(dataset, 'included_fields'):
+                    dataset.computational_fields = dataset.included_fields
+                    del dataset.included_fields
+                    dataset.last_changed_dt = datetime.now()
+
+                dataset._uuid = str(uuid.uuid4())
+                for field_key in dataset.available_fields:
+                    dataset.available_fields[field_key]._uuid = str(uuid.uuid4())
+                for field_key in dataset.label_fields:
+                    dataset.label_fields[field_key]._uuid = str(uuid.uuid4())
+                for field_key in dataset.computational_fields:
+                    dataset.computational_fields[field_key]._uuid = str(uuid.uuid4())
+                for document_key in dataset.documents:
+                    dataset.documents[document_key._uuid] = str(uuid.uuid4())
 
     def UpgradeDatabase(self, result, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATABASE))
@@ -351,36 +355,35 @@ class LoadThread(Thread):
         elif ver < version.parse('0.8.2'):
             db_conn = Database.DatabaseConnection(self.current_workspace_path)
             db_conn.Upgrade()
-        if ver < version.parse('0.8.5'):
-            db_conn = Database.DatabaseConnection(self.current_workspace_path)
 
-    def UpgradeSample(self, sample, dataset, ver):
-        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_SAMPLES))
-        if ver < version.parse('0.8.1'):
-            if not hasattr(sample, "_field_list"):
-                sample._fields_list = list(dataset.computational_fields.keys())
-                sample.last_changed_dt = datetime.now()
-            
-            if hasattr(sample, 'metadataset_key_list'):
-                sample.document_keys = sample.metadataset_key_list
-                sample.last_changed_dt = datetime.now()
-        if ver < version.parse('0.8.3'):
-            #reduce amount of data in each sample that has been generated to help speed up saving
-            if hasattr(sample, "_tokenset") and isinstance(sample._tokenset, dict) and sample.generated_flag:
-                sample.tokensets = sample.tokensets.keys()
-        if ver < version.parse('0.8.5'):
-            sample.uuid = str(uuid.uuid4())
-            if isinstance(sample, Samples.Sample):
-                for part_key in sample.parts_dict:
-                    sample.parts_dict[part_key].uuid = str(uuid.uuid4())
-                    if isinstance(sample.parts_dict[part_key], Samples.MergedPart):
-                        for subpart_key in sample.parts_dict[part_key]:
-                            sample.parts_dict[part_key].parts_dict[subpart_key].uuid = str(uuid.uuid4())
+    def UpgradeSamples(self, result, ver):
+        for sample in result['samples'].values():
+            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_SAMPLES))
+            if ver < version.parse('0.8.1'):
+                if not hasattr(sample, "_field_list"):
+                    sample._fields_list = list(result['datasets'][sample.dataset_key].computational_fields.keys())
+                    sample.last_changed_dt = datetime.now()
+                
+                if hasattr(sample, 'metadataset_key_list'):
+                    sample.document_keys = sample.metadataset_key_list
+                    sample.last_changed_dt = datetime.now()
+            if ver < version.parse('0.8.3'):
+                #reduce amount of data in each sample that has been generated to help speed up saving
+                if hasattr(sample, "_tokenset") and isinstance(sample._tokenset, dict) and sample.generated_flag:
+                    sample.tokensets = sample.tokensets.keys()
+            if ver < version.parse('0.8.5'):
+                sample._uuid = str(uuid.uuid4())
+                if isinstance(sample, Samples.Sample):
+                    for part_key in sample.parts_dict:
+                        sample.parts_dict[part_key]._uuid = str(uuid.uuid4())
+                        if isinstance(sample.parts_dict[part_key], Samples.MergedPart):
+                            for subpart_key in sample.parts_dict[part_key]:
+                                sample.parts_dict[part_key].parts_dict[subpart_key]._uuid = str(uuid.uuid4())
 
-    def UpgradeCodes(self, codes, datasets, samples, ver):
+    def UpgradeCodes(self, result, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_CODES))
-        for code_key in codes:
-            code = codes[code_key]
+        for code_key in result['codes']:
+            code = result['codes'][code_key]
             if ver < version.parse('0.8.1'):
                 if not hasattr(code, "doc_positions"):
                     code.doc_positions = {}
@@ -391,22 +394,22 @@ class LoadThread(Thread):
             if ver < version.parse('0.8.3'):
                 new_doc_positions = {}
                 for key in code.doc_positions:
-                    new_doc_positions[(list(datasets.keys())[0], key)] =  code.doc_positions[key]
+                    new_doc_positions[(list(result['datasets'].keys())[0], key)] =  code.doc_positions[key]
                 code.doc_positions = new_doc_positions
                 new_quotations = []
                 for quotation in code.quotations:
-                    new_quotations.append(Codes.Quotation(None, code, quotation.key[0], quotation.key[1], quotation.original_data, quotation.paraphrased_data))
+                    new_quotations.append(Codes.Quotation(code, quotation.key[0], quotation.key[1], quotation.original_data, quotation.paraphrased_data))
                 code.quotations = new_quotations
                 code.last_changed_dt = datetime.now()
             if ver < version.parse('0.8.5'):
                 if not hasattr(code, "_uuid"):
                     #recursively add a uuid to every object
                     def UpdateCodeUUIDs(code):
-                        code.uuid = str(uuid.uuid4())
+                        code._uuid = str(uuid.uuid4())
                         for subcode_key in code.subcodes:
                             UpdateCodeUUIDs(code.subcodes[subcode_key])
                         for quotation in code.quotations:
-                            quotation.uuid = str(uuid.uuid4())
+                            quotation._uuid = str(uuid.uuid4())
                     UpdateCodeUUIDs(code)
         if ver < version.parse('0.8.5'):
             #changes code keys to use uuid instead of user name fields
@@ -414,24 +417,180 @@ class LoadThread(Thread):
                 code_keys = list(codes.keys())
                 for old_key in code_keys:
                     code = codes[old_key]
-                    new_key = code.uuid
+                    new_key = code._uuid
                     code.key = new_key
                     #updates codes
                     codes[new_key] = code
                     del codes[old_key]
                     #update other objects
-                    for obj in code.GetConnections(datasets, samples):
+                    for obj in code.GetConnections(result['datasets'], result['samples']):
                         obj.codes.remove(old_key)
                         obj.codes.append(code.key)
                         obj.last_changed_dt = datetime.now()
                     CodeRekey(code.subcodes)
-            CodeRekey(codes)
+            CodeRekey(result['codes'])
 
+    def Upgrade0_8_6(self, result):
+        #Updated config
+        if 'adjustable_includedfields_mode' in result['config']['options']:
+            result['config']['options']['adjustable_computation_fields_mode'] = result['config']['options']['adjustable_includedfields_mode']
+            del result['config']['options']['adjustable_includedfields_mode']
+        if 'model_iter' not in result['config']:
+            result['config']['model_iter'] = 0
+        
+        #Update Codes
+        def UpgradeCodes(codes):
+            for old_key in list(codes.keys()):
+                code = codes[old_key]
+                new_key = code._uuid
+                code.key = new_key
+                codes[new_key] = code
+                del codes[old_key]
+                #update other objects and connections to other objects
+                new_connections = []
+                for obj in code.GetConnections(result['datasets'], result['samples']):
+                    obj.codes.remove(old_key)
+                    obj.codes.append(code.key)
+                    obj.last_changed_dt = datetime.now()
+                    obj_module = getattr(obj, '__module__', None)
+                    key_path = []
+                    key_path.append((type(obj), obj._uuid))
+                    while obj.parent != None:
+                        obj = obj.parent
+                        key_path.append((type(obj), obj._uuid))
+                    key_path.reverse()
+                    new_connections.append((obj_module, key_path))
+                code.connections = new_connections
+                #Update doc_positions
+                new_doc_positions = {}
+                for key in code.doc_positions:
+                    old_doc_position = code.doc_positions[key]
+                    new_doc_position = []
+                    old_dataset_key, old_doc_key = key
+                    dataset = result['datasets'][old_dataset_key]
+                    document = dataset.documents[old_doc_key]
+                    for field_key, start, end in old_doc_position:
+                        field = dataset.available_fields[field_key]
+                        new_doc_position.append((field._uuid, start, end))
+                    new_doc_positions[(dataset._uuid, document._uuid)] = new_doc_position
+                code.doc_positions = new_doc_positions
+                code.last_changed_dt = datetime.now()
+                UpgradeCodes(code.subcodes)
+                for quotation in code.quotations:
+                    #TODO check what else is needed to update Quotations
+                    quotation.key = quotation._uuid
+                    old_dataset_key = quotation.dataset_key
+                    quotation._dataset_key = result['datasets'][old_dataset_key]._uuid
+                    old_doc_key = quotation.document_key
+                    quotation._document_key = result['datasets'][old_dataset_key].documents[old_doc_key]._uuid
 
-                
-                
+        UpgradeCodes(result['codes'])
 
+        #Update Documents' Sample Connections as they will only work before Samples are updated
+        for dataset in result['datasets'].values():
+            for doc in dataset.documents.values():
+                new_sample_connections = []
+                for obj in doc.GetSampleConnections(result['samples']):
+                    if isinstance(obj, list):
+                        obj = obj[-1]
+                    obj_module = getattr(obj, '__module__', None)
+                    key_path = []
+                    if isinstance(obj, Samples.Sample):
+                        key = obj._uuid
+                    else:
+                        key = obj.key
+                    key_path.append((type(obj), key))
+                    while obj.parent != None:
+                        obj = obj.parent
+                        if isinstance(obj, Samples.Sample):
+                            key = obj._uuid
+                        else:
+                            key = obj.key
+                        key_path.insert(0, (type(obj), key))
+                    new_sample_connections.append((obj_module, key_path))
+                doc.sample_connections = new_sample_connections
 
-            
+        #Update Samples
+        for old_key in list(result['samples'].keys()):
+            sample = result['samples'][old_key]
+            dataset = result['datasets'][sample.dataset_key]
+            sample._dataset_key = dataset._uuid
+            new_key = sample._uuid
+            sample.key = new_key
+            sample.name = old_key
+            result['samples'][new_key] = sample
+            del result['samples'][old_key]
+            #Update Selected Documents
+            new_selected_documents = []
+            for doc_key in sample.selected_documents:
+                new_selected_documents.append(dataset.documents[doc_key]._uuid)
+            sample.selected_documents = new_selected_documents
+            #Update Field List
+            if sample.fields_list != None:
+                new_fields_list = []
+                for field_key in sample.fields_list:
+                    new_fields_list.append(dataset.available_fields[field_key]._uuid)
+                sample.fields_list = new_fields_list
+            #Update lower part and merged_part objects
+            for key in sample.parts_dict:
+                part = sample.parts_dict[key]
+                if isinstance(part, Samples.MergedPart):
+                    for sub_key in part.parts_dict:
+                        sub_part = part.parts_dict[sub_key]
+                        new_documents = []
+                        for old_doc_key in sub_part.documents:
+                            doc = dataset.documents[old_doc_key]
+                            new_documents.append(doc._uuid)
+                        sub_part.documents = new_documents
+                else:
+                    new_documents = []
+                    for old_doc_key in part.documents:
+                        doc = dataset.documents[old_doc_key]
+                        new_documents.append(doc._uuid)
+                    part.documents = new_documents
+            sample.last_changed_dt = datetime.now()
 
-    
+        #Update Datasets
+        for old_dataset_key in list(result['datasets'].keys()):
+            dataset = result['datasets'][old_dataset_key]
+            new_dataset_key = dataset._uuid
+            dataset.key = new_dataset_key
+            result['datasets'][new_dataset_key] = dataset
+            del result['datasets'][old_dataset_key]
+            #Update Fields
+            for old_field_key in list(dataset.label_fields.keys()):
+                field = dataset.available_fields[old_field_key]
+                del dataset.label_fields[old_field_key]
+                dataset.label_fields[field._uuid] = field
+            for old_field_key in list(dataset.computational_fields.keys()):
+                field = dataset.available_fields[old_field_key]
+                del dataset.computational_fields[old_field_key]
+                dataset.computational_fields[field._uuid] = field
+            for old_field_key in list(dataset.available_fields.keys()):
+                field = dataset.available_fields[old_field_key]
+                del dataset.available_fields[old_field_key]
+                field.key = field._uuid
+                dataset.available_fields[field.key] = field
+            #Update Selected Documents
+            new_selected_documents = []
+            for doc_key in dataset.selected_documents:
+                new_selected_documents.append(dataset.documents[doc_key]._uuid)
+            dataset.selected_documents = new_selected_documents
+            #Update Documents
+            for old_doc_key in list(dataset.documents.keys()):
+                document = dataset.documents[old_doc_key]
+                document.doc_id = old_doc_key
+                new_doc_key = dataset.documents[old_doc_key]._uuid
+                document.key = new_doc_key
+                dataset.documents[new_doc_key] = document
+                del dataset.documents[old_doc_key]
+            dataset.last_changed_dt = datetime.now()
+
+        #Update database
+        db_conn = Database.DatabaseConnection(self.current_workspace_path)
+        for dataset_key in result['datasets']:
+            dataset = result['datasets'][dataset_key]
+            db_conn.UpdateDatasetKey((dataset.name, dataset.dataset_source, dataset.dataset_type,), dataset.key)
+            for field_key in dataset.computational_fields:
+                field = dataset.computational_fields[field_key]
+                db_conn.UpdateFieldKey(dataset_key, field.name, field.key)

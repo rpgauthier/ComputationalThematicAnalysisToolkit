@@ -86,8 +86,8 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         search_sizer.Add(self.search_ctrl)
         sizer.Add(search_sizer, 0, wx.ALL, 5)
 
-        self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1)
-        self.ethics_community2_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY2)
+        self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1_REDDIT)
+        self.ethics_community2_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY2_REDDIT)
         self.ethics_research_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_RESEARCH)
         self.ethics_institution_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_INSTITUTION)
         self.ethics_reddit_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_REDDIT)
@@ -118,7 +118,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         sizer.Add(dataset_type_sizer, 0, wx.ALL, 5)
 
         language_label = wx.StaticText(self, label=GUIText.LANGUAGE+":")
-        self.language_ctrl = wx.Choice(self, choices=Constants.AVALIABLE_DATASET_LANGUAGES2)
+        self.language_ctrl = wx.Choice(self, choices=Constants.AVAILABLE_DATASET_LANGUAGES2)
         self.language_ctrl.Select(0)
         language_sizer = wx.BoxSizer(wx.HORIZONTAL)
         language_sizer.Add(language_label, 0, wx.ALIGN_CENTRE_VERTICAL)
@@ -269,15 +269,15 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         
         search = self.search_ctrl.GetValue()
         
-        language = Constants.AVALIABLE_DATASET_LANGUAGES1[self.language_ctrl.GetSelection()]
+        language = Constants.AVAILABLE_DATASET_LANGUAGES1[self.language_ctrl.GetSelection()]
 
         if not self.ethics_community1_ctrl.IsChecked():
-            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY1,
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY1_REDDIT,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('Ethics not checked')
             status_flag = False
         if not self.ethics_community2_ctrl.IsChecked():
-            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY2,
+            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY2_REDDIT,
                           GUIText.ERROR, wx.OK | wx.ICON_ERROR)
             logger.warning('Ethics not checked')
             status_flag = False
@@ -513,7 +513,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         sizer.Add(self.include_retweets_ctrl, 0, wx.EXPAND | wx.ALL, 5)
 
         language_label = wx.StaticText(self, label=GUIText.LANGUAGE+":")
-        self.language_ctrl = wx.Choice(self, choices=Constants.AVALIABLE_DATASET_LANGUAGES2)
+        self.language_ctrl = wx.Choice(self, choices=Constants.AVAILABLE_DATASET_LANGUAGES2)
         self.language_ctrl.Select(0)
         language_sizer = wx.BoxSizer(wx.HORIZONTAL)
         language_sizer.Add(language_label, 0, wx.ALIGN_CENTRE_VERTICAL)
@@ -674,7 +674,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             logger.warning('No consumer secret entered')
             status_flag = False
 
-        language = Constants.AVALIABLE_DATASET_LANGUAGES1[self.language_ctrl.GetSelection()]
+        language = Constants.AVAILABLE_DATASET_LANGUAGES1[self.language_ctrl.GetSelection()]
 
         auth = tweepy.OAuthHandler(keys['consumer_key'], keys['consumer_secret'])
         api = tweepy.API(auth)
@@ -910,7 +910,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         sizer.Add(ethics_sizer, 0, wx.ALL, 5)
 
         language_label = wx.StaticText(self, label=GUIText.LANGUAGE+":")
-        self.language_ctrl = wx.Choice(self, choices=Constants.AVALIABLE_DATASET_LANGUAGES2)
+        self.language_ctrl = wx.Choice(self, choices=Constants.AVAILABLE_DATASET_LANGUAGES2)
         self.language_ctrl.Select(0)
         language_sizer = wx.BoxSizer(wx.HORIZONTAL)
         language_sizer.Add(language_label, 0, wx.ALIGN_CENTRE_VERTICAL)
@@ -1121,7 +1121,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             logger.warning('Ethics not checked')
             status_flag = False
 
-        language = Constants.AVALIABLE_DATASET_LANGUAGES1[self.language_ctrl.GetSelection()]
+        language = Constants.AVAILABLE_DATASET_LANGUAGES1[self.language_ctrl.GetSelection()]
 
         datetime_field = self.datetime_field_ctrl.GetStringSelection()
         datetime_tz = self.datetime_tz_ctrl.GetStringSelection()

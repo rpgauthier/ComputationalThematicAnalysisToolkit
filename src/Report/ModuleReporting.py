@@ -70,8 +70,6 @@ class ReportingPanel(wx.Panel):
         '''saves current Reporting Module's data'''
         logger = logging.getLogger(__name__+".ReportingPanel.Save")
         logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_CONFIG)
         saved_data = {}
         saved_data['notes'] = self.notes_panel.Save()
         logger.info("Finished")

@@ -16,13 +16,16 @@ import Collection.SubModuleFields as SubModuleFields
 
 #TODO rethink create layout to have more description of the sources
 class DatasetsListPanel(wx.Panel):
-    def __init__(self, parent, size=wx.DefaultSize):
+    def __init__(self, parent, module, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".DatasetsPanel.__init__")
         logger.info("Starting")
         wx.Panel.__init__(self, parent, size=size)
 
         self.parent = parent
+        self.module = module
         main_frame = wx.GetApp().GetTopWindow()
+
+        self.dataset_dialogs = {}
         
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -61,7 +64,7 @@ class DatasetsListPanel(wx.Panel):
 
         self.datasets_model = DatasetsDataViews.DatasetsViewModel(main_frame.datasets.values())
         self.datasets_ctrl = DatasetsDataViews.DatasetsViewCtrl(self, self.datasets_model)
-        self.datasets_ctrl.Bind(dv.EVT_DATAVIEW_ITEM_EDITING_DONE, self.OnChangeDatasetKey)
+        self.datasets_ctrl.Bind(dv.EVT_DATAVIEW_ITEM_EDITING_DONE, self.OnChangeDatasetName)
         self.datasets_ctrl.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
         sizer.Add(self.datasets_ctrl, 1, wx.EXPAND, 5)
 
@@ -100,11 +103,15 @@ class DatasetsListPanel(wx.Panel):
             node = self.datasets_model.ItemToObject(item)
             while node.parent is not None:
                 node = node.parent
-            SubModuleFields.FieldsDialog(parent=self,
-                                         title=str(node.key)+" "+GUIText.CUSTOMIZE_LABEL_FIELDS,
-                                         dataset=node,
-                                         fields=node.label_fields,
-                                         label_fields=True).Show()
+
+            if node.key not in self.module.labelfields_dialogs:
+                self.module.labelfields_dialogs[node.key] = SubModuleFields.FieldsDialog(parent=self.module,
+                                                                                          title=str(node.name)+" "+GUIText.CUSTOMIZE_LABEL_FIELDS,
+                                                                                          dataset=node,
+                                                                                          fields=node.label_fields,
+                                                                                          label_fields=True)
+            self.module.labelfields_dialogs[node.key].Show()
+            self.module.labelfields_dialogs[node.key].SetFocus()
         logger.info("Finished")
 
     def OnCustomizeComputationalFields(self, event):
@@ -115,10 +122,13 @@ class DatasetsListPanel(wx.Panel):
             node = self.datasets_model.ItemToObject(item)
             while node.parent is not None:
                 node = node.parent
-            SubModuleFields.FieldsDialog(parent=self,
-                                         title=str(node.key)+" "+GUIText.CUSTOMIZE_COMPUTATIONAL_FIELDS,
-                                         dataset=node,
-                                         fields=node.computational_fields).Show()
+            if node.key not in self.module.computationfields_dialogs:
+                self.module.computationfields_dialogs[node.key] = SubModuleFields.FieldsDialog(parent=self.module,
+                                                                                                title=str(node.name)+" "+GUIText.CUSTOMIZE_COMPUTATIONAL_FIELDS,
+                                                                                                dataset=node,
+                                                                                                fields=node.computational_fields)
+            self.module.computationfields_dialogs[node.key].Show()
+            self.module.computationfields_dialogs[node.key].SetFocus()
         logger.info("Finished")
 
     def OnAccessDetails(self, event):
@@ -130,15 +140,17 @@ class DatasetsListPanel(wx.Panel):
             if item is not None:
                 node = self.datasets_model.ItemToObject(item)
                 if isinstance(node, Datasets.Dataset):
-                    DatasetsGUIs.DatasetDetailsDialog(self, node).Show()
-                #elif isinstance(node, Datasets.Field):
+                    if node.key not in self.dataset_dialogs:
+                        self.dataset_dialogs[node.key] = DatasetsGUIs.DatasetDetailsDialog(self, self.module, node)
+                    self.dataset_dialogs[node.key].Show()
+                    self.dataset_dialogs[node.key].SetFocus()
         logger.info("Finished")
 
     def OnAddRedditDataset(self, event):
         logger = logging.getLogger(__name__+".DatasetsPanel.OnAddRedditDataset")
         logger.info("Starting")
         #create a retriever of chosen type in a popup
-        CollectionDialogs.RedditDatasetRetrieverDialog(self).Show()
+        CollectionDialogs.RedditDatasetRetrieverDialog(self).ShowModal()
         logger.info("Finished")
     
     def OnAddTwitterDataset(self, event):
@@ -146,18 +158,18 @@ class DatasetsListPanel(wx.Panel):
         logger.info("Starting")
         #create a retriever of chosen type in a popup
         main_frame = wx.GetApp().GetTopWindow()
-        CollectionDialogs.TwitterDatasetRetrieverDialog(self).Show()
+        CollectionDialogs.TwitterDatasetRetrieverDialog(self).ShowModal()
         logger.info("Finished")
     
     def OnAddCSVDataset(self, event):
         logger = logging.getLogger(__name__+".DatasetsPanel.OnAddCSVDataset")
         logger.info("Starting")
         #create a retriever of chosen type in a popup
-        CollectionDialogs.CSVDatasetRetrieverDialog(self).Show()
+        CollectionDialogs.CSVDatasetRetrieverDialog(self).ShowModal()
         logger.info("Finished")
 
-    def OnChangeDatasetKey(self, event):
-        logger = logging.getLogger(__name__+".DatasetsPanel.OnChangeDatasetKey")
+    def OnChangeDatasetName(self, event):
+        logger = logging.getLogger(__name__+".DatasetsPanel.OnChangeDatasetName")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.CreateProgressDialog(GUIText.CHANGING_NAME_BUSY_LABEL,
@@ -168,22 +180,8 @@ class DatasetsListPanel(wx.Panel):
             if isinstance(node, Datasets.Dataset):
                 new_name = event.GetValue()
                 if node.name != new_name:
-                    old_key = node.key
-                    new_key = (new_name, node.dataset_source, node.dataset_type,)
-                    if new_key in main_frame.datasets:
-                        wx.MessageBox(GUIText.NAME_DUPLICATE_ERROR,
-                                        GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-                        logger.error("Duplicate name[%s] entered by user", str(new_key))
-                    else:
-                        main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_MSG1+str(node.key)\
-                                                       +GUIText.CHANGING_NAME_BUSY_MSG2+str(new_key))
-                        node.key = new_key
-                        node.name = new_name
-                        main_frame.datasets[new_key] = main_frame.datasets[old_key]
-                        del main_frame.datasets[old_key]
-                        Database.DatabaseConnection(main_frame.current_workspace.name).UpdateDatasetKey(old_key, new_key)
-                        main_frame.DatasetKeyChange(old_key, new_key)
-                        main_frame.DatasetsUpdated()
+                    node.name = new_name
+                    main_frame.DatasetsUpdated()
         finally:
             main_frame.CloseProgressDialog(thaw=True)
         logger.info("Finished")
@@ -215,7 +213,7 @@ class DatasetsListPanel(wx.Panel):
             if len(delete_nodes) > 0:
                 db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
                 for node in delete_nodes:
-                    main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_REMOVING_MSG+str(node.key))
+                    main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_REMOVING_MSG+str(node.name))
                     if node.key in main_frame.datasets:
                         del main_frame.datasets[node.key]
                     db_conn.DeleteDatasetFromStringTokens(node.key)
@@ -233,9 +231,17 @@ class DatasetsListPanel(wx.Panel):
         logger = logging.getLogger(__name__+".DatasetsPanel.DatasetsUpdated")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.UPDATING_DATASET_BUSY_MSG)
+        if len(self.dataset_dialogs.keys()) > 0:
+            main_frame.PulseProgressDialog(GUIText.UPDATING_DATASET_BUSY_MSG)
         self.datasets_model.Cleared()
         self.datasets_ctrl.Expander(None)
+        for key in list(self.dataset_dialogs.keys()):
+            dataset = self.dataset_dialogs[key].dataset
+            if dataset.key not in main_frame.datasets:
+                self.dataset_dialogs[key].Destroy()
+                del self.dataset_dialogs[key]
+            else:
+                self.dataset_dialogs[key].RefreshDetails()
         logger.info("Finished")
     
     def DocumentsUpdated(self):
@@ -246,12 +252,13 @@ class DatasetsListPanel(wx.Panel):
         logger.info("Finished")
 
 class DatasetDetailsPanel(wx.Panel):
-    def __init__(self, parent, size=wx.DefaultSize):
+    def __init__(self, parent, module, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".DatasetDetailsPanel.__init__")
         logger.info("Starting")
         wx.Panel.__init__(self, parent, size=size)
 
         self.parent = parent
+        self.module = module
         self.dataset = None
         self.tokenization_thread = None
 
@@ -301,7 +308,7 @@ class DatasetDetailsPanel(wx.Panel):
                                               GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
             confirm_dialog.SetOKLabel(GUIText.DATASETS_DELETE_DATASET)
             if confirm_dialog.ShowModal() == wx.ID_YES:
-                main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_REMOVING_MSG+str(self.dataset.key))
+                main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_REMOVING_MSG+str(self.dataset.name))
                 if self.dataset.parent is None:
                     del main_frame.datasets[self.dataset.key]
                 Database.DatabaseConnection(main_frame.current_workspace.name).DeleteDataset(self.dataset.key)
@@ -345,7 +352,7 @@ class DatasetDetailsPanel(wx.Panel):
             self.sizer.Add(create_sizer, 0, wx.ALL, 5)
         
         if isinstance(dataset, Datasets.Dataset):
-            dataset_panel = DatasetsGUIs.DatasetPanel(self, dataset, header=True)
+            dataset_panel = DatasetsGUIs.DatasetPanel(self, self.module, dataset, header=True)
             self.sizer.Add(dataset_panel)
         self.Layout()
         logger.info("Finished")

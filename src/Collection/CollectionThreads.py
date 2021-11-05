@@ -45,7 +45,7 @@ class RetrieveRedditDatasetThread(Thread):
         logger = logging.getLogger(__name__+".RetrieveRedditDatasetThread.run")
         logger.info("Starting")
         status_flag = True
-        dataset_key = (self.dataset_name, "Reddit", self.dataset_type)
+        dataset_source = "Reddit"
         retrieval_details = {
                 'subreddit': ', '.join(self.subreddits),
                 'search': self.search,
@@ -212,16 +212,16 @@ class RetrieveRedditDatasetThread(Thread):
         if status_flag:
             if len(data) > 0:
                 wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, self.language, retrieval_details, data, self.available_fields_list, self.label_fields_list, self.computation_fields_list, self.main_frame)
+                dataset = DatasetsUtilities.CreateDataset(self.dataset_name, dataset_source, self.dataset_type, self.language, retrieval_details, data, self.available_fields_list, self.label_fields_list, self.computation_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
-                error_msg = GUIText.NO_DATA_AVALIABLE_ERROR
+                error_msg = GUIText.NO_DATA_AVAILABLE_ERROR
 
         #return dataset and associated information
         result = {}
         result['status_flag'] = status_flag
-        result['dataset_key'] = dataset_key
+        result['dataset_key'] = dataset.key
         result['dataset'] = dataset
         result['error_msg'] = error_msg
         wx.PostEvent(self._notify_window, CustomEvents.RetrieveResultEvent(result))
@@ -232,7 +232,7 @@ class RetrieveRedditDatasetThread(Thread):
         logger.info("Starting")
         #check which months of the range are already downloaded
         #data archives are by month so need which months have no data and which months are before months which have no data
-        dict_monthfiles = rdr.FilesAvaliable(subreddit, start_date, end_date, prefix)
+        dict_monthfiles = rdr.FilesAvailable(subreddit, start_date, end_date, prefix)
         months_notfound = []
         months_tocheck = []
         errors = []
@@ -271,7 +271,7 @@ class RetrieveRedditDatasetThread(Thread):
         logger = logging.getLogger(__name__+".RedditRetrieverDialog.ImportDataFiles["+subreddit+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
         logger.info("Starting")
         #get names of files where data is to be loaded from
-        dict_monthfiles = rdr.FilesAvaliable(subreddit, start_date, end_date, prefix)
+        dict_monthfiles = rdr.FilesAvailable(subreddit, start_date, end_date, prefix)
         files = []
         for filename in dict_monthfiles.values():
             if filename != "":
@@ -346,7 +346,7 @@ class RetrieveTwitterDatasetThread(Thread):
         logger = logging.getLogger(__name__+".RetrieveTwitterDatasetThread.run")
         logger.info("Starting")
         status_flag = True
-        dataset_key = (self.dataset_name, "Twitter", self.dataset_type)
+        dataset_source = "Twitter"
         retrieval_details = {
                 'query': self.query,
                 'start_date': self.start_date,
@@ -424,16 +424,16 @@ class RetrieveTwitterDatasetThread(Thread):
         if status_flag:
             if len(data) > 0:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, self.language, retrieval_details, data, self.available_fields_list, self.label_fields_list, self.computation_fields_list, self.main_frame)
+                dataset = DatasetsUtilities.CreateDataset(self.dataset_name, dataset_source, self.dataset_type, self.language, retrieval_details, data, self.available_fields_list, self.label_fields_list, self.computation_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
-                error_msg = GUIText.NO_DATA_AVALIABLE_ERROR
+                error_msg = GUIText.NO_DATA_AVAILABLE_ERROR
 
         #return dataset and associated information
         result = {}
         result['status_flag'] = status_flag
-        result['dataset_key'] = dataset_key
+        result['dataset_key'] = dataset.key
         result['dataset'] = dataset
         result['error_msg'] = error_msg
         wx.PostEvent(self._notify_window, CustomEvents.RetrieveResultEvent(result))
@@ -444,7 +444,7 @@ class RetrieveTwitterDatasetThread(Thread):
         logger.info("Starting")
         #check which months of the range are already downloaded
         #data archives are by month so need which months have no data and which months are before months which have no data
-        dict_monthfiles = twr.FilesAvaliable(name, start_date, end_date, prefix)
+        dict_monthfiles = twr.FilesAvailable(name, start_date, end_date, prefix)
         months_notfound = []
         months_tocheck = []
         errors = []
@@ -483,7 +483,7 @@ class RetrieveTwitterDatasetThread(Thread):
         logger = logging.getLogger(__name__+".TwitterRetrieverDialog.ImportDataFiles["+name+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
         logger.info("Starting")
         #get names of files where data is to be loaded from
-        dict_monthfiles = twr.FilesAvaliable(name, start_date, end_date, prefix)
+        dict_monthfiles = twr.FilesAvailable(name, start_date, end_date, prefix)
         files = []
         for filename in dict_monthfiles.values():
             if filename != "":
@@ -567,10 +567,9 @@ class RetrieveCSVDatasetThread(Thread):
         file_data = self.ImportDataFiles(self.filename)
         #convert the data into toolkit's dataset format
         wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_CSV_MSG))
-
+        
+        dataset_source = "CSV"
         if self.dataset_field == "":
-            dataset_key = (self.dataset_name, "CSV", self.dataset_type)
-            
             row_num = 0
             for row in file_data:
                 row_num = row_num + 1
@@ -619,40 +618,40 @@ class RetrieveCSVDatasetThread(Thread):
             if len(data) > 0:
                 retrieval_details['row_count'] = row_num
                 wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                dataset = DatasetsUtilities.CreateDataset(dataset_key, self.language, retrieval_details, data, self.available_fields_list, self.label_fields_list, self.computation_fields_list, self.main_frame)
+                dataset = DatasetsUtilities.CreateDataset(self.dataset_name, dataset_source, self.dataset_type, self.language, retrieval_details, data, self.available_fields_list, self.label_fields_list, self.computation_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
-                error_msg = GUIText.NO_DATA_AVALIABLE_ERROR
+                error_msg = GUIText.NO_DATA_AVAILABLE_ERROR
         else:
-            new_dataset_key = []
+            new_dataset_keys = []
             row_num = 0
             dataset_row_num = {}
             for row in file_data:
                 row_num = row_num + 1
-                new_dataset_key = (self.dataset_name, "CSV", row[self.dataset_field])
-                if new_dataset_key not in data:
-                    data[new_dataset_key] = {}
-                    dataset_row_num[new_dataset_key] = 1
+                new_dataset_type = row[self.dataset_field]
+                if new_dataset_type not in data:
+                    data[new_dataset_type] = {}
+                    dataset_row_num[new_dataset_type] = 1
                 else:
-                    dataset_row_num[new_dataset_key] = dataset_row_num[new_dataset_key] + 1
+                    dataset_row_num[new_dataset_type] = dataset_row_num[new_dataset_type] + 1
 
                 if self.id_field in row:
                     document_id = row[self.id_field]
                 else:
                     document_id = row_num
                 key = ("CSV", row[self.dataset_field], document_id)
-                if key not in data[new_dataset_key]:
-                    data[new_dataset_key][key] = {}
-                    data[new_dataset_key][key]['data_source'] = 'CSV'
-                    data[new_dataset_key][key]['data_type'] = row[self.dataset_field]
-                    data[new_dataset_key][key]['id'] = document_id
+                if key not in data[new_dataset_type]:
+                    data[new_dataset_type][key] = {}
+                    data[new_dataset_type][key]['data_source'] = 'CSV'
+                    data[new_dataset_type][key]['data_type'] = row[self.dataset_field]
+                    data[new_dataset_type][key]['id'] = document_id
                     if self.url_field == "":
-                        data[new_dataset_key][key]['url'] = ""
+                        data[new_dataset_type][key]['url'] = ""
                     else:
-                        data[new_dataset_key][key]['url'] = row[self.url_field]
+                        data[new_dataset_type][key]['url'] = row[self.url_field]
                     if self.datetime_field == "":
-                        data[new_dataset_key][key]['created_utc'] = 0
+                        data[new_dataset_type][key]['created_utc'] = 0
                     else:
                         datetime_value = row[self.datetime_field]
                         if datetime_value != '':
@@ -660,36 +659,37 @@ class RetrieveCSVDatasetThread(Thread):
                             if datetime_obj != None:
                                 datetime_obj = datetime_obj.astimezone(timezone.utc)
                                 datetime_utc = datetime_obj.replace(tzinfo=timezone.utc).timestamp()
-                                data[new_dataset_key][key]['created_utc'] = datetime_utc
+                                data[new_dataset_type][key]['created_utc'] = datetime_utc
                             else:
-                                data[new_dataset_key][key]['created_utc'] = 0
+                                data[new_dataset_type][key]['created_utc'] = 0
                         else:
-                            data[new_dataset_key][key]['created_utc'] = 0
+                            data[new_dataset_type][key]['created_utc'] = 0
                     for field in row:
-                        data[new_dataset_key][key]["csv."+field] = [row[field]]
+                        data[new_dataset_type][key]["csv."+field] = [row[field]]
                 else:
                     for field in row:
-                        if "csv."+field in data[new_dataset_key][key]:
-                            data[new_dataset_key][key]["csv."+field].append(row[field])
+                        if "csv."+field in data[new_dataset_type][key]:
+                            data[new_dataset_type][key]["csv."+field].append(row[field])
                         else:
-                            data[new_dataset_key][key]["csv."+field] = [row[field]]
+                            data[new_dataset_type][key]["csv."+field] = [row[field]]
             #save as a document dataset
             if len(data) > 0:
                 wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
-                for new_dataset_key in data:
+                for new_dataset_type in data:
                     cur_retrieval_details = copy.deepcopy(retrieval_details)
-                    cur_retrieval_details['row_count'] = dataset_row_num[new_dataset_key]
-                    datasets[new_dataset_key] = DatasetsUtilities.CreateDataset(new_dataset_key, self.language, retrieval_details, data[new_dataset_key], self.available_fields_list, self.label_fields_list, self.computation_fields_list, self.main_frame)
-                    DatasetsUtilities.TokenizeDataset(datasets[new_dataset_key], self._notify_window, self.main_frame)
+                    cur_retrieval_details['row_count'] = dataset_row_num[new_dataset_type]
+                    new_dataset = DatasetsUtilities.CreateDataset(self.dataset_name, dataset_source, new_dataset_type, self.language, retrieval_details, data[new_dataset_type], self.available_fields_list, self.label_fields_list, self.computation_fields_list, self.main_frame)
+                    datasets[new_dataset.key] = new_dataset
+                    DatasetsUtilities.TokenizeDataset(new_dataset, self._notify_window, self.main_frame)
             else:
                 status_flag = False
-                error_msg = GUIText.NO_DATA_AVALIABLE_ERROR
+                error_msg = GUIText.NO_DATA_AVAILABLE_ERROR
 
         #return dataset and associated information
         result = {}
         result['status_flag'] = status_flag
         if dataset is not None:
-            result['dataset_key'] = dataset_key
+            result['dataset_key'] = dataset.key
             result['dataset'] = dataset
         else:
             result['datasets'] = datasets

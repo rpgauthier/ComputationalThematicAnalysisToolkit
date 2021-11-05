@@ -13,55 +13,52 @@ import Common.Database as Database
 from Common.GUIText import Datasets as GUIText
 from Common.GUIText import Filtering as GUITextFiltering
 
-def CreateDataset(dataset_key, language, retrieval_details, data, available_fields_list, label_fields, computational_fields, main_frame):
-    dataset = Datasets.Dataset(dataset_key,
-                               dataset_key[0],
-                               dataset_key[1],
-                               dataset_key[2],
-                               language,
-                               retrieval_details)
+def CreateDataset(dataset_name, dataset_source, dataset_type, language, retrieval_details, data, available_fields_list, label_fields, computational_fields, main_frame):
+    dataset = Datasets.Dataset(name=dataset_name,
+                               dataset_source=dataset_source,
+                               dataset_type=dataset_type,
+                               language=language,
+                               retrieval_details=retrieval_details)
 
     db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
     
-    db_conn.InsertDataset(dataset_key, 'text')
+    db_conn.InsertDataset(dataset.key, 'text')
 
     dataset.data = data
     
-    db_conn.InsertDocuments(dataset_key, dataset.data.keys())
+    db_conn.InsertDocuments(dataset.key, dataset.data.keys())
     
-    for field_name, field_info in label_fields:
-        new_field = Datasets.Field(dataset,
-                                   field_name,
-                                   dataset,
-                                   field_info['desc'],
-                                   field_info['type'])
-        dataset.label_fields[field_name] = new_field
     for field_name, field_info in available_fields_list:
         new_field = Datasets.Field(dataset,
                                    field_name,
                                    dataset,
                                    field_info['desc'],
                                    field_info['type'])
-        dataset.available_fields[field_name] = new_field
+        dataset.available_fields[new_field.key] = new_field
+    for field_name, field_info in label_fields:
+        for field in dataset.available_fields.values():
+            if field.name == field_name:
+                found_field = field
+                break
+        dataset.label_fields[found_field.key] = found_field
     for field_name, field_info in computational_fields:
-        new_field = Datasets.Field(dataset,
-                                   field_name,
-                                   dataset,
-                                   field_info['desc'],
-                                   field_info['type'])
-        dataset.computational_fields[field_name] = new_field
+        for field in dataset.available_fields.values():
+            if field.name == field_name:
+                found_field = field
+                break
+        dataset.computational_fields[found_field.key] = found_field
     return dataset
 
-def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
+def TokenizeDataset(dataset, notify_window, main_frame, rerun=False, tfidf_update=False):
     logger = logging.getLogger(__name__+".TokenizeDataset")
     logger.info("Starting")
     main_frame = main_frame
     db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
 
     def TokenizationController(field, field_data):
-        logger.info("Preparing Processes for dataset[%s], field[%s], for %s documents", str(dataset.key), str(field.key), str(len(field_data)))
+        logger.info("Preparing Processes for %s, %s, for %s documents", repr(dataset), repr(field), str(len(field_data)))
         nonlocal main_frame
-        wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_STARTING_FIELD_MSG+str(field.key)))
+        wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_STARTING_FIELD_MSG+str(field.name)))
         results = []
 
         total = len(field_data)
@@ -83,7 +80,7 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
         for data_list in split_data_lists:
             logger.info("Creating TokenizationWorker for Documents %s - %s", str(count+1), str(count+len(data_list)))
             res = main_frame.pool.apply_async(TokenizationWorker, (data_list, 
-                                                                   str(field.key),
+                                                                   repr(field),
                                                                    str(count+1)+"-"+str(count+len(data_list)-1),
                                                                    field.parent.language))
             results.append(res)
@@ -92,7 +89,7 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
         completed = 0
         wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
                                                                +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG2+str(len(results))\
-                                                               +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(field.key)))
+                                                               +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(field.name)))
         if not db_conn.CheckIfFieldExists(dataset.key, field.key):
             db_conn.InsertField(dataset.key, field.key)
         for res in results:
@@ -102,10 +99,10 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
             #insert documents' tokens into database
             db_conn.InsertStringTokens(dataset.key, field.key, new_tokensets)
             completed += 1
-            logger.info("%s %s", str(field.key), completed)
+            logger.info("%s %s", repr(field), completed)
             wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
                                                                    +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG2+str(len(results))\
-                                                                   +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(field.key)))
+                                                                   +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(field.name)))
 
         dataset.tokenization_package_versions = package_versions
 
@@ -115,19 +112,19 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
         for data in field.dataset.data.values():
             id_key = tuple(data[id_key_field] for id_key_field in id_key_fields)
             if id_key not in field_data:
-                if field.key in data:
-                    if isinstance(data[field.key], str):
-                        field_data[id_key] = [data[field.key]]
+                if field.name in data:
+                    if isinstance(data[field.name], str):
+                        field_data[id_key] = [data[field.name]]
                     else:
-                        field_data[id_key] = data[field.key]
+                        field_data[id_key] = data[field.name]
                 else:
                     field_data[id_key] = [""]
             else:
-                if field.key in data:
-                    if isinstance(data[field.key], str):
-                        field_data[id_key].append(data[field.key])
+                if field.name in data:
+                    if isinstance(data[field.name], str):
+                        field_data[id_key].append(data[field.name])
                     else:
-                        field_data[id_key].extend(data[field.key])
+                        field_data[id_key].extend(data[field.name])
                 else:
                     field_data[id_key].append("")
         if field.fieldtype == "string":
@@ -150,7 +147,7 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
             FieldTokenizer(dataset.computational_fields[computational_field_key])
 
     #calculate tfidf scores for all stored string tokens if any changes occured
-    if stringfield_count > 0:
+    if stringfield_count > 0 or tfidf_update:
         wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_STARTING_TFIDF_MSG))
         db_conn.UpdateStringTokensTFIDF(dataset.key)
         counts = db_conn.GetStringTokensCounts(dataset.key)
@@ -162,8 +159,8 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False):
             
     logger.info("Finished")
 
-def TokenizationWorker(data_list, field_key, label, language):
-    logger = logging.getLogger(__name__+".TokenizationWorker["+str(field_key)+"]["+str(label)+"]")
+def TokenizationWorker(data_list, field_repr, label, language):
+    logger = logging.getLogger(__name__+".TokenizationWorker["+field_repr+"]["+str(label)+"]")
     logger.info("Starting")
 
     package_versions = []

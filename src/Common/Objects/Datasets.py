@@ -8,10 +8,8 @@ import Common.Objects.Samples as Samples
 #Object classes to facilitate controlling datasets
 class Dataset(GenericObject):
     '''instances of Datasets.'''
-    def __init__(self, key, name, dataset_source, dataset_type, language, retrieval_details):
-        logger = logging.getLogger(__name__+".Dataset["+str(key)+"].__init__")
-        logger.info("Starting")
-        GenericObject.__init__(self, key, name=name)
+    def __init__(self, name, dataset_source, dataset_type, language, retrieval_details):
+        GenericObject.__init__(self, name=name)
         
         #properties that automatically update last_changed_dt
         self._dataset_source = dataset_source
@@ -45,10 +43,8 @@ class Dataset(GenericObject):
         self.selected_documents = []
         self.documents = {}
 
-        logger.info("Finished")
-
     def __repr__(self):
-        return 'Dataset: %s' % (str(self.key),)
+        return 'Dataset[%s][%s]' % (self.name, self.key,)
 
     @property
     def dataset_source(self):
@@ -179,12 +175,11 @@ class Dataset(GenericObject):
     
     def DestroyObject(self):
         #any children Fields
-        for available_field_name in list(self.available_fields.keys()):
-            self.available_fields[available_field_name].DestroyObject()
-        for computational_field_name in list(self.computational_fields.keys()):
-            self.computational_fields[computational_field_name].DestroyObject()
-        for label_field_name in list(self.label_fields.keys()):
-            self.label_fields[label_field_name].DestroyObject()
+        for key in list(self.available_fields.keys()):
+            self.available_fields[key].DestroyObject()
+        #make sure that symbolic connections are purged
+        self.computational_fields.clear()
+        self.label_fields.clear()
         #any children Documents:
         for document_key in list(self.documents.keys()):
             self.documents[document_key].DestroyObject()
@@ -200,20 +195,24 @@ class Dataset(GenericObject):
         self.filter_rules.append(new_rule)
         self._last_changed_dt = datetime.now()
 
-    def SetupDocument(self, key):
-        if key in self._data:
-            if key not in self.documents:
-                self.documents[key] = Document(self, key)
-            return self.documents[key]
+    def GetDocument(self, doc_id):
+        if doc_id in self._data:
+            new_doc = None
+            for doc in self.documents.values():
+                if doc.doc_id == doc_id:
+                    new_doc = doc
+                    break
+            if new_doc == None:
+                new_doc = Document(self, doc_id)
+                self.documents[new_doc.key] = new_doc
+            return self.documents[new_doc.key]
         else:
             return None
 
 class Field(GenericObject):
     '''instances of Fields.'''
-    def __init__(self, parent, key, dataset, desc, fieldtype):
-        logger = logging.getLogger(__name__+".Field["+str(key)+"].__init__")
-        logger.info("Starting")
-        GenericObject.__init__(self, key, parent=parent, name=str(key))
+    def __init__(self, parent, name, dataset, desc, fieldtype):
+        GenericObject.__init__(self, parent=parent, name=name)
         
         #properties that automatically update last_changed_dt
         self._dataset = dataset
@@ -222,12 +221,9 @@ class Field(GenericObject):
         self._tokenization_choice = 0
         self._tokenset = None
         self._included_tokenset_df = None
-        
-        #objects that have their own last_changed_dt and thus need to be checked dynamically
-        logger.info("Finished")
 
     def __repr__(self):
-        return 'Field: %s' % (self.key,)
+        return 'Field[%s][%s]' % (self.name, self.key,)
     
     @property
     def dataset(self):
@@ -297,14 +293,13 @@ class Field(GenericObject):
 
 class Document(GenericObject):
     '''instances of Document.'''
-    def __init__(self, parent, key):
-        logger = logging.getLogger(__name__+".Document["+str(key)+"].__init__")
-        logger.info("Starting")
-        GenericObject.__init__(self, key, parent=parent, name=str(key))
+    def __init__(self, parent, doc_id):
+        GenericObject.__init__(self, parent=parent)
 
         #properties that automatically update last_changed_dt
-        if 'url' in parent.data[key]:
-            self._url = parent.data[key]['url']
+        self._doc_id = doc_id
+        if 'url' in parent.data[doc_id]:
+            self._url = parent.data[doc_id]['url']
         else:
             self._url = ''
         
@@ -312,13 +307,16 @@ class Document(GenericObject):
         #self.data_dict = {}
         self.sample_connections = []
 
-        #objects that have their own last_changed_dt and thus need to be checked dynamically
-
-        #self.SetDocumentFields()
-        logger.info("Finished")
-
     def __repr__(self):
-        return 'Document: %s' % (self.key, )
+        return 'Document[%s][%s]' % (str(self.doc_id), self.key, )
+    
+    @property
+    def doc_id(self):
+        return self._doc_id
+    @doc_id.setter
+    def doc_id(self, value):
+        self._doc_id = value
+        self.last_changed_dt = datetime.now() 
 
     @property
     def url(self):

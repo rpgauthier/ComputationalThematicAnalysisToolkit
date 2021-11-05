@@ -7,7 +7,7 @@ import wx
 #import wx.lib.agw.flatnotebook as FNB
 import External.wxPython.flatnotebook_fix as FNB
 
-CUR_VER = '0.8.5'
+CUR_VER = '0.8.6'
 
 #Variables to configure GUI
 FNB_STYLE = FNB.FNB_DEFAULT_STYLE|FNB.FNB_HIDE_ON_SINGLE_TAB|FNB.FNB_NO_X_BUTTON|FNB.FNB_FF2
@@ -108,8 +108,8 @@ FILTER_TFIDF_INCLUDE = 'include tokens where their tfidf is '
 FILTER_TFIDF_LOWER = ' in the lower '
 FILTER_TFIDF_UPPER = ' in the upper  '
 ###Token Filters
-AVALIABLE_DATASET_LANGUAGES1 = ['eng-sm', 'fre-sm'] #removed eng-trf and fre-trf due to difficulties with preparing installations -- Sept 21, 2021
-AVALIABLE_DATASET_LANGUAGES2 = ['English', 'French']
+AVAILABLE_DATASET_LANGUAGES1 = ['eng-sm', 'fre-sm'] #removed eng-trf and fre-trf due to difficulties with preparing installations -- Sept 21, 2021
+AVAILABLE_DATASET_LANGUAGES2 = ['English', 'French']
 
 # dialogs
 TWITTER_DIALOG_SIZE = wx.Size(350, -1)

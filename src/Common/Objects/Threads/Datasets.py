@@ -10,19 +10,20 @@ import Common.Database as Database
 
 class TokenizerThread(Thread):
     """Tokenize Datasets Thread Class."""
-    def __init__(self, notify_window, main_frame, dataset, rerun=False):
+    def __init__(self, notify_window, main_frame, dataset, rerun=False, tfidf_update=False):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
         self.main_frame = main_frame
         self.dataset = dataset
         self.rerun = rerun
+        self.tfidf_update = tfidf_update
         self.start()
     
     def run(self):
         logger = logging.getLogger(__name__+"TokenizerThread["+str(self.dataset.key)+"].run")
         logger.info("Starting")
-        DatasetsUtilities.TokenizeDataset(self.dataset, self._notify_window, self.main_frame, rerun=self.rerun)
+        DatasetsUtilities.TokenizeDataset(self.dataset, self._notify_window, self.main_frame, rerun=self.rerun, tfidf_update=self.tfidf_update)
         result = {}
         wx.PostEvent(self._notify_window, CustomEvents.TokenizerResultEvent(result))
         logger.info("Finished")

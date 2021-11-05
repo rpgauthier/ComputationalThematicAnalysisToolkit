@@ -6,11 +6,9 @@ import Common.Objects.Datasets as Datasets
 import Common.Objects.Samples as Samples
 
 class Code(GenericObject):
-    def __init__(self, key):
-        logger = logging.getLogger(__name__+".Code["+str(key)+"].__init__")
-        logger.info("Starting")
-        GenericObject.__init__(self, key, name=key)
-        
+    def __init__(self, name, parent=None, key=None):
+        GenericObject.__init__(self, name=name, parent=parent)
+
         self._colour_rgb = (0,0,0,)
         
         self.subcodes = {}
@@ -18,7 +16,10 @@ class Code(GenericObject):
         self.doc_positions = {}
 
         self.quotations = []
-    
+
+    def __repr__(self):
+        return 'Code[%s][%s]' % (self.name, self.key,)
+
     @property
     def colour_rgb(self):
         return self._colour_rgb
@@ -163,13 +164,15 @@ class Code(GenericObject):
             self.parent = None
 
 class Quotation(GenericObject):
-    def __init__(self, key, parent, dataset_key, document_key, original_data=None, paraphrased_data=None):
-        GenericObject.__init__(self, key=key, parent=parent, name=key)
-        #key needs to be a tuple made up of the dataset_key and a document_key from that dataset allowing for lookup of the document
+    def __init__(self, parent, dataset_key, document_key, original_data=None, paraphrased_data=None):
+        GenericObject.__init__(self, parent=parent)
         self._dataset_key = dataset_key
         self._document_key = document_key
         self._original_data = original_data
         self._paraphrased_data = paraphrased_data
+
+    def __repr__(self):
+        return 'Quotation[%s]' % (str(self.key))
 
     @property
     def dataset_key(self):

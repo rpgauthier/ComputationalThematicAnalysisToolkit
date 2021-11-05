@@ -236,6 +236,25 @@ class DatabaseConnection():
         except sqlite3.Error as e:
             logger.exception("sql failed with error")
         logger.info("Finished")
+
+    def UpdateFieldKey(self, dataset_key, old_field_key, new_field_key):
+        logger = logging.getLogger(__name__+".UpdateDatasetKey")
+        logger.info("Starting")
+        try:
+            c = self.__conn.cursor()
+            sql_update_fieldkey = """UPDATE fields 
+                                     SET field_key = ?
+                                     WHERE dataset_id = (SELECT id
+                                                         FROM datasets 
+                                                         WHERE dataset_key = ?)
+                                     AND field_key = ?
+                                     """
+            c.execute(sql_update_fieldkey, (str(new_field_key), str(dataset_key), str(old_field_key),))
+            self.__conn.commit()
+            c.close()
+        except sqlite3.Error as e:
+            logger.exception("sql failed with error")
+        logger.info("Finished")
     
     def UpdateFieldPosition(self, dataset_key, field_key, position):
         logger = logging.getLogger(__name__+".InsertField")

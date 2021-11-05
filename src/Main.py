@@ -46,6 +46,7 @@ class MainFrame(wx.Frame):
 
         self.datasets = {}
         self.samples = {}
+        self.model_iter = 0
         self.codes = {}
         self.save_path = ''
         self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
@@ -57,6 +58,13 @@ class MainFrame(wx.Frame):
         self.progress_dialog_references = 0
         self.closing = False
         self.autosave_flag = False
+
+        self.options_dialog = None
+        self.about_dialog = None
+
+        self.codeconnections_dialogs = {}
+        self.document_dialogs = {} #TODO
+
 
         #Workspace's Options
         self.options_dict = {'multipledatasets_mode': False,
@@ -211,13 +219,20 @@ class MainFrame(wx.Frame):
     def OnOptions(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnOptions")
         logger.info("Starting")
-        OptionsDialog(self).Show()
+        if self.options_dialog == None:
+            self.options_dialog = OptionsDialog(self)
+            self.options_dialog
+        self.options_dialog.Show()
+        self.options_dialog.SetFocus()
         logger.info("Finished")
 
     def OnAbout(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnAbout")
         logger.info("Starting")
-        AboutDialog(self).Show()
+        if self.about_dialog == None:
+            self.about_dialog = AboutDialog(self)
+        self.about_dialog.Show()
+        self.about_dialog.SetFocus()
         logger.info("Finished")
 
     def OnNew(self, event):
@@ -230,16 +245,16 @@ class MainFrame(wx.Frame):
             #check if current workspace is not recently saved
             check_flag = False
             if not check_flag and len(self.datasets) != 0:
-                for dataset_key in self.datasets:
-                    if self.datasets[dataset_key].last_changed_dt > self.last_load_dt:
+                for key in self.datasets:
+                    if self.datasets[key].last_changed_dt > self.last_load_dt:
                         check_flag = True
             if not check_flag and len(self.samples) != 0:
-                for sample_key in self.samples:
-                    if self.samples[sample_key].last_changed_dt > self.last_load_dt:
+                for key in self.samples:
+                    if self.samples[key].last_changed_dt > self.last_load_dt:
                         check_flag = True
             if not check_flag and len(self.codes) != 0:
-                for code_key in self.codes:
-                    if self.codes[code_key].last_changed_dt > self.last_load_dt:
+                for key in self.codes:
+                    if self.codes[key].last_changed_dt > self.last_load_dt:
                         check_flag = True
             if check_flag:
                 confirm_dialog = wx.MessageDialog(self, GUIText.NEW_WARNING,
@@ -254,16 +269,25 @@ class MainFrame(wx.Frame):
                                         freeze=True)
                 self.PulseProgressDialog(GUIText.NEW_BUSY_MSG)
 
+                self.Freeze()
+
                 #reset objects
-                for key in self.datasets:
-                    self.datasets[key].DestroyObject()
-                self.datasets.clear()
-                for key in self.samples:
-                    self.samples[key].DestroyObject()
-                self.samples.clear()
+                for key in self.codeconnections_dialogs:
+                    self.codeconnections_dialogs[key].Destroy()    
+                self.codeconnections_dialogs.clear()
+                for key in self.document_dialogs:
+                    self.document_dialogs[key].Destroy()    
+                self.codeconnections_dialogs.clear()
                 for key in self.codes:
                     self.codes[key].DestroyObject()
                 self.codes.clear()
+                for key in self.samples:
+                    self.samples[key].DestroyObject()
+                self.samples.clear()
+                for key in self.datasets:
+                    self.datasets[key].DestroyObject()
+                self.datasets.clear()
+                
 
                 self.save_path = ''
                 self.current_workspace.cleanup()
@@ -274,11 +298,13 @@ class MainFrame(wx.Frame):
 
                 self.DatasetsUpdated(autosave=False)
                 self.SamplesUpdated()
-                self.DocumentsUpdated()
+                self.DocumentsUpdated(self)
                 #TODO investigate error that occurs when a code is selected when new is clicked
                 self.CodesUpdated()
 
                 self.SetTitle(GUIText.APP_NAME+" - "+GUIText.UNSAVED)
+
+                self.Thaw()
 
                 self.CloseProgressDialog(thaw=True)
         logger.info("Finished")
@@ -292,16 +318,16 @@ class MainFrame(wx.Frame):
         check_flag = False
         #check if current workspace is not recently saved
         if not check_flag and len(self.datasets) != 0:
-            for dataset_key in self.datasets:
-                if self.datasets[dataset_key].last_changed_dt > self.last_load_dt:
+            for key in self.datasets:
+                if self.datasets[key].last_changed_dt > self.last_load_dt:
                     check_flag = True
         if not check_flag and len(self.samples) != 0:
-            for sample_key in self.samples:
-                if self.samples[sample_key].last_changed_dt > self.last_load_dt:
+            for key in self.samples:
+                if self.samples[key].last_changed_dt > self.last_load_dt:
                     check_flag = True
         if not check_flag and len(self.codes) != 0:
-            for code_key in self.codes:
-                if self.codes[code_key].last_changed_dt > self.last_load_dt:
+            for key in self.codes:
+                if self.codes[key].last_changed_dt > self.last_load_dt:
                     check_flag = True
         if check_flag:
             confirm_dialog = wx.MessageDialog(self, GUIText.LOAD_WARNING,
@@ -329,20 +355,20 @@ class MainFrame(wx.Frame):
                     self.SetTitle(GUIText.APP_NAME+" - "+file_dialog.GetFilename())
 
                     #reset objects
-                    for key in self.datasets:
-                        self.datasets[key].DestroyObject()
-                    self.datasets.clear()
-                    for key in self.samples:
-                        self.samples[key].DestroyObject()
-                    self.samples.clear()
                     for key in self.codes:
                         self.codes[key].DestroyObject()
                     self.codes.clear()
+                    for key in self.samples:
+                        self.samples[key].DestroyObject()
+                    self.samples.clear()
+                    for key in self.datasets:
+                        self.datasets[key].DestroyObject()
+                    self.datasets.clear()
 
                     #update gui based on reset objects to prevent errors
                     self.DatasetsUpdated(autosave=False)
                     self.SamplesUpdated()
-                    self.DocumentsUpdated()
+                    self.DocumentsUpdated(self)
                     self.CodesUpdated()
 
                     self.current_workspace.cleanup()
@@ -352,40 +378,95 @@ class MainFrame(wx.Frame):
                     self.load_thread = MainThreads.LoadThread(self, self.save_path, self.current_workspace.name)
         logger.info("Finished")
     
+    def OnRestoreLoadStart(self, event):
+        '''function to resume from last autosave'''
+        logger = logging.getLogger(__name__+".MainFrame.OnRestoreLoadStart")
+        logger.info("Starting")
+
+        if os.path.isdir(Constants.AUTOSAVE_PATH):
+            check_flag = False
+            #check if current workspace is not recently saved
+            if not check_flag and len(self.datasets) != 0:
+                for dataset_key in self.datasets:
+                    if self.datasets[dataset_key].last_changed_dt > self.last_load_dt:
+                        check_flag = True
+            if not check_flag and len(self.samples) != 0:
+                for sample_key in self.samples:
+                    if self.samples[sample_key].last_changed_dt > self.last_load_dt:
+                        check_flag = True
+            if not check_flag and len(self.codes) != 0:
+                for code_key in self.codes:
+                    if self.codes[code_key].last_changed_dt > self.last_load_dt:
+                        check_flag = True
+            if check_flag:
+                confirm_dialog = wx.MessageDialog(self, GUIText.LOAD_WARNING,
+                                                    GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+                confirm_dialog.SetOKLabel(GUIText.LOAD_ANYWAYS)
+                confirm_flag = confirm_dialog.ShowModal()
+            else:
+                confirm_flag = wx.ID_OK
+            if confirm_flag == wx.ID_OK:
+                self.CreateProgressDialog(title=GUIText.LOAD_BUSY_LABEL,
+                                        warning=GUIText.SIZE_WARNING_MSG,
+                                        freeze=True)
+                self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG)
+
+                self.save_path = ""
+                self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG_FILE + str(Constants.AUTOSAVE_PATH))
+                logger.info("loading file: %s", Constants.AUTOSAVE_PATH)
+                self.SetTitle(GUIText.APP_NAME+" - Last AutoSave")
+
+                #reset objects
+                for key in self.codes:
+                    self.codes[key].DestroyObject()
+                self.codes.clear()
+                for key in self.samples:
+                    self.samples[key].DestroyObject()
+                self.samples.clear()
+                for key in self.datasets:
+                    self.datasets[key].DestroyObject()
+                self.datasets.clear()
+
+                #update gui based on reset objects to prevent errors
+                self.DatasetsUpdated(autosave=False)
+                self.SamplesUpdated()
+                self.DocumentsUpdated(self)
+                self.CodesUpdated()
+
+                self.current_workspace.cleanup()
+                self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
+
+                self.last_load_dt = datetime.now()
+                self.load_thread = MainThreads.LoadThread(self, Constants.AUTOSAVE_PATH, self.current_workspace.name, restoreload=True)
+        else:
+            wx.MessageBox(GUIText.NO_AUTOSAVE_ERROR)
+        logger.info("Finished")
+
     def OnLoadEnd(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnLoadEnd")
         logger.info("Starting")
         #once load thread has finished loading data files into memory run the GUI with the loaded data
         
         saved_data = event.data['config']
+
+        self.ModeChange()
         
         self.datasets.update(event.data['datasets'])
         self.samples.update(event.data['samples'])
         self.codes.update(event.data['codes'])
+        self.model_iter = saved_data['model_iter']
+        self.options_dict = saved_data['options']
 
         self.collection_module.Load(saved_data['collection_module'])
         self.filtering_module.Load(saved_data['filtering_module'])
         self.sampling_module.Load(saved_data['sampling_module'])
         self.coding_module.Load(saved_data['coding_module'])
-        #if 'reviewing_module' in saved_data:
-        #    self.reviewing_module.Load(saved_data['reviewing_module'])
-        #else:
-        #    self.reviewing_module.Load({})
-        if 'reporting_module' in saved_data:
-            self.reporting_module.Load(saved_data['reporting_module'])
-        else:
-            self.reporting_module.Load({})
-        
+        #self.reviewing_module.Load(saved_data['reviewing_module'])
+        self.reporting_module.Load(saved_data['reporting_module'])
+
         self.toggle_notes_menuitem.Check(check=saved_data['notes_check'])
         self.OnToggleNotes(None)
         self.notes_panel.Load(saved_data['notes'])
-
-        mode_changed = False
-        if self.options_dict['multipledatasets_mode'] != saved_data['options']['multipledatasets_mode']:
-            mode_changed = True
-        self.options_dict = saved_data['options']
-        if mode_changed:
-            self.ModeChange()
 
         self.load_thread.join()
         self.load_thread = None
@@ -444,6 +525,7 @@ class MainFrame(wx.Frame):
             config_data['datasets'] = list(self.datasets.keys())
             config_data['options'] = self.options_dict
             config_data['samples'] = list(self.samples.keys())
+            config_data['model_iter'] = self.model_iter
             config_data['codes'] = True
             config_data['collection_module'] = self.collection_module.Save()
             config_data['filtering_module'] = self.filtering_module.Save()
@@ -454,6 +536,36 @@ class MainFrame(wx.Frame):
 
             self.save_thread = MainThreads.SaveThread(self, self.save_path, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, notes_text, self.last_load_dt)
 
+    def AutoSaveStart(self):
+        '''function for auto saving data after completing important operations'''
+        logger = logging.getLogger(__name__+".MainFrame.OnAutoSaveStart")
+        logger.info("Starting")
+        self.autosave_flag = True
+        self.CreateProgressDialog(title=GUIText.SAVE_BUSY_LABEL,
+                                  warning=GUIText.SIZE_WARNING_MSG,
+                                  freeze=True)
+        self.PulseProgressDialog(GUIText.AUTO_SAVE_BUSY_MSG)
+        logger.info("auto saving workspace to [%s]", Constants.AUTOSAVE_PATH)
+
+        notes_text = self.notes_notebook.Save()
+
+        config_data = {}
+        config_data['notes_check'] = self.toggle_notes_menuitem.IsChecked()
+        config_data['notes'] = self.notes_panel.Save()
+        config_data['datasets'] = list(self.datasets.keys())
+        config_data['options'] = self.options_dict
+        config_data['samples'] = list(self.samples.keys())
+        config_data['model_iter'] = self.model_iter
+        config_data['codes'] = True
+        config_data['collection_module'] = self.collection_module.Save()
+        config_data['filtering_module'] = self.filtering_module.Save()
+        config_data['sampling_module'] = self.sampling_module.Save()
+        config_data['coding_module'] = self.coding_module.Save()
+        #config_data['reviewing_module'] = self.reviewing_module.Save()
+        config_data['reporting_module'] = self.reporting_module.Save()
+
+        self.save_thread = MainThreads.SaveThread(self, Constants.AUTOSAVE_PATH, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, notes_text, self.last_load_dt, autosave=True)
+    
     def OnSaveEnd(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnSaveEnd")
         logger.info("Starting")
@@ -468,103 +580,6 @@ class MainFrame(wx.Frame):
         logger.info("Finished")
         if self.closing:
             self.OnCloseEnd(event)
-
-    def AutoSaveStart(self):
-        '''function for auto saving data after completing important operations'''
-        logger = logging.getLogger(__name__+".MainFrame.OnAutoSaveStart")
-        logger.info("Starting")
-        self.autosave_flag = True
-        self.CreateProgressDialog(title=GUIText.SAVE_BUSY_LABEL,
-                                  warning=GUIText.SIZE_WARNING_MSG,
-                                  freeze=True)
-        self.PulseProgressDialog(GUIText.AUTO_SAVE_BUSY_MSG)
-
-        self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_FILE + str(Constants.AUTOSAVE_PATH))
-        logger.info("auto saving file: %s", Constants.AUTOSAVE_PATH)
-
-        self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_NOTES)
-        notes_text = self.notes_notebook.Save()
-
-        self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_CONFIG)
-        config_data = {}
-        config_data['notes_check'] = self.toggle_notes_menuitem.IsChecked()
-        config_data['notes'] = self.notes_panel.Save()
-        config_data['datasets'] = list(self.datasets.keys())
-        config_data['options'] = self.options_dict
-        config_data['samples'] = list(self.samples.keys())
-        config_data['codes'] = True
-        config_data['collection_module'] = self.collection_module.Save()
-        config_data['filtering_module'] = self.filtering_module.Save()
-        config_data['sampling_module'] = self.sampling_module.Save()
-        config_data['coding_module'] = self.coding_module.Save()
-        #config_data['reviewing_module'] = self.reviewing_module.Save()
-        config_data['reporting_module'] = self.reporting_module.Save()
-
-        self.save_thread = MainThreads.SaveThread(self, Constants.AUTOSAVE_PATH, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, notes_text, self.last_load_dt, autosave=True)
-    
-    def OnRestoreLoadStart(self, event):
-        '''function to resume from last autosave'''
-        logger = logging.getLogger(__name__+".MainFrame.OnRestoreLoadStart")
-        logger.info("Starting")
-
-        if os.path.isdir(Constants.AUTOSAVE_PATH):
-            check_flag = False
-            #check if current workspace is not recently saved
-            if not check_flag and len(self.datasets) != 0:
-                for dataset_key in self.datasets:
-                    if self.datasets[dataset_key].last_changed_dt > self.last_load_dt:
-                        check_flag = True
-            if not check_flag and len(self.samples) != 0:
-                for sample_key in self.samples:
-                    if self.samples[sample_key].last_changed_dt > self.last_load_dt:
-                        check_flag = True
-            if not check_flag and len(self.codes) != 0:
-                for code_key in self.codes:
-                    if self.codes[code_key].last_changed_dt > self.last_load_dt:
-                        check_flag = True
-            if check_flag:
-                confirm_dialog = wx.MessageDialog(self, GUIText.LOAD_WARNING,
-                                                    GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
-                confirm_dialog.SetOKLabel(GUIText.LOAD_ANYWAYS)
-                confirm_flag = confirm_dialog.ShowModal()
-            else:
-                confirm_flag = wx.ID_OK
-            if confirm_flag == wx.ID_OK:
-                self.CreateProgressDialog(title=GUIText.LOAD_BUSY_LABEL,
-                                        warning=GUIText.SIZE_WARNING_MSG,
-                                        freeze=True)
-                self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG)
-
-                self.save_path = ""
-                self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG_FILE + str(Constants.AUTOSAVE_PATH))
-                logger.info("loading file: %s", Constants.AUTOSAVE_PATH)
-                self.SetTitle(GUIText.APP_NAME+" - Last AutoSave")
-
-                #reset objects
-                for key in self.datasets:
-                    self.datasets[key].DestroyObject()
-                self.datasets.clear()
-                for key in self.samples:
-                    self.samples[key].DestroyObject()
-                self.samples.clear()
-                for key in self.codes:
-                    self.codes[key].DestroyObject()
-                self.codes.clear()
-
-                #update gui based on reset objects to prevent errors
-                self.DatasetsUpdated(autosave=False)
-                self.SamplesUpdated()
-                self.DocumentsUpdated()
-                self.CodesUpdated()
-
-                self.current_workspace.cleanup()
-                self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
-
-                self.last_load_dt = datetime.now()
-                self.load_thread = MainThreads.LoadThread(self, Constants.AUTOSAVE_PATH, self.current_workspace.name, restoreload=True)
-        else:
-            wx.MessageBox(GUIText.NO_AUTOSAVE_ERROR)
-        logger.info("Finished")
 
     def OnProgress(self, event):
         self.PulseProgressDialog(event.data)
@@ -588,16 +603,16 @@ class MainFrame(wx.Frame):
             check_flag = False
             #check if current workspace is not recently saved
             if not check_flag and len(self.datasets) != 0:
-                for dataset_key in self.datasets:
-                    if self.datasets[dataset_key].last_changed_dt > self.last_load_dt:
+                for key in self.datasets:
+                    if self.datasets[key].last_changed_dt > self.last_load_dt:
                         check_flag = True
             if not check_flag and len(self.samples) != 0:
-                for sample_key in self.samples:
-                    if self.samples[sample_key].last_changed_dt > self.last_load_dt:
+                for key in self.samples:
+                    if self.samples[key].last_changed_dt > self.last_load_dt:
                         check_flag = True
             if not check_flag and len(self.codes) != 0:
-                for code_key in self.codes:
-                    if self.codes[code_key].last_changed_dt > self.last_load_dt:
+                for key in self.codes:
+                    if self.codes[key].last_changed_dt > self.last_load_dt:
                         check_flag = True
             if check_flag:
                 confirm_dialog = wx.MessageDialog(self, GUIText.CLOSE_WARNING,
@@ -623,6 +638,23 @@ class MainFrame(wx.Frame):
     def OnCloseEnd(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnCloseEnd")
         logger.info("Starting")
+
+        #reset objects
+        for key in self.codes:
+            self.codes[key].DestroyObject()
+        self.codes.clear()
+        for key in self.samples:
+            self.samples[key].DestroyObject()
+        self.samples.clear()
+        for key in self.datasets:
+            self.datasets[key].DestroyObject()
+        self.datasets.clear()
+
+        #update gui based on reset objects to prevent errors
+        self.DatasetsUpdated(autosave=False)
+        self.SamplesUpdated()
+        self.DocumentsUpdated(self)
+        self.CodesUpdated()
 
         self.PulseProgressDialog(GUIText.SHUTDOWN_BUSY_POOL)
         logger.info("Starting to shut down of process pool")
@@ -664,55 +696,6 @@ class MainFrame(wx.Frame):
             self.Enable()
             self.Thaw()
 
-    def DatasetKeyChange(self, old_key, new_key):
-        logger = logging.getLogger(__name__+".MainFrame.DatasetKeyChange")
-        logger.info("Starting")
-        
-        for sample_key in self.samples:
-            if self.samples[sample_key].dataset_key == old_key:
-                self.samples[sample_key].dataset_key = new_key
-        
-        dataset_codes = self.datasets[new_key].GetCodeConnections(self.codes)
-        for code in dataset_codes:
-            code.GetConnections(self.datasets, self.samples)
-            code.AddConnection(self.datasets[new_key])
-        for field_key in self.datasets[new_key].available_fields:
-            field_codes = self.datasets[new_key].available_fields[field_key].GetCodeConnections(self.codes)
-            for code in field_codes:
-                code.GetConnections(self.datasets, self.samples)
-                code.AddConnection(self.datasets[new_key].available_fields[field_key])
-        for field_key in self.datasets[new_key].computational_fields:
-            field_codes = self.datasets[new_key].computational_fields[field_key].GetCodeConnections(self.codes)
-            for code in field_codes:
-                code.GetConnections(self.datasets, self.samples)
-                code.AddConnection(self.datasets[new_key].computational_fields[field_key])
-        for document_key in self.datasets[new_key].documents:
-            document_codes = self.datasets[new_key].documents[document_key].GetCodeConnections(self.codes)
-            for code in document_codes:
-                code.GetConnections(self.datasets, self.samples)
-                code.AddConnection(self.datasets[new_key].documents[document_key])
-        logger.info("Finished")
-
-    def SampleKeyChange(self, old_key, new_key):
-        logger = logging.getLogger(__name__+".MainFrame.SampletKeyChange")
-        logger.info("Starting")
-        sample_codes = self.samples[new_key].GetCodeConnections(self.codes)
-        for code in sample_codes:
-            code.GetConnections(self.datasets, self.samples)
-            code.AddConnection(self.samples[new_key])
-        for part_key in self.samples[new_key].parts_dict:
-            if isinstance(self.samples[new_key].parts_dict[part_key], Samples.MergedPart):
-                for subpart_key in self.samples[new_key].parts_dict:
-                    part_codes = self.samples[new_key].parts_dict[part_key].parts_dict[subpart_key].GetCodeConnections(self.codes)
-                    for code in part_codes:
-                        code.GetConnections(self.datasets, self.samples)
-                        code.AddConnection(self.samples[new_key].parts_dict[part_key].parts_dict[subpart_key])
-            part_codes = self.samples[new_key].parts_dict[part_key].GetCodeConnections(self.codes)
-            for code in part_codes:
-                code.GetConnections(self.datasets, self.samples)
-                code.AddConnection(self.samples[new_key].parts_dict[part_key])
-        logger.info("Finished")
-
     def DatasetsUpdated(self, autosave=True):
         logger = logging.getLogger(__name__+".MainFrame.DatasetsUpdated")
         logger.info("Starting")
@@ -725,23 +708,31 @@ class MainFrame(wx.Frame):
             self.AutoSaveStart()
         logger.info("Finished")
 
-    def DocumentsUpdated(self):
+    def DocumentsUpdated(self, source):
         logger = logging.getLogger(__name__+".MainFrame.DocumentsUpdated")
         logger.info("Starting")
+        for key in self.document_dialogs:
+            if source != self.document_dialogs[key].document_panel:
+                self.document_dialogs[key].RefreshDetails()
         self.sampling_module.DocumentsUpdated()
-        self.coding_module.DocumentsUpdated()
+        self.coding_module.DocumentsUpdated(source)
         logger.info("Finished")
 
     def SamplesUpdated(self):
         logger = logging.getLogger(__name__+".MainFrame.SamplesUpdated")
         logger.info("Starting")
         self.sampling_module.SamplesUpdated()
-        self.coding_module.DocumentsUpdated()
+        self.coding_module.DocumentsUpdated(self)
         logger.info("Finished")
     
     def CodesUpdated(self):
         logger = logging.getLogger(__name__+".MainFrame.CodesUpdated")
         logger.info("Starting")
+        for key in self.document_dialogs:
+            self.document_dialogs[key].RefreshDetails()
+        for key in self.codeconnections_dialogs:
+            self.codeconnections_dialogs[key].RefreshDetails()
+        self.coding_module.CodesUpdated()
         #self.reviewing_module.CodesUpdated()
         self.reporting_module.CodesUpdated()
         logger.info("Finished")
@@ -749,7 +740,7 @@ class MainFrame(wx.Frame):
     def ModeChange(self):
         self.collection_module.ModeChange()
         self.sampling_module.ModeChange()
-        self.coding_module.DocumentsUpdated()
+        self.coding_module.DocumentsUpdated(self)
         #self.reviewing_module.ModeChange()
         self.reporting_module.ModeChange()
 
@@ -864,12 +855,16 @@ class OptionsDialog(wx.Dialog):
     def ChangeAdjustableLabelFieldsMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.adjustable_label_fields_ctrl.GetValue()
-        main_frame.options_dict['adjustable_label_fields_mode'] = new_mode
+        if main_frame.options_dict['adjustable_label_fields_mode'] != new_mode:
+            main_frame.options_dict['adjustable_label_fields_mode'] = new_mode
+            main_frame.ModeChange()
     
     def ChangeAdjustableComputationalFieldsMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.adjustable_computation_fields_ctrl.GetValue()
-        main_frame.options_dict['adjustable_computation_fields_mode'] = new_mode
+        if main_frame.options_dict['adjustable_computation_fields_mode'] != new_mode:
+            main_frame.options_dict['adjustable_computation_fields_mode'] = new_mode
+            main_frame.ModeChange()
     
     def ChangeTwitterFields(self, event):
         main_frame = wx.GetApp().GetTopWindow()

@@ -36,9 +36,10 @@ class PartsViewModel(dv.PyDataViewModel):
                 self.label_column_names.append('id')
                 self.label_column_types.append('string')
             else:
-                for field_name in self.dataset.label_fields:
-                    self.label_column_names.append(field_name)
-                    self.label_column_types.append(self.dataset.label_fields[field_name].fieldtype)
+                for key in self.dataset.label_fields:
+                    field = self.dataset.label_fields[key]
+                    self.label_column_names.append(field.name)
+                    self.label_column_types.append(field.fieldtype)
         else:
             if self.dataset.dataset_source == "Reddit":
                 self.label_column_names.append('url')
@@ -150,8 +151,8 @@ class PartsViewModel(dv.PyDataViewModel):
                        len(self.label_column_names)+1 : "\U0001F6C8" if node.notes != "" else "", }
             idx = 1
             for field_name in self.label_column_names:
-                if field_name in node.parent.data[node.key]:
-                    value = node.parent.data[node.key][field_name]
+                if field_name in node.parent.data[node.doc_id]:
+                    value = node.parent.data[node.doc_id][field_name]
                     if self.label_column_types[idx-1] == 'url':
                         segmented_url = value.split("/")
                         if segmented_url[len(segmented_url)-1] != '':
@@ -218,7 +219,7 @@ class PartsViewModel(dv.PyDataViewModel):
         if col == 0:
             SamplesUtilities.SamplesSelected(self.sample, self.dataset, node, value)
             main_frame = wx.GetApp().GetTopWindow()
-            main_frame.DocumentsUpdated()
+            main_frame.DocumentsUpdated(self)
         return True
 
 #This view enables displaying datasets and how they are grouped
@@ -312,7 +313,11 @@ class PartsViewCtrl(dv.DataViewCtrl):
                 logger.info("Call to access url[%s]", node.url)
                 webbrowser.open_new_tab(node.url)
             else:
-                CodesGUIs.DocumentDialog(self, node).Show()
+                main_frame = wx.GetApp().GetTopWindow()
+                if node.key not in main_frame.document_dialogs:
+                    main_frame.document_dialogs[node.key] = CodesGUIs.DocumentDialog(main_frame, node)
+                main_frame.document_dialogs[node.key].Show()
+                main_frame.document_dialogs[node.key].SetFocus()
         logger.info("Finished")
 
     def OnCopyItems(self, event):

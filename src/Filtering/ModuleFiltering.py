@@ -60,8 +60,6 @@ class FilteringNotebook(FNB.FlatNotebook):
                     self.filters[key] = FilterPanel(self, main_frame.datasets[key].name, main_frame.datasets[key], size=self.GetSize())
                     self.filters[key].rules_panel.DisplayFilterRules(main_frame.datasets[key].filter_rules)
                     self.filters[key].UpdateImpact()
-
-            
                     self.AddPage(self.filters[key], main_frame.datasets[key].name)
                     self.filters[key].actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filters[key].actions_menu, main_frame.datasets[key].name)
             else:
@@ -90,6 +88,8 @@ class FilteringNotebook(FNB.FlatNotebook):
         
         for key in main_frame.datasets:
             self.filters[key] = FilterPanel(self, main_frame.datasets[key].name, main_frame.datasets[key], size=self.GetSize())
+            self.filters[key].rules_panel.DisplayFilterRules(main_frame.datasets[key].filter_rules)
+            self.filters[key].UpdateImpact()
             self.AddPage(self.filters[key], main_frame.datasets[key].name)
             self.filters[key].actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filters[key].actions_menu, main_frame.datasets[key].name)
 
@@ -566,7 +566,6 @@ class FilterPanel(wx.Panel):
         self.autosave = True
         self.ApplyFilterAllRulesStart()
         logger.info("Finished")
-    
 
     def OnExportFilterRules(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnExportRemovalSettings")
@@ -710,8 +709,6 @@ class FilterPanel(wx.Panel):
     def Save(self):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].Save")
         logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.SAVE_FILTERING_BUSY_MSG+str(self.name))
         saved_data = {}
         saved_data['included_search_word'] = self.included_words_panel.word_searchctrl.GetValue()
         saved_data['included_search_pos'] = self.included_words_panel.pos_searchctrl.GetValue()
@@ -720,7 +717,6 @@ class FilterPanel(wx.Panel):
         saved_data['applying_rules_paused'] = self.rules_panel.pauserules_tool.IsToggled()
         if self.rules_panel.pauserules_tool.IsToggled():
             saved_data['draft_rules'] = self.rules_panel.current_rules
-
         logger.info("Finished")
         return saved_data
 

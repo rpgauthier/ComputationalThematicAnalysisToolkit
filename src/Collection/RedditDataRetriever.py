@@ -14,7 +14,7 @@ from dateutil.relativedelta import relativedelta
 import Common.Constants as Constants
 
 def DeleteFiles(sub):
-    logger = logging.getLogger(__name__+".FilesAvaliable["+sub+"]")
+    logger = logging.getLogger(__name__+".FilesAvailable["+sub+"]")
     logger.info("Starting")
     path = os.path.join(Constants.DATA_PATH, 'Reddit', sub)
     if os.path.exists(path):
@@ -24,8 +24,8 @@ def DeleteFiles(sub):
                 os.remove(os.path.join(path, filename))
     logger.info("Finished")
 
-def FilesAvaliable(sub, start_date, end_date, prefix):
-    logger = logging.getLogger(__name__+".FilesAvaliable["+sub+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
+def FilesAvailable(sub, start_date, end_date, prefix):
+    logger = logging.getLogger(__name__+".FilesAvailable["+sub+"]["+str(start_date)+"]["+str(end_date)+"]["+prefix+"]")
     logger.info("Starting")
     start_month = start_date[0:7]
     end_month = end_date[0:7]

@@ -123,8 +123,8 @@ class Main(Common):
     LOAD_BUSY_LABEL = "Loading Workspace"
     LOAD_BUSY_MSG = "Please Wait while data is loaded.\n"
     LOAD_BUSY_MSG_FILE = "Loading File: "
-    LOAD_BUSY_MSG_DATASET = "Loading Dataset: "
-    LOAD_BUSY_MSG_SAMPLE = "Loading Sample: "
+    LOAD_BUSY_MSG_DATASET = "Loaded Dataset: "
+    LOAD_BUSY_MSG_SAMPLE = "Loaded Sample: "
     LOAD_BUSY_MSG_CODES = "Loading Codes"
     LOAD_BUSY_MSG_CONFIG = "Loading Configurations."
 
@@ -229,7 +229,7 @@ class Datasets(Common):
     RETRIEVAL_FAILED_COMMENT = "Failed to retrieve comments for month "
     NO_RETRIEVAL_CONNECTION_ERROR = "Unable to Connect to Internet.\nPlease check your network status."
     NO_DATA_RETRIEVED_ERROR = "No data retrieved.\nPlease trying again later as requested data may not yet be available."
-    NO_DATA_AVALIABLE_ERROR = "No data available.\nPlease try enabling data retrieval."
+    NO_DATA_AVAILABLE_ERROR = "No data available.\nPlease try enabling data retrieval."
 
     REDDIT_ARCHIVED_TOOLTIP = "Use the local subreddit archive to create the dataset."
     REDDIT_UPDATE_PUSHSHIFT_TOOLTIP = "For any part of the period between the start and end dates that the local subreddit archive does not have data,"\
@@ -482,7 +482,7 @@ class Samples(Main):
     DATASET = Datasets.DATASET
     DATASET_MISSING_ERROR = "Dataset was not chosen." \
                             "\nPlease choose a dataset for the model."
-    DATASET_NOTAVALIABLE_ERROR = "No Data is available." \
+    DATASET_NOTAVAILABLE_ERROR = "No Data is available." \
                             "\nPlease load data into the project before trying to create a model."
     TYPE_UNKNOWN_ERROR = "Failed to create sample due to unknown type."
     AFTERFILTERING_LABEL1 = "After filtering "
@@ -525,13 +525,15 @@ class Samples(Main):
     SAMPLE_NUM = "# of Samples"
 
 class Collection(Main, Datasets):
-    ETHICS_CONFIRMATION = "We have considered "
+    ETHICS_CONFIRMATION = "I have considered "
     ETHICS_CONFIRMATION_MISSING_ERROR = "Before proceeding we need to take time to consider "
+    ETHICS_COMMUNITY1_REDDIT = "the subreddit's guidelines, rules, and terms of use."
     ETHICS_COMMUNITY1 = "the online community's guidelines, rules, and terms of use."
+    ETHICS_COMMUNITY2_REDDIT = "the impact of our project on the subreddit's community."
     ETHICS_COMMUNITY2 = "the impact of our project on the online community."
     ETHICS_RESEARCH = "the research community's ethical guidelines and rules on online public data collection."
     ETHICS_INSTITUTION = "our institution's ethical guidelines and rules on online public data collection."
-    ETHICS_REDDIT = "Reddit's rules and terms of use for collecting data."
+    ETHICS_REDDIT = "Reddit's policies and terms of use for collecting data."
     ETHICS_REDDIT_URL = "https://www.redditinc.com/policies/"
     ETHICS_REDDITAPI_URL = "https://www.reddit.com/wiki/api-terms"
     ETHICS_PUSHSHIFT = "that this toolkit uses the Pushshift.io api to collect Reddit Data."
@@ -562,7 +564,7 @@ class Collection(Main, Datasets):
     CUSTOMIZE_FIELDS = "Customize Fields"
 
     FIELDS_LABEL = "Fields"
-    FIELDS_AVALIABLE_LABEL = "Avaliable Fields"
+    FIELDS_AVAILABLE_LABEL = "Available Fields"
     FIELDS_INCLUDED_LABEL = 'Included Fields'
     FIELDS_ADD_TOOLTIP = "Selected fields will be added to "
     FIELDS_REMOVE_TOOLTIP = "Selected fields will be removed from "

@@ -19,15 +19,19 @@ class CollectionPanel(wx.Panel):
         wx.Panel.__init__(self, parent, size=size)
 
         self.name = "collection_module"
+        
+        self.labelfields_dialogs = {}
+        self.computationfields_dialogs = {}
+
         sizer = wx.BoxSizer(wx.VERTICAL)
         
         #splitter used to control panels that appear in this module
         self.splitter = wx.SplitterWindow(self)
 
         #Each of the panels that could be used for this module:
-        self.datasetdetails_panel = SubModuleDatasets.DatasetDetailsPanel(self.splitter)
+        self.datasetdetails_panel = SubModuleDatasets.DatasetDetailsPanel(self.splitter, self)
 
-        self.datasetslist_panel = SubModuleDatasets.DatasetsListPanel(self.splitter)
+        self.datasetslist_panel = SubModuleDatasets.DatasetsListPanel(self.splitter, self)
         self.datasetslist_panel.datasets_ctrl.Bind(dv.EVT_DATAVIEW_ITEM_ACTIVATED, self.OnShowData)
         self.datasetslist_panel.Hide()
         
@@ -92,6 +96,23 @@ class CollectionPanel(wx.Panel):
         self.Freeze()
         self.datasetslist_panel.DatasetsUpdated()
         self.datasetsdata_notebook.DatasetsUpdated()
+        main_frame = wx.GetApp().GetTopWindow()
+        for key in list(self.labelfields_dialogs.keys()):
+            dataset = self.labelfields_dialogs[key].dataset
+            if dataset.key not in main_frame.datasets:
+                self.labelfields_dialogs[key].Destroy()
+                del self.labelfields_dialogs[key]
+            else:
+                self.labelfields_dialogs[key].SetTitle(str(dataset.name)+" "+GUIText.CUSTOMIZE_LABEL_FIELDS)
+                self.labelfields_dialogs[key].fields_panel.chosen_fields_model.Cleared()
+        for key in list(self.computationfields_dialogs.keys()):
+            dataset = self.computationfields_dialogs[key].dataset
+            if dataset.key not in main_frame.datasets:
+                self.computationfields_dialogs[key].Destroy()
+                del self.computationfields_dialogs[key]
+            else:
+                self.computationfields_dialogs[key].SetTitle(str(dataset.name)+" "+GUIText.CUSTOMIZE_LABEL_FIELDS)
+                self.computationfields_dialogs[key].fields_panel.chosen_fields_model.Cleared()
         self.OnChangeDatasetDataTab(None)
         self.Thaw()
 
@@ -108,12 +129,30 @@ class CollectionPanel(wx.Panel):
             self.splitter.ReplaceWindow(old_window, self.datasetslist_panel)
             sash_height = int(self.GetSize().GetHeight()/6)
             self.splitter.SetSashPosition(sash_height)
-        elif old_window != self.datasetdetails_panel:
+        elif not main_frame.options_dict['multipledatasets_mode'] and old_window != self.datasetdetails_panel:
             old_window.Hide()
             self.datasetdetails_panel.Show()
             self.splitter.ReplaceWindow(old_window, self.datasetdetails_panel)
             sash_height = int(self.datasetdetails_panel.GetBestSize().GetHeight()) + 5
             self.splitter.SetSashPosition(sash_height)
+        
+        if not main_frame.options_dict['adjustable_label_fields_mode']:
+            for key in list(self.labelfields_dialogs.keys()):
+                self.labelfields_dialogs[key].Destroy()
+                del self.labelfields_dialogs[key]
+        if not main_frame.options_dict['adjustable_computation_fields_mode']:
+            for key in list(self.computationfields_dialogs.keys()):
+                self.computationfields_dialogs[key].Destroy()
+                del self.computationfields_dialogs[key]
+
+        index = self.datasetsdata_notebook.GetSelection()
+        if index == -1:
+            self.datasetdetails_panel.ChangeDataset(None)
+            self.datasetslist_panel.DatasetsUpdated()
+        else:
+            selected_panel = self.datasetsdata_notebook.GetPage(index)
+            self.datasetdetails_panel.ChangeDataset(selected_panel.dataset)
+            self.datasetslist_panel.DatasetsUpdated()
         self.Layout()
         logger.info("Finished")
 
@@ -122,8 +161,6 @@ class CollectionPanel(wx.Panel):
         logger = logging.getLogger(__name__+".CollectionNotebook.Load")
         logger.info("Starting")
         self.Freeze()
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.LOAD_BUSY_MSG_CONFIG)
         #TODO confirm that custom load functionality isnt needed to properly reset this panel and this notebook
         self.datasetslist_panel.DatasetsUpdated()
         self.datasetsdata_notebook.DatasetsUpdated()
@@ -132,12 +169,10 @@ class CollectionPanel(wx.Panel):
         self.Thaw()
         logger.info("Finished")
 
-    def Save(self):
+    def Save(self,):
         '''saves current Collection Module's data'''
         logger = logging.getLogger(__name__+".CollectionNotebook.Save")
         logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_CONFIG)
         saved_data = {}
         saved_data['notes'] = self.notes_panel.Save()
         #save configurations
