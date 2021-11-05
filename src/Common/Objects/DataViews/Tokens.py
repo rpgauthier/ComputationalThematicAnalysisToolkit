@@ -6,23 +6,21 @@ import wx.grid
 from Common.GUIText import Filtering as GUIText
 import Common.Database as Database
 
-#TODO finish changing to us database as source of virtual table
 class TokenGridTable(wx.grid.GridTableBase):
     def __init__(self, dataset, word_type):
         self.dataset = dataset
         self.word_type = word_type
         main_frame = wx.GetApp().GetTopWindow()
         
-        self.word_search_term = ""
-        self.pos_search_term = ""
+        self.search_term = ""
         self.sort_col = GUIText.FILTERS_NUM_WORDS
         self.sort_ascending = False
 
         db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
         if self.word_type == "Included":
-            self.data = db_conn.GetIncludedStringTokens(self.dataset.key, self.word_search_term, self.pos_search_term, self.sort_col, self.sort_ascending)
+            self.data = db_conn.GetIncludedStringTokens(self.dataset.key, self.search_term, self.sort_col, self.sort_ascending)
         else:
-            self.data = db_conn.GetRemovedStringTokens(self.dataset.key, self.word_search_term, self.pos_search_term, self.sort_col, self.sort_ascending)
+            self.data = db_conn.GetRemovedStringTokens(self.dataset.key, self.search_term, self.sort_col, self.sort_ascending)
 
         wx.grid.GridTableBase.__init__(self)
         self._rows = self.GetNumberRows()
@@ -72,9 +70,9 @@ class TokenGridTable(wx.grid.GridTableBase):
         main_frame = wx.GetApp().GetTopWindow()
         db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
         if self.word_type == "Included":
-            self.data = db_conn.GetIncludedStringTokens(self.dataset.key, self.word_search_term, self.pos_search_term, self.sort_col, self.sort_ascending)
+            self.data = db_conn.GetIncludedStringTokens(self.dataset.key, self.search_term, self.sort_col, self.sort_ascending)
         else:
-            self.data = db_conn.GetRemovedStringTokens(self.dataset.key, self.word_search_term, self.pos_search_term, self.sort_col, self.sort_ascending)
+            self.data = db_conn.GetRemovedStringTokens(self.dataset.key, self.search_term, self.sort_col, self.sort_ascending)
 
         grid.BeginBatch()
         for current, new, delmsg, addmsg in [
@@ -114,12 +112,14 @@ class TokenGrid(wx.grid.Grid):
         self.EnableEditing(False)
         self.UseNativeColHeader(True)
         self.HideRowLabels()
+        #TODO assess if this is causing unintented behaviour on OSX
         self.SetSelectionMode(wx.grid.Grid.SelectRows)
         self.SetCellHighlightPenWidth(0)
         self.Bind(wx.grid.EVT_GRID_SELECT_CELL, self.OnSelect)
         self.Bind(wx.grid.EVT_GRID_COL_SORT, self.OnSort)
         logger.info("Finished")
 
+    #TODO assess if this is causing unintented behaviour on OSX
     def OnSelect(self, event):
         self.SelectRow(event.GetRow())
 
@@ -141,11 +141,10 @@ class TokenGrid(wx.grid.Grid):
         self.gridtable.ResetView(self)
         logger.info("Finish")
 
-    def Update(self, word_search_term, pos_search_term):
+    def Update(self, search_term):
         logger = logging.getLogger(__name__+".TokenGrid.Update")
         logger.info("Starting")
-        self.gridtable.word_search_term = word_search_term
-        self.gridtable.pos_search_term = pos_search_term
+        self.gridtable.search_term = search_term
         self.gridtable.ResetView(self)
         for i in range(0, len(self.gridtable.col_names)):
             self.SetColLabelValue(i, self.gridtable.GetColLabelValue(i))

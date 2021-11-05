@@ -681,14 +681,10 @@ class FilterPanel(wx.Panel):
         self.rules_panel.tokenization_choice.SetSelection(self.dataset.tokenization_choice)
 
         if 'included_search_word' in saved_data:
-            self.included_words_panel.word_searchctrl.SetValue(saved_data['included_search_word'])
-        if 'included_search_pos' in saved_data:
-            self.included_words_panel.pos_searchctrl.SetValue(saved_data['included_search_pos'])
+            self.included_words_panel.searchctrl.SetValue(saved_data['included_search_word'])
         if 'removed_search_word' in saved_data:
-            self.removed_words_panel.word_searchctrl.SetValue(saved_data['removed_search_word'])
-        if 'removed_search_pos' in saved_data:
-            self.removed_words_panel.pos_searchctrl.SetValue(saved_data['removed_search_pos'])
-
+            self.removed_words_panel.searchctrl.SetValue(saved_data['removed_search_word'])
+        
         if 'applying_rules_paused' in saved_data:
             self.rules_panel.pauserules_tool.Toggle(saved_data['applying_rules_paused'])
         if self.rules_panel.pauserules_tool.IsToggled():
@@ -710,10 +706,8 @@ class FilterPanel(wx.Panel):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].Save")
         logger.info("Starting")
         saved_data = {}
-        saved_data['included_search_word'] = self.included_words_panel.word_searchctrl.GetValue()
-        saved_data['included_search_pos'] = self.included_words_panel.pos_searchctrl.GetValue()
-        saved_data['removed_search_word'] = self.removed_words_panel.word_searchctrl.GetValue()
-        saved_data['removed_search_pos'] = self.removed_words_panel.pos_searchctrl.GetValue()
+        saved_data['included_search_word'] = self.included_words_panel.searchctrl.GetValue()
+        saved_data['removed_search_word'] = self.removed_words_panel.searchctrl.GetValue()
         saved_data['applying_rules_paused'] = self.rules_panel.pauserules_tool.IsToggled()
         if self.rules_panel.pauserules_tool.IsToggled():
             saved_data['draft_rules'] = self.rules_panel.current_rules
@@ -747,35 +741,27 @@ class WordsPanel(wx.Panel):
         label_font = wx.Font(Constants.LABEL_SIZE, Constants.LABEL_FAMILY, Constants.LABEL_STYLE, Constants.LABEL_WEIGHT, underline=Constants.LABEL_UNDERLINE)
         self.label_box.SetFont(label_font)
         sizer = wx.StaticBoxSizer(self.label_box, wx.VERTICAL)
+        h_sizer = wx.GridSizer(2)
+        sizer.Add(h_sizer, proportion=0, flag=wx.EXPAND)
         #create the toolbar
         self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
         self.toolbar.Realize()
-        sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
+        h_sizer.Add(self.toolbar, proportion=0, flag=wx.ALL|wx.ALIGN_LEFT, border=5)
+
         #create search sizer
         search_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.word_searchctrl = wx.SearchCtrl(self)
-        self.word_searchctrl.Bind(wx.EVT_SEARCH, self.OnSearch)
-        self.word_searchctrl.Bind(wx.EVT_SEARCH_CANCEL, self.OnSearchCancel)
-        self.word_searchctrl.SetDescriptiveText(GUIText.FILTERS_WORD_SEARCH)
-        self.word_searchctrl.ShowCancelButton(True)
-        #TODO check this on OSX
-        extent = self.word_searchctrl.GetTextExtent(GUIText.FILTERS_WORD_SEARCH)
-        size = self.word_searchctrl.GetSizeFromTextSize(extent.GetWidth()*2, -1)
-        self.word_searchctrl.SetMinSize(size)
-        search_sizer.Add(self.word_searchctrl, 0, wx.ALL, 5)
-        self.pos_searchctrl = wx.SearchCtrl(self)
-        self.pos_searchctrl.Bind(wx.EVT_SEARCH, self.OnSearch)
-        self.pos_searchctrl.Bind(wx.EVT_SEARCH_CANCEL, self.OnSearchCancel)
-        self.pos_searchctrl.SetDescriptiveText(GUIText.FILTERS_POS_SEARCH)
-        self.pos_searchctrl.ShowCancelButton(True)
-        #TODO check this on OSX
-        extent = self.pos_searchctrl.GetTextExtent(GUIText.FILTERS_POS_SEARCH)
-        size = self.pos_searchctrl.GetSizeFromTextSize(extent.GetWidth()*1.5, -1)
-        self.pos_searchctrl.SetMinSize(size)
-        search_sizer.Add(self.pos_searchctrl, 0, wx.ALL, 5)
+        self.searchctrl = wx.SearchCtrl(self)
+        self.searchctrl.Bind(wx.EVT_SEARCH, self.OnSearch)
+        self.searchctrl.Bind(wx.EVT_SEARCH_CANCEL, self.OnSearchCancel)
+        self.searchctrl.SetDescriptiveText(GUIText.SEARCH)
+        self.searchctrl.ShowCancelButton(True)
+        extent = self.searchctrl.GetTextExtent(GUIText.FILTERS_WORD_SEARCH)
+        size = self.searchctrl.GetSizeFromTextSize(extent.GetWidth()*2, -1)
+        self.searchctrl.SetMinSize(size)
+        search_sizer.Add(self.searchctrl, 0, wx.ALL, 5)
         self.search_count_text = wx.StaticText(self)
         search_sizer.Add(self.search_count_text, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        sizer.Add(search_sizer)
+        h_sizer.Add(search_sizer, flag=wx.ALIGN_RIGHT)
         #create the list to be shown
         self.words_list = TokenDataViews.TokenGrid(self, self.dataset, word_type)
         sizer.Add(self.words_list, proportion=1, flag=wx.EXPAND, border=5)
@@ -790,6 +776,7 @@ class WordsPanel(wx.Panel):
         logger.info("Starting")
         self.DisplayWordsList()
         self.search_count_text.SetLabel(GUIText.SEARCH_COUNT_LABEL+str(self.words_list.GetNumberRows()))
+        self.Layout()
         logger.info("Finished")
 
     def OnSearchCancel(self, event):
@@ -798,10 +785,11 @@ class WordsPanel(wx.Panel):
         search_ctrl = event.GetEventObject()
         search_ctrl.SetValue("")
         self.DisplayWordsList()
-        if self.word_searchctrl.GetValue() == "" and self.pos_searchctrl.GetValue() == "":
+        if self.searchctrl.GetValue() == "":
             self.search_count_text.SetLabel("")
         else:
             self.search_count_text.SetLabel(GUIText.SEARCH_COUNT_LABEL+str(self.words_list.GetNumberRows()))
+        self.Layout()
         logger.info("Finished")
 
     def UpdateWords(self):
@@ -817,9 +805,8 @@ class WordsPanel(wx.Panel):
         self.Freeze()
         main_frame.PulseProgressDialog(GUIText.FILTERS_DISPLAY_STRINGS_BUSY_MSG1+self.word_type+GUIText.FILTERS_DISPLAY_STRINGS_BUSY_MSG2+str(self.parent_frame.name))
         try:
-            word_search_term = self.word_searchctrl.GetValue()
-            pos_search_term = self.pos_searchctrl.GetValue()
-            self.words_list.Update(word_search_term, pos_search_term)
+            search_term = self.searchctrl.GetValue()
+            self.words_list.Update(search_term)
         finally:
             self.Thaw()
         logger.info("Finished")

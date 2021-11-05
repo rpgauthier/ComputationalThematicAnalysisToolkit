@@ -1078,7 +1078,7 @@ class DatabaseConnection():
         logger.info("Finished")
         return counts
 
-    def GetIncludedStringTokens(self, dataset_key, word_search_term, pos_search_term, sort_col, sort_ascending):
+    def GetIncludedStringTokens(self, dataset_key, search_term, sort_col, sort_ascending):
         logger = logging.getLogger(__name__+".GetIncludedStringTokens")
         #logger.info("Starting")
         try:
@@ -1103,12 +1103,10 @@ class DatabaseConnection():
 
             sql = sql_select_includedrow1 
             parameters = [dataset_id]
-            if word_search_term != "":
-                sql = sql + "AND words = ? "
-                parameters.append(word_search_term)
-            if pos_search_term != "":
-                sql = sql + "AND pos = ? "
-                parameters.append(pos_search_term)
+            if search_term != "":
+                sql = sql + "AND (words = ? OR pos = ?)"
+                parameters.append(search_term)
+                parameters.append(search_term)
             sql = sql + sql_select_includedrow2
             
             if sort_col is GUITextFiltering.FILTERS_WORDS:
@@ -1137,7 +1135,7 @@ class DatabaseConnection():
         #logger.info("Finished")
         return data
 
-    def GetRemovedStringTokens(self, dataset_key, word_search_term, pos_search_term, sort_col, sort_ascending):
+    def GetRemovedStringTokens(self, dataset_key, search_term, sort_col, sort_ascending):
         logger = logging.getLogger(__name__+".GetRemovedStringTokens")
         #logger.info("Starting")
         try:
@@ -1162,12 +1160,10 @@ class DatabaseConnection():
 
             sql = sql_select_removedrow1 
             parameters = [dataset_id]
-            if word_search_term != "":
-                sql = sql + "AND words = ? "
-                parameters.append(word_search_term)
-            if pos_search_term != "":
-                sql = sql + "AND pos = ? "
-                parameters.append(pos_search_term)
+            if search_term != "":
+                sql = sql + "AND (words = ? OR pos = ?)"
+                parameters.append(search_term)
+                parameters.append(search_term)
             sql = sql + sql_select_removedrow2
             
             if sort_col is GUITextFiltering.FILTERS_WORDS:
