@@ -902,7 +902,6 @@ class DatabaseConnection():
                                                     pos, 
                                                     num_of_words,
                                                     num_of_docs,
-                                                    spacy_stopword,
                                                     tfidf_range_min,
                                                     tfidf_range_max
                                                  )
@@ -920,7 +919,6 @@ class DatabaseConnection():
                                                             ELSE text
                                                             END) AS num_of_words,
                                                     COUNT(DISTINCT document_id) AS num_of_docs,
-                                                    spacy_stopword,
                                                     CASE :token_type
                                                         WHEN 'stem' THEN ROUND(MIN(stem_tfidf),4)
                                                         WHEN 'lemma' THEN ROUND(MIN(lemma_tfidf),4)
@@ -936,8 +934,7 @@ class DatabaseConnection():
                                                  AND included = 1
                                                  GROUP BY dataset_id,
                                                           words,
-                                                          pos,
-                                                          spacy_stopword"""
+                                                          pos"""
             c.execute(sql_insert_stringtokensincluded, {'token_type': token_type, 'dataset_id': dataset_id})
             self.__conn.commit()
             c.close()
@@ -966,7 +963,6 @@ class DatabaseConnection():
                                                     pos, 
                                                     num_of_words,
                                                     num_of_docs,
-                                                    spacy_stopword,
                                                     tfidf_range_min,
                                                     tfidf_range_max
                                                  )
@@ -984,7 +980,6 @@ class DatabaseConnection():
                                                             ELSE text
                                                             END) AS num_of_words,
                                                     COUNT(DISTINCT document_id) AS num_of_docs,
-                                                    spacy_stopword,
                                                     CASE :token_type
                                                         WHEN 'stem' THEN ROUND(MIN(stem_tfidf),4)
                                                         WHEN 'lemma' THEN ROUND(MIN(lemma_tfidf),4)
@@ -1000,8 +995,7 @@ class DatabaseConnection():
                                                  AND included = 0
                                                  GROUP BY dataset_id,
                                                           words,
-                                                          pos,
-                                                          spacy_stopword"""
+                                                          pos"""
             c.execute(sql_insert_stringtokensremoved, {'token_type': token_type, 'dataset_id': dataset_id})
             self.__conn.commit()
             c.close()
@@ -1100,7 +1094,6 @@ class DatabaseConnection():
                                                 pos,
                                                 num_of_words,
                                                 num_of_docs,
-                                                spacy_stopword,
                                                 tfidf_range_min,
                                                 tfidf_range_max
                                          FROM string_tokens_included
@@ -1126,8 +1119,6 @@ class DatabaseConnection():
                 sql = sql + "num_of_words "
             elif sort_col is GUITextFiltering.FILTERS_NUM_DOCS:
                 sql = sql + "num_of_docs "
-            elif sort_col is GUITextFiltering.FILTERS_SPACY_AUTO_STOPWORDS:
-                sql = sql + "spacy_stopword "
             elif sort_col is GUITextFiltering.FILTERS_TFIDF_MAX:
                 sql = sql + "tfidf_range_max "
             elif sort_col is GUITextFiltering.FILTERS_TFIDF_MIN:
@@ -1162,7 +1153,6 @@ class DatabaseConnection():
                                                pos,
                                                num_of_words,
                                                num_of_docs,
-                                               spacy_stopword,
                                                tfidf_range_min,
                                                tfidf_range_max
                                         FROM string_tokens_removed
@@ -1188,8 +1178,6 @@ class DatabaseConnection():
                 sql = sql + "num_of_words "
             elif sort_col is GUITextFiltering.FILTERS_NUM_DOCS:
                 sql = sql + "num_of_docs "
-            elif sort_col is GUITextFiltering.FILTERS_SPACY_AUTO_STOPWORDS:
-                sql = sql + "spacy_stopword "
             elif sort_col is GUITextFiltering.FILTERS_TFIDF_MIN:
                 sql = sql + "tfidf_range_min "
             elif sort_col is GUITextFiltering.FILTERS_TFIDF_MAX:

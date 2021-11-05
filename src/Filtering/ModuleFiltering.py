@@ -737,7 +737,7 @@ class WordsPanel(wx.Panel):
                           GUIText.FILTERS_PER_WORDS,
                           GUIText.FILTERS_NUM_DOCS,
                           GUIText.FILTERS_PER_DOCS,
-                          GUIText.FILTERS_SPACY_AUTO_STOPWORDS,
+                          #GUIText.FILTERS_SPACY_AUTO_STOPWORDS,
                           GUIText.FILTERS_TFIDF_MIN,
                           GUIText.FILTERS_TFIDF_MAX]
 

@@ -30,7 +30,6 @@ class TokenGridTable(wx.grid.GridTableBase):
                           GUIText.FILTERS_POS,
                           GUIText.FILTERS_NUM_WORDS,
                           GUIText.FILTERS_NUM_DOCS,
-                          GUIText.FILTERS_SPACY_AUTO_STOPWORDS,
                           GUIText.FILTERS_TFIDF_MIN,
                           GUIText.FILTERS_TFIDF_MAX]
 
@@ -62,11 +61,6 @@ class TokenGridTable(wx.grid.GridTableBase):
             return str(row_data[col]) +" (" +str(round((row_data[col]/self.dataset.total_tokens)*100, 4))+"%)"
         elif self.col_names[col] == GUIText.FILTERS_NUM_DOCS:
             return str(row_data[col]) +" (" +str(round((row_data[col]/self.dataset.total_docs)*100, 4))+"%)"
-        elif self.col_names[col] == GUIText.FILTERS_SPACY_AUTO_STOPWORDS:
-            if row_data[col] == 0:
-                return str(False)
-            else:
-                return str(True)
         else:
             return str(row_data[col])
 

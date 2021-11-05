@@ -594,3 +594,5 @@ class LoadThread(Thread):
             for field_key in dataset.computational_fields:
                 field = dataset.computational_fields[field_key]
                 db_conn.UpdateFieldKey(dataset_key, field.name, field.key)
+            db_conn.RefreshStringTokensIncluded(dataset.key)
+            db_conn.RefreshStringTokensRemoved(dataset.key)

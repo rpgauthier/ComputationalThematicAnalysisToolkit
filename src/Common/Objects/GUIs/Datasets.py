@@ -352,8 +352,6 @@ class DatasetPanel(wx.Panel):
         main_frame.multiprocessing_inprogress_flag = False
         logger.info("Finished")
 
-
-
 class DatasetDataPanel(wx.Panel):
     def __init__(self, parent, dataset, size=wx.DefaultSize):
         wx.Panel.__init__(self, parent=parent, size=size)
