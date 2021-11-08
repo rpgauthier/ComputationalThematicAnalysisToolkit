@@ -66,7 +66,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         
         main_frame = wx.GetApp().GetTopWindow()
         if main_frame.options_dict['multipledatasets_mode']:
-            name_label = wx.StaticText(self, label=GUIText.NAME + ": ")
+            name_label = wx.StaticText(self, label=GUIText.NAME + " ")
             self.name_ctrl = wx.TextCtrl(self)
             self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
             name_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -90,14 +90,14 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         datasetconfig_sizer.Add(h_sizer)
         #choose type of dataset to retrieve
         dataset_type_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        dataset_type_label = wx.StaticText(self, label=GUIText.TYPE+": ")
+        dataset_type_label = wx.StaticText(self, label=GUIText.TYPE+" ")
         self.dataset_type_choice = wx.Choice(self, choices=[GUIText.REDDIT_DISCUSSIONS, GUIText.REDDIT_SUBMISSIONS, GUIText.REDDIT_COMMENTS])
         self.dataset_type_choice.Bind(wx.EVT_CHOICE, self.OnDatasetTypeChosen)
         dataset_type_sizer.Add(dataset_type_label, 0, wx.ALIGN_CENTRE_VERTICAL)
         dataset_type_sizer.Add(self.dataset_type_choice)
         h_sizer.Add(dataset_type_sizer, 0, wx.ALL, 5)
 
-        language_label = wx.StaticText(self, label=GUIText.LANGUAGE+":")
+        language_label = wx.StaticText(self, label=GUIText.LANGUAGE+" ")
         self.language_ctrl = wx.Choice(self, choices=Constants.AVAILABLE_DATASET_LANGUAGES2)
         self.language_ctrl.Select(0)
         language_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -108,11 +108,11 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         dataconstraints_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Data Constraints")
         sizer.Add(dataconstraints_sizer, 0, wx.ALL|wx.EXPAND, 5)
 
-        start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
+        start_date_label = wx.StaticText(self, label=GUIText.START_DATE+" ")
         self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
                                                 style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
         self.start_date_ctrl.SetToolTip(GUIText.START_DATE_TOOLTIP)
-        end_date_label = wx.StaticText(self, label=GUIText.END_DATE+": ")
+        end_date_label = wx.StaticText(self, label=GUIText.END_DATE+" ")
         self.end_date_ctrl = wx.adv.DatePickerCtrl(self, name="endDate",
                                               style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
         self.end_date_ctrl.SetToolTip(GUIText.END_DATE_TOOLTIP)
@@ -125,7 +125,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         dataconstraints_sizer.Add(date_sizer, 0, wx.ALL, 5)
 
         #TODO enhance integration of search to allow complex queries (currently only supports literial string entered in text box)
-        search_label = wx.StaticText(self, label=GUIText.REDDIT_CONTAINS_TEXT+"(Optional): ")
+        search_label = wx.StaticText(self, label=GUIText.REDDIT_CONTAINS_TEXT+"(Optional) ")
         self.search_ctrl = wx.TextCtrl(self)
         search_sizer = wx.BoxSizer(wx.HORIZONTAL)
         search_sizer.Add(search_label, 0, wx.ALIGN_CENTRE_VERTICAL)
@@ -145,7 +145,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.archived_radioctrl.SetToolTip(GUIText.REDDIT_ARCHIVED_TOOLTIP)
         self.full_pushshift_radioctrl = wx.RadioButton(self, label=GUIText.REDDIT_FULL_PUSHSHIFT)
         self.full_pushshift_radioctrl.SetToolTip(GUIText.REDDIT_FULL_PUSHSHIFT_TOOLTIP)
-        source_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.SOURCE+": ")
+        source_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.SOURCE+" ")
         source_sizer.Add(self.update_pushshift_radioctrl, 0, wx.ALL, 5)
         #source_sizer.Add(self.update_redditapi_radioctrl)
         #source_sizer.Add(self.full_redditapi_radioctrl)
@@ -880,7 +880,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.error_label.Hide()
 
         if main_frame.options_dict['multipledatasets_mode']:
-            name_label = wx.StaticText(self, label=GUIText.NAME + ": ")
+            name_label = wx.StaticText(self, label=GUIText.NAME + " ")
             self.name_ctrl = wx.TextCtrl(self)
             self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
             self.name_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -891,7 +891,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         datasetconfig_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Dataset Configurations")
         sizer.Add(datasetconfig_sizer, 0, wx.EXPAND|wx.ALL, 5)
 
-        filename_label = wx.StaticText(self, label=GUIText.FILENAME + ": ")
+        filename_label = wx.StaticText(self, label=GUIText.FILENAME + " ")
         self.filename_ctrl = wx.FilePickerCtrl(self, wildcard="CSV files (*.csv)|*.csv")
         path = os.path.join(Constants.DATA_PATH + "CSV")
         self.filename_ctrl.SetInitialDirectory(path)
@@ -901,7 +901,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.filename_ctrl.Bind(wx.EVT_FILEPICKER_CHANGED, self.OnFilenameChosen)
         datasetconfig_sizer.Add(self.filename_sizer, 0, wx.ALL|wx.EXPAND, 5)
 
-        id_field_label = wx.StaticText(self, label=GUIText.CSV_IDFIELD+": ")
+        id_field_label = wx.StaticText(self, label=GUIText.CSV_IDFIELD+" ")
         self.id_field_ctrl = wx.Choice(self, choices=[GUIText.CSV_IDFIELD_DEFAULT])
         self.id_field_ctrl.SetToolTip(GUIText.CSV_IDFIELD_TOOLTIP)
         self.id_field_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -909,7 +909,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.id_field_sizer.Add(self.id_field_ctrl)
         datasetconfig_sizer.Add(self.id_field_sizer, 0, wx.ALL, 5)
 
-        language_label = wx.StaticText(self, label=GUIText.LANGUAGE+":")
+        language_label = wx.StaticText(self, label=GUIText.LANGUAGE+" ")
         self.language_ctrl = wx.Choice(self, choices=Constants.AVAILABLE_DATASET_LANGUAGES2)
         self.language_ctrl.Select(0)
         self.language_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -921,7 +921,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         sizer.Add(datafields_sizer, 0, wx.EXPAND|wx.ALL, 5)
 
         if main_frame.options_dict['multipledatasets_mode']:
-            dataset_field_label = wx.StaticText(self, label=GUIText.CSV_DATASETFIELD+"(Optional): ")
+            dataset_field_label = wx.StaticText(self, label=GUIText.CSV_DATASETFIELD+"(Optional) ")
             self.dataset_field_ctrl = wx.Choice(self, choices=[])
             self.dataset_field_ctrl.SetToolTip(GUIText.CSV_DATASETFIELD_TOOLTIP)
             dataset_field_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -929,7 +929,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             dataset_field_sizer.Add(self.dataset_field_ctrl)
             datafields_sizer.Add(dataset_field_sizer, 0, wx.ALL, 5)
         
-        url_field_label = wx.StaticText(self, label=GUIText.CSV_URLFIELD+"(Optional): ")
+        url_field_label = wx.StaticText(self, label=GUIText.CSV_URLFIELD+"(Optional) ")
         self.url_field_ctrl = wx.Choice(self, choices=[""])
         self.url_field_ctrl.SetToolTip(GUIText.CSV_URLFIELD_TOOLTIP)
         url_field_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -937,7 +937,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         url_field_sizer.Add(self.url_field_ctrl)
         datafields_sizer.Add(url_field_sizer, 0, wx.ALL, 5)
 
-        datetime_field_label = wx.StaticText(self, label=GUIText.CSV_DATETIMEFIELD+"(Optional): ")
+        datetime_field_label = wx.StaticText(self, label=GUIText.CSV_DATETIMEFIELD+"(Optional) ")
         self.datetime_field_ctrl = wx.Choice(self, choices=[""])
         self.datetime_field_ctrl.SetToolTip(GUIText.CSV_DATETIMEFIELD_TOOLTIP)
         self.datetime_tz_ctrl = wx.Choice(self, choices=pytz.all_timezones)
@@ -968,7 +968,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         label_fields_sizer.Add(label_fields_combined_sizer, 1, wx.EXPAND)
         sizer.Add(label_fields_sizer, 1, wx.EXPAND|wx.ALL, 5)
 
-        computation_fields_first_label = wx.StaticText(self, label=GUIText.COMPUTATIONAL_FIELDS+":")
+        computation_fields_first_label = wx.StaticText(self, label=GUIText.COMPUTATIONAL_FIELDS)
         self.computation_fields_first_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT|wx.LC_NO_HEADER)
         self.computation_fields_first_ctrl.AppendColumn(GUIText.FIELD)
         self.computation_fields_first_ctrl.SetToolTip(GUIText.COMPUTATIONAL_FIELDS_TOOLTIP)
@@ -1012,7 +1012,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         ethics_sizer.Add(self.ethics_research_ctrl, 0, wx.ALL, 5)
         self.ethics_institution_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_INSTITUTION)
         ethics_sizer.Add(self.ethics_institution_ctrl, 0, wx.ALL, 5)
-        sizer.Add(ethics_sizer, 0, wx.ALL, 5)
+        sizer.Add(ethics_sizer, 0, wx.ALL|wx.EXPAND, 5)
 
         #Retriever button to collect the requested data
         controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)

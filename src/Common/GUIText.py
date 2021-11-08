@@ -371,7 +371,7 @@ class Datasets(Common):
     CSV_DATETIMEFIELD_TOOLTIP = "Choose a field to use as datetime to documents."
     CSV_DATETIMETZ_MISSING_ERROR = "Please choose the time zone for the contents of the datatime field"
     
-    LABEL_FIELDS = "Label Fields: "
+    LABEL_FIELDS = "Label Fields"
     LABEL_FIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
                              "\nIf a field occurs multiple times for the same id, the first occurance will be used."
     COMBINED_LABEL_FIELDS = "Combined Label Fields: "
@@ -380,7 +380,7 @@ class Datasets(Common):
     COMPUTATIONAL_FIELDS = "Computational Fields"
     COMPUTATIONAL_FIELDS_TOOLTIP = "Choose fields you want computational methods to use when identifing samples of interest from the data."\
                              "\nIf a field occurs multiple times for the same id, the first occurance will be used."
-    COMBINED_COMPUTATIONAL_FIELDS = "Combined Computational Fields: "
+    COMBINED_COMPUTATIONAL_FIELDS = "Combined Computational Fields"
     COMBINED_COMPUTATIONAL_FIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the data."\
                                       "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
     CUSTOMIZE_LABEL_FIELDS = "Customize Label Fields"
