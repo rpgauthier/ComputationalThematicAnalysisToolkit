@@ -75,7 +75,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             sizer.Add(name_sizer, 0, wx.ALL, 5)
 
         datasetconfig_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Dataset Configurations")
-        sizer.Add(datasetconfig_sizer, 1, wx.ALL|wx.EXPAND, 5)
+        sizer.Add(datasetconfig_sizer, 0, wx.ALL|wx.EXPAND, 5)
 
         #TODO enhance ability to integrate multiple subreddits
         subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT)
@@ -84,7 +84,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         subreddit_sizer = wx.BoxSizer(wx.HORIZONTAL)
         subreddit_sizer.Add(subreddit_label, 0, wx.ALIGN_CENTRE_VERTICAL)
         subreddit_sizer.Add(self.subreddit_ctrl, 1, wx.EXPAND)
-        datasetconfig_sizer.Add(subreddit_sizer, 1, wx.ALL|wx.EXPAND, 5)
+        datasetconfig_sizer.Add(subreddit_sizer, 0, wx.ALL|wx.EXPAND, 5)
 
         h_sizer = wx.BoxSizer()
         datasetconfig_sizer.Add(h_sizer)
@@ -106,7 +106,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         h_sizer.Add(language_sizer, 0, wx.ALL, 5)
 
         dataconstraints_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Data Constraints")
-        sizer.Add(dataconstraints_sizer, 1, wx.ALL|wx.EXPAND, 5)
+        sizer.Add(dataconstraints_sizer, 0, wx.ALL|wx.EXPAND, 5)
 
         start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
         self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
@@ -130,7 +130,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         search_sizer = wx.BoxSizer(wx.HORIZONTAL)
         search_sizer.Add(search_label, 0, wx.ALIGN_CENTRE_VERTICAL)
         search_sizer.Add(self.search_ctrl, 1, wx.EXPAND)
-        dataconstraints_sizer.Add(search_sizer, 1, wx.ALL|wx.EXPAND, 5)
+        dataconstraints_sizer.Add(search_sizer, 0, wx.ALL|wx.EXPAND, 5)
 
         #control the subsource of where data is retrieved from
         self.update_pushshift_radioctrl = wx.RadioButton(self, label=GUIText.REDDIT_UPDATE_PUSHSHIFT, style=wx.RB_GROUP)
@@ -146,12 +146,12 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.full_pushshift_radioctrl = wx.RadioButton(self, label=GUIText.REDDIT_FULL_PUSHSHIFT)
         self.full_pushshift_radioctrl.SetToolTip(GUIText.REDDIT_FULL_PUSHSHIFT_TOOLTIP)
         source_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.SOURCE+": ")
-        source_sizer.Add(self.update_pushshift_radioctrl)
+        source_sizer.Add(self.update_pushshift_radioctrl, 0, wx.ALL, 5)
         #source_sizer.Add(self.update_redditapi_radioctrl)
         #source_sizer.Add(self.full_redditapi_radioctrl)
-        source_sizer.Add(self.archived_radioctrl)
-        source_sizer.Add(self.full_pushshift_radioctrl)
-        sizer.Add(source_sizer, 1, wx.ALL|wx.EXPAND, 5)
+        source_sizer.Add(self.archived_radioctrl, 0, wx.ALL, 5)
+        source_sizer.Add(self.full_pushshift_radioctrl, 0, wx.ALL, 5)
+        sizer.Add(source_sizer, 0, wx.ALL|wx.EXPAND, 5)
 
         label_fields_label = wx.StaticText(self, label=GUIText.LABEL_FIELDS)
         self.label_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
@@ -160,11 +160,11 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.label_fields_ctrl.AppendColumn(GUIText.TYPE)
         self.label_fields_ctrl.SetToolTip(GUIText.LABEL_FIELDS_TOOLTIP)
         self.label_fields_ctrl.EnableCheckBoxes()
-        label_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        label_fields_sizer = wx.BoxSizer(wx.VERTICAL)
         label_fields_sizer.Add(label_fields_label, 0, wx.ALL)
         label_fields_sizer.Add(self.label_fields_ctrl, 1, wx.EXPAND)
         if main_frame.options_dict['adjustable_label_fields_mode']:
-            sizer.Add(label_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
+            sizer.Add(label_fields_sizer, 1, wx.ALL|wx.EXPAND, 5)
         else:
             label_fields_sizer.ShowItems(False)
 
@@ -175,23 +175,23 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.computational_fields_ctrl.AppendColumn(GUIText.TYPE)
         self.computational_fields_ctrl.SetToolTip(GUIText.COMPUTATIONAL_FIELDS_TOOLTIP)
         self.computational_fields_ctrl.EnableCheckBoxes()
-        computational_fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        computational_fields_sizer = wx.BoxSizer(wx.VERTICAL)
         computational_fields_sizer.Add(computational_fields_label, 0, wx.ALL)
         computational_fields_sizer.Add(self.computational_fields_ctrl, 1, wx.EXPAND)
         if main_frame.options_dict['adjustable_computation_fields_mode']:
-            sizer.Add(computational_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
+            sizer.Add(computational_fields_sizer, 1, wx.ALL|wx.EXPAND, 5)
         else:
             computational_fields_sizer.ShowItems(False)
 
         ethics_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Ethical Considerations")
         self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1_REDDIT)
-        ethics_sizer.Add(self.ethics_community1_ctrl)
+        ethics_sizer.Add(self.ethics_community1_ctrl, 0, wx.ALL, 5)
         self.ethics_community2_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY2_REDDIT)
-        ethics_sizer.Add(self.ethics_community2_ctrl)
+        ethics_sizer.Add(self.ethics_community2_ctrl, 0, wx.ALL, 5)
         self.ethics_research_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_RESEARCH)
-        ethics_sizer.Add(self.ethics_research_ctrl)
+        ethics_sizer.Add(self.ethics_research_ctrl, 0, wx.ALL, 5)
         self.ethics_institution_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_INSTITUTION)
-        ethics_sizer.Add(self.ethics_institution_ctrl)
+        ethics_sizer.Add(self.ethics_institution_ctrl, 0, wx.ALL, 5)
         self.ethics_reddit_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_REDDIT)
         ethics_reddit_url = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.ETHICS_REDDIT_URL)
         ethics_redditapi_url = wx.adv.HyperlinkCtrl(self, label="2", url=GUIText.ETHICS_REDDITAPI_URL)
@@ -200,9 +200,9 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         ethics_reddit_sizer.Add(ethics_reddit_url)
         ethics_reddit_sizer.AddSpacer(5)
         ethics_reddit_sizer.Add(ethics_redditapi_url)
-        ethics_sizer.Add(ethics_reddit_sizer)
+        ethics_sizer.Add(ethics_reddit_sizer, 0, wx.ALL, 5)
         self.ethics_pushshift_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_PUSHSHIFT)
-        ethics_sizer.Add(self.ethics_pushshift_ctrl)
+        ethics_sizer.Add(self.ethics_pushshift_ctrl, 0, wx.ALL, 5)
         sizer.Add(ethics_sizer, 0, wx.ALL, 5)
 
         #Retriever button to collect the requested data
@@ -889,7 +889,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             sizer.Add(self.name_sizer, 0, wx.ALL, 5)
 
         datasetconfig_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Dataset Configurations")
-        sizer.Add(datasetconfig_sizer, 1, wx.EXPAND|wx.ALL, 5)
+        sizer.Add(datasetconfig_sizer, 0, wx.EXPAND|wx.ALL, 5)
 
         filename_label = wx.StaticText(self, label=GUIText.FILENAME + ": ")
         self.filename_ctrl = wx.FilePickerCtrl(self, wildcard="CSV files (*.csv)|*.csv")
@@ -899,7 +899,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.filename_sizer.Add(filename_label, 0, wx.ALIGN_CENTRE_VERTICAL)
         self.filename_sizer.Add(self.filename_ctrl, 1, wx.EXPAND)
         self.filename_ctrl.Bind(wx.EVT_FILEPICKER_CHANGED, self.OnFilenameChosen)
-        datasetconfig_sizer.Add(self.filename_sizer, 1, wx.ALL|wx.EXPAND, 5)
+        datasetconfig_sizer.Add(self.filename_sizer, 0, wx.ALL|wx.EXPAND, 5)
 
         id_field_label = wx.StaticText(self, label=GUIText.CSV_IDFIELD+": ")
         self.id_field_ctrl = wx.Choice(self, choices=[GUIText.CSV_IDFIELD_DEFAULT])
@@ -918,7 +918,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         datasetconfig_sizer.Add(self.language_sizer, 0, wx.ALL, 5)
 
         datafields_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Special Data Fields")
-        sizer.Add(datafields_sizer, 1, wx.EXPAND|wx.ALL, 5)
+        sizer.Add(datafields_sizer, 0, wx.EXPAND|wx.ALL, 5)
 
         if main_frame.options_dict['multipledatasets_mode']:
             dataset_field_label = wx.StaticText(self, label=GUIText.CSV_DATASETFIELD+"(Optional): ")
@@ -948,7 +948,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         datafields_sizer.Add(datetime_field_sizer, 0, wx.ALL, 5)
 
         label_fields_first_label = wx.StaticText(self, label=GUIText.LABEL_FIELDS)
-        self.label_fields_first_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.label_fields_first_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT|wx.LC_NO_HEADER)
         self.label_fields_first_ctrl.AppendColumn(GUIText.FIELD)
         self.label_fields_first_ctrl.SetToolTip(GUIText.LABEL_FIELDS_TOOLTIP)
         self.label_fields_first_ctrl.EnableCheckBoxes()
@@ -956,7 +956,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         label_fields_first_sizer.Add(label_fields_first_label)
         label_fields_first_sizer.Add(self.label_fields_first_ctrl, 1, wx.EXPAND)
         label_fields_combined_label = wx.StaticText(self, label=GUIText.COMBINED_LABEL_FIELDS)
-        self.label_fields_combined_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.label_fields_combined_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT|wx.LC_NO_HEADER)
         self.label_fields_combined_ctrl.AppendColumn(GUIText.FIELD)
         self.label_fields_combined_ctrl.SetToolTip(GUIText.COMBINED_LABEL_FIELDS_TOOLTIP)
         self.label_fields_combined_ctrl.EnableCheckBoxes()
@@ -969,7 +969,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         sizer.Add(label_fields_sizer, 1, wx.EXPAND|wx.ALL, 5)
 
         computation_fields_first_label = wx.StaticText(self, label=GUIText.COMPUTATIONAL_FIELDS+":")
-        self.computation_fields_first_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.computation_fields_first_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT|wx.LC_NO_HEADER)
         self.computation_fields_first_ctrl.AppendColumn(GUIText.FIELD)
         self.computation_fields_first_ctrl.SetToolTip(GUIText.COMPUTATIONAL_FIELDS_TOOLTIP)
         self.computation_fields_first_ctrl.EnableCheckBoxes()
@@ -977,7 +977,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         computation_fields_first_sizer.Add(computation_fields_first_label)
         computation_fields_first_sizer.Add(self.computation_fields_first_ctrl, 1, wx.EXPAND)
         computation_fields_combined_label = wx.StaticText(self, label=GUIText.COMBINED_COMPUTATIONAL_FIELDS)
-        self.computation_fields_combined_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.computation_fields_combined_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT|wx.LC_NO_HEADER)
         self.computation_fields_combined_ctrl.AppendColumn(GUIText.FIELD)
         self.computation_fields_combined_ctrl.SetToolTip(GUIText.COMBINED_COMPUTATIONAL_FIELDS_TOOLTIP)
         self.computation_fields_combined_ctrl.EnableCheckBoxes()
@@ -1005,13 +1005,13 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         # ethics/terms of use
         ethics_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Ethical Considerations")
         self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1)
-        ethics_sizer.Add(self.ethics_community1_ctrl)
+        ethics_sizer.Add(self.ethics_community1_ctrl, 0, wx.ALL, 5)
         self.ethics_community2_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY2)
-        ethics_sizer.Add(self.ethics_community2_ctrl)
+        ethics_sizer.Add(self.ethics_community2_ctrl, 0, wx.ALL, 5)
         self.ethics_research_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_RESEARCH)
-        ethics_sizer.Add(self.ethics_research_ctrl)
+        ethics_sizer.Add(self.ethics_research_ctrl, 0, wx.ALL, 5)
         self.ethics_institution_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_INSTITUTION)
-        ethics_sizer.Add(self.ethics_institution_ctrl)
+        ethics_sizer.Add(self.ethics_institution_ctrl, 0, wx.ALL, 5)
         sizer.Add(ethics_sizer, 0, wx.ALL, 5)
 
         #Retriever button to collect the requested data
