@@ -729,7 +729,7 @@ class RetrieveCSVDatasetThread(Thread):
         with open(filename, 'rb') as infile:
             encoding_result = chardet.detect(infile.read(100000))
 
-        filedata_df = pd.read_csv(filename, encoding=encoding_result['encoding'], keep_default_na=False, dtype='unicode')
+        filedata_df = pd.read_csv(filename, encoding='utf-8', keep_default_na=False, dtype='unicode')
 
         filedata = filedata_df.to_dict('records')
 

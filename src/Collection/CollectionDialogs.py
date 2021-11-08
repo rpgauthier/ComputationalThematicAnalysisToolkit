@@ -948,14 +948,16 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         datafields_sizer.Add(datetime_field_sizer, 0, wx.ALL, 5)
 
         label_fields_first_label = wx.StaticText(self, label=GUIText.LABEL_FIELDS)
-        self.label_fields_first_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
+        self.label_fields_first_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.label_fields_first_ctrl.AppendColumn(GUIText.FIELD)
         self.label_fields_first_ctrl.SetToolTip(GUIText.LABEL_FIELDS_TOOLTIP)
         self.label_fields_first_ctrl.EnableCheckBoxes()
         label_fields_first_sizer = wx.BoxSizer(wx.VERTICAL)
         label_fields_first_sizer.Add(label_fields_first_label)
         label_fields_first_sizer.Add(self.label_fields_first_ctrl, 1, wx.EXPAND)
         label_fields_combined_label = wx.StaticText(self, label=GUIText.COMBINED_LABEL_FIELDS)
-        self.label_fields_combined_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
+        self.label_fields_combined_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.label_fields_combined_ctrl.AppendColumn(GUIText.FIELD)
         self.label_fields_combined_ctrl.SetToolTip(GUIText.COMBINED_LABEL_FIELDS_TOOLTIP)
         self.label_fields_combined_ctrl.EnableCheckBoxes()
         label_fields_combined_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -967,14 +969,16 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         sizer.Add(label_fields_sizer, 1, wx.EXPAND|wx.ALL, 5)
 
         computation_fields_first_label = wx.StaticText(self, label=GUIText.COMPUTATIONAL_FIELDS+":")
-        self.computation_fields_first_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
+        self.computation_fields_first_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.computation_fields_first_ctrl.AppendColumn(GUIText.FIELD)
         self.computation_fields_first_ctrl.SetToolTip(GUIText.COMPUTATIONAL_FIELDS_TOOLTIP)
         self.computation_fields_first_ctrl.EnableCheckBoxes()
         computation_fields_first_sizer = wx.BoxSizer(wx.VERTICAL)
         computation_fields_first_sizer.Add(computation_fields_first_label)
         computation_fields_first_sizer.Add(self.computation_fields_first_ctrl, 1, wx.EXPAND)
         computation_fields_combined_label = wx.StaticText(self, label=GUIText.COMBINED_COMPUTATIONAL_FIELDS)
-        self.computation_fields_combined_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
+        self.computation_fields_combined_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.computation_fields_combined_ctrl.AppendColumn(GUIText.FIELD)
         self.computation_fields_combined_ctrl.SetToolTip(GUIText.COMBINED_COMPUTATIONAL_FIELDS_TOOLTIP)
         self.computation_fields_combined_ctrl.EnableCheckBoxes()
         computation_fields_combined_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -1033,7 +1037,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         if os.path.isfile(filename):
             with open(filename, 'rb') as infile:
                 encoding_result = chardet.detect(infile.read(100000))
-            with open(filename, mode='r', encoding=encoding_result['encoding']) as infile:
+            with open(filename, mode='r', encoding='utf-8') as infile:
                 reader = csv.reader(infile)
                 header_row = next(reader)
                 self.id_field_ctrl.Clear()
@@ -1067,6 +1071,8 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                     self.label_fields_first_ctrl.Append(["csv."+column_name])
                     self.computation_fields_first_ctrl.Append(["csv."+column_name])
                     self.available_fields["csv."+column_name] = {"desc":"CSV Field", "type":"string"}
+                self.label_fields_first_ctrl.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+                self.computation_fields_first_ctrl.SetColumnWidth(0, wx.LIST_AUTOSIZE)
                 self.Layout()
                 self.Fit()
         logger.info("Finished")
@@ -1234,6 +1240,8 @@ class FieldDropTarget(wx.TextDropTarget):
             self.source2.DeleteItem(idx)
         if self.dest1.FindItem(-1, data) is wx.NOT_FOUND:
             self.dest1.InsertItem(0, data)
+            self.dest1.SetColumnWidth(0, wx.LIST_AUTOSIZE)
         if self.dest2.FindItem(-1, data) is wx.NOT_FOUND:
             self.dest2.InsertItem(0, data)
+            self.dest2.SetColumnWidth(0, wx.LIST_AUTOSIZE)
         return True
