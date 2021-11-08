@@ -58,6 +58,11 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.available_fields = {}
 
         sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.error_label = wx.StaticText(self, label="")
+        self.error_label.SetForegroundColour(wx.Colour(255, 0, 0))
+        sizer.Add(self.error_label, 0, wx.ALL, 5)
+        self.error_label.Hide()
         
         main_frame = wx.GetApp().GetTopWindow()
         if main_frame.options_dict['multipledatasets_mode']:
@@ -65,57 +70,32 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.name_ctrl = wx.TextCtrl(self)
             self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
             name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            name_sizer.Add(name_label)
+            name_sizer.Add(name_label, 0, wx.ALIGN_CENTRE_VERTICAL)
             name_sizer.Add(self.name_ctrl)
             sizer.Add(name_sizer, 0, wx.ALL, 5)
 
-        #TODO enhance to integrate ability to incldued multiple subreddits
+        datasetconfig_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Dataset Configurations")
+        sizer.Add(datasetconfig_sizer, 1, wx.ALL|wx.EXPAND, 5)
+
+        #TODO enhance ability to integrate multiple subreddits
         subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT)
         self.subreddit_ctrl = wx.TextCtrl(self)
         self.subreddit_ctrl.SetToolTip(GUIText.REDDIT_SUBREDDIT_TOOLTIP)
         subreddit_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        subreddit_sizer.Add(subreddit_label)
-        subreddit_sizer.Add(self.subreddit_ctrl)
-        sizer.Add(subreddit_sizer, 0, wx.ALL, 5)
+        subreddit_sizer.Add(subreddit_label, 0, wx.ALIGN_CENTRE_VERTICAL)
+        subreddit_sizer.Add(self.subreddit_ctrl, 1, wx.EXPAND)
+        datasetconfig_sizer.Add(subreddit_sizer, 1, wx.ALL|wx.EXPAND, 5)
 
-        #TODO enhance integration of search to allow complex queries (currently only supports literial string entered in text box)
-        search_label = wx.StaticText(self, label=GUIText.SEARCH)
-        self.search_ctrl = wx.TextCtrl(self)
-        search_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        search_sizer.Add(search_label)
-        search_sizer.Add(self.search_ctrl)
-        sizer.Add(search_sizer, 0, wx.ALL, 5)
-
-        self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1_REDDIT)
-        self.ethics_community2_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY2_REDDIT)
-        self.ethics_research_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_RESEARCH)
-        self.ethics_institution_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_INSTITUTION)
-        self.ethics_reddit_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_REDDIT)
-        ethics_reddit_url = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.ETHICS_REDDIT_URL)
-        ethics_redditapi_url = wx.adv.HyperlinkCtrl(self, label="2", url=GUIText.ETHICS_REDDITAPI_URL)
-        self.ethics_pushshift_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_PUSHSHIFT)
-        ethics_sizer = wx.BoxSizer(wx.VERTICAL)
-        ethics_sizer.Add(self.ethics_community1_ctrl)
-        ethics_sizer.Add(self.ethics_community2_ctrl)
-        ethics_sizer.Add(self.ethics_research_ctrl)
-        ethics_sizer.Add(self.ethics_institution_ctrl)
-        ethics_reddit_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        ethics_reddit_sizer.Add(self.ethics_reddit_ctrl)
-        ethics_reddit_sizer.Add(ethics_reddit_url)
-        ethics_reddit_sizer.AddSpacer(5)
-        ethics_reddit_sizer.Add(ethics_redditapi_url)
-        ethics_sizer.Add(ethics_reddit_sizer)
-        ethics_sizer.Add(self.ethics_pushshift_ctrl)
-        sizer.Add(ethics_sizer, 0, wx.ALL, 5)
-
+        h_sizer = wx.BoxSizer()
+        datasetconfig_sizer.Add(h_sizer)
         #choose type of dataset to retrieve
         dataset_type_sizer = wx.BoxSizer(wx.HORIZONTAL)
         dataset_type_label = wx.StaticText(self, label=GUIText.TYPE+": ")
         self.dataset_type_choice = wx.Choice(self, choices=[GUIText.REDDIT_DISCUSSIONS, GUIText.REDDIT_SUBMISSIONS, GUIText.REDDIT_COMMENTS])
         self.dataset_type_choice.Bind(wx.EVT_CHOICE, self.OnDatasetTypeChosen)
-        dataset_type_sizer.Add(dataset_type_label)
+        dataset_type_sizer.Add(dataset_type_label, 0, wx.ALIGN_CENTRE_VERTICAL)
         dataset_type_sizer.Add(self.dataset_type_choice)
-        sizer.Add(dataset_type_sizer, 0, wx.ALL, 5)
+        h_sizer.Add(dataset_type_sizer, 0, wx.ALL, 5)
 
         language_label = wx.StaticText(self, label=GUIText.LANGUAGE+":")
         self.language_ctrl = wx.Choice(self, choices=Constants.AVAILABLE_DATASET_LANGUAGES2)
@@ -123,7 +103,34 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         language_sizer = wx.BoxSizer(wx.HORIZONTAL)
         language_sizer.Add(language_label, 0, wx.ALIGN_CENTRE_VERTICAL)
         language_sizer.Add(self.language_ctrl)
-        sizer.Add(language_sizer, 0, wx.ALL, 5)
+        h_sizer.Add(language_sizer, 0, wx.ALL, 5)
+
+        dataconstraints_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Data Constraints")
+        sizer.Add(dataconstraints_sizer, 1, wx.ALL|wx.EXPAND, 5)
+
+        start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
+        self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
+                                                style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
+        self.start_date_ctrl.SetToolTip(GUIText.START_DATE_TOOLTIP)
+        end_date_label = wx.StaticText(self, label=GUIText.END_DATE+": ")
+        self.end_date_ctrl = wx.adv.DatePickerCtrl(self, name="endDate",
+                                              style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
+        self.end_date_ctrl.SetToolTip(GUIText.END_DATE_TOOLTIP)
+        date_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        date_sizer.Add(start_date_label, 0, wx.ALIGN_CENTRE_VERTICAL)
+        date_sizer.Add(self.start_date_ctrl)
+        date_sizer.AddSpacer(10)
+        date_sizer.Add(end_date_label, 0, wx.ALIGN_CENTRE_VERTICAL)
+        date_sizer.Add(self.end_date_ctrl)
+        dataconstraints_sizer.Add(date_sizer, 0, wx.ALL, 5)
+
+        #TODO enhance integration of search to allow complex queries (currently only supports literial string entered in text box)
+        search_label = wx.StaticText(self, label=GUIText.REDDIT_CONTAINS_TEXT+"(Optional): ")
+        self.search_ctrl = wx.TextCtrl(self)
+        search_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        search_sizer.Add(search_label, 0, wx.ALIGN_CENTRE_VERTICAL)
+        search_sizer.Add(self.search_ctrl, 1, wx.EXPAND)
+        dataconstraints_sizer.Add(search_sizer, 1, wx.ALL|wx.EXPAND, 5)
 
         #control the subsource of where data is retrieved from
         self.update_pushshift_radioctrl = wx.RadioButton(self, label=GUIText.REDDIT_UPDATE_PUSHSHIFT, style=wx.RB_GROUP)
@@ -144,23 +151,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         #source_sizer.Add(self.full_redditapi_radioctrl)
         source_sizer.Add(self.archived_radioctrl)
         source_sizer.Add(self.full_pushshift_radioctrl)
-        sizer.Add(source_sizer, 0, wx.ALL, 5)
-
-        start_date_label = wx.StaticText(self, label=GUIText.START_DATE+": ")
-        self.start_date_ctrl = wx.adv.DatePickerCtrl(self, name="startDate",
-                                                style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
-        self.start_date_ctrl.SetToolTip(GUIText.START_DATE_TOOLTIP)
-        end_date_label = wx.StaticText(self, label=GUIText.END_DATE+": ")
-        self.end_date_ctrl = wx.adv.DatePickerCtrl(self, name="endDate",
-                                              style=wx.adv.DP_DROPDOWN|wx.adv.DP_SHOWCENTURY)
-        self.end_date_ctrl.SetToolTip(GUIText.END_DATE_TOOLTIP)
-        date_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        date_sizer.Add(start_date_label)
-        date_sizer.Add(self.start_date_ctrl)
-        date_sizer.AddSpacer(10)
-        date_sizer.Add(end_date_label)
-        date_sizer.Add(self.end_date_ctrl)
-        sizer.Add(date_sizer, 0, wx.ALL, 5)
+        sizer.Add(source_sizer, 1, wx.ALL|wx.EXPAND, 5)
 
         label_fields_label = wx.StaticText(self, label=GUIText.LABEL_FIELDS)
         self.label_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
@@ -191,6 +182,28 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             sizer.Add(computational_fields_sizer, 0, wx.ALL|wx.EXPAND, 5)
         else:
             computational_fields_sizer.ShowItems(False)
+
+        ethics_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Ethical Considerations")
+        self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1_REDDIT)
+        ethics_sizer.Add(self.ethics_community1_ctrl)
+        self.ethics_community2_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY2_REDDIT)
+        ethics_sizer.Add(self.ethics_community2_ctrl)
+        self.ethics_research_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_RESEARCH)
+        ethics_sizer.Add(self.ethics_research_ctrl)
+        self.ethics_institution_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_INSTITUTION)
+        ethics_sizer.Add(self.ethics_institution_ctrl)
+        self.ethics_reddit_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_REDDIT)
+        ethics_reddit_url = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.ETHICS_REDDIT_URL)
+        ethics_redditapi_url = wx.adv.HyperlinkCtrl(self, label="2", url=GUIText.ETHICS_REDDITAPI_URL)
+        ethics_reddit_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        ethics_reddit_sizer.Add(self.ethics_reddit_ctrl)
+        ethics_reddit_sizer.Add(ethics_reddit_url)
+        ethics_reddit_sizer.AddSpacer(5)
+        ethics_reddit_sizer.Add(ethics_redditapi_url)
+        ethics_sizer.Add(ethics_reddit_sizer)
+        self.ethics_pushshift_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_PUSHSHIFT)
+        ethics_sizer.Add(self.ethics_pushshift_ctrl)
+        sizer.Add(ethics_sizer, 0, wx.ALL, 5)
 
         #Retriever button to collect the requested data
         controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
@@ -244,105 +257,57 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         logger = logging.getLogger(__name__+".RedditRetrieverDialog.OnRetrieveStart")
         logger.info("Starting")
 
-        status_flag = True
+        error_messages = []
+
         main_frame = wx.GetApp().GetTopWindow()
         if main_frame.options_dict['multipledatasets_mode']:
             name = self.name_ctrl.GetValue()
             if name == "":
-                wx.MessageBox(GUIText.NAME_MISSING_ERROR,
-                            GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                error_messages.append(GUIText.NAME_MISSING_ERROR)
                 logger.warning('No name entered')
-                status_flag = False
         else:
             name = self.subreddit_ctrl.GetValue() 
         subreddit = self.subreddit_ctrl.GetValue()
+
         if subreddit == "":
-            wx.MessageBox(GUIText.REDDIT_SUBREDDIT_MISSING_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            error_messages.append(GUIText.REDDIT_SUBREDDIT_MISSING_ERROR)
             logger.warning('No subreddit entered')
-            status_flag = False
         else:
             subreddits = str(subreddit).split(',')
             if len(subreddits) > 0:
                 for i in range(len(subreddits)):
                     subreddits[i] = str(subreddits[i]).strip()
-        
-        search = self.search_ctrl.GetValue()
-        
-        language = Constants.AVAILABLE_DATASET_LANGUAGES1[self.language_ctrl.GetSelection()]
-
-        if not self.ethics_community1_ctrl.IsChecked():
-            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY1_REDDIT,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('Ethics not checked')
-            status_flag = False
-        if not self.ethics_community2_ctrl.IsChecked():
-            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY2_REDDIT,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('Ethics not checked')
-            status_flag = False
-        if not self.ethics_research_ctrl.IsChecked():
-            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_RESEARCH,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('Ethics not checked')
-            status_flag = False
-        if not self.ethics_institution_ctrl.IsChecked():
-            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_INSTITUTION,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('Ethics not checked')
-            status_flag = False
-        if not self.ethics_reddit_ctrl.IsChecked():
-            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_REDDIT,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('Ethics not checked')
-            status_flag = False
-        if not self.ethics_pushshift_ctrl.IsChecked():
-            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_PUSHSHIFT,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('Ethics not checked')
-            status_flag = False
-        
-        start_date = str(self.start_date_ctrl.GetValue().Format("%Y-%m-%d"))
-        end_date = str(self.end_date_ctrl.GetValue().Format("%Y-%m-%d"))
-        if start_date > end_date:
-            wx.MessageBox(GUIText.DATE_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning("Start Date[%s] not before End Date[%s]",
-                           str(start_date), str(end_date))
-            status_flag = False
-        
-        #determine what type of retrieval is to be performed
-        replace_archive_flg = self.full_pushshift_radioctrl.GetValue() #or  self.full_redditapi_radioctrl.GetValue()
-        pushshift_flg = self.full_pushshift_radioctrl.GetValue() or self.update_pushshift_radioctrl.GetValue()
-        redditapi_flg = False
-        #redditapi_flg = self.update_redditapi_radioctrl.GetValue() or self.full_redditapi_radioctrl.GetValue()
 
         dataset_type_id = self.dataset_type_choice.GetSelection()
         dataset_type = ""
         if dataset_type_id is wx.NOT_FOUND:
-            wx.MessageBox(GUIText.TYPE_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            error_messages.append(GUIText.TYPE_ERROR)
             logger.warning("No Data type was selected for retrieval")
-            status_flag = False
         else:
             dataset_type = self.dataset_type_choice.GetString(dataset_type_id)
-
         if dataset_type == GUIText.REDDIT_DISCUSSIONS:
             dataset_type = 'discussion'
         elif dataset_type == GUIText.REDDIT_SUBMISSIONS:
             dataset_type = 'submission'
         elif dataset_type == GUIText.REDDIT_COMMENTS:
             dataset_type = 'comment'
-
-        dataset_source = "Reddit"
-
-        dataset_key = (name, dataset_source, dataset_type)
-        if dataset_key in main_frame.datasets:
-            wx.MessageBox(GUIText.NAME_EXISTS_ERROR,
-                          GUIText.ERROR,
-                          wx.OK | wx.ICON_ERROR)
-            logger.warning("Data with same name[%s] already exists", name)
-            status_flag = False
+        
+        language = Constants.AVAILABLE_DATASET_LANGUAGES1[self.language_ctrl.GetSelection()]
+        
+        start_date = str(self.start_date_ctrl.GetValue().Format("%Y-%m-%d"))
+        end_date = str(self.end_date_ctrl.GetValue().Format("%Y-%m-%d"))
+        if start_date > end_date:
+            error_messages.append(GUIText.DATE_ERROR)
+            logger.warning("Start Date[%s] not before End Date[%s]",
+                           str(start_date), str(end_date))
+        
+        search = self.search_ctrl.GetValue()
+        
+        #determine what type of retrieval is to be performed
+        replace_archive_flg = self.full_pushshift_radioctrl.GetValue() #or  self.full_redditapi_radioctrl.GetValue()
+        pushshift_flg = self.full_pushshift_radioctrl.GetValue() or self.update_pushshift_radioctrl.GetValue()
+        redditapi_flg = False
+        #redditapi_flg = self.update_redditapi_radioctrl.GetValue() or self.full_redditapi_radioctrl.GetValue()
         
         label_fields_list = []
         item = self.label_fields_ctrl.GetNextItem(-1)
@@ -365,10 +330,32 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
                 computational_fields_list.append((field_name, self.available_fields[field_name],))
             item = self.computational_fields_ctrl.GetNextItem(item)
 
-        if status_flag:
+        if not self.ethics_community1_ctrl.IsChecked():
+            error_messages.append(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY1_REDDIT)
+            logger.warning('Ethics not checked')
+        if not self.ethics_community2_ctrl.IsChecked():
+            error_messages.append(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY2_REDDIT)
+            logger.warning('Ethics not checked')
+        if not self.ethics_research_ctrl.IsChecked():
+            error_messages.append(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_RESEARCH)
+            logger.warning('Ethics not checked')
+        if not self.ethics_institution_ctrl.IsChecked():
+            error_messages.append(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_INSTITUTION)
+            logger.warning('Ethics not checked')
+        if not self.ethics_reddit_ctrl.IsChecked():
+            error_messages.append(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_REDDIT)
+            logger.warning('Ethics not checked')
+        if not self.ethics_pushshift_ctrl.IsChecked():
+            error_messages.append(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_PUSHSHIFT)
+            logger.warning('Ethics not checked')
+
+        if len(error_messages) == 0:
             main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+name,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
+            self.error_label.Hide()
+            self.Layout()
+            self.Fit()
             self.Hide()
             self.Disable()
             self.Freeze()
@@ -376,6 +363,12 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.retrieval_thread = CollectionThreads.RetrieveRedditDatasetThread(self, main_frame, name, language, subreddits, search, start_date, end_date,
                                                                                   replace_archive_flg, pushshift_flg, redditapi_flg, dataset_type,
                                                                                   list(self.available_fields.items()), label_fields_list, computational_fields_list)
+        else:
+            error_text = "-" + "\n-".join(error_messages)
+            self.error_label.SetLabel(error_text)
+            self.error_label.Show()
+            self.Layout()
+            self.Fit()
         logger.info("Finished")
 
 class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
@@ -877,81 +870,82 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.retrieval_thread = None
         self.available_fields = {}
 
+        main_frame = wx.GetApp().GetTopWindow()
+
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        name_label = wx.StaticText(self, label=GUIText.NAME + ": ")
-        self.name_ctrl = wx.TextCtrl(self)
-        self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_sizer.Add(name_label)
-        name_sizer.Add(self.name_ctrl)
-        sizer.Add(name_sizer, 0, wx.ALL, 5)
+        self.error_label = wx.StaticText(self, label="")
+        self.error_label.SetForegroundColour(wx.Colour(255, 0, 0))
+        sizer.Add(self.error_label, 0, wx.ALL, 5)
+        self.error_label.Hide()
+
+        if main_frame.options_dict['multipledatasets_mode']:
+            name_label = wx.StaticText(self, label=GUIText.NAME + ": ")
+            self.name_ctrl = wx.TextCtrl(self)
+            self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
+            self.name_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            self.name_sizer.Add(name_label, 0, wx.ALIGN_CENTRE_VERTICAL)
+            self.name_sizer.Add(self.name_ctrl)
+            sizer.Add(self.name_sizer, 0, wx.ALL, 5)
+
+        datasetconfig_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Dataset Configurations")
+        sizer.Add(datasetconfig_sizer, 1, wx.EXPAND|wx.ALL, 5)
 
         filename_label = wx.StaticText(self, label=GUIText.FILENAME + ": ")
         self.filename_ctrl = wx.FilePickerCtrl(self, wildcard="CSV files (*.csv)|*.csv")
         path = os.path.join(Constants.DATA_PATH + "CSV")
         self.filename_ctrl.SetInitialDirectory(path)
-        filename_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        filename_sizer.Add(filename_label)
-        filename_sizer.Add(self.filename_ctrl)
+        self.filename_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.filename_sizer.Add(filename_label, 0, wx.ALIGN_CENTRE_VERTICAL)
+        self.filename_sizer.Add(self.filename_ctrl, 1, wx.EXPAND)
         self.filename_ctrl.Bind(wx.EVT_FILEPICKER_CHANGED, self.OnFilenameChosen)
-        sizer.Add(filename_sizer, 0, wx.ALL, 5)
+        datasetconfig_sizer.Add(self.filename_sizer, 1, wx.ALL|wx.EXPAND, 5)
 
-        # ethics/terms of use
-        self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1)
-        self.ethics_community2_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY2)
-        self.ethics_research_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_RESEARCH)
-        self.ethics_institution_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_INSTITUTION)
-        ethics_sizer = wx.BoxSizer(wx.VERTICAL)
-        ethics_sizer.Add(self.ethics_community1_ctrl)
-        ethics_sizer.Add(self.ethics_community2_ctrl)
-        ethics_sizer.Add(self.ethics_research_ctrl)
-        ethics_sizer.Add(self.ethics_institution_ctrl)
-        sizer.Add(ethics_sizer, 0, wx.ALL, 5)
+        id_field_label = wx.StaticText(self, label=GUIText.CSV_IDFIELD+": ")
+        self.id_field_ctrl = wx.Choice(self, choices=[GUIText.CSV_IDFIELD_DEFAULT])
+        self.id_field_ctrl.SetToolTip(GUIText.CSV_IDFIELD_TOOLTIP)
+        self.id_field_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.id_field_sizer.Add(id_field_label, 0, wx.ALIGN_CENTRE_VERTICAL)
+        self.id_field_sizer.Add(self.id_field_ctrl)
+        datasetconfig_sizer.Add(self.id_field_sizer, 0, wx.ALL, 5)
 
         language_label = wx.StaticText(self, label=GUIText.LANGUAGE+":")
         self.language_ctrl = wx.Choice(self, choices=Constants.AVAILABLE_DATASET_LANGUAGES2)
         self.language_ctrl.Select(0)
-        language_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        language_sizer.Add(language_label, 0, wx.ALIGN_CENTRE_VERTICAL)
-        language_sizer.Add(self.language_ctrl)
-        sizer.Add(language_sizer, 0, wx.ALL, 5)
+        self.language_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.language_sizer.Add(language_label, 0, wx.ALIGN_CENTRE_VERTICAL)
+        self.language_sizer.Add(self.language_ctrl)
+        datasetconfig_sizer.Add(self.language_sizer, 0, wx.ALL, 5)
 
-        main_frame = wx.GetApp().GetTopWindow()
+        datafields_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Special Data Fields")
+        sizer.Add(datafields_sizer, 1, wx.EXPAND|wx.ALL, 5)
+
         if main_frame.options_dict['multipledatasets_mode']:
-            dataset_field_label = wx.StaticText(self, label=GUIText.CSV_DATASETFIELD)
+            dataset_field_label = wx.StaticText(self, label=GUIText.CSV_DATASETFIELD+"(Optional): ")
             self.dataset_field_ctrl = wx.Choice(self, choices=[])
             self.dataset_field_ctrl.SetToolTip(GUIText.CSV_DATASETFIELD_TOOLTIP)
             dataset_field_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            dataset_field_sizer.Add(dataset_field_label)
+            dataset_field_sizer.Add(dataset_field_label, 0, wx.ALIGN_CENTRE_VERTICAL)
             dataset_field_sizer.Add(self.dataset_field_ctrl)
-            sizer.Add(dataset_field_sizer, 0, wx.ALL, 5)
+            datafields_sizer.Add(dataset_field_sizer, 0, wx.ALL, 5)
         
-        id_field_label = wx.StaticText(self, label=GUIText.CSV_IDFIELD)
-        self.id_field_ctrl = wx.Choice(self, choices=[GUIText.CSV_IDFIELD_DEFAULT])
-        self.id_field_ctrl.SetToolTip(GUIText.CSV_IDFIELD_TOOLTIP)
-        id_field_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        id_field_sizer.Add(id_field_label)
-        id_field_sizer.Add(self.id_field_ctrl)
-        sizer.Add(id_field_sizer, 0, wx.ALL, 5)
-
-        url_field_label = wx.StaticText(self, label=GUIText.CSV_URLFIELD)
+        url_field_label = wx.StaticText(self, label=GUIText.CSV_URLFIELD+"(Optional): ")
         self.url_field_ctrl = wx.Choice(self, choices=[""])
         self.url_field_ctrl.SetToolTip(GUIText.CSV_URLFIELD_TOOLTIP)
         url_field_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        url_field_sizer.Add(url_field_label)
+        url_field_sizer.Add(url_field_label, 0, wx.ALIGN_CENTRE_VERTICAL)
         url_field_sizer.Add(self.url_field_ctrl)
-        sizer.Add(url_field_sizer, 0, wx.ALL, 5)
+        datafields_sizer.Add(url_field_sizer, 0, wx.ALL, 5)
 
-        datetime_field_label = wx.StaticText(self, label=GUIText.CSV_DATETIMEFIELD)
+        datetime_field_label = wx.StaticText(self, label=GUIText.CSV_DATETIMEFIELD+"(Optional): ")
         self.datetime_field_ctrl = wx.Choice(self, choices=[""])
         self.datetime_field_ctrl.SetToolTip(GUIText.CSV_DATETIMEFIELD_TOOLTIP)
         self.datetime_tz_ctrl = wx.Choice(self, choices=pytz.all_timezones)
         datetime_field_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        datetime_field_sizer.Add(datetime_field_label)
+        datetime_field_sizer.Add(datetime_field_label, 0, wx.ALIGN_CENTRE_VERTICAL)
         datetime_field_sizer.Add(self.datetime_field_ctrl)
         datetime_field_sizer.Add(self.datetime_tz_ctrl)
-        sizer.Add(datetime_field_sizer, 0, wx.ALL, 5)
+        datafields_sizer.Add(datetime_field_sizer, 0, wx.ALL, 5)
 
         label_fields_first_label = wx.StaticText(self, label=GUIText.LABEL_FIELDS)
         self.label_fields_first_ctrl = wx.ListCtrl(self, style=wx.LC_LIST|wx.LC_NO_HEADER)
@@ -1003,6 +997,18 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.computation_fields_first_ctrl.SetDropTarget(computation_fields_first_dt)
         computation_fields_combined_dt = FieldDropTarget(self.computation_fields_combined_ctrl, self.label_fields_combined_ctrl, self.computation_fields_first_ctrl, self.label_fields_first_ctrl)
         self.computation_fields_combined_ctrl.SetDropTarget(computation_fields_combined_dt)
+
+        # ethics/terms of use
+        ethics_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Ethical Considerations")
+        self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1)
+        ethics_sizer.Add(self.ethics_community1_ctrl)
+        self.ethics_community2_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY2)
+        ethics_sizer.Add(self.ethics_community2_ctrl)
+        self.ethics_research_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_RESEARCH)
+        ethics_sizer.Add(self.ethics_research_ctrl)
+        self.ethics_institution_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_INSTITUTION)
+        ethics_sizer.Add(self.ethics_institution_ctrl)
+        sizer.Add(ethics_sizer, 0, wx.ALL, 5)
 
         #Retriever button to collect the requested data
         controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
@@ -1076,50 +1082,26 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         logger = logging.getLogger(__name__+".CSVRetrieverDialog.OnRetrieveStart")
         logger.info("Starting")
 
-        status_flag = True
+        error_messages = []
         main_frame = wx.GetApp().GetTopWindow()
         
-        name = self.name_ctrl.GetValue()
-        if name == "":
-            wx.MessageBox(GUIText.NAME_MISSING_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('No name entered')
-            status_flag = False
+        if main_frame.options_dict['multipledatasets_mode']:
+            name = self.name_ctrl.GetValue()
+            if name == "":
+                error_messages.append(GUIText.NAME_MISSING_ERROR)
+                logger.warning('No name entered')
+        else:
+            name = self.filename_ctrl.GetPath().split('\\')[-1]
 
         filename = self.filename_ctrl.GetPath()
         if filename == "":
-            wx.MessageBox(GUIText.FILENAME_MISSING_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            error_messages.append(GUIText.FILENAME_MISSING_ERROR)
             logger.warning('No filename entered')
-            status_flag = False
         
         id_field = self.id_field_ctrl.GetStringSelection()
         if id_field == "":
-            wx.MessageBox(GUIText.CSV_IDFIELD_MISSING_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            error_messages.append(GUIText.CSV_IDFIELD_MISSING_ERROR)
             logger.warning('No id field chosen')
-            status_flag = False
-        
-        if not self.ethics_community1_ctrl.IsChecked():
-            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY1,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('Ethics not checked')
-            status_flag = False
-        if not self.ethics_community2_ctrl.IsChecked():
-            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY2,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('Ethics not checked')
-            status_flag = False
-        if not self.ethics_research_ctrl.IsChecked():
-            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_RESEARCH,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('Ethics not checked')
-            status_flag = False
-        if not self.ethics_institution_ctrl.IsChecked():
-            wx.MessageBox(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_INSTITUTION,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('Ethics not checked')
-            status_flag = False
 
         language = Constants.AVAILABLE_DATASET_LANGUAGES1[self.language_ctrl.GetSelection()]
 
@@ -1127,10 +1109,8 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         datetime_tz = self.datetime_tz_ctrl.GetStringSelection()
         if datetime_field != '':
             if datetime_tz not in pytz.all_timezones:
-                wx.MessageBox(GUIText.CSV_DATETIMETZ_MISSING_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                error_messages.append(GUIText.CSV_DATETIMETZ_MISSING_ERROR)
                 logger.warning('No datetime tz chosen')
-                status_flag = False
             if not main_frame.options_dict['adjustable_label_fields_mode']:
                 idx = self.label_fields_first_ctrl.FindItem(-1, "created_utc")
                 self.label_fields_first_ctrl.CheckItem(idx, True)
@@ -1195,7 +1175,6 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
                         if (field_name, self.available_fields[field_name],) not in label_fields_list:
                             label_fields_list.append((field_name, self.available_fields[field_name],))
 
-        dataset_source = "CSV"
         if main_frame.options_dict['multipledatasets_mode']:
             dataset_field = self.dataset_field_ctrl.GetStringSelection()
         else:
@@ -1203,18 +1182,27 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         dataset_type = ""
         if dataset_field == "":
             dataset_type = "document"
-            dataset_key = (name, dataset_source, dataset_type)
-            if dataset_key in main_frame.datasets:
-                wx.MessageBox(GUIText.NAME_EXISTS_ERROR,
-                            GUIText.ERROR,
-                            wx.OK | wx.ICON_ERROR)
-                logger.warning("Data with same name[%s] already exists", name)
-                status_flag = False
+        
+        if not self.ethics_community1_ctrl.IsChecked():
+            error_messages.append(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY1)
+            logger.warning('Ethics not checked')
+        if not self.ethics_community2_ctrl.IsChecked():
+            error_messages.append(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_COMMUNITY2)
+            logger.warning('Ethics not checked')
+        if not self.ethics_research_ctrl.IsChecked():
+            error_messages.append(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_RESEARCH)
+            logger.warning('Ethics not checked')
+        if not self.ethics_institution_ctrl.IsChecked():
+            error_messages.append(GUIText.ETHICS_CONFIRMATION_MISSING_ERROR+GUIText.ETHICS_INSTITUTION)
+            logger.warning('Ethics not checked')
 
-        if status_flag:
+        if len(error_messages) == 0:
             main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+name,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
+            self.error_label.Hide()
+            self.Layout()
+            self.Fit()
             self.Hide()
             self.Disable()
             self.Freeze()
@@ -1222,6 +1210,12 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.retrieval_thread = CollectionThreads.RetrieveCSVDatasetThread(self, main_frame, name, language, dataset_field, dataset_type,
                                                                                id_field, url_field, datetime_field, datetime_tz,
                                                                                list(self.available_fields.items()), label_fields_list, computation_fields_list, combined_list, filename)
+        else:
+            error_text = "-" + "\n-".join(error_messages)
+            self.error_label.SetLabel(error_text)
+            self.error_label.Show()
+            self.Layout()
+            self.Fit()
         logger.info("Finished")
     
 class FieldDropTarget(wx.TextDropTarget):

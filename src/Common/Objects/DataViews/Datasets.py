@@ -369,7 +369,7 @@ class DatasetsDataGridTable(wx.grid.GridTableBase):
                             if self.data_col_types[col] == 'string':
                                 first_entry = ' '.join(entry.split())
                             elif self.data_col_types[col] == 'UTC-timestamp':
-                                first_entry = str(datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT))+'UTC'
+                                first_entry = str(datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT))+GUIText.UTC
                             else:
                                 first_entry = str(entry)
                             break

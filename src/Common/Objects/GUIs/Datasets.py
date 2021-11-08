@@ -1,5 +1,5 @@
 import logging
-
+from datetime import datetime
 
 import wx
 #import wx.lib.agw.flatnotebook as FNB
@@ -150,63 +150,32 @@ class DatasetPanel(wx.Panel):
             details_sizer1.Add(name_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer1.AddSpacer(10)
 
-        if dataset.parent is None:
-            selected_lang = Constants.AVAILABLE_DATASET_LANGUAGES1.index(
-                dataset.language)
-            language_label = wx.StaticText(
-                self, label=GUIText.LANGUAGE + ": ")
-            self.language_ctrl = wx.Choice(
-                self, choices=Constants.AVAILABLE_DATASET_LANGUAGES2)
-            self.language_ctrl.Select(selected_lang)
-            language_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            language_sizer.Add(language_label, 0, wx.ALIGN_CENTRE_VERTICAL)
-            language_sizer.Add(self.language_ctrl)
-            details_sizer1.Add(language_sizer, 0, wx.ALL, 5)
-            details_sizer1.AddSpacer(10)
-            self.language_ctrl.Bind(wx.EVT_CHOICE, self.OnChangeDatasetLanguage)
-        else:
-            selected_lang = Constants.AVAILABLE_DATASET_LANGUAGES1.index(
-                dataset.language)
-            language_label = wx.StaticText(
-                self, label=GUIText.LANGUAGE + ": " + Constants.AVAILABLE_DATASET_LANGUAGES2[selected_lang])
-            details_sizer1.Add(language_label, 0, wx.ALL, 5)
-            details_sizer1.AddSpacer(10)
-
-        type_label = wx.StaticText(self, label=GUIText.TYPE + ": "
-                                            + dataset.dataset_type)
-        details_sizer2.Insert(0, type_label, 0, wx.ALL, 5)
-        details_sizer2.InsertSpacer(1, 10)
+        type_label = wx.StaticText(self, label=GUIText.TYPE + ": " + dataset.dataset_type)
+        details_sizer2.Add(type_label, 0, wx.ALL, 5)
+        details_sizer2.AddSpacer(10)
 
         if dataset.dataset_source == 'Reddit':
-
+            subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT+dataset.retrieval_details['subreddit'])
+            details_sizer1.Add(subreddit_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            details_sizer1.AddSpacer(10)
+            
             if 'search' in dataset.retrieval_details and dataset.retrieval_details['search'] != "":
                 search_label = wx.StaticText(self, label=GUIText.SEARCH+": \""+dataset.retrieval_details['search']+"\"")
-                details_sizer2.Insert(0, search_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-                details_sizer2.InsertSpacer(1, 10)
-
-            subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT+dataset.retrieval_details['subreddit'])
-            if main_frame.options_dict['multipledatasets_mode']:
-                details_sizer2.Insert(0, subreddit_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-                details_sizer2.InsertSpacer(1, 10)
-            else:
-                details_sizer1.Insert(0, subreddit_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-                details_sizer1.InsertSpacer(1, 10)
-
+                details_sizer1.Add(search_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                details_sizer1.AddSpacer(10)
+            
+            
             if dataset.retrieval_details['pushshift_flg']:
                 if dataset.retrieval_details['replace_archive_flg']:
                     if dataset.retrieval_details['redditapi_flg']:
-                        retrieveonline_label = wx.StaticText(
-                            self, label=GUIText.SOURCE+": "+GUIText.REDDIT_FULL_REDDITAPI)
+                        retrieveonline_label = wx.StaticText(self, label=GUIText.SOURCE+": "+GUIText.REDDIT_FULL_REDDITAPI)
                     else:
-                        retrieveonline_label = wx.StaticText(
-                            self, label=GUIText.SOURCE+": "+GUIText.REDDIT_FULL_PUSHSHIFT)
+                        retrieveonline_label = wx.StaticText(self, label=GUIText.SOURCE+": "+GUIText.REDDIT_FULL_PUSHSHIFT)
                 else:
                     if dataset.retrieval_details['redditapi_flg']:
-                        retrieveonline_label = wx.StaticText(
-                            self, label=GUIText.SOURCE+": "+GUIText.REDDIT_UPDATE_REDDITAPI)
+                        retrieveonline_label = wx.StaticText(self, label=GUIText.SOURCE+": "+GUIText.REDDIT_UPDATE_REDDITAPI)
                     else:
-                        retrieveonline_label = wx.StaticText(
-                            self, label=GUIText.SOURCE+": "+GUIText.REDDIT_UPDATE_PUSHSHIFT)
+                        retrieveonline_label = wx.StaticText(self, label=GUIText.SOURCE+": "+GUIText.REDDIT_UPDATE_PUSHSHIFT)
             else:
                 retrieveonline_label = wx.StaticText(
                     self, label=GUIText.SOURCE+": "+GUIText.REDDIT_ARCHIVED)
@@ -214,13 +183,18 @@ class DatasetPanel(wx.Panel):
             details_sizer2.AddSpacer(10)
 
             start_date_label = wx.StaticText(self, label=GUIText.START_DATE + ": "
-                                             + dataset.retrieval_details['start_date'])
+                                             + dataset.retrieval_details['start_date']+GUIText.UTC)
             details_sizer2.Add(start_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer2.AddSpacer(10)
 
             end_date_label = wx.StaticText(self, label=GUIText.END_DATE + ": "
-                                           + dataset.retrieval_details['end_date'])
+                                           + dataset.retrieval_details['end_date']+GUIText.UTC)
             details_sizer2.Add(end_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            details_sizer2.AddSpacer(10)
+
+            retrieved_date_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": "
+                                                + dataset.created_dt.strftime(Constants.DATE_FORMAT))
+            details_sizer2.Add(retrieved_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer2.AddSpacer(10)
 
             document_num_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
@@ -239,32 +213,72 @@ class DatasetPanel(wx.Panel):
                 details_sizer3.Add(comment_count_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
                 details_sizer3.AddSpacer(10)
 
-        retrieved_date_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": "
-                                             + dataset.created_dt.strftime("%Y-%m-%d, %H:%M:%S"))
-        details_sizer2.Add(retrieved_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        details_sizer2.AddSpacer(10)
-
         if dataset.dataset_source == 'Twitter':
             if dataset.retrieval_details['query']:
                 query_label = wx.StaticText(self, label=GUIText.QUERY + ": " + dataset.retrieval_details['query'])
-                details_sizer3.Add(query_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-                details_sizer3.AddSpacer(10)
+                details_sizer1.Add(query_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                details_sizer1.AddSpacer(10)
+
+            retrieved_date_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": "
+                                                + dataset.created_dt.strftime(Constants.DATE_FORMAT))
+            details_sizer2.Add(retrieved_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            details_sizer2.AddSpacer(10)
     
-            #TODO check if tweets ca be merged
+            #TODO check if tweets can be combined
             tweet_num_label = wx.StaticText(self, label=GUIText.TWITTER_TWEETS_NUM+": " + str(len(self.dataset.data)))
             details_sizer3.Add(tweet_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer3.AddSpacer(10)
         
         if dataset.dataset_source == 'CSV':
-            document_num_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
-            details_sizer2.Add(document_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            if 'filename' in dataset.retrieval_details:
+                filename = dataset.retrieval_details['filename'].split('\\')[-1]
+                if filename != dataset.name and  not main_frame.options_dict['multipledatasets_mode']:
+                    name_Label = wx.StaticText(self, label=GUIText.NAME+": "+dataset.name)
+                    details_sizer1.Add(name_Label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                    details_sizer1.AddSpacer(10)
+                filename_Label = wx.StaticText(self, label=GUIText.FILENAME+": "+filename)
+                details_sizer1.Add(filename_Label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                details_sizer1.AddSpacer(10)
+
+            if 'start_date' in dataset.retrieval_details:
+                start_date = str(datetime.utcfromtimestamp(dataset.retrieval_details['start_date']).strftime(Constants.DATETIME_FORMAT))
+                start_date_label = wx.StaticText(self, label=GUIText.START_DATETIME + ": " + str(start_date)+GUIText.UTC)
+                details_sizer2.Add(start_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                details_sizer2.AddSpacer(10)
+
+            if 'end_date' in dataset.retrieval_details:
+                end_date = str(datetime.utcfromtimestamp(dataset.retrieval_details['end_date']).strftime(Constants.DATETIME_FORMAT))
+                end_date_label = wx.StaticText(self, label=GUIText.END_DATETIME + ": " + str(end_date)+GUIText.UTC)
+                details_sizer2.Add(end_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                details_sizer2.AddSpacer(10)
+
+            retrieved_date_label = wx.StaticText(self, label=GUIText.IMPORTED_ON + ": "
+                                                + dataset.created_dt.strftime(Constants.DATE_FORMAT))
+            details_sizer2.Add(retrieved_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer2.AddSpacer(10)
+        
+            document_num_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
+            details_sizer3.Add(document_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            details_sizer3.AddSpacer(10)
 
             if 'row_count' in dataset.retrieval_details:
                 row_num_label = wx.StaticText(self, label=GUIText.CSV_ROWS_NUM+": " + str(dataset.retrieval_details['row_count']))
-                details_sizer2.Add(row_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-                details_sizer2.AddSpacer(10)
+                details_sizer3.Add(row_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                details_sizer3.AddSpacer(10)
         
+        selected_lang = Constants.AVAILABLE_DATASET_LANGUAGES1.index(dataset.language)
+        language_label = wx.StaticText(
+            self, label=GUIText.LANGUAGE + ": ")
+        self.language_ctrl = wx.Choice(
+            self, choices=Constants.AVAILABLE_DATASET_LANGUAGES2)
+        self.language_ctrl.Select(selected_lang)
+        language_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        language_sizer.Add(language_label, 0, wx.ALIGN_CENTRE_VERTICAL)
+        language_sizer.Add(self.language_ctrl)
+        details_sizer1.Add(language_sizer, 0, wx.ALL, 5)
+        details_sizer1.AddSpacer(10)
+        self.language_ctrl.Bind(wx.EVT_CHOICE, self.OnChangeDatasetLanguage)
+
         if main_frame.options_dict['adjustable_label_fields_mode']:
             customize_label_fields_ctrl = wx.Button(self, label=GUIText.CUSTOMIZE_LABEL_FIELDS)
             customize_label_fields_ctrl.Bind(wx.EVT_BUTTON, self.OnCustomizeLabelFields)

@@ -557,7 +557,11 @@ class RetrieveCSVDatasetThread(Thread):
         logger = logging.getLogger(__name__+".RetrieveCSVDatasetThread.run")
         logger.info("Starting")
         retrieval_details = {
-                'filename': self.filename
+                'filename': self.filename,
+                'id_field': self.id_field,
+                'url_field': self.url_field,
+                'datetime_field': self.datetime_field,
+                'datetime_tz': self.datetime_tz
                 }
         data = {}
         dataset = None
@@ -619,6 +623,16 @@ class RetrieveCSVDatasetThread(Thread):
             #save as a document dataset
             if len(data) > 0:
                 retrieval_details['row_count'] = row_num
+                if self.datetime_field != "":
+                    start_datetime = None
+                    end_datetime = None
+                    for key in data:
+                        if start_datetime == None or start_datetime > data[key]['created_utc']:
+                            start_datetime = data[key]['created_utc']
+                        if end_datetime == None or end_datetime < data[key]['created_utc']:
+                            end_datetime = data[key]['created_utc']
+                    retrieval_details['start_date'] = start_datetime
+                    retrieval_details['end_date'] = end_datetime
                 wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_CONSTRUCTING_MSG))
                 dataset = DatasetsUtilities.CreateDataset(self.dataset_name, dataset_source, self.dataset_type, self.language, retrieval_details, data, self.available_fields_list, self.label_fields_list, self.computation_fields_list, self.main_frame)
                 DatasetsUtilities.TokenizeDataset(dataset, self._notify_window, self.main_frame)
@@ -626,7 +640,6 @@ class RetrieveCSVDatasetThread(Thread):
                 status_flag = False
                 error_msg = GUIText.NO_DATA_AVAILABLE_ERROR
         else:
-            new_dataset_keys = []
             row_num = 0
             dataset_row_num = {}
             for row in file_data:
@@ -680,6 +693,16 @@ class RetrieveCSVDatasetThread(Thread):
                 for new_dataset_type in data:
                     cur_retrieval_details = copy.deepcopy(retrieval_details)
                     cur_retrieval_details['row_count'] = dataset_row_num[new_dataset_type]
+                    if self.datetime_field != "":
+                        start_datetime = None
+                        end_datetime = None
+                        for key in data[new_dataset_type]:
+                            if start_datetime == None or start_datetime > data[new_dataset_type][key]['created_utc']:
+                                start_datetime = data[new_dataset_type][key]['created_utc']
+                            if end_datetime == None or end_datetime < data[new_dataset_type][key]['created_utc']:
+                                end_datetime = data[new_dataset_type][key]['created_utc']
+                        cur_retrieval_details['start_date'] = start_datetime
+                        cur_retrieval_details['end_date'] = end_datetime
                     new_dataset = DatasetsUtilities.CreateDataset(self.dataset_name, dataset_source, new_dataset_type, self.language, retrieval_details, data[new_dataset_type], self.available_fields_list, self.label_fields_list, self.computation_fields_list, self.main_frame)
                     datasets[new_dataset.key] = new_dataset
                     DatasetsUtilities.TokenizeDataset(new_dataset, self._notify_window, self.main_frame)

@@ -151,15 +151,15 @@ class Main(Common):
     SHUTDOWN_BUSY_POOL = "Shutting down Process Pool"
     
     SAMPLE_CHANGE_NAME = "Change Sample Name"
-    NAME_MISSING_ERROR = "You must enter a Name."
-    FILENAME_MISSING_ERROR = "You must enter a Filename"
+    NAME_MISSING_ERROR = "Please enter a Name."
+    FILENAME_MISSING_ERROR = "Please enter a Filename"
     NAME_DUPLICATE_ERROR = "Same name already exists."\
                            "\nPlease choose a different name."
 
     DELETE_CONFIRMATION = " will be deleted. Are you sure you want to proceed?"
 
-    CONSUMER_KEY_MISSING_ERROR = "You must enter a Consumer Key."
-    CONSUMER_SECRET_MISSING_ERROR = "You must enter a Consumer Secret."
+    CONSUMER_KEY_MISSING_ERROR = "You need to enter a Consumer Key."
+    CONSUMER_SECRET_MISSING_ERROR = "You need to enter a Consumer Secret."
     INVALID_CREDENTIALS_ERROR = "Invalid credentials."
     INSUFFICIENT_CREDENTIALS_ERROR = "Your credentials do not allow access to this resource."
     
@@ -219,10 +219,10 @@ class Datasets(Common):
     NAME_TOOLTIP = "Choose a unique name for the new dataset"
     CONSUMER_KEY_TOOLTIP = "The API key of a project created in the Twitter Developer portal. Do not include quotes."
     CONSUMER_SECRET_TOOLTIP = "The API secret of a project created in the Twitter Developer portal. Do not include quotes."
-    START_DATE_TOOLTIP = "Must less than of equal to End Date"
-    END_DATE_TOOLTIP = "Must greater than of equal to Start Date"
-    DATE_ERROR = "Start Date must be before End Date"
-    TYPE_ERROR = "Dataset Type must be selected"
+    START_DATE_TOOLTIP = "Needs to be less than of equal to End Date"
+    END_DATE_TOOLTIP = "Needs to be greater than of equal to Start Date"
+    DATE_ERROR = "Start Date needs to be before End Date"
+    TYPE_ERROR = "Please select a Dataset Type"
     NAME_EXISTS_ERROR = "Name must be unique"
     RETRIEVAL_FAILED_ERROR = "Retrieval failed for one or more datasets.\nPlease try again later."
     RETRIEVAL_FAILED_SUBMISSION = "Failed to retrieve submissions for month "
@@ -258,9 +258,6 @@ class Datasets(Common):
                                                "\nPlease try again later."
     RETRIVAL_REDDIT_COMMENT_ERROR = "an error occured when retrieving Comments."\
                                             "\nPlease try again later."
-
-    GROUP_REQUEST = "Choose Field to use when Grouping "
-    GROUP_REQUEST_ERROR = 'You must select a single field to group data on'
 
     RETRIEVING_LABEL = "Retrieval Inprogress for Dataset: "
     RETRIEVING_BEGINNING_MSG = "Please wait while dataset is retrieved.\n"
@@ -309,6 +306,7 @@ class Datasets(Common):
     DESCRIPTION = "Description"
     DOCUMENT_NUM = "# of Documents"
     RETRIEVED_ON = "Retrieved On"
+    IMPORTED_ON = "Imported On"
     PREPARED_ON = "Prepared On"
     LANGUAGE = "Language"
     QUERY = "Query"
@@ -320,31 +318,34 @@ class Datasets(Common):
     #Retrieval specific fields
     START_DATE = "Start Date"
     END_DATE = "End Date"
+    START_DATETIME = "Start Date & Time"
+    END_DATETIME = "End Date & Time"
     UTC = "UTC"
 
     REDDIT_LABEL = "Reddit"
     REDDIT_SUBREDDIT = "www.reddit.com/r/"
     REDDIT_SUBREDDIT_TOOLTIP = "Exact case-sensitive spelling of the subreddit for retrieval."\
                                "\nIf you require multiple subreddits in the same dataset then seperate the subreddit names by comma."
-    REDDIT_SUBREDDIT_MISSING_ERROR = "You must enter a Subreddit."
+    REDDIT_SUBREDDIT_MISSING_ERROR = "Please enter a Subreddit."
     REDDIT_SUBMISSIONS = "Submissions"
     REDDIT_COMMENTS = "Comments"
     REDDIT_SUBMISSIONS_NUM = "# of Submissions"
     REDDIT_COMMENTS_NUM = "# of Comments"
+    REDDIT_CONTAINS_TEXT = "Contains Text"
 
     REDDIT_ARCHIVED = "Local Subreddit Archive"
     REDDIT_UPDATE_PUSHSHIFT = "Local Subreddit Archive updated using Pushshift.io"
     REDDIT_FULL_PUSHSHIFT = "Full retrieval from Pushshift.io"
     
-    REDDIT_UPDATED_REDDITAPI = "Local Subreddit Archive and updated using Pushshift.io and Reddit API"
+    REDDIT_UPDATE_REDDITAPI = "Local Subreddit Archive and updated using Pushshift.io and Reddit API"
     REDDIT_FULL_REDDITAPI = "Full retrieved from Pushshift.io and updated using Reddit API"
 
     TWITTER_LABEL = "Twitter"
     TWITTER_TWEETS_NUM = "# of Tweets"
     TWITTER_QUERY_HYPERLINK = "https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
-    TWITTER_QUERY_TOOLTIP = "Query must follow these rules: " + TWITTER_QUERY_HYPERLINK
+    TWITTER_QUERY_TOOLTIP = "Query needs to follow these rules: " + TWITTER_QUERY_HYPERLINK
     TWITTER_QUERY_RADIOBUTTON_TOOLTIP = "Use a Twitter query to create the dataset, using these rules: " + TWITTER_QUERY_HYPERLINK
-    TWITTER_QUERY_MISSING_ERROR = "You must enter a query."
+    TWITTER_QUERY_MISSING_ERROR = "You need to enter a query."
     TWITTER_QUERY_PLACEHOLDER = "ex. life OR technology from:google"
     TWITTER_TWEET_ATTRIBUTES = "Tweet Attributes"
     TWITTER_TWEET_ATTRIBUTES_RADIOBUTTON_TOOLTIP = "Use specific tweet attributes to create the dataset."
@@ -354,21 +355,21 @@ class Datasets(Common):
 
     CSV_LABEL = "CSV"
     CSV_ROWS_NUM = "# of Rows"
-    CSV_DATASETFIELD = "Dataset Field: "
+    CSV_DATASETFIELD = "Dataset Field"
     CSV_DATASETFIELD_TOOLTIP = "If the csv file contains data from a single source leave this field blank."\
                           "If the csv file contains multiple sources please choose a field differentiates those sources.\n"\
                           "This is important if dealing with multiple languages as different processing may be required."
-    CSV_IDFIELD = "Id Field: "
+    CSV_IDFIELD = "Id Field"
     CSV_IDFIELD_TOOLTIP = "Choose a field to use as id to documents.\n"\
                           "If id is unique then every row will be treated as a document.\n"\
                           "If id is not unique, rows with the same id will be merged."
-    CSV_IDFIELD_MISSING_ERROR = "You must choose an field to use as an id."
+    CSV_IDFIELD_MISSING_ERROR = "Please choose an field to use as an id."
     CSV_IDFIELD_DEFAULT = "<Assign based on Row Number>"
-    CSV_URLFIELD = "URL Field: "
+    CSV_URLFIELD = "URL Field"
     CSV_URLFIELD_TOOLTIP = "Choose a field to use as url to link to the online version of the documents."
-    CSV_DATETIMEFIELD = "Datetime Field: "
+    CSV_DATETIMEFIELD = "Datetime Field"
     CSV_DATETIMEFIELD_TOOLTIP = "Choose a field to use as datetime to documents."
-    CSV_DATETIMETZ_MISSING_ERROR = "Need to choose the time zone for the contents of the datatime field"
+    CSV_DATETIMETZ_MISSING_ERROR = "Please choose the time zone for the contents of the datatime field"
     
     LABEL_FIELDS = "Label Fields: "
     LABEL_FIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
@@ -465,13 +466,12 @@ class Samples(Main):
     #Sample
     SAMPLE_REQUEST = "Choose number of enteries to sample:"
 
-    NOT_SAVED_WARNING = "You must save the workspace to generate an LDA Model"
+    NOT_SAVED_WARNING = "You need to save the workspace to generate an LDA Model"
     CURRENTLY_GENERATING = "Currently Generating Model"
     INPROGRESS = "Inprogress"
     CHECK_STATUS = "Check Status"
     CHECK_STATUS_TOOLTIP = "Check if Model is Ready"
 
-    NAME_TOOLTIP = "Name must be unique, lowercase, and have no spaces."
     NUMBER_OF_TOPICS_CHOICE = "Choose Number of Topics: "
     NUMBER_OF_TOPICS_TOOLTIP = "Modelling more topics takes longer but may help identify less common topics"
     NUMBER_OF_TOPICS = "Number of Topics: "
@@ -492,7 +492,7 @@ class Samples(Main):
 
     GENERATE_WARNING = "\nWARNING: Do not shut down program or else model will not be created."
     GENERATE_NOTSAVED_WARNING = "Workspace has not yet been saved."\
-                                "\nTo generate this type of sample you must save the workspace"
+                                "\nTo generate this type of sample you need to save the workspace"
     GENERATING_DEFAULT_LABEL = "Generating Sample"
     GENERATING_DEFAULT_MSG = "Begining Generation."
     GENERATING_PREPARING_MSG = "\nDatasets are being prepared"
@@ -526,7 +526,7 @@ class Samples(Main):
 
 class Collection(Main, Datasets):
     ETHICS_CONFIRMATION = "I have considered "
-    ETHICS_CONFIRMATION_MISSING_ERROR = "Before proceeding we need to take time to consider "
+    ETHICS_CONFIRMATION_MISSING_ERROR = "Before proceeding please confirm that you have taken time to consider "
     ETHICS_COMMUNITY1_REDDIT = "the subreddit's guidelines, rules, and terms of use."
     ETHICS_COMMUNITY1 = "the online community's guidelines, rules, and terms of use."
     ETHICS_COMMUNITY2_REDDIT = "the impact of our project on the subreddit's community."
@@ -744,10 +744,8 @@ class Coding(Main):
     CONFIRM_DELETE_CODES = "Are you sure you want to delete selected codes?"
     CHANGE_COLOUR = "Change Colour"
 
-    NEW_CODE_NOTUNIQUE_ERROR = "New code has the same name as an existing code.\nCodes must have unique names."
-    NEW_CODE_BLANK_ERROR = "New code name is blank.\nCodes must have a unique name."
-    RENAME_CODE_NOTUNIQUE_ERROR = "Code's new name is the same name as an existing code.\nCodes must have unique names."
-    RENAME_CODE_BLANK_ERROR = "Code's new name is blank.\nCodes must have unique names."
+    NEW_CODE_BLANK_ERROR = "New code name is blank.\nCodes need to have a name."
+    RENAME_CODE_BLANK_ERROR = "Code's new name is blank.\nCodes need to have names."
 
     CREATE_QUOTATION = "Create Quotation"
 

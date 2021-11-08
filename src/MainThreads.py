@@ -596,3 +596,20 @@ class LoadThread(Thread):
                 db_conn.UpdateFieldKey(dataset_key, field.name, field.key)
             db_conn.RefreshStringTokensIncluded(dataset.key)
             db_conn.RefreshStringTokensRemoved(dataset.key)
+        
+        #update csv datasets to be able to show start and end dates of data if they were created
+        for dataset_key in result['datasets']:
+            dataset = result['datasets'][dataset_key]
+            if dataset.dataset_source == "CSV":
+                start_datetime = None
+                end_datetime = None
+                for key in data:
+                    if start_datetime == None or start_datetime > data[key]['created_utc']:
+                        start_datetime = data[key]['created_utc']
+                    if end_datetime == None or end_datetime < data[key]['created_utc']:
+                        end_datetime = data[key]['created_utc']
+                if start_datetime!= None and start_datetime != 0:
+                    dataset.retrieval_details['start_date'] = start_datetime
+                if end_datetime != None and end_datetime != 0:
+                    dataset.retrieval_details['end_date'] = end_datetime
+                dataset.last_changed_dt = datetime.now()
