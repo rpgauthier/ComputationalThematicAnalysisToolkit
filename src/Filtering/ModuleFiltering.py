@@ -10,6 +10,7 @@ import spacy.lang.en.stop_words
 import spacy.lang.fr.stop_words
 
 import wx
+import wx.lib.splitter as splitter
 #import wx.lib.agw.flatnotebook as FNB
 import External.wxPython.flatnotebook_fix as FNB
 import wx.lib.scrolledpanel
@@ -123,29 +124,28 @@ class FilterPanel(wx.Panel):
         self.autosave = False
 
         panel_splitter = wx.SplitterWindow(self, size=self.GetSize(), style=wx.SP_BORDER)
-        top_splitter = wx.SplitterWindow(panel_splitter, style=wx.SP_BORDER)
-        bottom_splitter = wx.SplitterWindow(panel_splitter, style=wx.SP_BORDER)
+        panel_splitter.SetMinimumPaneSize(100)
 
-        self.included_words_panel = IncludedWordsPanel(top_splitter, self, dataset,  style=wx.TAB_TRAVERSAL)
-        self.removed_words_panel = RemovedWordsPanel(top_splitter, self, dataset, style=wx.TAB_TRAVERSAL) 
-        self.rules_panel = RulesPanel(bottom_splitter, self, style=wx.TAB_TRAVERSAL)
-        self.impact_panel = ImpactPanel(bottom_splitter, self)
-        
-        top_splitter.SetMinimumPaneSize(20)
-        top_splitter.SetSashPosition(int(self.GetSize().GetWidth()/2))
-        top_splitter.SplitVertically(self.included_words_panel, self.removed_words_panel)
+        self.rules_panel = RulesPanel(panel_splitter, self, style=wx.TAB_TRAVERSAL)
 
-        bottom_splitter.SetMinimumPaneSize(20)
-        bottom_splitter.SetSashPosition(int(self.GetSize().GetWidth()/2))
-        bottom_splitter.SplitVertically(self.rules_panel, self.impact_panel)
-        
-        panel_splitter.SetMinimumPaneSize(20)
-        panel_splitter.SetSashPosition(int(self.GetSize().GetHeight()*3/4))
-        panel_splitter.SplitHorizontally(top_splitter, bottom_splitter)
+        #right_splitter = wx.SplitterWindow(panel_splitter, style=wx.SP_BORDER)
+        #right_splitter.SetMinimumPaneSize(100)
+        right_panel = wx.Panel(panel_splitter)
+        right_sizer = wx.GridSizer(rows=2, cols=1, gap=wx.Size(0, 0))
+        self.included_words_panel = IncludedWordsPanel(right_panel, self, dataset,  style=wx.TAB_TRAVERSAL)
+        right_sizer.Add(self.included_words_panel, 0, wx.EXPAND)
+        self.removed_words_panel = RemovedWordsPanel(right_panel, self, dataset, style=wx.TAB_TRAVERSAL) 
+        right_sizer.Add(self.removed_words_panel, 0, wx.EXPAND)
+        right_panel.SetSizerAndFit(right_sizer)
+
+        #right_splitter.SplitHorizontally(self.included_words_panel, self.removed_words_panel, int(self.GetSize().GetHeight()/2))
+        panel_splitter.SplitVertically(self.rules_panel, right_panel, int(self.GetSize().GetWidth()/2))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(panel_splitter, 1, wx.EXPAND)
         self.SetSizer(sizer)
+        self.Layout()
+        self.Fit()
 
         #create the menu for the filter
         main_frame = wx.GetApp().GetTopWindow()
@@ -662,13 +662,13 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         self.included_words_panel.UpdateWords()
         self.removed_words_panel.UpdateWords()
-        self.impact_panel.document_num_original.SetLabel(str(self.dataset.total_docs))
-        self.impact_panel.token_num_original.SetLabel(str(self.dataset.total_tokens))
-        self.impact_panel.uniquetoken_num_original.SetLabel(str(self.dataset.total_uniquetokens))
-        self.impact_panel.document_num_remaining.SetLabel(str(self.dataset.total_docs_remaining))
-        self.impact_panel.token_num_remaining.SetLabel(str(self.dataset.total_tokens_remaining))
-        self.impact_panel.uniquetoken_num_remaining.SetLabel(str(self.dataset.total_uniquetokens_remaining))
-        self.impact_panel.Update()
+        self.rules_panel.document_num_original.SetLabel(str(self.dataset.total_docs))
+        self.rules_panel.token_num_original.SetLabel(str(self.dataset.total_tokens))
+        self.rules_panel.uniquetoken_num_original.SetLabel(str(self.dataset.total_uniquetokens))
+        self.rules_panel.document_num_remaining.SetLabel(str(self.dataset.total_docs_remaining))
+        self.rules_panel.token_num_remaining.SetLabel(str(self.dataset.total_tokens_remaining))
+        self.rules_panel.uniquetoken_num_remaining.SetLabel(str(self.dataset.total_uniquetokens_remaining))
+        self.rules_panel.Update()
         logger.info("Finished")
 
     #Required Functions
@@ -888,6 +888,7 @@ class RulesPanel(wx.Panel):
         tokenization_sizer.Add(self.tokenization_choice, proportion=0, flag=wx.ALL, border=5)
         
         self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
+        
         remove_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.REMOVE,
                                            bitmap=wx.Bitmap(1, 1),
                                            shortHelp=GUIText.FILTERS_RULE_REMOVE_TOOLTIP)
@@ -914,7 +915,6 @@ class RulesPanel(wx.Panel):
                                                 shortHelp=GUIText.FILTERS_CREATE_TFIDF_RULE_TOOLTIP)
         self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnCreateTfidfFilter, tfidffilter_tool)
 
-
         self.pauserules_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_AUTOAPPLY_PAUSE,
                                                     bitmap=wx.Bitmap(1,1),
                                                     shortHelp=GUIText.FILTERS_AUTOAPPLY_TOOLTIP,
@@ -937,6 +937,42 @@ class RulesPanel(wx.Panel):
 
         self.rules_list = DatasetsGUIs.FilterRuleListCtrl(self)
         sizer.Add(self.rules_list, proportion=1, flag=wx.EXPAND, border=5)
+
+        impact_sizer = wx.BoxSizer()
+        sizer.Add(impact_sizer)
+
+        document_num_sizer = wx.BoxSizer()
+        document_num_label1 = wx.StaticText(self, label=GUIText.FILTERS_NUM_DOCS+":")
+        document_num_sizer.Add(document_num_label1, 0, wx.ALL, 5)
+        self.document_num_remaining = wx.StaticText(self, label="")
+        document_num_sizer.Add(self.document_num_remaining, 0, wx.ALL, 5)
+        document_num_label2 = wx.StaticText(self, label=" / ")
+        document_num_sizer.Add(document_num_label2, 0, wx.ALL, 5)
+        self.document_num_original = wx.StaticText(self, label="")
+        document_num_sizer.Add(self.document_num_original, 0, wx.ALL, 5)
+        impact_sizer.Add(document_num_sizer)
+
+        token_num_sizer = wx.BoxSizer()
+        token_num_label1 = wx.StaticText(self, label=GUIText.FILTERS_NUM_WORDS+":")
+        token_num_sizer.Add(token_num_label1, 0, wx.ALL, 5)
+        self.token_num_remaining = wx.StaticText(self, label="")
+        token_num_sizer.Add(self.token_num_remaining, 0, wx.ALL, 5)
+        token_num_label2 = wx.StaticText(self, label=" / ")
+        token_num_sizer.Add(token_num_label2, 0, wx.ALL, 5)
+        self.token_num_original = wx.StaticText(self, label="")
+        token_num_sizer.Add(self.token_num_original, 0, wx.ALL, 5)
+        impact_sizer.Add(token_num_sizer)
+
+        uniquetoken_num_sizer = wx.BoxSizer()
+        uniquetoken_num_label1 = wx.StaticText(self, label=GUIText.FILTERS_NUM_UNIQUEWORDS+":")
+        uniquetoken_num_sizer.Add(uniquetoken_num_label1, 0, wx.ALL, 5)
+        self.uniquetoken_num_remaining = wx.StaticText(self, label="")
+        uniquetoken_num_sizer.Add(self.uniquetoken_num_remaining, 0, wx.ALL, 5)
+        uniquetoken_num_label2 = wx.StaticText(self, label=" / ")
+        uniquetoken_num_sizer.Add(uniquetoken_num_label2, 0, wx.ALL, 5)
+        self.uniquetoken_num_original = wx.StaticText(self, label="")
+        uniquetoken_num_sizer.Add(self.uniquetoken_num_original, 0, wx.ALL, 5)
+        impact_sizer.Add(uniquetoken_num_sizer)
 
         border = wx.BoxSizer()
         border.Add(sizer, 1, wx.EXPAND|wx.ALL, 5)
@@ -1045,53 +1081,6 @@ class RulesPanel(wx.Panel):
             if "R" not in state:
                 rules.append(rule)
         return rules
-
-class ImpactPanel(wx.Panel):
-    def __init__(self, parent, parent_frame):
-        wx.Panel.__init__(self, parent)
-
-        self.label_box = wx.StaticBox(self, label=GUIText.IMPACT_LABEL)
-        label_font = wx.Font(Constants.LABEL_SIZE, Constants.LABEL_FAMILY, Constants.LABEL_STYLE, Constants.LABEL_WEIGHT, underline=Constants.LABEL_UNDERLINE)
-        self.label_box.SetFont(label_font)
-
-        sizer = wx.StaticBoxSizer(self.label_box, wx.VERTICAL)
-        
-        document_num_sizer = wx.BoxSizer()
-        document_num_label1 = wx.StaticText(self, label=GUIText.FILTERS_NUM_DOCS+":")
-        document_num_sizer.Add(document_num_label1, 0, wx.ALL, 5)
-        self.document_num_remaining = wx.StaticText(self, label="")
-        document_num_sizer.Add(self.document_num_remaining, 0, wx.ALL, 5)
-        document_num_label2 = wx.StaticText(self, label=" / ")
-        document_num_sizer.Add(document_num_label2, 0, wx.ALL, 5)
-        self.document_num_original = wx.StaticText(self, label="")
-        document_num_sizer.Add(self.document_num_original, 0, wx.ALL, 5)
-        sizer.Add(document_num_sizer)
-
-        token_num_sizer = wx.BoxSizer()
-        token_num_label1 = wx.StaticText(self, label=GUIText.FILTERS_NUM_WORDS+":")
-        token_num_sizer.Add(token_num_label1, 0, wx.ALL, 5)
-        self.token_num_remaining = wx.StaticText(self, label="")
-        token_num_sizer.Add(self.token_num_remaining, 0, wx.ALL, 5)
-        token_num_label2 = wx.StaticText(self, label=" / ")
-        token_num_sizer.Add(token_num_label2, 0, wx.ALL, 5)
-        self.token_num_original = wx.StaticText(self, label="")
-        token_num_sizer.Add(self.token_num_original, 0, wx.ALL, 5)
-        sizer.Add(token_num_sizer)
-
-        uniquetoken_num_sizer = wx.BoxSizer()
-        uniquetoken_num_label1 = wx.StaticText(self, label=GUIText.FILTERS_NUM_UNIQUEWORDS+":")
-        uniquetoken_num_sizer.Add(uniquetoken_num_label1, 0, wx.ALL, 5)
-        self.uniquetoken_num_remaining = wx.StaticText(self, label="")
-        uniquetoken_num_sizer.Add(self.uniquetoken_num_remaining, 0, wx.ALL, 5)
-        uniquetoken_num_label2 = wx.StaticText(self, label=" / ")
-        uniquetoken_num_sizer.Add(uniquetoken_num_label2, 0, wx.ALL, 5)
-        self.uniquetoken_num_original = wx.StaticText(self, label="")
-        uniquetoken_num_sizer.Add(self.uniquetoken_num_original, 0, wx.ALL, 5)
-        sizer.Add(uniquetoken_num_sizer)
-
-        border = wx.BoxSizer()
-        border.Add(sizer, 1, wx.EXPAND|wx.ALL, 5)
-        self.SetSizerAndFit(border)
 
 class CreateCountFilterDialog(wx.Dialog):
     def __init__(self, parent, dataset):
