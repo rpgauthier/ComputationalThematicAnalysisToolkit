@@ -302,7 +302,7 @@ class LoadThread(Thread):
                 for field_key in dataset.computational_fields:
                     dataset.computational_fields[field_key]._uuid = str(uuid.uuid4())
                 for document_key in dataset.documents:
-                    dataset.documents[document_key._uuid] = str(uuid.uuid4())
+                    dataset.documents[document_key]._uuid = str(uuid.uuid4())
 
     def UpgradeDatabase(self, result, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATABASE))
