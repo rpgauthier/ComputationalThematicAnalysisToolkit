@@ -603,11 +603,11 @@ class LoadThread(Thread):
             if dataset.dataset_source == "CSV":
                 start_datetime = None
                 end_datetime = None
-                for key in data:
-                    if start_datetime == None or start_datetime > data[key]['created_utc']:
-                        start_datetime = data[key]['created_utc']
-                    if end_datetime == None or end_datetime < data[key]['created_utc']:
-                        end_datetime = data[key]['created_utc']
+                for key in dataset.data:
+                    if start_datetime == None or start_datetime > dataset.data[key]['created_utc']:
+                        start_datetime = dataset.data[key]['created_utc']
+                    if end_datetime == None or end_datetime < dataset.data[key]['created_utc']:
+                        end_datetime = dataset.data[key]['created_utc']
                 if start_datetime!= None and start_datetime != 0:
                     dataset.retrieval_details['start_date'] = start_datetime
                 if end_datetime != None and end_datetime != 0:
