@@ -340,7 +340,7 @@ class DocumentListPanel(wx.Panel):
         return saved_data
 
 class DocumentDialog(wx.Dialog):
-    def __init__(self, parent, document, size=wx.DefaultSize):
+    def __init__(self, parent, document, size=wx.Size((600,600))):
         logger = logging.getLogger(__name__+".DocumentDialog["+str(document.key)+"].__init__")
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=str(document.doc_id), size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)

@@ -275,11 +275,11 @@ class MainFrame(wx.Frame):
                 self.Freeze()
 
                 #reset objects
-                for key in self.codeconnections_dialogs:
-                    self.codeconnections_dialogs[key].Destroy()    
-                self.codeconnections_dialogs.clear()
                 for key in self.document_dialogs:
                     self.document_dialogs[key].Destroy()    
+                self.document_dialogs.clear()
+                for key in self.codeconnections_dialogs:
+                    self.codeconnections_dialogs[key].Destroy()    
                 self.codeconnections_dialogs.clear()
                 for key in self.codes:
                     self.codes[key].DestroyObject()
@@ -358,6 +358,14 @@ class MainFrame(wx.Frame):
                     self.SetTitle(GUIText.APP_NAME+" - "+file_dialog.GetFilename())
 
                     #reset objects
+                    for doc_key in list(self.document_dialogs.keys()):
+                        doc_dialog = self.document_dialogs[doc_key]
+                        doc_dialog.Destroy()
+                    self.document_dialogs.clear()
+                    for code_key in list(self.codeconnections_dialogs.keys()):
+                        code_dialog = self.codeconnections_dialogs[code_key]
+                        code_dialog.Destroy()
+                    self.codeconnections_dialogs.clear()
                     for key in self.codes:
                         self.codes[key].DestroyObject()
                     self.codes.clear()
@@ -420,6 +428,14 @@ class MainFrame(wx.Frame):
                 self.SetTitle(GUIText.APP_NAME+" - Last AutoSave")
 
                 #reset objects
+                for doc_key in list(self.document_dialogs.keys()):
+                    doc_dialog = self.document_dialogs[doc_key]
+                    doc_dialog.Destroy()
+                self.document_dialogs.clear()
+                for code_key in list(self.codeconnections_dialogs.keys()):
+                    code_dialog = self.codeconnections_dialogs[code_key]
+                    code_dialog.Destroy()
+                self.codeconnections_dialogs.clear()
                 for key in self.codes:
                     self.codes[key].DestroyObject()
                 self.codes.clear()
@@ -643,6 +659,14 @@ class MainFrame(wx.Frame):
         logger.info("Starting")
 
         #reset objects
+        for doc_key in list(self.document_dialogs.keys()):
+            doc_dialog = self.document_dialogs[doc_key]
+            doc_dialog.Destroy()
+        self.document_dialogs.clear()
+        for code_key in list(self.codeconnections_dialogs.keys()):
+            code_dialog = self.codeconnections_dialogs[code_key]
+            code_dialog.Destroy()
+        self.codeconnections_dialogs.clear()
         for key in self.codes:
             self.codes[key].DestroyObject()
         self.codes.clear()
