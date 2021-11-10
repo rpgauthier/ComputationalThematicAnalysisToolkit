@@ -76,7 +76,7 @@ class Common:
     NOT_USEFUL_HELP = "Flags selected entries usefulness as not useful"
 
     SEARCH = "Search"
-    SEARCH_COUNT_LABEL = "# of Results: "
+    SEARCH_RESULTS_LABEL = " Results"
     SHOW = "Show"
     GOTO = "Go to"
     PAGE = "Page"
@@ -316,6 +316,10 @@ class Datasets(Common):
     ACCOUNTS = "Accounts"
 
     #Retrieval specific fields
+    DATASET_CONFIGURATIONS = "Dataset Configurations"
+    DATA_CONSTRAINTS = "Data Constraints"
+    SPECIAL_DATA_FIELDS = "Special Data Fields"
+    ETHICAL_CONSIDERATIONS = "Ethical Considerations"
     START_DATE = "Start Date"
     END_DATE = "End Date"
     START_DATETIME = "Start Date & Time"
@@ -374,7 +378,7 @@ class Datasets(Common):
     LABEL_FIELDS = "Label Fields"
     LABEL_FIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
                              "\nIf a field occurs multiple times for the same id, the first occurance will be used."
-    COMBINED_LABEL_FIELDS = "Combined Label Fields: "
+    COMBINED_LABEL_FIELDS = "Combined Label Fields"
     COMBINED_LABEL_FIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
                                       "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
     COMPUTATIONAL_FIELDS = "Computational Fields"
@@ -437,8 +441,8 @@ class Samples(Main):
     SPLIT_TOPIC_SHORTHELP = "Remove selected topics from their Merged Topic"
     REMOVE_TOPIC_LABEL = "Remove Topics"
     REMOVE_TOPIC_SHORTHELP = "Remove selected topics from the model"
-    PROBABILITY_CUTOFF_LABEL = "Probability Cutoff: "
-    PROBABILITY_CUTOFF_TOOLTIP = "Include documents in a topic when the probability of the topic being present in the document is greater or equal to the cutoff"
+    PROBABILITY_CUTOFF_LABEL = "Probability Cutoff "
+    PROBABILITY_CUTOFF_TOOLTIP = "Include documents in a topic when the model predicts the probability of the topic being present in the document is greater or equal to the cutoff"
 
     RESTORE_RULES = "Restore Rules"
     RESTORE_RULES_TOOLTIP = "Restores the rules of the dataset back to the version used when this sample was generated."
@@ -472,13 +476,13 @@ class Samples(Main):
     CHECK_STATUS = "Check Status"
     CHECK_STATUS_TOOLTIP = "Check if Model is Ready"
 
-    NUMBER_OF_TOPICS_CHOICE = "Choose Number of Topics: "
+    NUMBER_OF_TOPICS_CHOICE = "Choose Number of Topics"
     NUMBER_OF_TOPICS_TOOLTIP = "Modelling more topics takes longer but may help identify less common topics"
-    NUMBER_OF_TOPICS = "Number of Topics: "
-    NUMBER_OF_PASSES_CHOICE = "Choose Number of Passes: "
+    NUMBER_OF_TOPICS = "Number of Topics"
+    NUMBER_OF_PASSES_CHOICE = "Choose Number of Passes"
     NUMBER_OF_PASSES_TOOLTIP = "More passes causes modelling to take longer but may help produce more cohesive topics"
-    NUMBER_OF_PASSES = "Number of Passes: "
-    NUMBER_OF_DOCUMENTS = "Number of Documents: "
+    NUMBER_OF_PASSES = "Number of Passes"
+    NUMBER_OF_DOCUMENTS = "Number of Documents"
     DATASET = Datasets.DATASET
     DATASET_MISSING_ERROR = "Dataset was not chosen." \
                             "\nPlease choose a dataset for the model."
@@ -601,10 +605,9 @@ class Filtering(Main, Datasets):
     SAMPLES_LABEL = "Samples List"
 
     FILTERS_PREPARING_MSG = "Please wait while datasets are prepared for token filtering for field: "
-    FILTERS_ENTRIES = "Entries"
     FILTERS_FIELDS = "Fields"
     FILTERS_WORDS = "Words"
-    FILTERS_POS = "Parts of Speech"
+    FILTERS_POS = "Parts-of-Speech"
     FILTERS_NUM_WORDS = "# of Words"
     FILTERS_PER_WORDS = "% of Words"
     FILTERS_NUM_DOCS = "# of Docs"
@@ -619,36 +622,37 @@ class Filtering(Main, Datasets):
     FILTERS_ANY = '<ANY>'
     FILTERS_REMOVE = 'Remove'
     FILTERS_INCLUDE = 'Include'
-    FILTERS_REMOVE_TOOLTIP = "Remove selection based on "
-    FILTERS_READD_TOOLTIP = "Readd selection based on "
-    FILTERS_REMOVE_ENTRIES = "Remove " + FILTERS_ENTRIES
-    FILTERS_REMOVE_ENTRIES_TOOLTIP = FILTERS_REMOVE_TOOLTIP + FILTERS_ENTRIES
-    FILTERS_REMOVE_WORDS = "Remove " + FILTERS_WORDS
-    FILTERS_REMOVE_WORDS_TOOLTIP = FILTERS_REMOVE_TOOLTIP + FILTERS_WORDS
-    FILTERS_REMOVE_POS = "Remove " + FILTERS_POS
-    FILTERS_REMOVE_POS_TOOLTIP = FILTERS_REMOVE_TOOLTIP + FILTERS_POS
-    FILTERS_READD_ENTRIES = "Add " + FILTERS_ENTRIES
-    FILTERS_READD_ENTRIES_TOOLTIP = FILTERS_READD_TOOLTIP + FILTERS_ENTRIES
-    FILTERS_READD_WORDS = "Add " + FILTERS_WORDS
-    FILTERS_READD_WORDS_TOOLTIP = FILTERS_READD_TOOLTIP + FILTERS_WORDS
-    FILTERS_READD_POS = "Add " + FILTERS_POS
-    FILTERS_READD_POS_TOOLTIP = FILTERS_READD_TOOLTIP + FILTERS_POS
+    FILTERS_REMOVE_TOOLTIP = "Add new remove rules based on the "
+    FILTERS_READD_TOOLTIP = "Add new include rules based on the "
+    FILTERS_REMOVE_ROWS = "Remove Selected Rows"
+    FILTERS_REMOVE_ROWS_TOOLTIP = FILTERS_REMOVE_TOOLTIP + "Word and Part-of-Speech pair of selected rows"
+    FILTERS_REMOVE_WORDS = "Remove Selected Words"
+    FILTERS_REMOVE_WORDS_TOOLTIP = FILTERS_REMOVE_TOOLTIP + "Word of selected rows"
+    FILTERS_REMOVE_POS = "Remove Selected Parts-of-Speech"
+    FILTERS_REMOVE_POS_TOOLTIP = FILTERS_REMOVE_TOOLTIP + "Part-of-Speech of selected rows"
+    FILTERS_ADD_ROWS = "Include Rows"
+    FILTERS_ADD_ENTRIES_TOOLTIP = FILTERS_READD_TOOLTIP + "Word and Part-of-Speech of selected rows"
+    FILTERS_ADD_WORDS = "Include Selected Words"
+    FILTERS_ADD_WORDS_TOOLTIP = FILTERS_READD_TOOLTIP + "Word of selected rows"
+    FILTERS_ADD_POS = "Include Selected Part-of-Speech"
+    FILTERS_ADD_POS_TOOLTIP = FILTERS_READD_TOOLTIP + "Part-of-Speech of selected rows"
     FILTERS_ENTRIES_LIST = "Entries List"
     FILTERS_ENTRIES_TREEMAP1 = "Top "
     FILTERS_ENTRIES_TREEMAP2 = " Entries (as per # of Words)"
     FILTERS_ENTRIES_TREEMAP_LABEL = "Entries Treemap"
     FILTERS_INCLUDED_LIST = "Included List"
     FILTERS_REMOVED_LIST = "Removed List"
-    FILTERS_TOKENIZER = "Tokenizer:"
-    FILTERS_METHOD = "Method:"
+    FILTERS_TOKENIZER = "Tokenizer"
+    FILTERS_METHOD = "Method"
     FILTERS_RAWTOKENS = "Raw Tokens"
-    FILTERS_STEMMER = "Stemmer: "
-    FILTERS_LEMMATIZER = "Lemmatizer: "
+    FILTERS_STEMMER = "Stemmer"
+    FILTERS_LEMMATIZER = "Lemmatizer"
     FILTERS_RULES = "Rules"
     FILTERS_RULES_LIST = "Rules List"
     FILTERS_RULES_STEP = "Step"
     FILTERS_RULES_ACTION = "Action"
-    FILTERS_RULE_REMOVE_TOOLTIP = "Selected rules will be removed"
+    FILTERS_RULES_DELETE = "Delete Rules"
+    FILTERS_RULE_DELETE_TOOLTIP = "Selected rules will be deleted"
     FILTERS_RULE_UP = "Move Up"
     FILTERS_RULE_UP_TOOLTIP = "Selected rules will each occur later"
     FILTERS_RULE_DOWN = "Move Down"
@@ -659,23 +663,28 @@ class Filtering(Main, Datasets):
     FILTERS_WORD_SEARCH = "Word Search"
     FILTERS_POS_SEARCH = "Part of Speach Search"
 
-    FILTERS_CREATE_RULE_FIELD = "Apply to Field:"
-    FILTERS_CREATE_RULE_FIELD_TOOLTIP = "leave blank to apply to all fields"    
-    FILTERS_CREATE_RULE_WORD = "Apply to Word:"
+    FILTERS_CREATE_RULE_FIELD = "Field"
+    FILTERS_CREATE_RULE_FIELD_TOOLTIP = "leave blank to apply to all fields"
+    FILTERS_CREATE_RULE_FIELD_ERROR = "Invalid field selected."
+    FILTERS_CREATE_RULE_WORD = "Word"
     FILTERS_CREATE_RULE_WORD_TOOLTIP = "leave blank to apply to all words"
-    FILTERS_CREATE_RULE_POS = "Apply to POS:"
-    FILTERS_CREATE_RULE_POS_TOOLTIP = "leave blank to apply to any pos"
-    FILTERS_CREATE_RULE_RULE = "Rule:"
+    FILTERS_CREATE_RULE_POS = "Part-of-Speech"
+    FILTERS_CREATE_RULE_POS_TOOLTIP = "leave blank to apply to all parts of speech"
+    FILTER_CREATE_RULE_ANY = "<ANY>"
+    FILTERS_CREATE_RULE_ACTION = "Action"
+    FILTERS_CREATE_RULE = "Create Rule"
+    FILTERS_CREATE_RULE_TOOLTIP = "Create a new generic rule or expand dropdown to create a custom rule"
+    FILTERS_CREATE_RULE_INCOMPLETE_ERROR = "Incomplete rule.\nPlease make sure action field is filled out."
     FILTERS_CREATE_COUNT_RULE = "Create Count Rule"
-    FILTERS_CREATE_COUNT_RULE_TOOLTIP = "Create a New Count Rule"
+    FILTERS_CREATE_COUNT_RULE_TOOLTIP = "Create a new count rule using either the # of words or the # of documents"
     FILTERS_CREATE_COUNT_RULE_COLUMN_TOOLTIP = "Choose a numeric column"
     FILTERS_CREATE_COUNT_RULE_OPERATION_TOOLTIP = "Choose a comparision operation"
     FILTERS_CREATE_COUNT_RULE_NUMBER_TOOLTIP = "Set the number to compare against"
-    FILTERS_CREATE_COUNT_RULE_INCOMPLETE_ERROR = "Incomplete count rule.\nPlease make sure all Rule fields are filled out."
-    FILTERS_CREATE_TFIDF_RULE = "Create TFIDF Rule"
-    FILTERS_CREATE_TFIDF_RULE_TOOLTIP = "Create a New TFIDF Rule"
-    FILTERS_CREATE_TFIDF_RULE_NUMBER_TOOLTIP = "Set the token rank to use when deciding what tfidf value to use"
-    FILTERS_CREATE_TFIDF_RULE_INCOMPLETE_ERROR = "Incomplete tfidf rule.\nPlease make sure all Rule fields are filled out."
+    FILTERS_CREATE_COUNT_RULE_INCOMPLETE_ERROR = "Incomplete count rule.\nPlease make sure all action fields are filled out."
+    FILTERS_CREATE_TFIDF_RULE = "Create TF-IDF Rule"
+    FILTERS_CREATE_TFIDF_RULE_TOOLTIP = "Create a new tf-idf rule that uses the individual tokens' tf-idf values"
+    FILTERS_CREATE_TFIDF_RULE_NUMBER_TOOLTIP = "Set the percentage cutoff to use to compare against tf-idf values"
+    FILTERS_CREATE_TFIDF_RULE_INCOMPLETE_ERROR = "Incomplete tf-idf rule.\nPlease make sure all action fields are filled out."
 
     FILTERS_AUTOAPPLY_PAUSE = "Pause Auto-Apply"
     FILTERS_AUTOAPPLY_RESUME = "Resume Auto-Apply"
@@ -717,9 +726,7 @@ class Filtering(Main, Datasets):
     SAVE_FILTERING_BUSY_MSG = "Saving Data Cleaning & Filtering for dataset: "
 
 class Sampling(Samples):
-    SAMPLE_NAME = "Name of Sample:"
-
-
+    SAMPLE_NAME = "Sample Name "
 
 class Coding(Main):
     CODING_NOTES_LABEL = "Coding Notes"

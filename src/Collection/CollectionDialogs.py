@@ -74,7 +74,9 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
             name_sizer.Add(self.name_ctrl)
             sizer.Add(name_sizer, 0, wx.ALL, 5)
 
-        datasetconfig_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Dataset Configurations")
+        datasetconfig_box = wx.StaticBox(self, label=GUIText.DATASET_CONFIGURATIONS)
+        datasetconfig_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        datasetconfig_sizer = wx.StaticBoxSizer(datasetconfig_box, wx.VERTICAL)
         sizer.Add(datasetconfig_sizer, 0, wx.ALL|wx.EXPAND, 5)
 
         #TODO enhance ability to integrate multiple subreddits
@@ -105,7 +107,9 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         language_sizer.Add(self.language_ctrl)
         h_sizer.Add(language_sizer, 0, wx.ALL, 5)
 
-        dataconstraints_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Data Constraints")
+        dataconstraints_box = wx.StaticBox(self, label=GUIText.DATA_CONSTRAINTS)
+        dataconstraints_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        dataconstraints_sizer = wx.StaticBoxSizer(dataconstraints_box, wx.VERTICAL)
         sizer.Add(dataconstraints_sizer, 0, wx.ALL|wx.EXPAND, 5)
 
         start_date_label = wx.StaticText(self, label=GUIText.START_DATE+" ")
@@ -145,7 +149,10 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.archived_radioctrl.SetToolTip(GUIText.REDDIT_ARCHIVED_TOOLTIP)
         self.full_pushshift_radioctrl = wx.RadioButton(self, label=GUIText.REDDIT_FULL_PUSHSHIFT)
         self.full_pushshift_radioctrl.SetToolTip(GUIText.REDDIT_FULL_PUSHSHIFT_TOOLTIP)
-        source_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.SOURCE+" ")
+
+        source_box = wx.StaticBox(self, label=GUIText.SOURCE)
+        source_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        source_sizer = wx.StaticBoxSizer(source_box, wx.VERTICAL)
         source_sizer.Add(self.update_pushshift_radioctrl, 0, wx.ALL, 5)
         #source_sizer.Add(self.update_redditapi_radioctrl)
         #source_sizer.Add(self.full_redditapi_radioctrl)
@@ -168,7 +175,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         else:
             label_fields_sizer.ShowItems(False)
 
-        computational_fields_label = wx.StaticText(self, label=GUIText.COMPUTATIONAL_FIELDS+":")
+        computational_fields_label = wx.StaticText(self, label=GUIText.COMPUTATIONAL_FIELDS)
         self.computational_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
         self.computational_fields_ctrl.AppendColumn(GUIText.FIELD)
         self.computational_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
@@ -183,7 +190,9 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         else:
             computational_fields_sizer.ShowItems(False)
 
-        ethics_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Ethical Considerations")
+        ethics_box = wx.StaticBox(self, label=GUIText.ETHICAL_CONSIDERATIONS)
+        ethics_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        ethics_sizer = wx.StaticBoxSizer(ethics_box, wx.VERTICAL)
         self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1_REDDIT)
         ethics_sizer.Add(self.ethics_community1_ctrl, 0, wx.ALL, 5)
         self.ethics_community2_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY2_REDDIT)
@@ -489,7 +498,8 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         attributes_sizer.Add(attributes_options_sizer, 0, wx.EXPAND)
 
         # add 'search by' elements to box
-        self.search_by_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.SEARCH_BY+": ")
+        search_box = wx.StaticBox(self, label=GUIText.SEARCH_BY)
+        self.search_by_sizer = wx.StaticBoxSizer(search_box, wx.VERTICAL)
         self.search_by_sizer.Add(query_sizer, 0, wx.EXPAND)
         self.search_by_sizer.Add(attributes_sizer, 0, wx.EXPAND)
 
@@ -556,7 +566,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         else:
             label_fields_sizer.ShowItems(False)
 
-        computational_fields_label = wx.StaticText(self, label=GUIText.COMPUTATIONAL_FIELDS+":")
+        computational_fields_label = wx.StaticText(self, label=GUIText.COMPUTATIONAL_FIELDS)
         self.computational_fields_ctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
         self.computational_fields_ctrl.AppendColumn(GUIText.FIELD)
         self.computational_fields_ctrl.AppendColumn(GUIText.DESCRIPTION)
@@ -887,8 +897,11 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
             self.name_sizer.Add(name_label, 0, wx.ALIGN_CENTRE_VERTICAL)
             self.name_sizer.Add(self.name_ctrl)
             sizer.Add(self.name_sizer, 0, wx.ALL, 5)
-
-        datasetconfig_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Dataset Configurations")
+        
+        
+        datasetconfig_box = wx.StaticBox(self, label=GUIText.DATASET_CONFIGURATIONS)
+        datasetconfig_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        datasetconfig_sizer = wx.StaticBoxSizer(datasetconfig_box, wx.VERTICAL)
         sizer.Add(datasetconfig_sizer, 0, wx.EXPAND|wx.ALL, 5)
 
         filename_label = wx.StaticText(self, label=GUIText.FILENAME + " ")
@@ -917,7 +930,9 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.language_sizer.Add(self.language_ctrl)
         datasetconfig_sizer.Add(self.language_sizer, 0, wx.ALL, 5)
 
-        datafields_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Special Data Fields")
+        datafields_box = wx.StaticBox(self, label=GUIText.SPECIAL_DATA_FIELDS)
+        datafields_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        datafields_sizer = wx.StaticBoxSizer(datafields_box, wx.VERTICAL)
         sizer.Add(datafields_sizer, 0, wx.EXPAND|wx.ALL, 5)
 
         if main_frame.options_dict['multipledatasets_mode']:
@@ -1003,7 +1018,9 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.computation_fields_combined_ctrl.SetDropTarget(computation_fields_combined_dt)
 
         # ethics/terms of use
-        ethics_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, "Ethical Considerations")
+        ethics_box = wx.StaticBox(self, label=GUIText.ETHICAL_CONSIDERATIONS)
+        ethics_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        ethics_sizer = wx.StaticBoxSizer(ethics_box, wx.VERTICAL)
         self.ethics_community1_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY1)
         ethics_sizer.Add(self.ethics_community1_ctrl, 0, wx.ALL, 5)
         self.ethics_community2_ctrl = wx.CheckBox(self, label=GUIText.ETHICS_CONFIRMATION+GUIText.ETHICS_COMMUNITY2)

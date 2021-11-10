@@ -7,6 +7,7 @@ import nltk
 
 import wx
 
+import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
 import Common.Objects.Datasets as Datasets
 import Common.Database as Database
@@ -208,7 +209,21 @@ def ApplyFilterAllRules(dataset, main_frame):
     logger.info("Starting")
     db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
     wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_BUSY_MSG))
-    db_conn.ApplyAllDatasetRules(dataset.key, dataset.filter_rules)
+    mapped_rules = []
+    for field_name, word, pos, action in dataset.filter_rules:
+        include = False
+        if field_name != Constants.FILTER_RULE_ANY:
+            for field in dataset.computational_fields.values():
+                if field.name == field_name:
+                    field_name = field.key
+                    include = True
+                    break
+        else:
+            include = True
+        if include:
+            mapped_rules.append((field_name, word, pos, action))
+
+    db_conn.ApplyAllDatasetRules(dataset.key, mapped_rules)
     db_conn.RefreshStringTokensIncluded(dataset.key)
     db_conn.RefreshStringTokensRemoved(dataset.key)
     wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_UPDATING_COUNTS))
@@ -223,14 +238,27 @@ def ApplyFilterNewRules(dataset, main_frame, new_rules):
     logger = logging.getLogger(__name__+".ApplyFilterNewRules")
     logger.info("Starting")
     if len(new_rules) > 0:
-            db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
-            wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_BUSY_MSG))
-            db_conn.ApplyNewDatasetRules(dataset.key, new_rules)
-            db_conn.RefreshStringTokensIncluded(dataset.key)
-            db_conn.RefreshStringTokensRemoved(dataset.key)
-            wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_UPDATING_COUNTS))
-            included_counts = db_conn.GetIncludedStringTokensCounts(dataset.key)
-            dataset.total_docs_remaining = included_counts['documents']
-            dataset.total_tokens_remaining = included_counts['tokens']
-            dataset.total_uniquetokens_remaining = included_counts['unique_tokens']
+        db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
+        wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_BUSY_MSG))
+        mapped_rules = []
+        for field_name, word, pos, action in new_rules:
+            include = False
+            if field_name != Constants.FILTER_RULE_ANY:
+                for field in dataset.computational_fields.values():
+                    if field.name == field_name:
+                        field_name = field.key
+                        include = True
+                        break
+            else:
+                include = True
+            if include:
+                mapped_rules.append((field_name, word, pos, action))
+        db_conn.ApplyNewDatasetRules(dataset.key, mapped_rules)
+        db_conn.RefreshStringTokensIncluded(dataset.key)
+        db_conn.RefreshStringTokensRemoved(dataset.key)
+        wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_UPDATING_COUNTS))
+        included_counts = db_conn.GetIncludedStringTokensCounts(dataset.key)
+        dataset.total_docs_remaining = included_counts['documents']
+        dataset.total_tokens_remaining = included_counts['tokens']
+        dataset.total_uniquetokens_remaining = included_counts['unique_tokens']
     logger.info("Finished")

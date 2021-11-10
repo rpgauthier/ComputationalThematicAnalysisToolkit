@@ -129,156 +129,247 @@ class DatasetPanel(wx.Panel):
         self.dataset = dataset
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-
         details_sizer1 = wx.BoxSizer(wx.HORIZONTAL)
-        details_sizer2 = wx.BoxSizer(wx.HORIZONTAL)
-        details_sizer3 = wx.BoxSizer(wx.HORIZONTAL)    
         self.sizer.Add(details_sizer1, 0, wx.ALL, 5)
+        details_sizer2 = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(details_sizer2, 0, wx.ALL, 5)
+        details_sizer3 = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(details_sizer3, 0, wx.ALL, 5)
 
         main_frame = wx.GetApp().GetTopWindow()
         if main_frame.options_dict['multipledatasets_mode']:
             name_sizer = wx.BoxSizer(wx.HORIZONTAL)
             name_label = wx.StaticText(self, label=GUIText.NAME + ":")
-            name_sizer.Add(name_label)
-            self.name_ctrl = wx.TextCtrl(
-                self, value=dataset.name, style=wx.TE_PROCESS_ENTER)
+            name_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            name_sizer.Add(name_label, flags=wx.ALIGN_CENTRE_VERTICAL)
+            self.name_ctrl = wx.TextCtrl(self, value=dataset.name, style=wx.TE_PROCESS_ENTER)
             self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
             self.name_ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnChangeDatasetName)
             name_sizer.Add(self.name_ctrl)
             details_sizer1.Add(name_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer1.AddSpacer(10)
 
-        type_label = wx.StaticText(self, label=GUIText.TYPE + ": " + dataset.dataset_type)
-        details_sizer2.Add(type_label, 0, wx.ALL, 5)
+        type_sizer = wx.BoxSizer()
+        type_label = wx.StaticText(self, label=GUIText.TYPE + ": ")
+        type_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+        type_sizer.Add(type_label)
+        type_name = wx.StaticText(self, label=dataset.dataset_type)
+        type_sizer.Add(type_name)
+        details_sizer2.Add(type_sizer, 0, wx.ALL, 5)
         details_sizer2.AddSpacer(10)
 
         if dataset.dataset_source == 'Reddit':
             subreddit_label = wx.StaticText(self, label=GUIText.REDDIT_SUBREDDIT+dataset.retrieval_details['subreddit'])
+            subreddit_label.SetFont(main_frame.DETAILS_LABEL_FONT)
             details_sizer1.Add(subreddit_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer1.AddSpacer(10)
             
             if 'search' in dataset.retrieval_details and dataset.retrieval_details['search'] != "":
-                search_label = wx.StaticText(self, label=GUIText.SEARCH+": \""+dataset.retrieval_details['search']+"\"")
-                details_sizer1.Add(search_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                search_sizer = wx.BoxSizer()
+                search_label = wx.StaticText(self, label=GUIText.SEARCH+": ")
+                search_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+                search_sizer.Add(search_label)
+                search_str = wx.StaticText(self, label="\""+dataset.retrieval_details['search']+"\"")
+                search_sizer.Add(search_str)
+                details_sizer1.Add(search_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+
                 details_sizer1.AddSpacer(10)
             
             
+            source_sizer = wx.BoxSizer()
+            source_label = wx.StaticText(self, label=GUIText.SOURCE+": ")
+            source_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            source_sizer.Add(source_label)
             if dataset.retrieval_details['pushshift_flg']:
                 if dataset.retrieval_details['replace_archive_flg']:
                     if dataset.retrieval_details['redditapi_flg']:
-                        retrieveonline_label = wx.StaticText(self, label=GUIText.SOURCE+": "+GUIText.REDDIT_FULL_REDDITAPI)
+                        retrievedfrom_label = GUIText.REDDIT_FULL_REDDITAPI
                     else:
-                        retrieveonline_label = wx.StaticText(self, label=GUIText.SOURCE+": "+GUIText.REDDIT_FULL_PUSHSHIFT)
+                        retrievedfrom_label = GUIText.REDDIT_FULL_PUSHSHIFT
                 else:
                     if dataset.retrieval_details['redditapi_flg']:
-                        retrieveonline_label = wx.StaticText(self, label=GUIText.SOURCE+": "+GUIText.REDDIT_UPDATE_REDDITAPI)
+                        retrievedfrom_label = GUIText.REDDIT_UPDATE_REDDITAPI
                     else:
-                        retrieveonline_label = wx.StaticText(self, label=GUIText.SOURCE+": "+GUIText.REDDIT_UPDATE_PUSHSHIFT)
+                        retrievedfrom_label =GUIText.REDDIT_UPDATE_PUSHSHIFT
             else:
-                retrieveonline_label = wx.StaticText(
-                    self, label=GUIText.SOURCE+": "+GUIText.REDDIT_ARCHIVED)
-            details_sizer2.Add(retrieveonline_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                retrievedfrom_label = GUIText.REDDIT_ARCHIVED
+            source_name = wx.StaticText(self, label=retrievedfrom_label)
+            source_sizer.Add(source_name)
+            details_sizer2.Add(source_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer2.AddSpacer(10)
 
-            start_date_label = wx.StaticText(self, label=GUIText.START_DATE + ": "
-                                             + dataset.retrieval_details['start_date']+GUIText.UTC)
-            details_sizer2.Add(start_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            start_sizer = wx.BoxSizer()
+            start_label = wx.StaticText(self, label=GUIText.START_DATE + ": ")
+            start_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            start_sizer.Add(start_label)
+            start_datetime = wx.StaticText(self, label=dataset.retrieval_details['start_date']+" 00:00:00"+GUIText.UTC)
+            start_sizer.Add(start_datetime)
+            details_sizer2.Add(start_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer2.AddSpacer(10)
 
-            end_date_label = wx.StaticText(self, label=GUIText.END_DATE + ": "
-                                           + dataset.retrieval_details['end_date']+GUIText.UTC)
-            details_sizer2.Add(end_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            end_sizer = wx.BoxSizer()
+            end_label = wx.StaticText(self, label=GUIText.END_DATE + ": ")
+            end_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            end_sizer.Add(end_label)
+            end_datetime = wx.StaticText(self, label=dataset.retrieval_details['end_date']+" 23:59:59"+GUIText.UTC)
+            end_sizer.Add(end_datetime)
+            details_sizer2.Add(end_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer2.AddSpacer(10)
 
-            retrieved_date_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": "
-                                                + dataset.created_dt.strftime(Constants.DATE_FORMAT))
-            details_sizer2.Add(retrieved_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            retrieved_on_sizer = wx.BoxSizer()
+            retrieved_on_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": ")
+            retrieved_on_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            retrieved_on_sizer.Add(retrieved_on_label)
+            retrieved_on_date = wx.StaticText(self, label=dataset.created_dt.strftime(Constants.DATE_FORMAT))
+            retrieved_on_sizer.Add(retrieved_on_date)
+            details_sizer2.Add(retrieved_on_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer2.AddSpacer(10)
 
-            document_num_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
-            details_sizer3.Add(document_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            document_count_sizer = wx.BoxSizer()
+            document_count_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": ")
+            document_count_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            document_count_sizer.Add(document_count_label)
+            document_count_num = wx.StaticText(self, label=str(len(self.dataset.data)))
+            document_count_sizer.Add(document_count_num)
+            details_sizer3.Add(document_count_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer3.AddSpacer(10)
 
             if 'submission_count' in dataset.retrieval_details:
-                submission_count_label = wx.StaticText(self, label=GUIText.REDDIT_SUBMISSIONS_NUM + ": "
-                                           + str(dataset.retrieval_details['submission_count']))
-                details_sizer3.Add(submission_count_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                submission_count_sizer = wx.BoxSizer()
+                submission_count_label = wx.StaticText(self, label=GUIText.REDDIT_SUBMISSIONS_NUM + ": ")
+                submission_count_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+                submission_count_sizer.Add(submission_count_label)
+                submission_count_num = wx.StaticText(self, label=str(dataset.retrieval_details['submission_count']))
+                submission_count_sizer.Add(submission_count_num)
+                details_sizer3.Add(submission_count_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
                 details_sizer3.AddSpacer(10)
 
             if 'comment_count' in dataset.retrieval_details:
-                comment_count_label = wx.StaticText(self, label=GUIText.REDDIT_COMMENTS_NUM + ": "
-                                           + str(dataset.retrieval_details['comment_count']))
-                details_sizer3.Add(comment_count_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                comment_count_sizer = wx.BoxSizer()
+                comment_count_label = wx.StaticText(self, label=GUIText.REDDIT_COMMENTS_NUM + ": ")
+                comment_count_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+                comment_count_sizer.Add(comment_count_label)
+                comment_count_num = wx.StaticText(self, label=str(dataset.retrieval_details['comment_count']))
+                comment_count_sizer.Add(comment_count_num)
+                details_sizer3.Add(comment_count_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
                 details_sizer3.AddSpacer(10)
 
         if dataset.dataset_source == 'Twitter':
             if dataset.retrieval_details['query']:
-                query_label = wx.StaticText(self, label=GUIText.QUERY + ": " + dataset.retrieval_details['query'])
-                details_sizer1.Add(query_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                query_sizer = wx.BoxSizer()
+                query_label = wx.StaticText(self, label=GUIText.QUERY + ": ")
+                query_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+                query_sizer.Add(query_label)
+                query_text = wx.StaticText(self, label="\""+dataset.retrieval_details['query']+"\"")
+                query_sizer.Add(query_text)
+                details_sizer1.Add(query_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
                 details_sizer1.AddSpacer(10)
 
-            retrieved_date_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": "
-                                                + dataset.created_dt.strftime(Constants.DATE_FORMAT))
-            details_sizer2.Add(retrieved_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+
+            retrieved_on_sizer = wx.BoxSizer()
+            retrieved_on_label = wx.StaticText(self, label=GUIText.RETRIEVED_ON + ": ")
+            retrieved_on_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            retrieved_on_sizer.Add(retrieved_on_label)
+            retrieved_on_date = wx.StaticText(self, label=dataset.created_dt.strftime(Constants.DATE_FORMAT))
+            retrieved_on_sizer.Add(retrieved_on_date)
+            details_sizer2.Add(retrieved_on_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer2.AddSpacer(10)
     
             #TODO check if tweets can be combined
-            tweet_num_label = wx.StaticText(self, label=GUIText.TWITTER_TWEETS_NUM+": " + str(len(self.dataset.data)))
-            details_sizer3.Add(tweet_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            tweet_count_sizer = wx.BoxSizer()
+            tweet_count_label = wx.StaticText(self, label=GUIText.TWITTER_TWEETS_NUM+": ")
+            tweet_count_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            tweet_count_sizer.Add(tweet_count_label)
+            tweet_count_num = wx.StaticText(self, label=str(len(self.dataset.data)))
+            tweet_count_sizer.Add(tweet_count_num)
+            details_sizer3.Add(tweet_count_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer3.AddSpacer(10)
         
         if dataset.dataset_source == 'CSV':
             if 'filename' in dataset.retrieval_details:
                 filename = dataset.retrieval_details['filename'].split('\\')[-1]
                 if filename != dataset.name and  not main_frame.options_dict['multipledatasets_mode']:
-                    name_Label = wx.StaticText(self, label=GUIText.NAME+": "+dataset.name)
-                    details_sizer1.Add(name_Label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                    name_sizer = wx.BoxSizer(wx.HORIZONTAL)
+                    name_label = wx.StaticText(self, label=GUIText.NAME + ":")
+                    name_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+                    name_sizer.Add(name_label, flags=wx.ALIGN_CENTRE_VERTICAL)
+                    self.name_ctrl = wx.TextCtrl(self, value=dataset.name, style=wx.TE_PROCESS_ENTER)
+                    self.name_ctrl.SetToolTip(GUIText.NAME_TOOLTIP)
+                    self.name_ctrl.Bind(wx.EVT_TEXT_ENTER, self.OnChangeDatasetName)
+                    name_sizer.Add(self.name_ctrl)
+                    details_sizer1.Add(name_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
                     details_sizer1.AddSpacer(10)
-                filename_Label = wx.StaticText(self, label=GUIText.FILENAME+": "+filename)
-                details_sizer1.Add(filename_Label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                filename_sizer = wx.BoxSizer() 
+                filename_label = wx.StaticText(self, label=GUIText.FILENAME+": ")
+                filename_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+                filename_sizer.Add(filename_label)
+                filename_name = wx.StaticText(self, label=filename)
+                filename_sizer.Add(filename_name)
+                details_sizer1.Add(filename_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
                 details_sizer1.AddSpacer(10)
 
             if 'start_date' in dataset.retrieval_details:
-                start_date = str(datetime.utcfromtimestamp(dataset.retrieval_details['start_date']).strftime(Constants.DATETIME_FORMAT))
-                start_date_label = wx.StaticText(self, label=GUIText.START_DATETIME + ": " + str(start_date)+GUIText.UTC)
-                details_sizer2.Add(start_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                start_sizer = wx.BoxSizer()
+                start_label = wx.StaticText(self, label=GUIText.START_DATE + ": ")
+                start_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+                start_sizer.Add(start_label)
+                start_dt = str(datetime.utcfromtimestamp(dataset.retrieval_details['start_date']).strftime(Constants.DATETIME_FORMAT))
+                start_datetime = wx.StaticText(self, label=start_dt+GUIText.UTC)
+                start_sizer.Add(start_datetime)
+                details_sizer2.Add(start_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
                 details_sizer2.AddSpacer(10)
 
             if 'end_date' in dataset.retrieval_details:
-                end_date = str(datetime.utcfromtimestamp(dataset.retrieval_details['end_date']).strftime(Constants.DATETIME_FORMAT))
-                end_date_label = wx.StaticText(self, label=GUIText.END_DATETIME + ": " + str(end_date)+GUIText.UTC)
-                details_sizer2.Add(end_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                end_sizer = wx.BoxSizer()
+                end_label = wx.StaticText(self, label=GUIText.END_DATE + ": ")
+                end_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+                end_sizer.Add(end_label)
+                end_dt = str(datetime.utcfromtimestamp(dataset.retrieval_details['end_date']).strftime(Constants.DATETIME_FORMAT))
+                end_datetime = wx.StaticText(self, label=end_dt+GUIText.UTC)
+                end_sizer.Add(end_datetime)
+                details_sizer2.Add(end_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
                 details_sizer2.AddSpacer(10)
 
-            retrieved_date_label = wx.StaticText(self, label=GUIText.IMPORTED_ON + ": "
-                                                + dataset.created_dt.strftime(Constants.DATE_FORMAT))
-            details_sizer2.Add(retrieved_date_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            imported_on_sizer = wx.BoxSizer
+            imported_on_label = wx.StaticText(self, label=GUIText.IMPORTED_ON + ": ")
+            imported_on_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            imported_on_sizer.Add(imported_on_label)
+            imported_on_datetime = wx.StaticText(self, label=dataset.created_dt.strftime(Constants.DATE_FORMAT))
+            imported_on_sizer.Add(imported_on_datetime)
+            details_sizer2.Add(imported_on_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer2.AddSpacer(10)
         
-            document_num_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": " + str(len(self.dataset.data)))
-            details_sizer3.Add(document_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            document_count_sizer = wx.BoxSizer()
+            document_count_label = wx.StaticText(self, label=GUIText.DOCUMENT_NUM+": ")
+            document_count_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            document_count_sizer.Add(document_count_label)
+            document_count_num = wx.StaticText(self, label=str(len(self.dataset.data)))
+            document_count_sizer.Add(document_count_num)
+            details_sizer3.Add(document_count_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details_sizer3.AddSpacer(10)
 
             if 'row_count' in dataset.retrieval_details:
-                row_num_label = wx.StaticText(self, label=GUIText.CSV_ROWS_NUM+": " + str(dataset.retrieval_details['row_count']))
-                details_sizer3.Add(row_num_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                row_count_sizer = wx.BoxSizer()
+                row_count_label = wx.StaticText(self, label=GUIText.CSV_ROWS_NUM+": ")
+                row_count_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+                row_count_sizer.Add(row_count_label)
+                row_count_num = wx.StaticText(self, label=str(dataset.retrieval_details['row_count']))
+                row_count_sizer.Add(row_count_num)
+                details_sizer3.Add(row_count_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
                 details_sizer3.AddSpacer(10)
         
-        selected_lang = Constants.AVAILABLE_DATASET_LANGUAGES1.index(dataset.language)
-        language_label = wx.StaticText(
-            self, label=GUIText.LANGUAGE + ": ")
-        self.language_ctrl = wx.Choice(
-            self, choices=Constants.AVAILABLE_DATASET_LANGUAGES2)
-        self.language_ctrl.Select(selected_lang)
         language_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        selected_lang = Constants.AVAILABLE_DATASET_LANGUAGES1.index(dataset.language)
+        language_label = wx.StaticText(self, label=GUIText.LANGUAGE + ": ")
+        language_label.SetFont(main_frame.DETAILS_LABEL_FONT)
         language_sizer.Add(language_label, 0, wx.ALIGN_CENTRE_VERTICAL)
+        self.language_ctrl = wx.Choice(self, choices=Constants.AVAILABLE_DATASET_LANGUAGES2)
+        self.language_ctrl.Select(selected_lang)
+        self.language_ctrl.Bind(wx.EVT_CHOICE, self.OnChangeDatasetLanguage)
         language_sizer.Add(self.language_ctrl)
         details_sizer1.Add(language_sizer, 0, wx.ALL, 5)
         details_sizer1.AddSpacer(10)
-        self.language_ctrl.Bind(wx.EVT_CHOICE, self.OnChangeDatasetLanguage)
-
+        
         if main_frame.options_dict['adjustable_label_fields_mode']:
             customize_label_fields_ctrl = wx.Button(self, label=GUIText.CUSTOMIZE_LABEL_FIELDS)
             customize_label_fields_ctrl.Bind(wx.EVT_BUTTON, self.OnCustomizeLabelFields)
@@ -399,7 +490,7 @@ class DatasetDataPanel(wx.Panel):
         search_ctrl = event.GetEventObject()
         search_value = search_ctrl.GetValue()
         self.datasetdata_grid.Search(search_value)
-        self.search_count_text.SetLabel(GUIText.SEARCH_COUNT_LABEL+str(len(self.datasetdata_grid.gridtable.data_df)))
+        self.search_count_text.SetLabel(str(len(self.datasetdata_grid.gridtable.data_df))+GUIText.SEARCH_RESULTS_LABEL)
         logger.info("Finished")
 
     def OnSearchCancel(self, event):

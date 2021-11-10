@@ -54,10 +54,10 @@ class CodeConnectionsPanel(wx.Panel):
         edit_panel_sizer = wx.BoxSizer(wx.VERTICAL)
 
         usefulness_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        usefulness_label = wx.StaticText(edit_panel, label=GUIText.USEFULNESS_LABEL+":", style=wx.ALIGN_LEFT)
-        usefulness_sizer.Add(usefulness_label, 0, wx.ALL, 5)
+        usefulness_label = wx.StaticText(edit_panel, label=GUIText.USEFULNESS_LABEL+" ", style=wx.ALIGN_LEFT)
+        usefulness_sizer.Add(usefulness_label, 0, wx.ALIGN_CENTER_VERTICAL)
         self.usefulness_ctrl = wx.Choice(edit_panel, choices=[GUIText.NOT_SURE, GUIText.USEFUL, GUIText.NOT_USEFUL], style=wx.ALIGN_LEFT)
-        usefulness_sizer.Add(self.usefulness_ctrl, 0, wx.ALL, 5)
+        usefulness_sizer.Add(self.usefulness_ctrl)
         self.usefulness_ctrl.Bind(wx.EVT_CHOICE, self.OnUpdateUsefulness)
         if self.code.usefulness_flag is None:
             self.usefulness_ctrl.Select(0)
@@ -65,7 +65,7 @@ class CodeConnectionsPanel(wx.Panel):
             self.usefulness_ctrl.Select(1)
         elif not self.code.usefulness_flag:
             self.usefulness_ctrl.Select(2)
-        edit_panel_sizer.Add(usefulness_sizer)
+        edit_panel_sizer.Add(usefulness_sizer, 0, wx.ALL, 5)
 
         self.notes_panel = Notes.NotesPanel(edit_panel)
         self.notes_panel.SetNote(code.notes)
@@ -117,10 +117,14 @@ class DocumentListPanel(wx.Panel):
 
         self.dataset_key = dataset_key
 
+        main_frame = wx.GetApp().GetTopWindow()
+
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
         controls_sizer = wx.BoxSizer()
-        actions_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, self, label=GUIText.ACTIONS)
+        actions_box = wx.StaticBox(self, label=GUIText.ACTIONS)
+        actions_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        actions_sizer = wx.StaticBoxSizer(actions_box, wx.HORIZONTAL)
         actions_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
         notsure_tool = actions_toolbar.AddTool(wx.ID_ANY, label=GUIText.NOT_SURE, bitmap=wx.Bitmap(1, 1),
                                       shortHelp=GUIText.NOT_SURE_HELP)
@@ -152,13 +156,14 @@ class DocumentListPanel(wx.Panel):
         self.dataset_toggle.Check()
         self.origins_menu.Bind(wx.EVT_MENU, self.OnToggleSamples, self.dataset_toggle)
         
-        view_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, self, label=GUIText.VIEW)
+        view_box = wx.StaticBox(self, label=GUIText.VIEW)
+        view_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        view_sizer = wx.StaticBoxSizer(view_box, wx.HORIZONTAL)
         view_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
         usefulness_tool = view_toolbar.AddTool(wx.ID_ANY, label=GUIText.SHOW_USEFULNESS, bitmap=wx.Bitmap(1, 1), kind=wx.ITEM_DROPDOWN)
         usefulness_tool.SetDropdownMenu(usefulness_menu)
         origins_tool = view_toolbar.AddTool(wx.ID_ANY, label=GUIText.SHOW_DOCS_FROM, bitmap=wx.Bitmap(1, 1), kind=wx.ITEM_DROPDOWN)
         origins_tool.SetDropdownMenu(self.origins_menu)
-        
         view_toolbar.Realize()
         view_sizer.Add(view_toolbar)
         controls_sizer.Add(view_sizer, 0, wx.ALL, 5)
@@ -390,10 +395,10 @@ class DocumentPanel(wx.Panel):
         edit_panel_sizer = wx.BoxSizer(wx.VERTICAL)
 
         usefulness_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        usefulness_label = wx.StaticText(edit_panel, label=GUIText.USEFULNESS_LABEL+":", style=wx.ALIGN_LEFT)
-        usefulness_sizer.Add(usefulness_label, 0, wx.ALL, 5)
+        usefulness_label = wx.StaticText(edit_panel, label=GUIText.USEFULNESS_LABEL+" ", style=wx.ALIGN_LEFT)
+        usefulness_sizer.Add(usefulness_label, 0, wx.ALIGN_CENTER_VERTICAL)
         self.usefulness_ctrl = wx.Choice(edit_panel, choices=[GUIText.NOT_SURE, GUIText.USEFUL, GUIText.NOT_USEFUL], style=wx.ALIGN_LEFT)
-        usefulness_sizer.Add(self.usefulness_ctrl, 0, wx.ALL, 5)
+        usefulness_sizer.Add(self.usefulness_ctrl)
         self.usefulness_ctrl.Bind(wx.EVT_CHOICE, self.OnUpdateUsefulness)
         if self.document.usefulness_flag == None:
             self.usefulness_ctrl.Select(0)
@@ -401,7 +406,7 @@ class DocumentPanel(wx.Panel):
             self.usefulness_ctrl.Select(1)
         elif not self.document.usefulness_flag:
             self.usefulness_ctrl.Select(2)
-        edit_panel_sizer.Add(usefulness_sizer)
+        edit_panel_sizer.Add(usefulness_sizer, 0, wx.ALL, 5)
 
         self.notes_panel = Notes.NotesPanel(edit_panel)
         self.notes_panel.SetNote(document.notes)
@@ -558,79 +563,81 @@ class DocumentPanel(wx.Panel):
         main_frame.CodesUpdated()
 
     def PopulateFieldCtrl(self):
-        self.field_ctrl.Clear()
-        urlStyle = wx.richtext.RichTextAttr()
-        urlStyle.SetFontUnderlined(True)
-        self.field_ctrl.BeginSuppressUndo()
-        cur_pos = 0
-        for key in self.document.parent.label_fields:
-            field = self.document.parent.label_fields[key]
-            if field.name in self.document.parent.data[self.document.doc_id]:
-                field_data = self.document.parent.data[self.document.doc_id][field.name]
-                self.field_ctrl.WriteText('------'+str(field.name)+'------\n')
-                if isinstance(field_data, list):
-                    for entry in field_data:
-                        if field.fieldtype == 'url':
-                            self.field_ctrl.BeginStyle(urlStyle)
-                            self.field_ctrl.BeginURL(entry)
-                            self.field_ctrl.WriteText(entry)
-                            self.field_ctrl.EndURL()
-                            self.field_ctrl.EndStyle()
-                            self.field_ctrl.WriteText('\n------------\n')
-                        elif field.fieldtype == 'UTC-timestamp':
-                            value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
-                            self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
+        if self.field_ctrl:
+            self.field_ctrl.Clear()
+            urlStyle = wx.richtext.RichTextAttr()
+            urlStyle.SetFontUnderlined(True)
+            self.field_ctrl.BeginSuppressUndo()
+            cur_pos = 0
+            if self.document.parent != None:
+                for key in self.document.parent.label_fields:
+                    field = self.document.parent.label_fields[key]
+                    if field.name in self.document.parent.data[self.document.doc_id]:
+                        field_data = self.document.parent.data[self.document.doc_id][field.name]
+                        self.field_ctrl.WriteText('------'+str(field.name)+'------\n')
+                        if isinstance(field_data, list):
+                            for entry in field_data:
+                                if field.fieldtype == 'url':
+                                    self.field_ctrl.BeginStyle(urlStyle)
+                                    self.field_ctrl.BeginURL(entry)
+                                    self.field_ctrl.WriteText(entry)
+                                    self.field_ctrl.EndURL()
+                                    self.field_ctrl.EndStyle()
+                                    self.field_ctrl.WriteText('\n------------\n')
+                                elif field.fieldtype == 'UTC-timestamp':
+                                    value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
+                                    self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
+                                else:
+                                    self.field_ctrl.WriteText(str(entry)+'\n------------\n')
                         else:
-                            self.field_ctrl.WriteText(str(entry)+'\n------------\n')
-                else:
-                    if field.fieldtype == 'url':
-                        self.field_ctrl.BeginStyle(urlStyle)
-                        self.field_ctrl.BeginURL(field_data)
-                        self.field_ctrl.WriteText(field_data)
-                        self.field_ctrl.EndURL()
-                        self.field_ctrl.EndStyle()
-                        self.field_ctrl.WriteText('\n------------\n')
-                    elif field.fieldtype == 'UTC-timestamp':
-                        value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
-                        self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
-                    else:
-                        self.field_ctrl.WriteText(str(field_data)+'\n------------\n')
-            self.field_positions[field.key] = (cur_pos, self.field_ctrl.GetInsertionPoint()-1)
-            cur_pos = self.field_ctrl.GetInsertionPoint()
-        for key in self.document.parent.computational_fields:
-            field = self.document.parent.computational_fields[key]
-            if key not in self.document.parent.label_fields and field.name in self.document.parent.data[self.document.doc_id]:
-                field_data = self.document.parent.data[self.document.doc_id][field.name]
-                self.field_ctrl.WriteText('------'+str(field.name)+'------\n')
-                if isinstance(field_data, list):
-                    for entry in field_data:
-                        if field.fieldtype == 'url':
-                            self.field_ctrl.BeginStyle(urlStyle)
-                            self.field_ctrl.BeginURL(entry)
-                            self.field_ctrl.WriteText(entry)
-                            self.field_ctrl.EndURL()
-                            self.field_ctrl.EndStyle()
-                            self.field_ctrl.WriteText('\n------------\n')
-                        elif field.fieldtype == 'UTC-timestamp':
-                            value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
-                            self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
+                            if field.fieldtype == 'url':
+                                self.field_ctrl.BeginStyle(urlStyle)
+                                self.field_ctrl.BeginURL(field_data)
+                                self.field_ctrl.WriteText(field_data)
+                                self.field_ctrl.EndURL()
+                                self.field_ctrl.EndStyle()
+                                self.field_ctrl.WriteText('\n------------\n')
+                            elif field.fieldtype == 'UTC-timestamp':
+                                value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
+                                self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
+                            else:
+                                self.field_ctrl.WriteText(str(field_data)+'\n------------\n')
+                    self.field_positions[field.key] = (cur_pos, self.field_ctrl.GetInsertionPoint()-1)
+                    cur_pos = self.field_ctrl.GetInsertionPoint()
+                for key in self.document.parent.computational_fields:
+                    field = self.document.parent.computational_fields[key]
+                    if key not in self.document.parent.label_fields and field.name in self.document.parent.data[self.document.doc_id]:
+                        field_data = self.document.parent.data[self.document.doc_id][field.name]
+                        self.field_ctrl.WriteText('------'+str(field.name)+'------\n')
+                        if isinstance(field_data, list):
+                            for entry in field_data:
+                                if field.fieldtype == 'url':
+                                    self.field_ctrl.BeginStyle(urlStyle)
+                                    self.field_ctrl.BeginURL(entry)
+                                    self.field_ctrl.WriteText(entry)
+                                    self.field_ctrl.EndURL()
+                                    self.field_ctrl.EndStyle()
+                                    self.field_ctrl.WriteText('\n------------\n')
+                                elif field.fieldtype == 'UTC-timestamp':
+                                    value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
+                                    self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
+                                else:
+                                    self.field_ctrl.WriteText(str(entry)+'\n------------\n')
                         else:
-                            self.field_ctrl.WriteText(str(entry)+'\n------------\n')
-                else:
-                    if field.fieldtype == 'url':
-                        self.field_ctrl.BeginStyle(urlStyle)
-                        self.field_ctrl.BeginURL(field_data)
-                        self.field_ctrl.WriteText(field_data)
-                        self.field_ctrl.EndURL()
-                        self.field_ctrl.EndStyle()
-                        self.field_ctrl.WriteText('\n------------\n')
-                    elif field.fieldtype == 'UTC-timestamp':
-                        value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
-                        self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
-                    else:
-                        self.field_ctrl.WriteText(str(field_data)+'\n------------\n')
-                self.field_positions[field.key] = (cur_pos, self.field_ctrl.GetInsertionPoint()-1)
-                cur_pos = self.field_ctrl.GetInsertionPoint()
+                            if field.fieldtype == 'url':
+                                self.field_ctrl.BeginStyle(urlStyle)
+                                self.field_ctrl.BeginURL(field_data)
+                                self.field_ctrl.WriteText(field_data)
+                                self.field_ctrl.EndURL()
+                                self.field_ctrl.EndStyle()
+                                self.field_ctrl.WriteText('\n------------\n')
+                            elif field.fieldtype == 'UTC-timestamp':
+                                value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
+                                self.field_ctrl.WriteText(value_str+' UTC\n------------\n')
+                            else:
+                                self.field_ctrl.WriteText(str(field_data)+'\n------------\n')
+                        self.field_positions[field.key] = (cur_pos, self.field_ctrl.GetInsertionPoint()-1)
+                        cur_pos = self.field_ctrl.GetInsertionPoint()
     
     def RefreshDetails(self):
         self.PopulateFieldCtrl()

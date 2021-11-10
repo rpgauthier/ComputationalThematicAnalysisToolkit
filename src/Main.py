@@ -39,6 +39,9 @@ class MainFrame(wx.Frame):
         self.SetMinSize(wx.Size(400, 400))
         self.Maximize(True)
 
+        self.GROUP_LABEL_FONT = wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.NORMAL, underline=True)
+        self.DETAILS_LABEL_FONT = wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, "")
+
         #multiprocessing controls
         self.pool = pool
         self.pool_num = self.pool._processes
@@ -804,7 +807,9 @@ class OptionsDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
 
-        advanced_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.OPTIONS_ADVANCED_MODES)
+        advanced_box = wx.StaticBox(self, label=GUIText.OPTIONS_ADVANCED_MODES)
+        advanced_box.SetFont(main_frame.GROUP_LABEL_FONT)
+        advanced_sizer = wx.StaticBoxSizer(advanced_box, wx.VERTICAL)
         sizer.Add(advanced_sizer, 0, wx.ALL, 5)
 
         self.multipledatasets_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_MULTIPLEDATASETS)
@@ -822,7 +827,9 @@ class OptionsDialog(wx.Dialog):
         self.adjustable_computation_fields_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeAdjustableComputationalFieldsMode)
         advanced_sizer.Add(self.adjustable_computation_fields_ctrl, 0, wx.ALL, 5)
 
-        twitter_sizer = wx.StaticBoxSizer(wx.VERTICAL, self, label=GUIText.TWITTER_LABEL+" "+GUIText.OPTIONS_LABEL)
+        twitter_box = wx.StaticBox(self, label=GUIText.TWITTER_LABEL)
+        twitter_box.SetFont(main_frame.GROUP_LABEL_FONT)
+        twitter_sizer = wx.StaticBoxSizer(twitter_box, wx.VERTICAL)
         sizer.Add(twitter_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         twitter_consumer_key_label = wx.StaticText(self, label=GUIText.CONSUMER_KEY + ": ")

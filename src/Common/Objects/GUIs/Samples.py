@@ -30,11 +30,11 @@ class SampleCreatePanel(wx.Panel):
         self.capture_thread = None
         self.start_dt = None
 
-        label_font = wx.Font(Constants.LABEL_SIZE, Constants.LABEL_FAMILY, Constants.LABEL_STYLE, Constants.LABEL_WEIGHT, underline=Constants.LABEL_UNDERLINE)
+        main_frame = wx.GetApp().GetTopWindow()
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         generic_label_box = wx.StaticBox(self, label=GUIText.GENERIC_SECTION_LABEL)
-        generic_label_box.SetFont(label_font)
+        generic_label_box.SetFont(main_frame.GROUP_LABEL_FONT)
         generic_sizer = wx.StaticBoxSizer(generic_label_box, orient=wx.VERTICAL)
         sizer.Add(generic_sizer, 0, wx.ALL, 5)
         create_random_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -47,10 +47,9 @@ class SampleCreatePanel(wx.Panel):
         create_random_sizer.Add(create_random_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         create_random_link = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.RANDOM_URL)
         create_random_sizer.Add(create_random_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-
         
         topicmodel_label_box = wx.StaticBox(self, label=GUIText.TOPICMODEL_SECTION_LABEL)
-        topicmodel_label_box.SetFont(label_font)
+        topicmodel_label_box.SetFont(main_frame.GROUP_LABEL_FONT)
         topicmodel_sizer = wx.StaticBoxSizer(topicmodel_label_box, orient=wx.VERTICAL)
         sizer.Add(topicmodel_sizer, 0, wx.ALL, 5)
         description_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -323,13 +322,16 @@ class PartPanel(wx.Panel):
         self.parts.update(parts)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-
         controls_sizer = wx.BoxSizer()
-        sample_label = wx.StaticText(self, label=GUIText.SAMPLE_REQUEST)
-        controls_sizer.Add(sample_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        self.sample_num = wx.SpinCtrl(self, min=1, max=100, initial=10)
-        self.sample_num.Bind(wx.EVT_SPINCTRL, self.OnChangeDocumentNumber)
-        controls_sizer.Add(self.sample_num, 0, wx.ALL, 5)
+        self.sizer.Add(controls_sizer, 0, wx.ALL, 5)
+
+        sample_num_sizer = wx.BoxSizer()
+        sample_num_label = wx.StaticText(self, label=GUIText.SAMPLE_REQUEST)
+        sample_num_sizer.Add(sample_num_label, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.sample_num_ctrl = wx.SpinCtrl(self, min=1, max=100, initial=10)
+        self.sample_num_ctrl.Bind(wx.EVT_SPINCTRL, self.OnChangeDocumentNumber)
+        sample_num_sizer.Add(self.sample_num_ctrl)
+        controls_sizer.Add(sample_num_sizer, 0, wx.ALL, 5)
         
         toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
         useful_tool = toolbar.AddTool(wx.ID_ANY, label=GUIText.NOT_SURE, bitmap=wx.Bitmap(1, 1),
@@ -344,8 +346,6 @@ class PartPanel(wx.Panel):
         toolbar.Bind(wx.EVT_MENU, self.OnNotUseful, notuseful_tool)
         toolbar.Realize()
         controls_sizer.Add(toolbar, 0, wx.ALL, 5)
-
-        self.sizer.Add(controls_sizer, 0, wx.ALL, 5)
         
         self.parts_model = SamplesDataViews.PartsViewModel(self.sample, self.dataset)
         self.parts_ctrl = SamplesDataViews.PartsViewCtrl(self, self.parts_model)
@@ -363,7 +363,7 @@ class PartPanel(wx.Panel):
     def OnChangeDocumentNumber(self, event):
         logger = logging.getLogger(__name__+".PartPanel["+str(self.sample.key)+"].OnChangeDocumentNumber")
         logger.info("Starting")
-        document_num = self.sample_num.GetValue()
+        document_num = self.sample_num_ctrl.GetValue()
         for part_key in self.parts:
             parent = self.parts[part_key].parent
             while parent is not None and not isinstance(parent, Samples.Sample):
@@ -461,12 +461,14 @@ class SampleRulesDialog(wx.Dialog):
         self.sample = sample
         self.dataset = dataset
         self.apply_rules_thread = None
+
+        main_frame = wx.GetApp().GetTopWindow()
         
         package_list = list(sample.tokenization_package_versions)
         tokenizer_package = sample.tokenization_package_versions[0]
         package_list[0] = FilteringGUIText.FILTERS_RAWTOKENS
-        package_list[1] = FilteringGUIText.FILTERS_STEMMER + package_list[1]
-        package_list[2] = FilteringGUIText.FILTERS_LEMMATIZER + package_list[2]
+        package_list[1] = FilteringGUIText.FILTERS_STEMMER+": "+package_list[1]
+        package_list[2] = FilteringGUIText.FILTERS_LEMMATIZER+": "+package_list[2]
         
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -481,15 +483,15 @@ class SampleRulesDialog(wx.Dialog):
 
         tokenization_sizer = wx.BoxSizer(wx.HORIZONTAL)
         tokenization_package_label1 = wx.StaticText(self, label=FilteringGUIText.FILTERS_TOKENIZER)
-        tokenization_package_label1.SetFont(wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
-        tokenization_sizer.Add(tokenization_package_label1, proportion=0, flag=wx.ALL, border=5)
+        tokenization_package_label1.SetFont(main_frame.DETAILS_LABEL_FONT)
+        tokenization_sizer.Add(tokenization_package_label1, proportion=0, flag=wx.ALL|wx.ALIGN_CENTER_VERTICAL, border=5)
         tokenization_package_label2 = wx.StaticText(self, label=tokenizer_package)
-        tokenization_sizer.Add(tokenization_package_label2, proportion=0, flag=wx.ALL, border=5)
+        tokenization_sizer.Add(tokenization_package_label2, proportion=0, flag=wx.ALL|wx.ALIGN_CENTER_VERTICAL, border=5)
         tokenization_choice_label = wx.StaticText(self, label=FilteringGUIText.FILTERS_METHOD)
-        tokenization_choice_label.SetFont(wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
-        tokenization_sizer.Add(tokenization_choice_label, proportion=0, flag=wx.ALL, border=5)
+        tokenization_choice_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+        tokenization_sizer.Add(tokenization_choice_label, proportion=0, flag=wx.ALL|wx.ALIGN_CENTER_VERTICAL, border=5)
         tokenization_label = wx.StaticText(self, label=package_list[sample.tokenization_choice])
-        tokenization_sizer.Add(tokenization_label, proportion=0, flag=wx.ALL, border=5)
+        tokenization_sizer.Add(tokenization_label, proportion=0, flag=wx.ALL|wx.ALIGN_CENTER_VERTICAL, border=5)
         sizer.Add(tokenization_sizer, proportion=0, flag=wx.ALL, border=5)
         
         self.rules_list = DatasetsGUIs.FilterRuleListCtrl(self)
@@ -650,20 +652,38 @@ class RandomSamplePanel(AbstractSamplePanel):
         logger.info("Starting")
         AbstractSamplePanel.__init__(self, parent, sample, dataset, size)
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
-
-        details_sizer = wx.BoxSizer(wx.HORIZONTAL)
         main_frame = wx.GetApp().GetTopWindow()
-        type_label = wx.StaticText(self, label=GUIText.SAMPLE_TYPE+": "+str(sample.sample_type))
-        details_sizer.Add(type_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        details_sizer.AddSpacer(10)
-        if main_frame.options_dict['multipledatasets_mode']:
-            dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(self.dataset.name))
-            details_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-            details_sizer.AddSpacer(10)
-        created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.start_dt.strftime("%Y-%m-%d %H:%M:%S"))
-        details_sizer.Add(created_dt_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        details_sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(details_sizer, 0, wx.ALL, 5)
+
+        type_sizer = wx.BoxSizer()
+        type_label = wx.StaticText(self, label=GUIText.SAMPLE_TYPE+": ")
+        type_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+        type_sizer.Add(type_label)
+        type_text = wx.StaticText(self, label=str(sample.sample_type))
+        type_sizer.Add(type_text)
+        details_sizer.Add(type_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        details_sizer.AddSpacer(10)
+
+        if main_frame.options_dict['multipledatasets_mode']:
+            dataset_sizer = wx.BoxSizer()
+            dataset_label = wx.StaticText(self, label=GUIText.DATASET+": ")
+            dataset_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            dataset_sizer.Add(dataset_label)
+            dataset_name = wx.StaticText(self, label=str(self.dataset.name))
+            dataset_sizer.Add(dataset_name)
+            details_sizer.Add(dataset_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            details_sizer.AddSpacer(10)
+
+        created_sizer = wx.BoxSizer()
+        created_label = wx.StaticText(self, label=GUIText.CREATED_ON+": ")
+        created_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+        created_sizer.Add(created_label)
+        created_datetime = wx.StaticText(self, label=self.sample.created_dt.strftime("%Y-%m-%d %H:%M:%S"))
+        created_sizer.Add(created_datetime)
+        details_sizer.Add(created_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
 
         self.parts_panel = PartPanel(self, self.sample, self.dataset, sample.parts_dict)
         sizer.Add(self.parts_panel, 1, wx.EXPAND, 5)
@@ -758,39 +778,75 @@ class TopicSamplePanel(AbstractSamplePanel):
 
         self.selected_parts = None
         self.computationfields_dialog = None
+        main_frame = wx.GetApp().GetTopWindow()
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-
         details1_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        main_frame = wx.GetApp().GetTopWindow()
-        type_label = wx.StaticText(self, label=GUIText.SAMPLE_TYPE+": "+str(sample.sample_type))
-        details1_sizer.Add(type_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        details1_sizer.AddSpacer(10)
-        if main_frame.options_dict['multipledatasets_mode']:
-            dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(self.dataset.name))
-            details1_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-            details1_sizer.AddSpacer(10)
-        created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.created_dt.strftime("%Y-%m-%d %H:%M:%S"))
-        details1_sizer.Add(created_dt_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         self.sizer.Add(details1_sizer, 0, wx.ALL, 5)
-
         details2_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+" "+str(sample.num_topics))
-        details2_sizer.Add(num_topics_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        self.sizer.Add(details2_sizer, 0, wx.ALL, 5)
+
+        type_sizer = wx.BoxSizer()
+        type_label = wx.StaticText(self, label=GUIText.SAMPLE_TYPE+": ")
+        type_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+        type_sizer.Add(type_label)
+        type_text = wx.StaticText(self, label=str(sample.sample_type))
+        type_sizer.Add(type_text)
+        details1_sizer.Add(type_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        details1_sizer.AddSpacer(10)
+
+        if main_frame.options_dict['multipledatasets_mode']:
+            dataset_sizer = wx.BoxSizer()
+            dataset_label = wx.StaticText(self, label=GUIText.DATASET+": ")
+            dataset_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            dataset_sizer.Add(dataset_label)
+            dataset_name = wx.StaticText(self, label=str(self.dataset.name))
+            dataset_sizer.Add(dataset_name)
+            details1_sizer.Add(dataset_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            details1_sizer.AddSpacer(10)
+
+        created_sizer = wx.BoxSizer()
+        created_label = wx.StaticText(self, label=GUIText.CREATED_ON+": ")
+        created_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+        created_sizer.Add(created_label)
+        created_datetime = wx.StaticText(self, label=self.sample.created_dt.strftime("%Y-%m-%d %H:%M:%S"))
+        created_sizer.Add(created_datetime)
+        details1_sizer.Add(created_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+
+        num_topics_sizer = wx.BoxSizer()
+        num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+": ")
+        num_topics_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+        num_topics_sizer.Add(num_topics_label)
+        num_topics_num = wx.StaticText(self, label=str(sample.num_topics))
+        num_topics_sizer.Add(num_topics_num)
+        details2_sizer.Add(num_topics_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details2_sizer.AddSpacer(10)
+
         if hasattr(sample, 'num_passes'):
-            num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" "+str(sample.num_passes))
-            details2_sizer.Add(num_passes_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            num_passes_sizer = wx.BoxSizer()
+            num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" ")
+            num_passes_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            num_passes_sizer.Add(num_passes_label)
+            num_passes_num = wx.StaticText(self, label=str(sample.num_passes))
+            num_passes_sizer.Add(num_passes_num)
+            details2_sizer.Add(num_passes_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details2_sizer.AddSpacer(10)
-        used_documents_label = wx.StaticText(self, label=GUIText.NUMBER_OF_DOCUMENTS+str(len(self.sample.tokensets)))
-        details2_sizer.Add(used_documents_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+
+        used_document_sizer = wx.BoxSizer()
+        used_documents_label = wx.StaticText(self, label=GUIText.NUMBER_OF_DOCUMENTS+": ")
+        used_documents_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+        used_document_sizer.Add(used_documents_label)
+        used_document_num = wx.StaticText(self, label=str(len(self.sample.tokensets)))
+        used_document_sizer.Add(used_document_num)
+        details2_sizer.Add(used_document_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+
         rules_button = wx.Button(self, label=FilteringGUIText.FILTERS_RULES)
         rules_button.Bind(wx.EVT_BUTTON, self.OnShowRules)
         details2_sizer.Add(rules_button, 0, wx.ALL, 5)
+
         includefields_button = wx.Button(self, label=FilteringGUIText.COMPUTATIONAL_FIELDS)
         includefields_button.Bind(wx.EVT_BUTTON, self.OnShowComputationalFields)
         details2_sizer.Add(includefields_button, 0, wx.ALL, 5)
-        self.sizer.Add(details2_sizer, 0, wx.ALL, 5)
 
 
         #initialize and show an inprogress panel for display while model is generating
@@ -849,7 +905,7 @@ class TopicSamplePanel(AbstractSamplePanel):
     def OnChangeTopicWordNum(self, event):
         logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].OnChangeTopicWordNum")
         logger.info("Starting")
-        self.sample.word_num = self.topiclist_panel.topic_list_num.GetValue()
+        self.sample.word_num = self.topiclist_panel.words_num_ctrl.GetValue()
         self.topiclist_panel.topic_list_model.Cleared()
         self.topiclist_panel.topic_list_ctrl.Expander(None)
         #self.visualization_panel.Refresh(self.selected_parts)
@@ -1060,6 +1116,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         logger.info("Starting")
         self.Freeze()
 
+        #TODO investigate performance issues occuring here
         #figure out what topics have been selected
         self.ChangeSelections()
         self.parts_panel.ChangeSelectedParts(self.selected_parts)
@@ -1086,7 +1143,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnMergeTopics, self.topiclist_panel.merge_topics_tool)
         self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnSplitTopics, self.topiclist_panel.split_topics_tool)
         self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnRemoveTopics, self.topiclist_panel.remove_topics_tool)
-        self.topiclist_panel.topic_list_num.Bind(wx.EVT_SPINCTRL, self.OnChangeTopicWordNum)
+        self.topiclist_panel.words_num_ctrl.Bind(wx.EVT_SPINCTRL, self.OnChangeTopicWordNum)
         #turned off for performance reasons
         self.topiclist_panel.topic_list_ctrl.Bind(dv.EVT_DATAVIEW_SELECTION_CHANGED, self.OnTopicsSelected)
         #self.topiclist_panel.cutoff_slider.Bind(wx.EVT_SLIDER, self.OnChangeCutoff)
@@ -1157,7 +1214,6 @@ class TopicSamplePanel(AbstractSamplePanel):
                                       parts=included_topics, cutoff=self.sample.document_cutoff, word_cloud_freq=weight_map)
         logger.info("Finished")
 
-        
     def ModeChange(self):
         logger = logging.getLogger(__name__+".AbstractSamplePanel["+self.sample.key+"].ModeChanged")
         logger.info("Starting")
@@ -1264,49 +1320,98 @@ class TopicListPanel(wx.Panel):
         self.sample = sample
         self.dataset = dataset
 
-        topic_list_sizer = wx.BoxSizer(wx.VERTICAL)
-
-        details1_sizer = wx.BoxSizer(wx.HORIZONTAL)
         main_frame = wx.GetApp().GetTopWindow()
-        type_label = wx.StaticText(self, label=GUIText.SAMPLE_TYPE+": "+str(self.sample.sample_type))
-        details1_sizer.Add(type_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        details1_sizer.AddSpacer(10)
-        if main_frame.options_dict['multipledatasets_mode']:
-            dataset_label = wx.StaticText(self, label=GUIText.DATASET+": "+str(self.dataset.name))
-            details1_sizer.Add(dataset_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-            details1_sizer.AddSpacer(10)
-        created_dt_label = wx.StaticText(self, label=GUIText.CREATED_ON+": "+self.sample.start_dt.strftime("%Y-%m-%d %H:%M:%S"))
-        details1_sizer.Add(created_dt_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        details1_sizer.AddSpacer(10)
-        generate_time_label = wx.StaticText(self, label=GUIText.GENERATE_TIME+": "+str(self.sample.end_dt - self.sample.start_dt).split('.')[0])
-        details1_sizer.Add(generate_time_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        topic_list_sizer.Add(details1_sizer, 0, wx.ALL, 5)
 
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        details1_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(details1_sizer, 0, wx.ALL, 5)
         details2_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+str(self.sample.num_topics))
-        details2_sizer.Add(num_topics_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        sizer.Add(details2_sizer, 0, wx.ALL, 5)
+        
+
+        type_sizer = wx.BoxSizer()
+        type_label = wx.StaticText(self, label=GUIText.SAMPLE_TYPE+": ")
+        type_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+        type_sizer.Add(type_label)
+        type_text = wx.StaticText(self, label=str(sample.sample_type))
+        type_sizer.Add(type_text)
+        details1_sizer.Add(type_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        details1_sizer.AddSpacer(10)
+
+        if main_frame.options_dict['multipledatasets_mode']:
+            dataset_sizer = wx.BoxSizer()
+            dataset_label = wx.StaticText(self, label=GUIText.DATASET+": ")
+            dataset_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            dataset_sizer.Add(dataset_label)
+            dataset_name = wx.StaticText(self, label=str(self.dataset.name))
+            dataset_sizer.Add(dataset_name)
+            details1_sizer.Add(dataset_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            details1_sizer.AddSpacer(10)
+
+        created_sizer = wx.BoxSizer()
+        created_label = wx.StaticText(self, label=GUIText.CREATED_ON+": ")
+        created_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+        created_sizer.Add(created_label)
+        created_datetime = wx.StaticText(self, label=self.sample.created_dt.strftime("%Y-%m-%d %H:%M:%S"))
+        created_sizer.Add(created_datetime)
+        details1_sizer.Add(created_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+
+        generated_sizer = wx.BoxSizer()
+        generated_label = wx.StaticText(self, label=GUIText.GENERATE_TIME+": ")
+        generated_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+        generated_sizer.Add(generated_label)
+        generated_time = wx.StaticText(self, label=str(self.sample.end_dt - self.sample.start_dt).split('.')[0])
+        generated_sizer.Add(generated_time)
+        details1_sizer.Add(generated_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+
+        num_topics_sizer = wx.BoxSizer()
+        num_topics_label = wx.StaticText(self, label=GUIText.NUMBER_OF_TOPICS+": ")
+        num_topics_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+        num_topics_sizer.Add(num_topics_label)
+        num_topics_num = wx.StaticText(self, label=str(sample.num_topics))
+        num_topics_sizer.Add(num_topics_num)
+        details2_sizer.Add(num_topics_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         details2_sizer.AddSpacer(10)
-        if hasattr(self.sample, 'num_passes'):
-            num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+str(self.sample.num_passes))
-            details2_sizer.Add(num_passes_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+
+        if hasattr(sample, 'num_passes'):
+            num_passes_sizer = wx.BoxSizer()
+            num_passes_label = wx.StaticText(self, label=GUIText.NUMBER_OF_PASSES+" ")
+            num_passes_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+            num_passes_sizer.Add(num_passes_label)
+            num_passes_num = wx.StaticText(self, label=str(sample.num_passes))
+            num_passes_sizer.Add(num_passes_num)
+            details2_sizer.Add(num_passes_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             details2_sizer.AddSpacer(10)
-        used_documents_label = wx.StaticText(self, label=GUIText.NUMBER_OF_DOCUMENTS+str(len(self.sample.tokensets)))
-        details2_sizer.Add(used_documents_label, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+
+        used_document_sizer = wx.BoxSizer()
+        used_documents_label = wx.StaticText(self, label=GUIText.NUMBER_OF_DOCUMENTS+": ")
+        used_documents_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+        used_document_sizer.Add(used_documents_label)
+        used_document_num = wx.StaticText(self, label=str(len(self.sample.tokensets)))
+        used_document_sizer.Add(used_document_num)
+        details2_sizer.Add(used_document_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+
         rules_button = wx.Button(self, label=FilteringGUIText.FILTERS_RULES)
         rules_button.Bind(wx.EVT_BUTTON, self.OnShowRules)
         details2_sizer.Add(rules_button, 0, wx.ALL, 5)
+
         includefields_button = wx.Button(self, label=FilteringGUIText.COMPUTATIONAL_FIELDS)
         includefields_button.Bind(wx.EVT_BUTTON, self.OnShowComputationalFields)
         details2_sizer.Add(includefields_button, 0, wx.ALL, 5)
-        topic_list_sizer.Add(details2_sizer, 0, wx.ALL, 5)
 
-        topic_list_label1 = wx.StaticText(self, label=GUIText.WORDS_PER_TOPIC1)
-        self.topic_list_num = wx.SpinCtrl(self, min=1, max=100, initial=10)
-        topic_list_label2 = wx.StaticText(self, label=GUIText.WORDS_PER_TOPIC2)
-        topic_list_label_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        topic_list_label_sizer.Add(topic_list_label1, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        topic_list_label_sizer.Add(self.topic_list_num, 0, wx.ALL, 5)
-        topic_list_label_sizer.Add(topic_list_label2, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        sizer.Add(wx.StaticLine(self), 0, wx.EXPAND)
+
+        topic_list_tools_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(topic_list_tools_sizer, 0, wx.ALL, 5)
+
+        words_num_sizer = wx.BoxSizer()
+        words_num_label1 = wx.StaticText(self, label=GUIText.WORDS_PER_TOPIC1+" ")
+        words_num_sizer.Add(words_num_label1, 0, wx.ALIGN_CENTRE_VERTICAL)
+        self.words_num_ctrl = wx.SpinCtrl(self, min=1, max=100, initial=10)
+        words_num_sizer.Add(self.words_num_ctrl)
+        words_num_label2 = wx.StaticText(self, label=" "+GUIText.WORDS_PER_TOPIC2)
+        words_num_sizer.Add(words_num_label2, 0, wx.ALIGN_CENTRE_VERTICAL)
+        topic_list_tools_sizer.Add(words_num_sizer, 0, wx.ALL, 5)
 
         self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
         self.merge_topics_tool = self.toolbar.AddTool(wx.ID_ANY,
@@ -1322,7 +1427,7 @@ class TopicListPanel(wx.Panel):
                                                       bitmap=wx.Bitmap(1, 1),
                                                       shortHelp=GUIText.REMOVE_TOPIC_SHORTHELP)
         self.toolbar.Realize()
-        topic_list_label_sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
+        topic_list_tools_sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
 
         cutoff_sizer = wx.BoxSizer(wx.HORIZONTAL)
         cutoff_label = wx.StaticText(self, label=GUIText.PROBABILITY_CUTOFF_LABEL)
@@ -1336,15 +1441,13 @@ class TopicListPanel(wx.Panel):
         self.cutoff_spin.SetToolTip(GUIText.PROBABILITY_CUTOFF_TOOLTIP)
         cutoff_sizer.Add(cutoff_label, 0, wx.ALIGN_CENTER)
         cutoff_sizer.Add(self.cutoff_spin, 0, wx.ALIGN_CENTER)
-        topic_list_label_sizer.Add(cutoff_sizer, proportion=0, flag=wx.ALL, border=5)
-
-        topic_list_sizer.Add(topic_list_label_sizer, 0, wx.ALL, 5)
+        topic_list_tools_sizer.Add(cutoff_sizer, proportion=0, flag=wx.ALL, border=5)
         
         self.topic_list_model = SamplesDataViews.TopicViewModel(sample.parts_dict.values())
         self.topic_list_ctrl = SamplesDataViews.TopicViewCtrl(self, self.topic_list_model)
-        topic_list_sizer.Add(self.topic_list_ctrl, 1, wx.EXPAND)
+        sizer.Add(self.topic_list_ctrl, 1, wx.EXPAND)
 
-        self.SetSizer(topic_list_sizer)
+        self.SetSizer(sizer)
         logger.info("Finished")
     
     def OnShowRules(self, event):

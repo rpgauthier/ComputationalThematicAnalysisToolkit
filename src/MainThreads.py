@@ -437,6 +437,10 @@ class LoadThread(Thread):
             del result['config']['options']['adjustable_includedfields_mode']
         if 'model_iter' not in result['config']:
             result['config']['model_iter'] = 0
+        for key in result['config']['filtering_module']['filters']:
+            if 'applying_rules_paused' in result['config']['filtering_module']['filters'][key]:
+                result['config']['filtering_module']['filters'][key]['autoapply'] = result['config']['filtering_module']['filters'][key]['applying_rules_paused']
+                del result['config']['filtering_module']['filters'][key]['applying_rules_paused']
         
         #Update Codes
         def UpgradeCodes(codes):

@@ -28,9 +28,11 @@ class DatasetsListPanel(wx.Panel):
         self.dataset_dialogs = {}
         
         sizer = wx.BoxSizer(wx.VERTICAL)
-
         toolbar_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        create_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, self, label=GUIText.CREATE)
+
+        create_box = wx.StaticBox(self, label=GUIText.CREATE)
+        create_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        create_sizer = wx.StaticBoxSizer(create_box, wx.HORIZONTAL)
         create_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
         add_reddit_tool = create_toolbar.AddTool(wx.ID_ANY,
                                                  label=GUIText.DATASETS_RETRIEVE_REDDIT,
@@ -52,7 +54,9 @@ class DatasetsListPanel(wx.Panel):
         create_sizer.Add(create_toolbar)
         toolbar_sizer.Add(create_sizer, 0, wx.ALL, 5)
 
-        modify_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, self, label=GUIText.MODIFY)
+        modify_box = wx.StaticBox(self, label=GUIText.MODIFY)
+        create_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        modify_sizer = wx.StaticBoxSizer(modify_box, wx.HORIZONTAL)
         modify_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
         remove_tool = modify_toolbar.AddTool(wx.ID_ANY, label=GUIText.DELETE, bitmap=wx.Bitmap(1, 1),
                                              shortHelp=GUIText.DATASETS_DELETE_TOOLTIP)
@@ -325,7 +329,9 @@ class DatasetDetailsPanel(wx.Panel):
         self.sizer.Clear(True)
         main_frame = wx.GetApp().GetTopWindow()
         if main_frame.options_dict['multipledatasets_mode'] or dataset is None:
-            create_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, self, label=GUIText.CREATE)
+            create_box = wx.StaticBox(self, label=GUIText.CREATE)
+            create_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+            create_sizer = wx.StaticBoxSizer(create_box, wx.HORIZONTAL)
             toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
             add_reddit_tool = toolbar.AddTool(wx.ID_ANY,
                                             label=GUIText.DATASETS_RETRIEVE_REDDIT,
