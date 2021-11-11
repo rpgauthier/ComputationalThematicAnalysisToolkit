@@ -105,6 +105,11 @@ FILTER_TFIDF_UPPER = ' in the upper  '
 AVAILABLE_DATASET_LANGUAGES1 = ['eng-sm', 'fre-sm'] #removed eng-trf and fre-trf due to difficulties with preparing installations -- Sept 21, 2021
 AVAILABLE_DATASET_LANGUAGES2 = ['English', 'French']
 
+###Usefulness
+NOT_SURE = "Not Sure"
+USEFUL = "Useful"
+NOT_USEFUL = "Not Useful"
+
 # dialogs
 TWITTER_DIALOG_SIZE = wx.Size(350, -1)
 OPTIONS_DIALOG_SIZE = wx.Size(350, 300)

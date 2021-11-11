@@ -783,3 +783,6 @@ class Reviewing(Main):
 class Reporting(Main):
     LOAD_BUSY_MSG_CONFIG = "Loading Reporting Configurations"
     SAVE_BUSY_MSG_CONFIG ="Saving Reporting Configurations"
+
+    CODE_FILTERS = "Filter Codes"
+    QUOTE_FILTERS = "Filter Quotes"

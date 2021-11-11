@@ -5,6 +5,7 @@ from datetime import datetime
 
 import wx
 import wx.adv
+from wx.core import CheckListBox
 import wx.richtext
 import wx.dataview as dv
 
@@ -12,6 +13,7 @@ from Common.GUIText import Coding as GUIText
 import Common.Constants as Constants
 import Common.Notes as Notes
 import Common.Objects.DataViews.Codes as CodesDataViews
+import Common.Objects.GUIs.Generic as GenericGUIs
 
 class CodeConnectionsDialog(wx.Dialog):
     def __init__(self, parent, code, size=wx.DefaultSize):
@@ -122,53 +124,50 @@ class DocumentListPanel(wx.Panel):
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
         controls_sizer = wx.BoxSizer()
+        self.sizer.Add(controls_sizer, 0, wx.ALL, 5)
+
         actions_box = wx.StaticBox(self, label=GUIText.ACTIONS)
         actions_box.SetFont(main_frame.DETAILS_LABEL_FONT)
         actions_sizer = wx.StaticBoxSizer(actions_box, wx.HORIZONTAL)
-        #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
-        actions_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-        notsure_tool = actions_toolbar.AddTool(wx.ID_ANY, label=GUIText.NOT_SURE, bitmap=wx.Bitmap(1, 1),
-                                      shortHelp=GUIText.NOT_SURE_HELP)
-        actions_toolbar.Bind(wx.EVT_MENU, self.OnNotSure, notsure_tool)
-        useful_tool = actions_toolbar.AddTool(wx.ID_ANY, label=GUIText.USEFUL, bitmap=wx.Bitmap(1, 1),
-                                      shortHelp=GUIText.USEFUL_HELP)
-        actions_toolbar.Bind(wx.EVT_MENU, self.OnUseful, useful_tool)
-        notuseful_tool = actions_toolbar.AddTool(wx.ID_ANY, label=GUIText.NOT_USEFUL, bitmap=wx.Bitmap(1, 1),
-                                         shortHelp=GUIText.NOT_USEFUL_HELP)
-        actions_toolbar.Bind(wx.EVT_MENU, self.OnNotUseful, notuseful_tool)
-        actions_toolbar.Realize()
-        actions_sizer.Add(actions_toolbar)
-        controls_sizer.Add(actions_sizer, 0, wx.ALL, 5)
-        
-        usefulness_menu = wx.Menu()
-        self.notsure_toggle = usefulness_menu.Append(wx.ID_ANY, item=GUIText.NOT_SURE, kind=wx.ITEM_CHECK)
-        self.notsure_toggle.Check()
-        usefulness_menu.Bind(wx.EVT_MENU, self.OnToggleShowUsefulness, self.notsure_toggle)
-        self.useful_toggle = usefulness_menu.Append(wx.ID_ANY, item=GUIText.USEFUL, kind=wx.ITEM_CHECK)
-        self.useful_toggle.Check()
-        usefulness_menu.Bind(wx.EVT_MENU, self.OnToggleShowUsefulness, self.useful_toggle)
-        self.notuseful_toggle = usefulness_menu.Append(wx.ID_ANY, item=GUIText.NOT_USEFUL, kind=wx.ITEM_CHECK)
-        self.notuseful_toggle.Check()
-        usefulness_menu.Bind(wx.EVT_MENU, self.OnToggleShowUsefulness, self.notuseful_toggle)
+        controls_sizer.Add(actions_sizer)
 
-        self.origins_menu = wx.Menu()
-        self.origins_toggles = {}
-        self.dataset_toggle = self.origins_menu.Append(wx.ID_ANY, item=GUIText.DATACOLLECTION_LIST, kind=wx.ITEM_CHECK)
-        self.dataset_toggle.Check()
-        self.origins_menu.Bind(wx.EVT_MENU, self.OnToggleSamples, self.dataset_toggle)
+        notsure_btn = wx.Button(self, label=GUIText.NOT_SURE)
+        notsure_btn.SetToolTip(GUIText.NOT_SURE_HELP)
+        notsure_btn.Bind(wx.EVT_BUTTON, self.OnNotSure)
+        actions_sizer.Add(notsure_btn)
+        useful_btn = wx.Button(self, label=GUIText.USEFUL)
+        useful_btn.SetToolTip(GUIText.USEFUL_HELP)
+        useful_btn.Bind(wx.EVT_BUTTON, self.OnUseful)
+        actions_sizer.Add(useful_btn)
+        notuseful_btn = wx.Button(self, label=GUIText.NOT_USEFUL)
+        notuseful_btn.SetToolTip(GUIText.NOT_USEFUL_HELP)
+        notuseful_btn.Bind(wx.EVT_BUTTON, self.OnNotUseful)
+        actions_sizer.Add(notuseful_btn)
         
         view_box = wx.StaticBox(self, label=GUIText.VIEW)
         view_box.SetFont(main_frame.DETAILS_LABEL_FONT)
         view_sizer = wx.StaticBoxSizer(view_box, wx.HORIZONTAL)
-        #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
-        view_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-        usefulness_tool = view_toolbar.AddTool(wx.ID_ANY, label=GUIText.SHOW_USEFULNESS, bitmap=wx.Bitmap(1, 1), kind=wx.ITEM_DROPDOWN)
-        usefulness_tool.SetDropdownMenu(usefulness_menu)
-        origins_tool = view_toolbar.AddTool(wx.ID_ANY, label=GUIText.SHOW_DOCS_FROM, bitmap=wx.Bitmap(1, 1), kind=wx.ITEM_DROPDOWN)
-        origins_tool.SetDropdownMenu(self.origins_menu)
-        view_toolbar.Realize()
-        view_sizer.Add(view_toolbar)
-        controls_sizer.Add(view_sizer, 0, wx.ALL, 5)
+        controls_sizer.Add(view_sizer)
+
+        usefulness_combo_ctrl = wx.ComboCtrl(self, value=GUIText.SHOW_USEFULNESS, style=wx.TE_READONLY)
+        self.usefulness_popup_ctrl = GenericGUIs.CheckListBoxComboPopup(GUIText.SHOW_USEFULNESS)
+        usefulness_combo_ctrl.SetPopupControl(self.usefulness_popup_ctrl)
+        view_sizer.Add(usefulness_combo_ctrl, 1)
+        usefulness_combo_ctrl.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.OnToggleShowUsefulness)
+        self.usefulness_popup_ctrl.AddItem(GUIText.NOT_SURE, Constants.NOT_SURE, True)
+        self.usefulness_popup_ctrl.AddItem(GUIText.USEFUL, Constants.USEFUL, True)
+        self.usefulness_popup_ctrl.AddItem(GUIText.NOT_USEFUL, Constants.NOT_USEFUL, True)
+        longest_string = max([GUIText.SHOW_USEFULNESS, GUIText.NOT_SURE, GUIText.USEFUL, GUIText.NOT_USEFUL], key=len)
+        size = usefulness_combo_ctrl.GetSizeFromText(longest_string)
+        usefulness_combo_ctrl.SetMinSize(size)
+        
+        origins_combo_ctrl = wx.ComboCtrl(self, value=GUIText.SHOW_DOCS_FROM, style=wx.TE_READONLY)
+        self.origins_popup_ctrl = GenericGUIs.CheckListBoxComboPopup(GUIText.SHOW_DOCS_FROM)
+        origins_combo_ctrl.SetPopupControl(self.origins_popup_ctrl)
+        view_sizer.Add(origins_combo_ctrl, 1)
+        origins_combo_ctrl.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.OnToggleSamples)
+        size = origins_combo_ctrl.GetSizeFromText(GUIText.SHOW_DOCS_FROM)
+        origins_combo_ctrl.SetMinSize(size)
 
         self.search_ctrl = wx.SearchCtrl(self)
         self.search_ctrl.Bind(wx.EVT_SEARCH, self.OnSearch)
@@ -179,20 +178,19 @@ class DocumentListPanel(wx.Panel):
         size = self.search_ctrl.GetSizeFromTextSize(extent.GetWidth()*4, -1)
         self.search_ctrl.SetMinSize(size)
         controls_sizer.Add(self.search_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-
-        self.sizer.Add(controls_sizer, 0, wx.ALL, 5)
         
-        #single dataset mode
         main_frame = wx.GetApp().GetTopWindow()
         self.documents_model = CodesDataViews.DocumentViewModel(main_frame.datasets[self.dataset_key], main_frame.samples)
-        self.documents_model.samples_filter.append('dataset')
         self.documents_ctrl = CodesDataViews.DocumentViewCtrl(self, self.documents_model)
-        self.sizer.Add(self.documents_ctrl, 1, wx.EXPAND)
+        self.sizer.Add(self.documents_ctrl, 1, wx.ALL|wx.EXPAND, 5)
 
+        #single dataset mode
+        self.origins_popup_ctrl.AddItem(GUIText.DATACOLLECTION_LIST, 'dataset', True)
+        self.documents_model.samples_filter.append('dataset')
         self.documents_model.Cleared()
         self.documents_ctrl.Expander(None)
 
-        self.SetSizer(self.sizer)
+        self.SetSizerAndFit(self.sizer)
 
         logger.info("Finished")    
 
@@ -203,8 +201,8 @@ class DocumentListPanel(wx.Panel):
             node = self.documents_model.ItemToObject(item)
             if hasattr(node, "usefulness_flag"):
                 node.usefulness_flag = None
-                self.documents_model.ItemChanged(item)
-            
+        self.documents_model.Cleared()
+        self.documents_ctrl.Expander(None)
         logger.info("Finished")
 
     def OnUseful(self, event):
@@ -214,7 +212,8 @@ class DocumentListPanel(wx.Panel):
             node = self.documents_model.ItemToObject(item)
             if hasattr(node, "usefulness_flag"):
                 node.usefulness_flag = True
-                self.documents_model.ItemChanged(item)
+        self.documents_model.Cleared()
+        self.documents_ctrl.Expander(None)
         logger.info("Finished")
 
     def OnNotUseful(self, event):
@@ -224,46 +223,30 @@ class DocumentListPanel(wx.Panel):
             node = self.documents_model.ItemToObject(item)
             if hasattr(node, "usefulness_flag"):
                 node.usefulness_flag = False
-                self.documents_model.ItemChanged(item)
+        self.documents_model.Cleared()
+        self.documents_ctrl.Expander(None)
         logger.info("Finished")
     
     def OnToggleShowUsefulness(self, event):
-        notsure_toggled = self.notsure_toggle.IsChecked()
-        if not notsure_toggled:
-            if None in self.documents_model.usefulness_filter:
-                self.documents_model.usefulness_filter.remove(None)
-        elif notsure_toggled:
-            if None not in self.documents_model.usefulness_filter:
-                self.documents_model.usefulness_filter.append(None)
+        self.documents_model.usefulness_filter.clear()
         
-        useful_toggled = self.useful_toggle.IsChecked()
-        if not useful_toggled:
-            if True in self.documents_model.usefulness_filter:
-                self.documents_model.usefulness_filter.remove(True)
-        elif useful_toggled:
-            if True not in self.documents_model.usefulness_filter:
-                self.documents_model.usefulness_filter.append(True)
-        
-        notuseful_toggled = self.notuseful_toggle.IsChecked()
-        if not notuseful_toggled:
-            if False in self.documents_model.usefulness_filter:
-                self.documents_model.usefulness_filter.remove(False)
-        elif notuseful_toggled:
-            if False not in self.documents_model.usefulness_filter:
-                self.documents_model.usefulness_filter.append(False)
+        checked_keys = self.usefulness_popup_ctrl.GetCheckedKeys()
+
+        if Constants.NOT_SURE in checked_keys:
+            self.documents_model.usefulness_filter.append(None)
+        if Constants.USEFUL in checked_keys:
+            self.documents_model.usefulness_filter.append(True)
+        if Constants.NOT_USEFUL in checked_keys:
+            self.documents_model.usefulness_filter.append(False)
+
         self.documents_model.Cleared()
         self.documents_ctrl.Expander(None)
 
     def OnToggleSamples(self, event):
         logger = logging.getLogger(__name__+".DocumentListPanel.OnToggleSamples")
         logger.info("Starting")
-        origins = []
-
-        if self.dataset_toggle.IsChecked():
-            origins.append('dataset')
-        for key in self.origins_toggles:
-            if self.origins_toggles[key].IsChecked():
-                origins.append(key)
+        
+        origins = self.origins_popup_ctrl.GetCheckedKeys()
         
         self.documents_model.samples_filter.clear()
         self.documents_model.samples_filter.extend(origins)
@@ -312,15 +295,15 @@ class DocumentListPanel(wx.Panel):
         logger.info("Starting")
 
         main_frame = wx.GetApp().GetTopWindow()
-        for key in list(self.origins_toggles.keys()):
-            if key not in main_frame.samples:
-                self.origins_menu.Delete(self.origins_toggles[key])
-                del self.origins_toggles[key]
+        for key in self.origins_popup_ctrl.GetKeys():
+            if key not in main_frame.samples and key != 'dataset':
+                self.origins_popup_ctrl.RemoveItem(key)
+                if key in self.documents_model.samples_filter:
+                    self.documents_model.samples_filter.remove(key)
+        cur_keys = self.origins_popup_ctrl.GetKeys()
         for key in main_frame.samples:
-            if key not in self.origins_toggles:
-                self.origins_toggles[key] = self.origins_menu.Append(wx.ID_ANY, item=main_frame.samples[key].name, kind=wx.ITEM_CHECK)
-                self.origins_toggles[key].Check()
-                self.origins_menu.Bind(wx.EVT_MENU, self.OnToggleSamples, self.origins_toggles[key])
+            if key not in cur_keys:
+                self.origins_popup_ctrl.AddItem(main_frame.samples[key].name, key, True)
                 self.documents_model.samples_filter.append(key)
 
         self.documents_model.Cleared()
@@ -655,7 +638,6 @@ class DocumentPanel(wx.Panel):
         self.notes_panel.SetNote(self.document.notes)
         self.notes_panel.Bind(wx.EVT_TEXT, self.OnUpdateNotes)
 
-
 class CreateQuotationDialog(wx.Dialog):
     def __init__(self, parent, code, datasets, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".CreateQuotationDialog["+str(code.key)+"].__init__")
@@ -699,5 +681,3 @@ class CreateQuotationDialog(wx.Dialog):
         else:
             self.EndModal(wx.ID_OK)
         logger.info("Finished")
-
-

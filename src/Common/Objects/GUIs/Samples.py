@@ -331,20 +331,22 @@ class PartPanel(wx.Panel):
         sample_num_sizer.Add(self.sample_num_ctrl)
         controls_sizer.Add(sample_num_sizer, 0, wx.ALL, 5)
         
-        #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
-        toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-        useful_tool = toolbar.AddTool(wx.ID_ANY, label=GUIText.NOT_SURE, bitmap=wx.Bitmap(1, 1),
-                                      shortHelp=GUIText.NOT_SURE_HELP)
-        toolbar.Bind(wx.EVT_MENU, self.OnUseful, useful_tool)
-        
-        useful_tool = toolbar.AddTool(wx.ID_ANY, label=GUIText.USEFUL, bitmap=wx.Bitmap(1, 1),
-                                      shortHelp=GUIText.USEFUL_HELP)
-        toolbar.Bind(wx.EVT_MENU, self.OnUseful, useful_tool)
-        notuseful_tool = toolbar.AddTool(wx.ID_ANY, label=GUIText.NOT_USEFUL, bitmap=wx.Bitmap(1, 1),
-                                         shortHelp=GUIText.NOT_USEFUL_HELP)
-        toolbar.Bind(wx.EVT_MENU, self.OnNotUseful, notuseful_tool)
-        toolbar.Realize()
-        controls_sizer.Add(toolbar, 0, wx.ALL, 5)
+        #actions_box = wx.StaticBox(self, label=GUIText.ACTIONS)
+        #actions_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        actions_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        controls_sizer.Add(actions_sizer, 0, wx.ALL, 5)
+        notsure_btn = wx.Button(self, label=GUIText.NOT_SURE)
+        notsure_btn.SetToolTip(GUIText.NOT_SURE_HELP)
+        notsure_btn.Bind(wx.EVT_BUTTON, self.OnNotSure)
+        actions_sizer.Add(notsure_btn)
+        useful_btn = wx.Button(self, label=GUIText.USEFUL)
+        useful_btn.SetToolTip(GUIText.USEFUL_HELP)
+        useful_btn.Bind(wx.EVT_BUTTON, self.OnUseful)
+        actions_sizer.Add(useful_btn)
+        notuseful_btn = wx.Button(self, label=GUIText.NOT_USEFUL)
+        notuseful_btn.SetToolTip(GUIText.NOT_USEFUL_HELP)
+        notuseful_btn.Bind(wx.EVT_BUTTON, self.OnNotUseful)
+        actions_sizer.Add(notuseful_btn)
         
         self.parts_model = SamplesDataViews.PartsViewModel(self.sample, self.dataset)
         self.parts_ctrl = SamplesDataViews.PartsViewCtrl(self, self.parts_model)
@@ -471,14 +473,11 @@ class SampleRulesDialog(wx.Dialog):
         
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
-        restore_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.RESTORE_RULES,
-                                            bitmap=wx.Bitmap(1, 1),
-                                            shortHelp=GUIText.RESTORE_RULES_TOOLTIP)
-        self.toolbar.Bind(wx.EVT_MENU, self.OnRestoreStart, restore_tool)
+        restore_btn = wx.Button(self, label=GUIText.RESTORE_RULES)
+        restore_btn.SetToolTip(GUIText.RESTORE_RULES_TOOLTIP)
+        restore_btn.Bind(wx.EVT_BUTTON, self.OnRestoreStart)
         CustomEvents.APPLY_FILTER_RULES_EVT_RESULT(self, self.OnRestoreFinish)
-        self.toolbar.Realize()
-        sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
+        sizer.Add(restore_btn, proportion=0, flag=wx.ALL, border=5)
 
         tokenization_sizer = wx.BoxSizer(wx.HORIZONTAL)
         tokenization_package_label1 = wx.StaticText(self, label=FilteringGUIText.FILTERS_TOKENIZER)
@@ -568,18 +567,15 @@ class SampleComputationalFieldsDialog(wx.Dialog):
         for field_key in self.sample.fields_list:
             self.fields[field_key] = self.dataset.available_fields[field_key]
         
-        self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
-        restore_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.RESTORE_COMPUTATIONAL_FIELDS,
-                                            bitmap=wx.Bitmap(1, 1),
-                                            shortHelp=GUIText.RESTORE_COMPUTATIONAL_FIELDS_TOOLTIP)
-        self.toolbar.Bind(wx.EVT_MENU, self.OnRestoreStart, restore_tool)
+        self.restore_btn = wx.Button(self, label=GUIText.RESTORE_COMPUTATIONAL_FIELDS)
+        self.restore_btn.SetToolTip(GUIText.RESTORE_COMPUTATIONAL_FIELDS_TOOLTIP)
+        self.restore_btn.Bind(wx.EVT_MENU, self.OnRestoreStart)
         CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnRestoreFinish)
-        self.toolbar.Realize()
-        self.sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
+        self.sizer.Add(self.restore_btn, proportion=0, flag=wx.ALL, border=5)
         if main_frame.options_dict['adjustable_computation_fields_mode']:
-            self.toolbar.Show()
+            self.restore_btn.Show()
         else:
-            self.toolbar.Hide()
+            self.restore_btn.Hide()
 
         self.computational_fields_model = DatasetsDataViews.ChosenFieldsViewModel(self.fields)
         self.computational_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(self, self.computational_fields_model)
@@ -638,9 +634,9 @@ class SampleComputationalFieldsDialog(wx.Dialog):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         if main_frame.options_dict['adjustable_computation_fields_mode']:
-            self.toolbar.Show()
+            self.restore_btn.Show()
         else:
-            self.toolbar.Hide()
+            self.restore_btn.Hide()
         self.Layout()
         logger.info("Finished")
 
@@ -1139,9 +1135,9 @@ class TopicSamplePanel(AbstractSamplePanel):
         self.horizontal_splitter.SetMinimumPaneSize(20)
 
         self.topiclist_panel = TopicListPanel(self.horizontal_splitter, self, self.sample, self.dataset)
-        self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnMergeTopics, self.topiclist_panel.merge_topics_tool)
-        self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnSplitTopics, self.topiclist_panel.split_topics_tool)
-        self.topiclist_panel.toolbar.Bind(wx.EVT_MENU, self.OnRemoveTopics, self.topiclist_panel.remove_topics_tool)
+        self.topiclist_panel.merge_topics_btn.Bind(wx.EVT_MENU, self.OnMergeTopics)
+        self.topiclist_panel.split_topics_btn.Bind(wx.EVT_MENU, self.OnSplitTopics)
+        self.topiclist_panel.remove_topics_btn.Bind(wx.EVT_MENU, self.OnRemoveTopics)
         self.topiclist_panel.words_num_ctrl.Bind(wx.EVT_SPINCTRL, self.OnChangeTopicWordNum)
         #turned off for performance reasons
         self.topiclist_panel.topic_list_ctrl.Bind(dv.EVT_DATAVIEW_SELECTION_CHANGED, self.OnTopicsSelected)
@@ -1400,8 +1396,8 @@ class TopicListPanel(wx.Panel):
 
         sizer.Add(wx.StaticLine(self), 0, wx.EXPAND)
 
-        topic_list_tools_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(topic_list_tools_sizer, 0, wx.ALL, 5)
+        controls_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(controls_sizer, 0, wx.ALL, 5)
 
         words_num_sizer = wx.BoxSizer()
         words_num_label1 = wx.StaticText(self, label=GUIText.WORDS_PER_TOPIC1+" ")
@@ -1410,23 +1406,22 @@ class TopicListPanel(wx.Panel):
         words_num_sizer.Add(self.words_num_ctrl)
         words_num_label2 = wx.StaticText(self, label=" "+GUIText.WORDS_PER_TOPIC2)
         words_num_sizer.Add(words_num_label2, 0, wx.ALIGN_CENTRE_VERTICAL)
-        topic_list_tools_sizer.Add(words_num_sizer, 0, wx.ALL, 5)
+        controls_sizer.Add(words_num_sizer, 0, wx.ALL, 5)
 
-        self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-        self.merge_topics_tool = self.toolbar.AddTool(wx.ID_ANY,
-                                                      label=GUIText.MERGE_TOPIC_LABEL,
-                                                      bitmap=wx.Bitmap(1, 1),
-                                                      shortHelp=GUIText.MERGE_TOPIC_SHORTHELP)
-        self.split_topics_tool = self.toolbar.AddTool(wx.ID_ANY,
-                                                      label=GUIText.SPLIT_TOPIC_LABEL,
-                                                      bitmap=wx.Bitmap(1, 1),
-                                                      shortHelp=GUIText.SPLIT_TOPIC_SHORTHELP)
-        self.remove_topics_tool = self.toolbar.AddTool(wx.ID_ANY,
-                                                      label=GUIText.REMOVE_TOPIC_LABEL,
-                                                      bitmap=wx.Bitmap(1, 1),
-                                                      shortHelp=GUIText.REMOVE_TOPIC_SHORTHELP)
-        self.toolbar.Realize()
-        topic_list_tools_sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
+        #actions_box = wx.StaticBox(self, label=GUIText.ACTIONS)
+        #actions_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        actions_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        controls_sizer.Add(actions_sizer, 0, wx.ALL, 5)
+
+        self.merge_topics_btn = wx.Button(self, label=GUIText.MERGE_TOPIC_LABEL)
+        self.merge_topics_btn.SetToolTip(GUIText.MERGE_TOPIC_SHORTHELP)
+        actions_sizer.Add(self.merge_topics_btn)
+        self.split_topics_btn = wx.Button(self, label=GUIText.SPLIT_TOPIC_LABEL)
+        self.split_topics_btn.SetToolTip(GUIText.SPLIT_TOPIC_SHORTHELP)
+        actions_sizer.Add(self.split_topics_btn)
+        self.remove_topics_btn = wx.Button(self, label=GUIText.REMOVE_TOPIC_LABEL)
+        self.remove_topics_btn.SetToolTip(GUIText.REMOVE_TOPIC_SHORTHELP)
+        actions_sizer.Add(self.remove_topics_btn)
 
         cutoff_sizer = wx.BoxSizer(wx.HORIZONTAL)
         cutoff_label = wx.StaticText(self, label=GUIText.PROBABILITY_CUTOFF_LABEL)
@@ -1440,7 +1435,7 @@ class TopicListPanel(wx.Panel):
         self.cutoff_spin.SetToolTip(GUIText.PROBABILITY_CUTOFF_TOOLTIP)
         cutoff_sizer.Add(cutoff_label, 0, wx.ALIGN_CENTER)
         cutoff_sizer.Add(self.cutoff_spin, 0, wx.ALIGN_CENTER)
-        topic_list_tools_sizer.Add(cutoff_sizer, proportion=0, flag=wx.ALL, border=5)
+        controls_sizer.Add(cutoff_sizer, proportion=0, flag=wx.ALL, border=5)
         
         self.topic_list_model = SamplesDataViews.TopicViewModel(sample.parts_dict.values())
         self.topic_list_ctrl = SamplesDataViews.TopicViewCtrl(self, self.topic_list_model)

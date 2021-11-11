@@ -1140,7 +1140,7 @@ class DocumentViewModel(dv.PyDataViewModel):
                     else:
                         include = True
                     if len(self.usefulness_filter) > 0:
-                        if node.documents[document_key].usefulness_flag not in self.usefulness_filter:
+                        if self.dataset.documents[document_key].usefulness_flag not in self.usefulness_filter:
                             include = False
                     if include:
                         children.append(self.ObjectToItem(self.dataset.documents[document_key]))
@@ -1680,6 +1680,11 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
     def __init__(self, codes):
         dv.PyDataViewModel.__init__(self)
         self.codes = codes
+        
+        self.search_filter = ""
+        self.code_usefulness_filter = []
+        self.quote_usefulness_filter = []
+
         self.UseWeakRefs(True)
 
     def GetColumnCount(self):
@@ -1692,15 +1697,20 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
         # end up being the collection of visible roots in our tree.
         if not parent:
             for code_key in self.codes:
-                children.append(self.ObjectToItem(self.codes[code_key]))
+                code = self.codes[code_key]
+                if len(self.code_usefulness_filter) == 0 or code.usefulness_flag in self.code_usefulness_filter:
+                    children.append(self.ObjectToItem(code))
             return len(children)
 
         node = self.ItemToObject(parent)
         if isinstance(node, Codes.Code):
             for quotation in node.quotations:
-                children.append(self.ObjectToItem(quotation))
+                if len(self.quote_usefulness_filter) == 0 or quotation.usefulness_flag in self.quote_usefulness_filter:
+                    children.append(self.ObjectToItem(quotation))
             for subcode_key in node.subcodes:
-                children.append(self.ObjectToItem(node.subcodes[subcode_key]))
+                subcode = node.subcodes[subcode_key]
+                if len(self.code_usefulness_filter) == 0 or subcode.usefulness_flag in self.code_usefulness_filter:
+                    children.append(self.ObjectToItem(subcode))
         return len(children)
 
     def IsContainer(self, item):
