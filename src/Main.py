@@ -65,7 +65,7 @@ class MainFrame(wx.Frame):
         self.about_dialog = None
 
         self.codeconnections_dialogs = {}
-        self.document_dialogs = {} #TODO
+        self.document_dialogs = {}
 
 
         #Workspace's Options
@@ -301,7 +301,6 @@ class MainFrame(wx.Frame):
                 self.DatasetsUpdated(autosave=False)
                 self.SamplesUpdated()
                 self.DocumentsUpdated(self)
-                #TODO investigate error that occurs when a code is selected when new is clicked
                 self.CodesUpdated()
 
                 self.SetTitle(GUIText.APP_NAME+" - "+GUIText.UNSAVED)

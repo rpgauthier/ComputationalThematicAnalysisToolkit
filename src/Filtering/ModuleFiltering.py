@@ -582,7 +582,6 @@ class FilterPanel(wx.Panel):
         logger.info("Finished")
         return saved_data
 
-#TODO continue converting to virutal backed onto database
 # differeniate between included and removed
 class WordsPanel(wx.Panel):
     def __init__(self, parent, parent_frame, dataset, word_type, style):

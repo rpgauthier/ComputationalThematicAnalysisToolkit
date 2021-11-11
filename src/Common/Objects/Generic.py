@@ -14,6 +14,7 @@ class GenericObject(object):
         self._name = name
         self._label = ""
         self._notes = ""
+        self._notes_string = ""
         self._usefulness_flag = None
 
         #objects that have their own last_changed_dt and thus need to be checked dynamically
@@ -63,6 +64,17 @@ class GenericObject(object):
     @notes.setter
     def notes(self, value):
         self._notes = value
+        self.last_changed_dt = datetime.now()
+    
+    @property
+    def notes_string(self):
+        if hasattr(self, self._notes_string):
+            return self._notes_string
+        else:
+            return ""
+    @notes_string.setter
+    def notes_string(self, value):
+        self._notes_string = value
         self.last_changed_dt = datetime.now()
 
     @property

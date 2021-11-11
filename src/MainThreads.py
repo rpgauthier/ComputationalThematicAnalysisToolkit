@@ -190,7 +190,6 @@ class LoadThread(Thread):
         logger.info("Finished")
         wx.PostEvent(self._notify_window, CustomEvents.LoadResultEvent(result))
 
-    #TODO upgrade to use uuid as keys for objects
     def Upgrade0_8_5(self, result, ver):
         wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_WORKSPACE1 + str(ver) \
                                                                      + GUIText.UPGRADE_BUSY_MSG_WORKSPACE2 + Constants.CUR_VER))

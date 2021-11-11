@@ -134,7 +134,6 @@ class DatabaseConnection():
             logger.exception("sql failed with sql error")
         logger.info("Finished")
 
-    #TODO figure out how to drop columns tf and idf if they exist as they are no longer used
     def Upgrade(self):
         logger = logging.getLogger(__name__+".Upgrade")
         logger.info("Starting")

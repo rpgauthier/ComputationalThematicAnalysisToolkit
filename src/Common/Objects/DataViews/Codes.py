@@ -716,7 +716,7 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
 #   0. Code:   string
 #   1. References:  int
 #   2. Notes: string
-#TODO need to rework ViewModel to show dynamic label columns instead of just system ids
+#TODO need to rework ViewModel to show dynamic label columns instead of just document ids
 class CodeConnectionsViewModel(dv.PyDataViewModel):
     def __init__(self, code, datasets, samples):
         dv.PyDataViewModel.__init__(self)
@@ -862,7 +862,7 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
             raise RuntimeError("unknown node type")
 
 #this view enables displaying of fields for different datasets
-#TODO need to rework ViewModel to show dynamic label columns instead of just system ids
+#TODO need to rework ViewModel to show dynamic label columns instead of just document ids
 class CodeConnectionsViewCtrl(dv.DataViewCtrl):
     def __init__(self, parent, model, style=dv.DV_MULTIPLE|dv.DV_ROW_LINES):
         dv.DataViewCtrl.__init__(self, parent, style=style)

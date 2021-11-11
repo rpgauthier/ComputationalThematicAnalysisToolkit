@@ -1,7 +1,4 @@
-#TODO program needs to be adjusted allow french localization via either:
-# 1) hot swapping GUIText's classes with French Equivilents
-# 2) rework to use wx.localization
-
+#TODO program needs to be adjusted allow french localization
 class Common:
     #Common text used everywhere
     WARNING = "Warning"
@@ -410,7 +407,7 @@ class Samples(Main):
     BITERM_DESC = "This topic model is suited to identifying topics in short texts, such as tweets and instant messages"
     BITERM_URL = "https://dl.acm.org/doi/10.1145/2488388.2488514"
     NMF_LABEL = "Non-Negative Matrix Factorization"
-    NMF_DESC = "This topic model is suited to identifying topics in short texts, such as tweets and instant messages"
+    NMF_DESC = "This topic model is suited to rough identifying topics when performing initial explorations"
     NMF_URL = "https://dl.acm.org/doi/book/10.5555/aai28114631"
 
     #model list columns and tools

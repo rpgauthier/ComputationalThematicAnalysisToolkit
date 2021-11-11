@@ -40,6 +40,7 @@ class FieldsPanel(wx.Panel):
 
         available_panel = wx.lib.scrolledpanel.ScrolledPanel(splitter)
         available_sizer = wx.BoxSizer(wx.VERTICAL)
+        #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
         available_toolbar = wx.ToolBar(available_panel, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
         add_tool = available_toolbar.AddTool(wx.ID_ANY, label=GUIText.ADD, bitmap=wx.Bitmap(1, 1),
                                              shortHelp=GUIText.FIELDS_ADD_TOOLTIP)
@@ -56,6 +57,7 @@ class FieldsPanel(wx.Panel):
 
         chosen_panel = wx.lib.scrolledpanel.ScrolledPanel(splitter)
         chosen_sizer = wx.BoxSizer(wx.VERTICAL)
+        #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
         chosen_toolbar = wx.ToolBar(chosen_panel, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
         remove_tool = chosen_toolbar.AddTool(wx.ID_ANY, label=GUIText.REMOVE, bitmap=wx.Bitmap(1, 1),
                                              shortHelp=GUIText.FIELDS_REMOVE_TOOLTIP)

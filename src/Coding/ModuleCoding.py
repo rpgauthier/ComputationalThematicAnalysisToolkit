@@ -15,8 +15,7 @@ import Common.Objects.DataViews.Codes as CodesDataViews
 import Common.Objects.GUIs.Codes as CodesGUIs
 import Common.Objects.Utilities.Codes as CodesUtilities
 
-#TODO add ability to highlight what data was selected when checking a code. instructions on what was selected would need to be embeded in dataset>document
-
+#TODO add ability to automatically highlight what data was selected when checking a code. instructions on what was selected would need to be embeded in dataset>document
 class CodingNotebook(FNB.FlatNotebook):
     '''Manages the Coding Module'''
     def __init__(self, parent, size=wx.DefaultSize):

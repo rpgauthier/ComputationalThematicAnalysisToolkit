@@ -68,11 +68,11 @@ class SamplingNotebook(FNB.FlatNotebook):
                         sample.name = new_name
                         self.SetPageText(selection, new_name)
                         main_frame.SamplesUpdated()
-                        #TODO hook this up to allow toggle of sample specific actions
+                        #hook this up to allow toggle of sample specific actions
                         #sample_panel.menu_menuitem.SetItemLabel(new_name)
         logger.info("Finished")
 
-    #TODO hook this up so that users can toggle a specified sample vis the view menu
+    #Hook this up so that users can toggle a specified sample vis the view menu
     def OnToggleSample(self, event):
         logger = logging.getLogger(__name__+".SamplingNotebook.OnToggleTokenFilters")
         logger.info("Starting")
@@ -148,7 +148,7 @@ class SamplingNotebook(FNB.FlatNotebook):
                 if new_sample_panel is not None:
                     self.InsertPage(len(self.sample_panels), new_sample_panel, str(sample.name), select=True)
                     self.sample_panels[sample.key] = new_sample_panel
-                    #TODO hook this up to allow sample specific actions 
+                    #hook this up if need to allow sample specific actions 
                     #new_sample_panel.menu_menuitem = self.actions_menu.AppendSubMenu(new_sample_panel.menu, str(sample_key))
 
     def DatasetsUpdated(self):

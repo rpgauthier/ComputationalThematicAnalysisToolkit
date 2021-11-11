@@ -14,7 +14,7 @@ import Common.Database as Database
 import Collection.CollectionDialogs as CollectionDialogs
 import Collection.SubModuleFields as SubModuleFields
 
-#TODO rethink create layout to have more description of the sources
+#TODO rethink create layout to have more description of the sources similar to create samples panel
 class DatasetsListPanel(wx.Panel):
     def __init__(self, parent, module, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".DatasetsPanel.__init__")
@@ -33,6 +33,7 @@ class DatasetsListPanel(wx.Panel):
         create_box = wx.StaticBox(self, label=GUIText.CREATE)
         create_box.SetFont(main_frame.DETAILS_LABEL_FONT)
         create_sizer = wx.StaticBoxSizer(create_box, wx.HORIZONTAL)
+        #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
         create_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
         add_reddit_tool = create_toolbar.AddTool(wx.ID_ANY,
                                                  label=GUIText.DATASETS_RETRIEVE_REDDIT,
@@ -57,6 +58,7 @@ class DatasetsListPanel(wx.Panel):
         modify_box = wx.StaticBox(self, label=GUIText.MODIFY)
         create_box.SetFont(main_frame.DETAILS_LABEL_FONT)
         modify_sizer = wx.StaticBoxSizer(modify_box, wx.HORIZONTAL)
+        #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
         modify_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
         remove_tool = modify_toolbar.AddTool(wx.ID_ANY, label=GUIText.DELETE, bitmap=wx.Bitmap(1, 1),
                                              shortHelp=GUIText.DATASETS_DELETE_TOOLTIP)
@@ -222,10 +224,6 @@ class DatasetsListPanel(wx.Panel):
                         del main_frame.datasets[node.key]
                     db_conn.DeleteDatasetFromStringTokens(node.key)
                     node.DestroyObject()
-                    #TODO need to either:
-                    # 1) update SAMPLES and CODES
-                    # 2) delete associated SAMPLES and CODES when associated dataset has been deleted as they will no longr work correctly
-
                 main_frame.DatasetsUpdated()
         finally:
             main_frame.CloseProgressDialog(thaw=True)
@@ -332,6 +330,7 @@ class DatasetDetailsPanel(wx.Panel):
             create_box = wx.StaticBox(self, label=GUIText.CREATE)
             create_box.SetFont(main_frame.DETAILS_LABEL_FONT)
             create_sizer = wx.StaticBoxSizer(create_box, wx.HORIZONTAL)
+            #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
             toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
             add_reddit_tool = toolbar.AddTool(wx.ID_ANY,
                                             label=GUIText.DATASETS_RETRIEVE_REDDIT,

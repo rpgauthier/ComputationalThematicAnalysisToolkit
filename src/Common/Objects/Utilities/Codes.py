@@ -20,8 +20,7 @@ def QDACodeExporter(codes, pathname):
         new_code_element.set('color', '#%02x%02x%02x' % code.colour_rgb)
         desc = ET.SubElement(new_code_element, 'Description')
         if isinstance(code.notes, bytes):
-            #TODO need to figure out how to convert from richtext buffer back to string
-            desc.text = ""
+            desc.text = code.notes_string
         else:
             desc.text = code.notes
         for subcode_key in code.subcodes:
@@ -34,14 +33,14 @@ def QDACodeExporter(codes, pathname):
     tree = ET.ElementTree(codebook_element)
 
     tree.write(pathname)
-    #TODO figure out why caused the process to fail with no exception on OSX after pyinstaller
+    #TODO figure out why function is failing with no exception on OSX after pyinstaller
     if platform.system() == 'Windows':
         codebook_schema = xmlschema.XMLSchema('./External/REFI-QDA/Codebook-mrt2019.xsd')
         codebook_schema.validate(pathname)
 
 def QDACodeImporter(pathname):
     codes = {}
-    #TODO figure out why caused the process to fail with no exception on OSX after pyinstaller
+    #TODO figure out why function is failing with no exception on OSX after pyinstaller
     if platform.system() == 'Windows':
         codebook_schema = xmlschema.XMLSchema('./External/REFI-QDA/Codebook-mrt2019.xsd')
         codebook_schema.validate(pathname)
@@ -63,6 +62,7 @@ def QDACodeImporter(pathname):
                 subcode.parent = code
                 code.subcodes[subcode.key] = subcode
         code.notes = notes
+        code.notes_string = notes
         return code
 
     for child in list(codebook_element):

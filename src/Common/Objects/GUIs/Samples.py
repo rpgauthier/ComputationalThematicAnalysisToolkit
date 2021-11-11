@@ -85,10 +85,8 @@ class SampleCreatePanel(wx.Panel):
         create_nmf_button.SetToolTip(GUIText.CREATE_NMF_TOOLTIP)
         self.Bind(wx.EVT_BUTTON, lambda event: self.OnStartCreateSample(event, 'NMF'), create_nmf_button)
         create_nmf_sizer.Add(create_nmf_button, 0, wx.ALL, 5)
-        #TODO: check description is ok
         create_nmf_description = wx.StaticText(self, label=GUIText.NMF_DESC)
         create_nmf_sizer.Add(create_nmf_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-        #TODO: check URL is ok
         create_nmf_link = wx.adv.HyperlinkCtrl(self, label="4", url=GUIText.NMF_URL) 
         create_nmf_sizer.Add(create_nmf_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
 
@@ -333,6 +331,7 @@ class PartPanel(wx.Panel):
         sample_num_sizer.Add(self.sample_num_ctrl)
         controls_sizer.Add(sample_num_sizer, 0, wx.ALL, 5)
         
+        #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
         toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
         useful_tool = toolbar.AddTool(wx.ID_ANY, label=GUIText.NOT_SURE, bitmap=wx.Bitmap(1, 1),
                                       shortHelp=GUIText.NOT_SURE_HELP)
@@ -1116,8 +1115,8 @@ class TopicSamplePanel(AbstractSamplePanel):
         logger.info("Starting")
         self.Freeze()
 
-        #TODO investigate performance issues occuring here
         #figure out what topics have been selected
+        #TODO investigate performance issues occuring here on OSX
         self.ChangeSelections()
         self.parts_panel.ChangeSelectedParts(self.selected_parts)
         #update the data and visualizations of selected topics

@@ -92,7 +92,7 @@ class CodeConnectionsPanel(wx.Panel):
         main_frame.DocumentsUpdated(self)
 
     def OnUpdateNotes(self, event):
-        self.code.notes = self.notes_panel.GetNote()
+        self.code.notes, self.code.notes_string = self.notes_panel.GetNote()
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.DocumentsUpdated(self)
     
@@ -125,6 +125,7 @@ class DocumentListPanel(wx.Panel):
         actions_box = wx.StaticBox(self, label=GUIText.ACTIONS)
         actions_box.SetFont(main_frame.DETAILS_LABEL_FONT)
         actions_sizer = wx.StaticBoxSizer(actions_box, wx.HORIZONTAL)
+        #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
         actions_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
         notsure_tool = actions_toolbar.AddTool(wx.ID_ANY, label=GUIText.NOT_SURE, bitmap=wx.Bitmap(1, 1),
                                       shortHelp=GUIText.NOT_SURE_HELP)
@@ -159,6 +160,7 @@ class DocumentListPanel(wx.Panel):
         view_box = wx.StaticBox(self, label=GUIText.VIEW)
         view_box.SetFont(main_frame.DETAILS_LABEL_FONT)
         view_sizer = wx.StaticBoxSizer(view_box, wx.HORIZONTAL)
+        #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
         view_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
         usefulness_tool = view_toolbar.AddTool(wx.ID_ANY, label=GUIText.SHOW_USEFULNESS, bitmap=wx.Bitmap(1, 1), kind=wx.ITEM_DROPDOWN)
         usefulness_tool.SetDropdownMenu(usefulness_menu)
@@ -173,7 +175,6 @@ class DocumentListPanel(wx.Panel):
         self.search_ctrl.Bind(wx.EVT_SEARCH_CANCEL, self.OnSearchCancel)
         self.search_ctrl.SetDescriptiveText(GUIText.SEARCH)
         self.search_ctrl.ShowCancelButton(True)
-        #TODO check this on OSX
         extent = self.search_ctrl.GetTextExtent(GUIText.SEARCH)
         size = self.search_ctrl.GetSizeFromTextSize(extent.GetWidth()*4, -1)
         self.search_ctrl.SetMinSize(size)
@@ -448,7 +449,7 @@ class DocumentPanel(wx.Panel):
         main_frame.DocumentsUpdated(self)
 
     def OnUpdateNotes(self, event):
-        self.document.notes = self.notes_panel.GetNote()
+        self.document.notes, self.document.notes_string = self.notes_panel.GetNote()
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.DocumentsUpdated(self)
     

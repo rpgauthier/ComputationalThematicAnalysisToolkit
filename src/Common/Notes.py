@@ -192,8 +192,9 @@ class NotesPanel(wx.Panel):
             handler.SaveFile(buffer, out)
             out.seek(0)
             content = out.read()
+            content_string = self.rich_text_ctrl.GetValue()
         self.rich_text_ctrl.EndSuppressUndo()
-        return content
+        return content, content_string
 
     ##Save and Load Functions
     def Load(self, saved_data):
@@ -216,13 +217,15 @@ class NotesPanel(wx.Panel):
         #data fields
         saved_data = {}
 
-        content = self.GetNote()
+        content, content_string = self.GetNote()
 
         saved_data['RichTextCtrl'] = content
+        saved_data['RichTextCtrl_string'] = content_string
 
         logger.info("Finished")
         return saved_data
 
+#TODO Rework to be sizer of buttons to avoid Windows to OSX compatibility issues
 class NoteToolBar(wx.ToolBar):
     '''Toolbar with options for editing notes'''
     def __init__(self, *args, **kwds):
