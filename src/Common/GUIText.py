@@ -25,6 +25,7 @@ class Common:
     ADD = "Add"
     SELECT = "Select"
     REMOVE = "Remove"
+    INCLUDE = "Include"
     READD = "Readd"
 
     CREATE = "Create"
@@ -618,7 +619,7 @@ class Filtering(Main, Datasets):
     FILTERS_TFIDF_MAX = "TF-IDF Max"
     FILTERS_TFIDF_MIN = "TF-IDF Min"
 
-    FILTERS_TFIDF = "TFIDF Range"
+    FILTERS_TFIDF = "TF-IDF"
     FILTERS_ANY = '<ANY>'
     FILTERS_REMOVE = 'Remove'
     FILTERS_INCLUDE = 'Include'
@@ -670,21 +671,26 @@ class Filtering(Main, Datasets):
     FILTERS_CREATE_RULE_WORD_TOOLTIP = "leave blank to apply to all words"
     FILTERS_CREATE_RULE_POS = "Part-of-Speech"
     FILTERS_CREATE_RULE_POS_TOOLTIP = "leave blank to apply to all parts of speech"
-    FILTER_CREATE_RULE_ANY = "<ANY>"
+    FILTERS_CREATE_RULE_ANY = "<ANY>"
     FILTERS_CREATE_RULE_ACTION = "Action"
+    FILTERS_CREATE_RULE_ADVANCED = "Advanced Filters"
+    FILTERS_CREATE_TFIDF_REMOVE = 'remove tokens where their tfidf is '
+    FILTERS_CREATE_TFIDF_INCLUDE = 'include tokens where their tfidf is '
+    FILTERS_CREATE_TFIDF_LOWER = ' in the lower '
+    FILTERS_CREATE_TFIDF_UPPER = ' in the upper  '
     FILTERS_CREATE_RULE = "Create Rule"
     FILTERS_CREATE_RULE_TOOLTIP = "Create a new generic rule or expand dropdown to create a custom rule"
-    FILTERS_CREATE_RULE_INCOMPLETE_ERROR = "Incomplete rule.\nPlease make sure action field is filled out."
+    FILTERS_CREATE_RULE_INVALID_ACTION_ERROR = "Please make sure action has been selected."
+    FILTERS_CREATE_RULE_INVALID_ADVANCED_ERROR = "Please make sure a valid advanced choice has been selected."
+    FILTERS_CREATE_COUNT_RULE_INCOMPLETE_ADVANCED_ERROR = "Please make sure advanced fields are selected and/or filled out."
     FILTERS_CREATE_COUNT_RULE = "Create Count Rule"
     FILTERS_CREATE_COUNT_RULE_TOOLTIP = "Create a new count rule using either the # of words or the # of documents"
     FILTERS_CREATE_COUNT_RULE_COLUMN_TOOLTIP = "Choose a numeric column"
     FILTERS_CREATE_COUNT_RULE_OPERATION_TOOLTIP = "Choose a comparision operation"
     FILTERS_CREATE_COUNT_RULE_NUMBER_TOOLTIP = "Set the number to compare against"
-    FILTERS_CREATE_COUNT_RULE_INCOMPLETE_ERROR = "Incomplete count rule.\nPlease make sure all action fields are filled out."
     FILTERS_CREATE_TFIDF_RULE = "Create TF-IDF Rule"
     FILTERS_CREATE_TFIDF_RULE_TOOLTIP = "Create a new tf-idf rule that uses the individual tokens' tf-idf values"
     FILTERS_CREATE_TFIDF_RULE_NUMBER_TOOLTIP = "Set the percentage cutoff to use to compare against tf-idf values"
-    FILTERS_CREATE_TFIDF_RULE_INCOMPLETE_ERROR = "Incomplete tf-idf rule.\nPlease make sure all action fields are filled out."
 
     FILTERS_AUTOAPPLY_PAUSE = "Pause Auto-Apply"
     FILTERS_AUTOAPPLY_RESUME = "Resume Auto-Apply"

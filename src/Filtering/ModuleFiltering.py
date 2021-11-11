@@ -295,13 +295,12 @@ class FilterPanel(wx.Panel):
                 self.rules_panel.DraftNewFilterRules(new_rules)
         logger.info("Finished")
 
-    def OnCreateCustomRule(self, event):
-        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnCreateCustomRule")
+    def OnCreateRule(self, event):
+        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnCreateRule")
         logger.info("Starting")
-        #custom dialog to choose direction (greater or less), number, and words or docs
-        with CreateCustomRuleDialog(self, self.dataset) as create_dialog:
+        with CreateRuleDialog(self, self.dataset) as create_dialog:
             if create_dialog.ShowModal() == wx.ID_OK:
-                rule = create_dialog.action
+                rule = create_dialog.rule
                 new_rule = (create_dialog.field, create_dialog.word, create_dialog.pos, rule)
                 if self.rules_panel.autoapply:
                     self.dataset.AddFilterRule(new_rule)
@@ -311,54 +310,6 @@ class FilterPanel(wx.Panel):
                     self.rules_panel.DraftNewFilterRules([new_rule])
         logger.info("Finished")
     
-    def OnRemoveSpacyAutoStopword(self, event):
-        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnSpacyAutoStopword")
-        logger.info("Starting")
-        new_rule = (Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS)
-        if self.rules_panel.autoapply:
-            self.dataset.AddFilterRule(new_rule)
-            self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-            self.ApplyFilterNewRulesStart([new_rule])
-        else:
-            self.rules_panel.DraftNewFilterRules([new_rule])
-        logger.info("Finished")
-    
-    def OnCreateCountFilter(self, event):
-        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnCreateCountFilter")
-        logger.info("Starting")
-        #custom dialog to choose direction (greater or less), number, and words or docs
-        with CreateCountFilterDialog(self, self.dataset) as create_dialog:
-            if create_dialog.ShowModal() == wx.ID_OK:
-                rule = (create_dialog.action,
-                        create_dialog.column,
-                        create_dialog.operation,
-                        create_dialog.number,)
-                new_rule = (create_dialog.field, create_dialog.word, create_dialog.pos, rule)
-                if self.rules_panel.autoapply:
-                    self.dataset.AddFilterRule(new_rule)
-                    self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-                    self.ApplyFilterNewRulesStart([new_rule])
-                else:
-                    self.rules_panel.DraftNewFilterRules([new_rule])
-        logger.info("Finished")
-    
-    def OnCreateTfidfFilter(self, event):
-        logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnCreateTfidfFilter")
-        logger.info("Starting")
-        with CreateTfidfFilterDialog(self, self.dataset) as create_dialog:
-            if create_dialog.ShowModal() == wx.ID_OK:
-                rule = (create_dialog.action1,
-                        create_dialog.action2,
-                        create_dialog.rank,)
-                new_rule = (create_dialog.field, create_dialog.word, create_dialog.pos, rule)
-                if self.rules_panel.autoapply:
-                    self.dataset.AddFilterRule(new_rule)
-                    self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-                    self.ApplyFilterNewRulesStart([new_rule])
-                else:
-                    self.rules_panel.DraftNewFilterRules([new_rule])
-        logger.info("Finished")
-
     def OnDeleteRule(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnDeleteRule")
         logger.info("Starting")
@@ -454,14 +405,11 @@ class FilterPanel(wx.Panel):
         logger.info("Starting")
         self.rules_panel.autoapply = not self.rules_panel.autoapply
         if not self.rules_panel.autoapply:
-            self.rules_panel.pauserules_tool.SetLabel(GUIText.FILTERS_AUTOAPPLY_RESUME)
+            self.rules_panel.pauserules_btn.SetLabel(GUIText.FILTERS_AUTOAPPLY_RESUME)
         else:
-            self.rules_panel.pauserules_tool.SetLabel(GUIText.FILTERS_AUTOAPPLY_PAUSE)
-            menuitems = self.rules_panel.pauserules_menu.GetMenuItems()
-            if self.rules_panel.applyrules_menuitem in menuitems:
-                self.rules_panel.pauserules_menu.Remove(self.rules_panel.applyrules_menuitem)
-            if self.rules_panel.cancelrules_menuitem in menuitems:
-                self.rules_panel.pauserules_menu.Remove(self.rules_panel.cancelrules_menuitem)
+            self.rules_panel.pauserules_btn.SetLabel(GUIText.FILTERS_AUTOAPPLY_PAUSE)
+            self.rules_panel.applyrules_btn.Hide()
+            self.rules_panel.cancelrules_btn.Hide()
             self.dataset.filter_rules = self.rules_panel.GetDraftedRules()
             self.dataset.last_changed_dt = datetime.now()
             self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
@@ -473,11 +421,8 @@ class FilterPanel(wx.Panel):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnCancelRules")
         logger.info("Starting")
         self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-        menuitems = self.rules_panel.pauserules_menu.GetMenuItems()
-        if self.rules_panel.applyrules_menuitem in menuitems:
-            self.rules_panel.pauserules_menu.Remove(self.rules_panel.applyrules_menuitem)
-        if self.rules_panel.cancelrules_menuitem in menuitems:
-            self.rules_panel.pauserules_menu.Remove(self.rules_panel.cancelrules_menuitem)
+        self.rules_panel.applyrules_btn.Hide()
+        self.rules_panel.cancelrules_btn.Hide()
         logger.info("Finished")
     
     def OnApplyRules(self, event):
@@ -486,11 +431,8 @@ class FilterPanel(wx.Panel):
         self.dataset.filter_rules = self.rules_panel.GetDraftedRules()
         self.dataset.last_changed_dt = datetime.now()
         self.rules_panel.DisplayFilterRules(self.dataset.filter_rules)
-        menuitems = self.rules_panel.pauserules_menu.GetMenuItems()
-        if self.rules_panel.applyrules_menuitem in menuitems:
-            self.rules_panel.pauserules_menu.Remove(self.rules_panel.applyrules_menuitem)
-        if self.rules_panel.cancelrules_menuitem in menuitems:
-            self.rules_panel.pauserules_menu.Remove(self.rules_panel.cancelrules_menuitem)
+        self.rules_panel.applyrules_btn.Hide()
+        self.rules_panel.cancelrules_btn.Hide()
         self.autosave = True
         self.ApplyFilterAllRulesStart()
         logger.info("Finished")
@@ -582,7 +524,6 @@ class FilterPanel(wx.Panel):
             self.autosave = False
             main_frame.AutoSaveStart()
         self.Thaw()
-        self.rules_panel.toolbar.Realize()
         main_frame.CloseProgressDialog(thaw=False)
         logger.info("Finished")
     
@@ -616,9 +557,9 @@ class FilterPanel(wx.Panel):
         if 'autoapply' in saved_data:
             self.rules_panel.autoapply = saved_data['autoapply']
         if not self.rules_panel.autoapply:
-            self.rules_panel.pauserules_tool.SetLabel(GUIText.FILTERS_AUTOAPPLY_RESUME)
+            self.rules_panel.pauserules_btn.SetLabel(GUIText.FILTERS_AUTOAPPLY_RESUME)
         else:
-            self.rules_panel.pauserules_tool.SetLabel(GUIText.FILTERS_AUTOAPPLY_PAUSE)
+            self.rules_panel.pauserules_btn.SetLabel(GUIText.FILTERS_AUTOAPPLY_PAUSE)
         
         if not self.rules_panel.autoapply and 'draft_rules' in saved_data:
             self.rules_panel.DisplayDraftFilterRules(saved_data['draft_rules'])
@@ -868,67 +809,64 @@ class RulesPanel(wx.Panel):
         #Label for area
         label_box = wx.StaticBox(self, label=GUIText.FILTERS_RULES_LIST)
         label_box.SetFont(main_frame.GROUP_LABEL_FONT)
-        
         sizer = wx.StaticBoxSizer(label_box, wx.VERTICAL)
 
+        details_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(details_sizer, 0, wx.ALL, 5)
+
         tokenization_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.Add(tokenization_sizer)
-        tokenization_package_label1 = wx.StaticText(self, label=GUIText.FILTERS_TOKENIZER)
+        details_sizer.Add(tokenization_sizer)
+        tokenization_package_label1 = wx.StaticText(self, label=GUIText.FILTERS_TOKENIZER+": ")
         tokenization_package_label1.SetFont(main_frame.DETAILS_LABEL_FONT)
-        tokenization_sizer.Add(tokenization_package_label1, proportion=0, flag=wx.ALL, border=5)
+        tokenization_sizer.Add(tokenization_package_label1, flag=wx.ALIGN_CENTER_VERTICAL)
         self.tokenization_package_label2 = wx.StaticText(self, label=tokenizer_package)
-        tokenization_sizer.Add(self.tokenization_package_label2, proportion=0, flag=wx.ALL, border=5)
-        tokenization_choice_label = wx.StaticText(self, label=GUIText.FILTERS_METHOD)
-        tokenization_choice_label.SetFont(main_frame.DETAILS_LABEL_FONT)
-        tokenization_sizer.Add(tokenization_choice_label, proportion=0, flag=wx.ALL, border=5)
+        tokenization_sizer.Add(self.tokenization_package_label2, flag=wx.ALIGN_CENTER_VERTICAL)
+        details_sizer.AddSpacer(10)
+
+        methods_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        details_sizer.Add(methods_sizer)
+        method_label = wx.StaticText(self, label=GUIText.FILTERS_METHOD+": ")
+        method_label.SetFont(main_frame.DETAILS_LABEL_FONT)
+        methods_sizer.Add(method_label, flag=wx.ALIGN_CENTER_VERTICAL)
         self.tokenization_choice = wx.Choice(self, choices=package_list)
         self.tokenization_choice.SetSelection(self.parent_frame.dataset.tokenization_choice)
         self.tokenization_choice.Bind(wx.EVT_CHOICE, self.parent_frame.OnTokenizationChoiceStart)
-        tokenization_sizer.Add(self.tokenization_choice, proportion=0, flag=wx.ALL, border=5)
-        
-        self.toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_HORZ_TEXT|wx.TB_NOICONS)
+        methods_sizer.Add(self.tokenization_choice)
 
-        self.pauserules_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_AUTOAPPLY_PAUSE,
-                                                    bitmap=wx.Bitmap(1,1),
-                                                    shortHelp=GUIText.FILTERS_AUTOAPPLY_TOOLTIP,
-                                                    kind=wx.ITEM_DROPDOWN)
-        self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnPauseRules, self.pauserules_tool)
-        
-        self.pauserules_menu = wx.Menu()
-        self.applyrules_menuitem = self.pauserules_menu.Append(wx.ID_APPLY, GUIText.FILTERS_MANUALAPPLY,
-                                                               GUIText.FILTERS_MANUALAPPLY_TOOLTIP)
-        self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnApplyRules, self.applyrules_menuitem)
-        self.cancelrules_menuitem = self.pauserules_menu.Append(wx.ID_CANCEL, GUIText.FILTERS_MANUALCANCEL,
-                                                                GUIText.FILTERS_MANUALCANCEL_TOOLTIP)
-        self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnCancelRules, self.cancelrules_menuitem)
-        self.pauserules_menu.Remove(self.applyrules_menuitem)
-        self.pauserules_menu.Remove(self.cancelrules_menuitem)
-        self.pauserules_tool.SetDropdownMenu(self.pauserules_menu)
+        tools_sizer = wx.BoxSizer()
+        sizer.Add(tools_sizer, 0, wx.ALL|wx.EXPAND, 5)
 
-        self.toolbar.AddSeparator()
-        
-        customrules_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_CREATE_RULE, bitmap=wx.Bitmap(1,1),
-                                                shortHelp=GUIText.FILTERS_CREATE_RULE_TOOLTIP, kind=wx.ITEM_DROPDOWN)
-        self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnCreateCustomRule, customrules_tool)
-        customrules_menu = wx.Menu()
-        spacyautoremove_menuitem = customrules_menu.Append(wx.ID_ANY, GUIText.FILTERS_REMOVE_SPACY_AUTO_STOPWORDS,
-                                                           GUIText.FILTERS_REMOVE_SPACY_AUTO_STOPWORDS_TOOLTIP)
-        customrules_menu.Bind(wx.EVT_MENU, self.parent_frame.OnRemoveSpacyAutoStopword, spacyautoremove_menuitem)
-        countfilter_menuitem = customrules_menu.Append(wx.ID_ANY, GUIText.FILTERS_CREATE_COUNT_RULE,
-                                                       GUIText.FILTERS_CREATE_COUNT_RULE_TOOLTIP)
-        self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnCreateCountFilter, countfilter_menuitem)
-        tfidffilter_menuitem = customrules_menu.Append(wx.ID_ANY, GUIText.FILTERS_CREATE_TFIDF_RULE,
-                                                       GUIText.FILTERS_CREATE_TFIDF_RULE_TOOLTIP)
-        self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnCreateTfidfFilter, tfidffilter_menuitem)
-        customrules_tool.SetDropdownMenu(customrules_menu)
-        
-        remove_tool = self.toolbar.AddTool(wx.ID_ANY, label=GUIText.FILTERS_RULES_DELETE,
-                                           bitmap=wx.Bitmap(1, 1),
-                                           shortHelp=GUIText.FILTERS_RULE_DELETE_TOOLTIP)
-        self.toolbar.Bind(wx.EVT_MENU, self.parent_frame.OnDeleteRule, remove_tool)
+        #TODO decide if this should be a StaticBox
+        apply_tools_sizer = wx.BoxSizer()
+        tools_sizer.Add(apply_tools_sizer)
+        self.pauserules_btn = wx.Button(self, label=GUIText.FILTERS_AUTOAPPLY_PAUSE)
+        self.pauserules_btn.SetToolTip(GUIText.FILTERS_AUTOAPPLY_TOOLTIP)
+        self.pauserules_btn.Bind(wx.EVT_BUTTON, self.parent_frame.OnPauseRules)
+        apply_tools_sizer.Add(self.pauserules_btn)
+        self.applyrules_btn = wx.Button(self, label=GUIText.FILTERS_MANUALAPPLY)
+        self.applyrules_btn.SetToolTip(GUIText.FILTERS_MANUALAPPLY_TOOLTIP)
+        self.applyrules_btn.Bind(wx.EVT_BUTTON, self.parent_frame.OnApplyRules)
+        apply_tools_sizer.Add(self.applyrules_btn)
+        self.applyrules_btn.Hide()
+        self.cancelrules_btn = wx.Button(self, label=GUIText.FILTERS_MANUALCANCEL)
+        self.cancelrules_btn.SetToolTip(GUIText.FILTERS_MANUALCANCEL_TOOLTIP)
+        self.cancelrules_btn.Bind(wx.EVT_BUTTON, self.parent_frame.OnCancelRules)
+        apply_tools_sizer.Add(self.cancelrules_btn)
+        self.cancelrules_btn.Hide()
 
-        self.toolbar.Realize()
-        sizer.Add(self.toolbar, proportion=0, flag=wx.ALL, border=5)
+        tools_sizer.AddStretchSpacer()
+
+        #TODO decide if this should be a StaticBox
+        adjust_tools_sizer = wx.BoxSizer()
+        tools_sizer.Add(adjust_tools_sizer)
+        createrules_btn = wx.Button(self, label=GUIText.FILTERS_CREATE_RULE)
+        createrules_btn.SetToolTip(GUIText.FILTERS_CREATE_RULE_TOOLTIP)
+        createrules_btn.Bind(wx.EVT_BUTTON, self.parent_frame.OnCreateRule)
+        adjust_tools_sizer.Add(createrules_btn)
+        deleterules_btn = wx.Button(self, label=GUIText.FILTERS_RULES_DELETE)
+        deleterules_btn.SetToolTip(GUIText.FILTERS_RULE_DELETE_TOOLTIP)
+        deleterules_btn.Bind(wx.EVT_BUTTON, self.parent_frame.OnDeleteRule)
+        adjust_tools_sizer.Add(deleterules_btn)
 
         self.rules_list = DatasetsGUIs.FilterRuleListCtrl(self)
         sizer.Add(self.rules_list, proportion=1, flag=wx.EXPAND, border=5)
@@ -1047,12 +985,10 @@ class RulesPanel(wx.Panel):
                 num_changed = num_changed + 1
         self.rules_list.AutoSizeColumns()
         
-        if self.toolbar.FindById(wx.ID_APPLY) == None and num_changed > 0:
-            menuitems = self.pauserules_menu.GetMenuItems()
-            if self.applyrules_menuitem not in menuitems:
-                self.pauserules_menu.Append(self.applyrules_menuitem)
-            if self.cancelrules_menuitem not in menuitems:
-                self.pauserules_menu.Append(self.cancelrules_menuitem)
+        if num_changed > 0:
+            self.applyrules_btn.Show()
+            self.cancelrules_btn.Show()
+            self.Layout()
         self.Refresh()
 
     def DraftNewFilterRules(self, new_rules):
@@ -1130,6 +1066,8 @@ class RulesTextDropTarget(wx.TextDropTarget):
                         action = Constants.FILTER_RULE_INCLUDE
                 elif action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
                     action = Constants.FILTER_RULE_REMOVE
+                elif action == Constants.FILTER_RULE_INCLUDE_SPACY_AUTO_STOPWORDS:
+                    action = Constants.FILTER_RULE_INCLUDE
                 apply_needed = False
                 for reordered_rule in impacted_rules:
                     new_action = reordered_rule[3]
@@ -1141,6 +1079,8 @@ class RulesTextDropTarget(wx.TextDropTarget):
                             new_action = Constants.FILTER_RULE_INCLUDE
                     elif new_action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
                         new_action = Constants.FILTER_RULE_REMOVE
+                    elif action == Constants.FILTER_RULE_INCLUDE_SPACY_AUTO_STOPWORDS:
+                        action = Constants.FILTER_RULE_INCLUDE
                     if new_action != action:
                         apply_needed = True
                         break
@@ -1151,59 +1091,109 @@ class RulesTextDropTarget(wx.TextDropTarget):
                 self.filter_panel.rules_panel.DraftMovedFilterRules([(old_idx, new_idx)])
         return True
 
-class CreateCustomRuleDialog(wx.Dialog):
+class CreateRuleDialog(wx.Dialog):
     def __init__(self, parent, dataset):
         logger = logging.getLogger(__name__+".CreateCustomRuleDialog.__init__")
         logger.info("Starting")
         wx.Dialog.__init__(self, parent, title=GUIText.FILTERS_CREATE_RULE)
 
-        self.field_options = []
-        self.field_options.append(GUIText.FILTER_CREATE_RULE_ANY)
-        for field in dataset.computational_fields.values():
-            self.field_options.append(field.name)
-        action_options = [Constants.FILTER_RULE_REMOVE,
-                          Constants.FILTER_RULE_INCLUDE]
-        
         self.field = None
         self.word = None
         self.pos = None
-        self.action = None
+        self.rule = None
+        
+        self.field_options = []
+        self.field_options.append(GUIText.FILTERS_CREATE_RULE_ANY)
+        for field in dataset.computational_fields.values():
+            self.field_options.append(field.name)
+
+        self.action_options = {GUIText.REMOVE: Constants.FILTER_RULE_REMOVE,
+                               GUIText.INCLUDE: Constants.FILTER_RULE_INCLUDE}
+        
+        
+        self.advanced_options = {"":"",
+                                 GUIText.FILTERS_SPACY_AUTO_STOPWORDS: Constants.TOKEN_SPACY_STOPWORD,
+                                 GUIText.FILTERS_TFIDF: Constants.TOKEN_TFIDF,
+                                 GUIText.FILTERS_NUM_WORDS: Constants.TOKEN_NUM_WORDS,
+                                 GUIText.FILTERS_PER_WORDS: Constants.TOKEN_PER_WORDS,
+                                 GUIText.FILTERS_NUM_DOCS: Constants.TOKEN_NUM_DOCS,
+                                 GUIText.FILTERS_PER_DOCS: Constants.TOKEN_PER_DOCS}
+
+        self.count_operation_options = ['>',
+                                        '>=',
+                                        '=',
+                                        '<=',
+                                        '<']
+        
+        self.tfidf_direction_options = {GUIText.FILTERS_CREATE_TFIDF_LOWER: Constants.FILTER_TFIDF_LOWER,
+                                        GUIText.FILTERS_CREATE_TFIDF_UPPER: Constants.FILTER_TFIDF_UPPER}
+        
         
         sizer = wx.BoxSizer(wx.VERTICAL)
 
+        self.error_label = wx.StaticText(self, label="")
+        self.error_label.SetForegroundColour(wx.Colour(255,0,0))
+        sizer.Add(self.error_label, 0, wx.ALL, 5)
+        self.error_label.Hide()
+
+        field_sizer = wx.BoxSizer(wx.HORIZONTAL)
         field_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_FIELD+" ")
+        field_sizer.Add(field_label, 0, wx.ALIGN_CENTER_VERTICAL)
         self.field_ctrl = wx.Choice(self, choices=self.field_options)
         self.field_ctrl.SetSelection(0)
         self.field_ctrl.SetToolTip(GUIText.FILTERS_CREATE_RULE_FIELD_TOOLTIP)
-        field_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        field_sizer.Add(field_label, 0, wx.ALIGN_CENTER_VERTICAL)
         field_sizer.Add(self.field_ctrl)
         sizer.Add(field_sizer, 0, wx.ALL, 5)
 
+        word_sizer = wx.BoxSizer(wx.HORIZONTAL)
         word_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_WORD+" ")
+        word_sizer.Add(word_label, 0, wx.ALIGN_CENTER_VERTICAL)
         self.word_ctrl = wx.TextCtrl(self)
         self.word_ctrl.SetToolTip(GUIText.FILTERS_CREATE_RULE_WORD_TOOLTIP)
-        self.word_ctrl.SetHint(GUIText.FILTER_CREATE_RULE_ANY)
-        word_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        word_sizer.Add(word_label, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.word_ctrl.SetHint(GUIText.FILTERS_CREATE_RULE_ANY)
         word_sizer.Add(self.word_ctrl)
         sizer.Add(word_sizer, 0, wx.ALL, 5)
 
+        pos_sizer = wx.BoxSizer(wx.HORIZONTAL)
         pos_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_POS+" ")
+        pos_sizer.Add(pos_label, 0, wx.ALIGN_CENTER_VERTICAL)
         self.pos_ctrl = wx.TextCtrl(self)
         self.pos_ctrl.SetToolTip(GUIText.FILTERS_CREATE_RULE_POS_TOOLTIP)
-        self.pos_ctrl.SetHint(GUIText.FILTER_CREATE_RULE_ANY)
-        pos_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        pos_sizer.Add(pos_label, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.pos_ctrl.SetHint(GUIText.FILTERS_CREATE_RULE_ANY)
         pos_sizer.Add(self.pos_ctrl)
         sizer.Add(pos_sizer, 0, wx.ALL, 5)
 
-        rule_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_ACTION+" ")
-        self.action_ctrl = wx.Choice(self, choices=action_options)
-        rule_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        rule_sizer.Add(rule_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        rule_sizer.Add(self.action_ctrl)
-        sizer.Add(rule_sizer, 0, wx.ALL, 5)
+        action_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        action_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_ACTION+" ")
+        self.action_ctrl = wx.Choice(self, choices=list(self.action_options.keys()))
+        action_sizer.Add(action_label, 0, wx.ALIGN_CENTER_VERTICAL)
+        action_sizer.Add(self.action_ctrl)
+        sizer.Add(action_sizer, 0, wx.ALL, 5)
+
+        advanced_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        advanced_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_ADVANCED+" ")
+        advanced_sizer.Add(advanced_label, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.advanced_ctrl = wx.Choice(self, choices=list(self.advanced_options.keys()))
+        advanced_sizer.Add(self.advanced_ctrl)
+        self.advanced_ctrl.Bind(wx.EVT_CHOICE, self.OnAdvancedChoice)
+
+        self.count_operation_ctrl = wx.Choice(self, choices=self.count_operation_options)
+        self.count_operation_ctrl.SetToolTip(GUIText.FILTERS_CREATE_COUNT_RULE_OPERATION_TOOLTIP)
+        advanced_sizer.Add(self.count_operation_ctrl)
+        self.count_operation_ctrl.Hide()
+        self.count_number_ctrl = wx.SpinCtrlDouble(self, min=0, max=dataset.total_tokens, inc=0.01)
+        self.count_number_ctrl.SetToolTip(GUIText.FILTERS_CREATE_COUNT_RULE_NUMBER_TOOLTIP)
+        advanced_sizer.Add(self.count_number_ctrl)
+        self.count_number_ctrl.Hide()
+
+        self.tfidf_direction_ctrl = wx.Choice(self, choices=list(self.tfidf_direction_options.keys()))
+        advanced_sizer.Add(self.tfidf_direction_ctrl)
+        self.tfidf_direction_ctrl.Hide()
+        self.tfidf_rank_ctrl = wx.SpinCtrlDouble(self, min=0, max=100, inc=0.01)
+        self.tfidf_rank_ctrl.SetToolTip(GUIText.FILTERS_CREATE_TFIDF_RULE_NUMBER_TOOLTIP)
+        advanced_sizer.Add(self.tfidf_rank_ctrl)
+        self.tfidf_rank_ctrl.Hide()
+        sizer.Add(advanced_sizer, 0, wx.ALL, 5)
 
         controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
         ok_button = wx.FindWindowById(wx.ID_OK, self)
@@ -1217,138 +1207,38 @@ class CreateCustomRuleDialog(wx.Dialog):
 
         logger.info("Finished")
 
-    def OnOK(self, event):
-        logger = logging.getLogger(__name__+".CreateCountFilterDialog.OnOK")
-        logger.info("Starting")
-        #check that name exists and is unique
-        status_flag = True
-
-        self.field = self.field_ctrl.GetStringSelection()
-        if self.field not in self.field_options:
-            wx.MessageBox(GUIText.FILTERS_CREATE_RULE_FIELD_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('invalid field selected['+self.field+"]")
-            status_flag = False
-        elif self.field == GUIText.FILTER_CREATE_RULE_ANY:
-            self.field = Constants.FILTER_RULE_ANY
-
-        self.word = self.word_ctrl.GetValue()
-        if self.word == "":
-            self.word = Constants.FILTER_RULE_ANY
-        self.pos = self.pos_ctrl.GetValue()
-        if self.pos == "":
-            self.pos = Constants.FILTER_RULE_ANY
-        self.action = self.action_ctrl.GetStringSelection()
-        if self.action == "":
-            wx.MessageBox(GUIText.FILTERS_CREATE_RULE_INCOMPLETE_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('rule incomplete action['+self.action+"]")
-            status_flag = False
-
-        logger.info("Finished")
-        if status_flag:
-            self.EndModal(wx.ID_OK)
-
-class CreateCountFilterDialog(wx.Dialog):
-    def __init__(self, parent, dataset):
-        logger = logging.getLogger(__name__+".CreateCountFilterDialog.__init__")
-        logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=GUIText.FILTERS_CREATE_COUNT_RULE)
-
-        self.field_options = []
-        self.field_options.append(GUIText.FILTER_CREATE_RULE_ANY)
-        for field in dataset.computational_fields.values():
-            self.field_options.append(field.name)
-        action_options = [Constants.FILTER_RULE_REMOVE,
-                          Constants.FILTER_RULE_INCLUDE]
-        self.column_options = {GUIText.FILTERS_NUM_WORDS:Constants.TOKEN_NUM_WORDS,
-                               GUIText.FILTERS_PER_WORDS:Constants.TOKEN_PER_WORDS,
-                               GUIText.FILTERS_NUM_DOCS:Constants.TOKEN_NUM_DOCS,
-                               GUIText.FILTERS_PER_DOCS:Constants.TOKEN_PER_DOCS,}
-        operation_options = ['>',
-                             '>=',
-                             '=',
-                             '<=',
-                             '<']
-
-        self.field = None
-        self.word = None
-        self.pos = None
-        self.action = None
-        self.column = None
-        self.operation = None
-        self.number = None
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-
-        field_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_FIELD+" ")
-        self.field_ctrl = wx.Choice(self, choices=self.field_options)
-        self.field_ctrl.SetSelection(0)
-        self.field_ctrl.SetToolTip(GUIText.FILTERS_CREATE_RULE_FIELD_TOOLTIP)
-        field_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        field_sizer.Add(field_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        field_sizer.Add(self.field_ctrl)
-        sizer.Add(field_sizer, 0, wx.ALL, 5)
-
-        word_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_WORD+" ")
-        self.word_ctrl = wx.TextCtrl(self)
-        self.word_ctrl.SetToolTip(GUIText.FILTERS_CREATE_RULE_WORD_TOOLTIP)
-        self.word_ctrl.SetHint(GUIText.FILTER_CREATE_RULE_ANY)
-        word_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        word_sizer.Add(word_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        word_sizer.Add(self.word_ctrl)
-        sizer.Add(word_sizer,0, wx.ALL, 5)
-
-        pos_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_POS+" ")
-        self.pos_ctrl = wx.TextCtrl(self)
-        self.pos_ctrl.SetToolTip(GUIText.FILTERS_CREATE_RULE_POS_TOOLTIP)
-        self.pos_ctrl.SetHint(GUIText.FILTER_CREATE_RULE_ANY)
-        pos_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        pos_sizer.Add(pos_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        pos_sizer.Add(self.pos_ctrl)
-        sizer.Add(pos_sizer, 0, wx.ALL, 5)
-
-        rule_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_ACTION+" ")
-        self.action_ctrl = wx.Choice(self, choices=action_options)
-        self.column_ctrl = wx.Choice(self, choices=list(self.column_options.keys()))
-        self.column_ctrl.SetToolTip(GUIText.FILTERS_CREATE_COUNT_RULE_COLUMN_TOOLTIP)
-        self.operation_ctrl = wx.Choice(self, choices=operation_options)
-        self.operation_ctrl.SetToolTip(GUIText.FILTERS_CREATE_COUNT_RULE_OPERATION_TOOLTIP)
-        self.number_ctrl = wx.SpinCtrlDouble(self, min=0, max=dataset.total_tokens, inc=0.01)
-        self.number_ctrl.SetToolTip(GUIText.FILTERS_CREATE_COUNT_RULE_NUMBER_TOOLTIP)
-        rule_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        rule_sizer.Add(rule_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        rule_sizer.Add(self.action_ctrl)
-        rule_sizer.Add(self.column_ctrl)
-        rule_sizer.Add(self.operation_ctrl)
-        rule_sizer.Add(self.number_ctrl)
-        sizer.Add(rule_sizer, 0, wx.ALL, 5)
-
-        controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
-        ok_button = wx.FindWindowById(wx.ID_OK, self)
-        ok_button.SetLabel(GUIText.FILTERS_CREATE_COUNT_RULE)
-        ok_button.Bind(wx.EVT_BUTTON, self.OnOK)
-        sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
-
-        self.SetSizer(sizer)
+    def OnAdvancedChoice(self, event):
+        advanced_choice = self.advanced_ctrl.GetStringSelection()
+        if advanced_choice == "":
+            self.count_operation_ctrl.Hide()
+            self.count_number_ctrl.Hide()
+            self.tfidf_direction_ctrl.Hide()
+            self.tfidf_rank_ctrl.Hide()
+        elif advanced_choice == GUIText.FILTERS_TFIDF:
+            self.count_operation_ctrl.Hide()
+            self.count_number_ctrl.Hide()
+            self.tfidf_direction_ctrl.Show()
+            self.tfidf_rank_ctrl.Show()
+        elif advanced_choice in [GUIText.FILTERS_NUM_WORDS, GUIText.FILTERS_PER_WORDS, GUIText.FILTERS_NUM_DOCS, GUIText.FILTERS_PER_DOCS]:
+            self.count_operation_ctrl.Show()
+            self.count_number_ctrl.Show()
+            self.tfidf_direction_ctrl.Hide()
+            self.tfidf_rank_ctrl.Hide()
         self.Layout()
         self.Fit()
 
-        logger.info("Finished")
 
     def OnOK(self, event):
         logger = logging.getLogger(__name__+".CreateCountFilterDialog.OnOK")
         logger.info("Starting")
         #check that name exists and is unique
-        status_flag = True
+        error_list = []
 
         self.field = self.field_ctrl.GetStringSelection()
         if self.field not in self.field_options:
-            wx.MessageBox(GUIText.FILTERS_CREATE_RULE_FIELD_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            error_list.append(GUIText.FILTERS_CREATE_RULE_FIELD_ERROR)
             logger.warning('invalid field selected['+self.field+"]")
-            status_flag = False
-        elif self.field == GUIText.FILTER_CREATE_RULE_ANY:
+        elif self.field == GUIText.FILTERS_CREATE_RULE_ANY:
             self.field = Constants.FILTER_RULE_ANY
 
         self.word = self.word_ctrl.GetValue()
@@ -1359,124 +1249,60 @@ class CreateCountFilterDialog(wx.Dialog):
         if self.pos == "":
             self.pos = Constants.FILTER_RULE_ANY
 
-        self.action = self.action_ctrl.GetStringSelection()
-        self.column = self.column_options[self.column_ctrl.GetStringSelection()]
-        self.operation = self.operation_ctrl.GetStringSelection()
-        self.number = self.number_ctrl.GetValue()
-        if self.action == "" or self.column == "" or self.operation == "" or self.number == "":
-            wx.MessageBox(GUIText.FILTERS_CREATE_COUNT_RULE_INCOMPLETE_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('rule incomplete action['+self.action+"] column["+self.column+"] operation["+self.operation+"] number["+self.number+"]")
-            status_flag = False
+        action_text = self.action_ctrl.GetStringSelection()
+        if action_text not in self.action_options:
+            error_list.append(GUIText.FILTERS_CREATE_RULE_INVALID_ACTION_ERROR)
+            logger.warning('invalid action['+action_text+"]")
+        else:
+            action = self.action_options[action_text]
+        
+        advanced_text = self.advanced_ctrl.GetStringSelection()
+        if advanced_text not in self.advanced_options:
+            error_list.append(GUIText.FILTERS_CREATE_RULE_INVALID_ADVANCED_ERROR)
+            logger.warning('invalid advanced choice['+advanced_text+"]")
+        else:
+            advanced = self.advanced_options[advanced_text]
 
-        logger.info("Finished")
-        if status_flag:
+        if advanced == Constants.TOKEN_TFIDF:
+            direction_text = self.tfidf_direction_ctrl.GetStringSelection()
+            rank = self.tfidf_rank_ctrl.GetValue()
+            if direction_text not in self.tfidf_direction_options or rank == "":
+                error_list.append(GUIText.FILTERS_CREATE_COUNT_RULE_INCOMPLETE_ADVANCED_ERROR)
+                logger.warning('invalid tfidf rule['+advanced_text+"]["+direction_text+"]["+str(rank)+"]")
+            else:
+                direction = self.tfidf_direction_options[direction_text]
+            if len(error_list) == 0:
+                if action == Constants.FILTER_RULE_INCLUDE:
+                    action = Constants.FILTER_TFIDF_INCLUDE
+                elif action == Constants.FILTER_RULE_REMOVE:
+                    action = Constants.FILTER_TFIDF_REMOVE
+                self.rule = (action, direction, rank,)
+        elif advanced in [Constants.TOKEN_NUM_WORDS, Constants.TOKEN_PER_WORDS, Constants.TOKEN_NUM_DOCS, Constants.TOKEN_PER_DOCS]:
+            operation = self.count_operation_ctrl.GetStringSelection()
+            number = self.count_number_ctrl.GetValue()
+            if operation not in self.count_operation_options or number == "":
+                error_list.append(GUIText.FILTERS_CREATE_COUNT_RULE_INCOMPLETE_ADVANCED_ERROR)
+                logger.warning('invalid count rule['+advanced_text+"]["+operation+"]["+str(number)+"]")
+            if len(error_list) == 0:
+                self.rule = (action,
+                             advanced,
+                             operation,
+                             number,)
+        elif advanced == Constants.TOKEN_SPACY_STOPWORD and len(error_list) == 0:
+            if action == Constants.FILTER_RULE_INCLUDE:
+                self.rule = Constants.FILTER_RULE_INCLUDE_SPACY_AUTO_STOPWORDS
+            elif action == Constants.FILTER_RULE_REMOVE:
+                self.rule = Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS
+        elif len(error_list) == 0:
+            self.rule = action
+
+        if len(error_list) == 0:
+            logger.info("Finished")
             self.EndModal(wx.ID_OK)
-
-class CreateTfidfFilterDialog(wx.Dialog):
-    def __init__(self, parent, dataset):
-        logger = logging.getLogger(__name__+".CreateTfidfFilterDialog.__init__")
-        logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=GUIText.FILTERS_CREATE_TFIDF_RULE)
-
-        self.field_options = []
-        self.field_options.append(GUIText.FILTER_CREATE_RULE_ANY)
-        for field in dataset.computational_fields.values():
-            self.field_options.append(field.name)
-        action_options1 = [Constants.FILTER_TFIDF_REMOVE,
-                           Constants.FILTER_TFIDF_INCLUDE]
-        action_options2 = [Constants.FILTER_TFIDF_LOWER,
-                           Constants.FILTER_TFIDF_UPPER]
-
-        self.field = None
-        self.word = None
-        self.pos = None
-        self.action1 = None
-        self.action2 = None
-        self.rank = None
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-
-        field_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_FIELD+" ")
-        self.field_ctrl = wx.Choice(self, choices=self.field_options)
-        self.field_ctrl.SetSelection(0)
-        self.field_ctrl.SetToolTip(GUIText.FILTERS_CREATE_RULE_FIELD_TOOLTIP)
-        field_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        field_sizer.Add(field_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        field_sizer.Add(self.field_ctrl)
-        sizer.Add(field_sizer, 0, wx.ALL, 5)
-
-        word_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_WORD+" ")
-        self.word_ctrl = wx.TextCtrl(self)
-        self.word_ctrl.SetToolTip(GUIText.FILTERS_CREATE_RULE_WORD_TOOLTIP)
-        self.word_ctrl.SetHint(GUIText.FILTER_CREATE_RULE_ANY)
-        word_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        word_sizer.Add(word_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        word_sizer.Add(self.word_ctrl)
-        sizer.Add(word_sizer, 0, wx.ALL, 5)
-
-        pos_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_POS+" ")
-        self.pos_ctrl = wx.TextCtrl(self)
-        self.pos_ctrl.SetToolTip(GUIText.FILTERS_CREATE_RULE_POS_TOOLTIP)
-        self.pos_ctrl.SetHint(GUIText.FILTER_CREATE_RULE_ANY)
-        pos_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        pos_sizer.Add(pos_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        pos_sizer.Add(self.pos_ctrl)
-        sizer.Add(pos_sizer, 0, wx.ALL, 5)
-
-        rule_label = wx.StaticText(self, label=GUIText.FILTERS_CREATE_RULE_ACTION+" ")
-        self.action1_ctrl = wx.Choice(self, choices=action_options1)
-        self.action2_ctrl = wx.Choice(self, choices=action_options2)
-        self.rank_ctrl = wx.SpinCtrlDouble(self, min=0, max=100, inc=0.01)
-        self.rank_ctrl.SetToolTip(GUIText.FILTERS_CREATE_TFIDF_RULE_NUMBER_TOOLTIP)
-        rule_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        rule_sizer.Add(rule_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        rule_sizer.Add(self.action1_ctrl)
-        rule_sizer.Add(self.action2_ctrl)
-        rule_sizer.Add(self.rank_ctrl)
-        sizer.Add(rule_sizer, 0, wx.ALL, 5)
-
-        controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
-        ok_button = wx.FindWindowById(wx.ID_OK, self)
-        ok_button.SetLabel(GUIText.FILTERS_CREATE_TFIDF_RULE)
-        ok_button.Bind(wx.EVT_BUTTON, self.OnOK)
-        sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
-
-        self.SetSizer(sizer)
-        self.Layout()
-        self.Fit()
-
-        logger.info("Finished")
-
-    def OnOK(self, event):
-        logger = logging.getLogger(__name__+".CreateCountFilterDialog.OnOK")
-        logger.info("Starting")
-        #check that name exists and is unique
-        status_flag = True
-
-        self.field = self.field_ctrl.GetStringSelection()
-        if self.field not in self.field_options:
-            wx.MessageBox(GUIText.FILTERS_CREATE_RULE_FIELD_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('invalid field selected['+self.field+"]")
-            status_flag = False
-        elif self.field == GUIText.FILTER_CREATE_RULE_ANY:
-            self.field = Constants.FILTER_RULE_ANY
-        self.word = self.word_ctrl.GetValue()
-        if self.word == "":
-            self.word = Constants.FILTER_RULE_ANY
-        self.pos = self.pos_ctrl.GetValue()
-        if self.pos == "":
-            self.pos = Constants.FILTER_RULE_ANY
-        self.action1 = self.action1_ctrl.GetStringSelection()
-        self.action2 = self.action2_ctrl.GetStringSelection()
-        self.rank = self.rank_ctrl.GetValue()
-        if self.action1 == "" or self.action2 == "" or self.rank == "":
-            wx.MessageBox(GUIText.FILTERS_CREATE_TFIDF_RULE_INCOMPLETE_ERROR,
-                          GUIText.ERROR, wx.OK | wx.ICON_ERROR)
-            logger.warning('rule incomplete action1['+self.action1+"] action2["+self.action2+"] rank["+self.rank+"]")
-            status_flag = False
-
-        logger.info("Finished")
-        if status_flag:
-            self.EndModal(wx.ID_OK)
+        else:
+            error_str = "-" + "\n-".join(error_list)
+            self.error_label.SetLabel(error_str)
+            self.error_label.Show()
+            self.Layout()
+            self.Fit()
+            logger.info("Finished")

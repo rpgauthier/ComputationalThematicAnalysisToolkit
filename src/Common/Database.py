@@ -565,7 +565,7 @@ class DatabaseConnection():
             if field != Constants.FILTER_RULE_ANY:
                 sql_filter_list.append(field_sql)
                 sql_type_filters_parameters.append(str(field))
-            if action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
+            if action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS or  action == Constants.FILTER_RULE_INCLUDE_SPACY_AUTO_STOPWORDS :
                 sql_filter_list.append(stopword_sql)
             sql_filter = " AND ".join(sql_filter_list)
             sql_type_filters_list.append(sql_filter)
@@ -802,6 +802,8 @@ class DatabaseConnection():
                 next_rule_action = rule[3]
                 if next_rule_action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
                     next_rule_action = Constants.FILTER_RULE_REMOVE
+                elif next_rule_action == Constants.FILTER_RULE_INCLUDE_SPACY_AUTO_STOPWORDS:
+                    next_rule_action = Constants.FILTER_RULE_INCLUDE
 
                 if next_rule_action == cur_rule_action:
                     cur_rule_group.append(rule)
@@ -854,6 +856,8 @@ class DatabaseConnection():
                 next_rule_action = rule[3]
                 if next_rule_action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
                     next_rule_action = Constants.FILTER_RULE_REMOVE
+                if next_rule_action == Constants.FILTER_RULE_INCLUDE_SPACY_AUTO_STOPWORDS:
+                    next_rule_action = Constants.FILTER_RULE_INCLUDE
 
                 if next_rule_action == cur_rule_action:
                     cur_rule_group.append(rule)

@@ -16,7 +16,6 @@ import External.wxPython.labelbook_fix as LB_fix
 import RootApp
 import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
-import Common.Objects.Samples as Samples
 import Common.Database as Database
 from Common.GUIText import Main as GUIText
 import Common.Notes as cn
