@@ -545,6 +545,14 @@ class Collection(Main, Datasets):
     ETHICS_TWITTER = "and agree to Twitter's developer agreement and policy."
     ETHICS_TWITTER_URL = "https://developer.twitter.com/en/developer-terms/agreement-and-policy"
 
+    ONLINE_SOURCES = "Online Sources"
+    REDDIT_DESC = "Online communities' public discussions (made up of submissions and comments)."
+    REDDIT_URL = "https://www.reddit.com/"
+    TWITTER_DESC = "Online public comments."
+    TWITTER_URL = "https://twitter.com/"
+    LOCAL_SOURCES = "Local Sources"
+
+
     DATASETSLIST_LABEL = "Datasets List"
     DATASETS_RETRIEVE_LABEL = "Retrieve"
     DATASETS_RETRIEVE_TOOLTIP = "Retrieve new datasets for workspace"
@@ -552,8 +560,8 @@ class Collection(Main, Datasets):
     DATASETS_RETRIEVE_REDDIT_TOOLTIP = "Retrieve new Reddit datasets for workspace"
     DATASETS_RETRIEVE_TWITTER = "Retrieve " + Datasets.TWITTER_LABEL
     DATASETS_RETRIEVE_TWITTER_TOOLTIP = "Retrieve new Twitter datasets for workspace"
-    DATASETS_RETRIEVE_CSV = "Retrieve " + Datasets.CSV_LABEL
-    DATASETS_RETRIEVE_CSV_TOOLTIP = "Retrieve new CSV datasets for workspace"
+    DATASETS_IMPORT_CSV = "Import " + Datasets.CSV_LABEL
+    DATASETS_IMPORT_CSV_TOOLTIP = "Import a CSV dataset into workspace"
     DATASETS_GROUP_TOOLTIP = "Selected datasets will be grouped"
     DATASETS_GROUP_NAME = "Group Name:"
     DATASETS_UNGROUP_TOOLTIP = "Selected datasets will be ungrouped"

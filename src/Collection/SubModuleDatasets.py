@@ -2,6 +2,7 @@
 import logging
 
 import wx
+import wx.adv
 import wx.dataview as dv
 import wx.lib.scrolledpanel
 
@@ -33,38 +34,29 @@ class DatasetsListPanel(wx.Panel):
         create_box = wx.StaticBox(self, label=GUIText.CREATE)
         create_box.SetFont(main_frame.DETAILS_LABEL_FONT)
         create_sizer = wx.StaticBoxSizer(create_box, wx.HORIZONTAL)
-        #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
-        create_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-        add_reddit_tool = create_toolbar.AddTool(wx.ID_ANY,
-                                                 label=GUIText.DATASETS_RETRIEVE_REDDIT,
-                                                 bitmap=wx.Bitmap(1, 1),
-                                                 shortHelp=GUIText.DATASETS_RETRIEVE_REDDIT_TOOLTIP)
-        create_toolbar.Bind(wx.EVT_MENU, self.OnAddRedditDataset, add_reddit_tool)
-        add_csv_tool = create_toolbar.AddTool(wx.ID_ANY,
-                                              label=GUIText.DATASETS_RETRIEVE_CSV,
-                                              bitmap=wx.Bitmap(1, 1),
-                                              shortHelp=GUIText.DATASETS_RETRIEVE_CSV_TOOLTIP)
-        create_toolbar.Bind(wx.EVT_MENU, self.OnAddCSVDataset, add_csv_tool)
+        
+        add_reddit_btn = wx.Button(self, label=GUIText.DATASETS_RETRIEVE_REDDIT)
+        add_reddit_btn.SetToolTip(GUIText.DATASETS_RETRIEVE_REDDIT_TOOLTIP)
+        add_reddit_btn.Bind(wx.EVT_BUTTON, self.OnAddRedditDataset)
+        create_sizer.Add(add_reddit_btn)
+        add_csv_btn = wx.Button(self, label=GUIText.DATASETS_IMPORT_CSV)
+        add_csv_btn.SetToolTip(GUIText.DATASETS_IMPORT_CSV_TOOLTIP)
+        add_csv_btn.Bind(wx.EVT_BUTTON, self.OnAddCSVDataset)
+        create_sizer.Add(add_csv_btn)
         if 'twitter_enabled' in main_frame.options_dict:
-            add_twitter_tool = create_toolbar.AddTool(wx.ID_ANY,
-                                        label=GUIText.DATASETS_RETRIEVE_TWITTER,
-                                        bitmap=wx.Bitmap(1, 1),
-                                        shortHelp=GUIText.DATASETS_RETRIEVE_TWITTER_TOOLTIP)
-            create_toolbar.Bind(wx.EVT_MENU, self.OnAddTwitterDataset, add_twitter_tool)
-        create_toolbar.Realize()
-        create_sizer.Add(create_toolbar)
+            add_twitter_btn = wx.Button(self, label=GUIText.DATASETS_RETRIEVE_TWITTER)
+            add_twitter_btn.SetToolTip(GUIText.DATASETS_RETRIEVE_TWITTER_TOOLTIP)
+            add_twitter_btn.Bind(wx.EVT_BUTTON, self.OnAddTwitterDataset)
+            create_sizer.Add(add_twitter_btn)
         toolbar_sizer.Add(create_sizer, 0, wx.ALL, 5)
 
         modify_box = wx.StaticBox(self, label=GUIText.MODIFY)
-        create_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        modify_box.SetFont(main_frame.DETAILS_LABEL_FONT)
         modify_sizer = wx.StaticBoxSizer(modify_box, wx.HORIZONTAL)
-        #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
-        modify_toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-        remove_tool = modify_toolbar.AddTool(wx.ID_ANY, label=GUIText.DELETE, bitmap=wx.Bitmap(1, 1),
-                                             shortHelp=GUIText.DATASETS_DELETE_TOOLTIP)
-        modify_toolbar.Bind(wx.EVT_MENU, self.OnDeleteDatasets, remove_tool)
-        modify_toolbar.Realize()
-        modify_sizer.Add(modify_toolbar)
+        remove_btn = wx.Button(self, label=GUIText.DELETE)
+        remove_btn.SetToolTip(GUIText.DATASETS_DELETE_TOOLTIP)
+        remove_btn.Bind(wx.EVT_BUTTON, self.OnDeleteDatasets)
+        modify_sizer.Add(remove_btn)
         toolbar_sizer.Add(modify_sizer, 0, wx.ALL, 5)
         sizer.Add(toolbar_sizer)
 
@@ -326,39 +318,52 @@ class DatasetDetailsPanel(wx.Panel):
         self.dataset = dataset
         self.sizer.Clear(True)
         main_frame = wx.GetApp().GetTopWindow()
-        if main_frame.options_dict['multipledatasets_mode'] or dataset is None:
-            create_box = wx.StaticBox(self, label=GUIText.CREATE)
-            create_box.SetFont(main_frame.DETAILS_LABEL_FONT)
-            create_sizer = wx.StaticBoxSizer(create_box, wx.HORIZONTAL)
-            #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
-            toolbar = wx.ToolBar(self, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-            add_reddit_tool = toolbar.AddTool(wx.ID_ANY,
-                                            label=GUIText.DATASETS_RETRIEVE_REDDIT,
-                                            bitmap=wx.Bitmap(1, 1),
-                                            shortHelp=GUIText.DATASETS_RETRIEVE_REDDIT_TOOLTIP)
-            toolbar.Bind(wx.EVT_MENU, self.OnAddRedditDataset, add_reddit_tool)
-            if 'twitter_enabled' in main_frame.options_dict:
-                add_twitter_tool = toolbar.AddTool(wx.ID_ANY,
-                                            label=GUIText.DATASETS_RETRIEVE_TWITTER,
-                                            bitmap=wx.Bitmap(1, 1),
-                                            shortHelp=GUIText.DATASETS_RETRIEVE_TWITTER_TOOLTIP)
-                toolbar.Bind(wx.EVT_MENU, self.OnAddTwitterDataset, add_twitter_tool)
-            add_csv_tool = toolbar.AddTool(wx.ID_ANY,
-                                           label=GUIText.DATASETS_RETRIEVE_CSV,
-                                           bitmap=wx.Bitmap(1, 1),
-                                           shortHelp=GUIText.DATASETS_RETRIEVE_CSV_TOOLTIP)
-            toolbar.Bind(wx.EVT_MENU, self.OnAddCSVDataset, add_csv_tool)
-            if dataset is not None:
-                remove_tool = toolbar.AddTool(wx.ID_ANY, label=GUIText.DELETE, bitmap=wx.Bitmap(1, 1),
-                                            shortHelp=GUIText.DATASETS_DELETE_TOOLTIP)
-                toolbar.Bind(wx.EVT_MENU, self.OnDeleteDataset, remove_tool)
-            toolbar.Realize()
-            create_sizer.Add(toolbar)
-            self.sizer.Add(create_sizer, 0, wx.ALL, 5)
-        
         if isinstance(dataset, Datasets.Dataset):
+            if dataset is not None:
+                remove_btn = wx.Button(self, label=GUIText.DELETE)
+                remove_btn.SetToolTip(GUIText.DATASETS_DELETE_TOOLTIP)
+                remove_btn.Bind(wx.EVT_BUTTON, self.OnDeleteDataset)
+                self.sizer.Add(remove_btn)
             dataset_panel = DatasetsGUIs.DatasetPanel(self, self.module, dataset, header=True)
             self.sizer.Add(dataset_panel)
+        else:
+            online_box = wx.StaticBox(self, label=GUIText.ONLINE_SOURCES)
+            online_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+            online_sizer = wx.StaticBoxSizer(online_box, wx.VERTICAL)
+            self.sizer.Add(online_sizer, 0, wx.ALL, 5)
+
+            reddit_sizer = wx.BoxSizer()
+            online_sizer.Add(reddit_sizer)
+            add_reddit_btn = wx.Button(self, label=GUIText.DATASETS_RETRIEVE_REDDIT)
+            add_reddit_btn.SetToolTip(GUIText.DATASETS_RETRIEVE_REDDIT_TOOLTIP)
+            add_reddit_btn.Bind(wx.EVT_BUTTON, self.OnAddRedditDataset)
+            reddit_sizer.Add(add_reddit_btn, 0, wx.ALL, 5)
+            add_reddit_description = wx.StaticText(self, label=GUIText.REDDIT_DESC)
+            reddit_sizer.Add(add_reddit_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            add_reddit_link = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.REDDIT_URL)
+            reddit_sizer.Add(add_reddit_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            
+            if 'twitter_enabled' in main_frame.options_dict:
+                twitter_sizer = wx.BoxSizer()
+                online_sizer.Add(twitter_sizer)
+                add_twitter_btn = wx.Button(self, label=GUIText.DATASETS_RETRIEVE_TWITTER)
+                add_twitter_btn.SetToolTip(GUIText.DATASETS_RETRIEVE_TWITTER_TOOLTIP)
+                add_twitter_btn.Bind(wx.EVT_BUTTON, self.OnAddTwitterDataset)
+                twitter_sizer.Add(add_twitter_btn, 0, wx.ALL, 5)
+                add_twitter_description = wx.StaticText(self, label=GUIText.TWITTER_DESC)
+                twitter_sizer.Add(add_twitter_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+                add_twitter_link = wx.adv.HyperlinkCtrl(self, label="2", url=GUIText.TWITTER_URL)
+                twitter_sizer.Add(add_twitter_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            
+            local_box = wx.StaticBox(self, label=GUIText.LOCAL_SOURCES)
+            local_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+            local_sizer = wx.StaticBoxSizer(local_box, wx.VERTICAL)
+            self.sizer.Add(local_sizer, 0, wx.ALL, 5)
+            add_csv_btn = wx.Button(self, label=GUIText.DATASETS_IMPORT_CSV)
+            add_csv_btn.SetToolTip(GUIText.DATASETS_IMPORT_CSV_TOOLTIP)
+            add_csv_btn.Bind(wx.EVT_BUTTON, self.OnAddCSVDataset)
+            local_sizer.Add(add_csv_btn, 0, wx.ALL, 5)
+            
         self.Layout()
         logger.info("Finished")
 

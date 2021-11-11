@@ -185,6 +185,7 @@ class NotesPanel(wx.Panel):
         self.rich_text_ctrl.BeginSuppressUndo()
         if self.rich_text_ctrl.IsEmpty():
             content = ""
+            content_string = ""
         else:
             out = io.BytesIO()
             handler = wx.richtext.RichTextXMLHandler()

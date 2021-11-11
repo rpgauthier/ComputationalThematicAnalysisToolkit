@@ -40,14 +40,10 @@ class FieldsPanel(wx.Panel):
 
         available_panel = wx.lib.scrolledpanel.ScrolledPanel(splitter)
         available_sizer = wx.BoxSizer(wx.VERTICAL)
-        #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
-        available_toolbar = wx.ToolBar(available_panel, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-        add_tool = available_toolbar.AddTool(wx.ID_ANY, label=GUIText.ADD, bitmap=wx.Bitmap(1, 1),
-                                             shortHelp=GUIText.FIELDS_ADD_TOOLTIP)
-        available_toolbar.Bind(wx.EVT_MENU, self.OnAddFields, add_tool)
-
-        available_toolbar.Realize()
-        available_sizer.Add(available_toolbar, proportion=0, flag=wx.ALL, border=5)
+        add_btn = wx.Button(self, label=GUIText.ADD)
+        add_btn.SetToolTip(GUIText.FIELDS_ADD_TOOLTIP)
+        add_btn.Bind(wx.EVT_BUTTON, self.OnAddFields)
+        available_sizer.Add(add_btn, proportion=0, flag=wx.ALL, border=5)
 
         self.available_fields_model = DatasetsDataViews.AvailableFieldsViewModel(dataset)
         self.available_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(available_panel, self.available_fields_model)
@@ -58,12 +54,10 @@ class FieldsPanel(wx.Panel):
         chosen_panel = wx.lib.scrolledpanel.ScrolledPanel(splitter)
         chosen_sizer = wx.BoxSizer(wx.VERTICAL)
         #TODO Rework to be set of buttons to avoid Windows to OSX compatibility issues
-        chosen_toolbar = wx.ToolBar(chosen_panel, style=wx.TB_DEFAULT_STYLE|wx.TB_TEXT|wx.TB_NOICONS)
-        remove_tool = chosen_toolbar.AddTool(wx.ID_ANY, label=GUIText.REMOVE, bitmap=wx.Bitmap(1, 1),
-                                             shortHelp=GUIText.FIELDS_REMOVE_TOOLTIP)
-        chosen_toolbar.Bind(wx.EVT_MENU, self.OnRemoveFields, remove_tool)
-        chosen_toolbar.Realize()
-        chosen_sizer.Add(chosen_toolbar, proportion=0, flag=wx.ALL, border=5)
+        remove_btn = wx.Button(self, label=GUIText.REMOVE)
+        remove_btn.SetToolTip(GUIText.FIELDS_REMOVE_TOOLTIP)
+        remove_btn.Bind(wx.EVT_BUTTON, self.OnRemoveFields)
+        chosen_sizer.Add(remove_btn, proportion=0, flag=wx.ALL, border=5)
         self.chosen_fields_model = DatasetsDataViews.ChosenFieldsViewModel(fields)
         self.chosen_fields_ctrl = DatasetsDataViews.FieldsViewCtrl(chosen_panel, self.chosen_fields_model)
         chosen_sizer.Add(self.chosen_fields_ctrl, proportion=1, flag=wx.EXPAND, border=5)

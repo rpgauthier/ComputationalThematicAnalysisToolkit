@@ -1034,7 +1034,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
         #Retriever button to collect the requested data
         controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
         ok_button = wx.FindWindowById(wx.ID_OK, self)
-        ok_button.SetLabel(GUIText.DATASETS_RETRIEVE_CSV)
+        ok_button.SetLabel(GUIText.DATASETS_IMPORT_CSV)
         sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
 
         self.SetSizer(sizer)

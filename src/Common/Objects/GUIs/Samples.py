@@ -569,7 +569,7 @@ class SampleComputationalFieldsDialog(wx.Dialog):
         
         self.restore_btn = wx.Button(self, label=GUIText.RESTORE_COMPUTATIONAL_FIELDS)
         self.restore_btn.SetToolTip(GUIText.RESTORE_COMPUTATIONAL_FIELDS_TOOLTIP)
-        self.restore_btn.Bind(wx.EVT_MENU, self.OnRestoreStart)
+        self.restore_btn.Bind(wx.EVT_BUTTON, self.OnRestoreStart)
         CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnRestoreFinish)
         self.sizer.Add(self.restore_btn, proportion=0, flag=wx.ALL, border=5)
         if main_frame.options_dict['adjustable_computation_fields_mode']:
@@ -1135,9 +1135,9 @@ class TopicSamplePanel(AbstractSamplePanel):
         self.horizontal_splitter.SetMinimumPaneSize(20)
 
         self.topiclist_panel = TopicListPanel(self.horizontal_splitter, self, self.sample, self.dataset)
-        self.topiclist_panel.merge_topics_btn.Bind(wx.EVT_MENU, self.OnMergeTopics)
-        self.topiclist_panel.split_topics_btn.Bind(wx.EVT_MENU, self.OnSplitTopics)
-        self.topiclist_panel.remove_topics_btn.Bind(wx.EVT_MENU, self.OnRemoveTopics)
+        self.topiclist_panel.merge_topics_btn.Bind(wx.EVT_BUTTON, self.OnMergeTopics)
+        self.topiclist_panel.split_topics_btn.Bind(wx.EVT_BUTTON, self.OnSplitTopics)
+        self.topiclist_panel.remove_topics_btn.Bind(wx.EVT_BUTTON, self.OnRemoveTopics)
         self.topiclist_panel.words_num_ctrl.Bind(wx.EVT_SPINCTRL, self.OnChangeTopicWordNum)
         #turned off for performance reasons
         self.topiclist_panel.topic_list_ctrl.Bind(dv.EVT_DATAVIEW_SELECTION_CHANGED, self.OnTopicsSelected)
