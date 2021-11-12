@@ -52,25 +52,25 @@ class NotesPanel(wx.Panel):
 
         self.rich_text_ctrl = wx.richtext.RichTextCtrl(self)
         self.rich_text_ctrl.BeginSuppressUndo()
-        toolbar = NoteToolBar(self)
+        toolbar = NoteToolPanel(self)
 
         sizer.Add(toolbar, 0, wx.EXPAND|wx.ALL, 6)
         sizer.Add(self.rich_text_ctrl, 1, wx.EXPAND|wx.ALL, 6)
         self.SetSizer(sizer)
         sizer.Fit(self)
 
-        self.Bind(wx.EVT_TOOL, self.OnBold, id=wx.ID_BOLD)
-        self.Bind(wx.EVT_TOOL, self.OnItalic, id=wx.ID_ITALIC)
-        self.Bind(wx.EVT_TOOL, self.OnUnderline, id=wx.ID_UNDERLINE)
-        self.Bind(wx.EVT_TOOL, self.OnStrikethrough, id=wx.ID_STRIKETHROUGH)
-        self.Bind(wx.EVT_TOOL, self.OnFont, id=wx.ID_SELECT_FONT)
-        self.Bind(wx.EVT_TOOL, self.OnIncreasefontsize, id=wx.ID_ZOOM_OUT)
-        self.Bind(wx.EVT_TOOL, self.OnDecreasefontsize, id=wx.ID_ZOOM_IN)
-        self.Bind(wx.EVT_TOOL, self.OnPaste, id=wx.ID_PASTE)
-        self.Bind(wx.EVT_TOOL, self.OnCopy, id=wx.ID_COPY)
-        self.Bind(wx.EVT_TOOL, self.OnCut, id=wx.ID_CUT)
-        self.Bind(wx.EVT_TOOL, self.OnUndo, id=wx.ID_UNDO)
-        self.Bind(wx.EVT_TOOL, self.OnRedo, id=wx.ID_REDO)
+        self.Bind(wx.EVT_BUTTON, self.OnBold, id=wx.ID_BOLD)
+        self.Bind(wx.EVT_BUTTON, self.OnItalic, id=wx.ID_ITALIC)
+        self.Bind(wx.EVT_BUTTON, self.OnUnderline, id=wx.ID_UNDERLINE)
+        self.Bind(wx.EVT_BUTTON, self.OnStrikethrough, id=wx.ID_STRIKETHROUGH)
+        self.Bind(wx.EVT_BUTTON, self.OnFont, id=wx.ID_SELECT_FONT)
+        self.Bind(wx.EVT_BUTTON, self.OnIncreasefontsize, id=wx.ID_ZOOM_OUT)
+        self.Bind(wx.EVT_BUTTON, self.OnDecreasefontsize, id=wx.ID_ZOOM_IN)
+        self.Bind(wx.EVT_BUTTON, self.OnPaste, id=wx.ID_PASTE)
+        self.Bind(wx.EVT_BUTTON, self.OnCopy, id=wx.ID_COPY)
+        self.Bind(wx.EVT_BUTTON, self.OnCut, id=wx.ID_CUT)
+        self.Bind(wx.EVT_BUTTON, self.OnUndo, id=wx.ID_UNDO)
+        self.Bind(wx.EVT_BUTTON, self.OnRedo, id=wx.ID_REDO)
         #TODO figure out why undo and redo crash application on coding tab
         #error captured in windows event viewer but doesnt explain what is occuring
         #need to test if this error is being caused by two richtextctrls in the same frame
@@ -226,58 +226,102 @@ class NotesPanel(wx.Panel):
         logger.info("Finished")
         return saved_data
 
-#TODO Rework to be sizer of buttons to avoid Windows to OSX compatibility issues
-class NoteToolBar(wx.ToolBar):
+#TODO confirm new approach is OSX compatibile
+class NoteToolPanel(wx.Panel):
     '''Toolbar with options for editing notes'''
     def __init__(self, *args, **kwds):
-        kwds["style"] = wx.TB_FLAT
-        wx.ToolBar.__init__(self, *args, **kwds)
-        self.cut_tool = self.AddTool(wx.ID_CUT, GUIText.CUT, wx.ArtProvider.GetBitmap(wx.ART_CUT, wx.ART_TOOLBAR),
-                     wx.NullBitmap, wx.ITEM_NORMAL, GUIText.CUT, "")
-        self.copy_tool = self.AddTool(wx.ID_COPY, GUIText.COPY, wx.ArtProvider.GetBitmap(wx.ART_COPY, wx.ART_TOOLBAR),
-                     wx.NullBitmap, wx.ITEM_NORMAL, GUIText.COPY, "")
-        self.paste_tool = self.AddTool(wx.ID_PASTE, GUIText.PASTE, wx.ArtProvider.GetBitmap(wx.ART_PASTE, wx.ART_TOOLBAR),
-                     wx.NullBitmap, wx.ITEM_NORMAL, GUIText.PASTE, "")
-        self.AddSeparator()
-        self.undo_tool = self.AddTool(wx.ID_UNDO, GUIText.UNDO, wx.ArtProvider.GetBitmap(wx.ART_UNDO, wx.ART_TOOLBAR),
-                     wx.NullBitmap, wx.ITEM_NORMAL, GUIText.UNDO, "")
-        self.redo_tool = self.AddTool(wx.ID_REDO, GUIText.REDO, wx.ArtProvider.GetBitmap(wx.ART_REDO, wx.ART_TOOLBAR),
-                     wx.NullBitmap, wx.ITEM_NORMAL, GUIText.REDO, "")
-        self.AddSeparator()
+        wx.Panel.__init__(self, *args, **kwds)
+        sizer = wx.BoxSizer()
+
+        icon_width = 25
+        icon_height = 25
+        
+        bmp = wx.ArtProvider.GetBitmap(wx.ART_CUT, wx.ART_TOOLBAR)
+        image = bmp.ConvertToImage()
+        cut_bmp = wx.Bitmap(image.Scale(icon_width, icon_height, quality=wx.IMAGE_QUALITY_HIGH))
+        cut_btn = wx.BitmapButton(self, wx.ID_CUT, bitmap=cut_bmp)
+        cut_btn.SetToolTip(GUIText.CUT)
+        sizer.Add(cut_btn)
+
+        bmp = wx.ArtProvider.GetBitmap(wx.ART_COPY, wx.ART_TOOLBAR)
+        image = bmp.ConvertToImage()
+        copy_bmp = wx.Bitmap(image.Scale(icon_width, icon_height, quality=wx.IMAGE_QUALITY_HIGH))
+        copy_btn = wx.BitmapButton(self, wx.ID_COPY, bitmap=copy_bmp)
+        copy_btn.SetToolTip(GUIText.COPY)
+        sizer.Add(copy_btn)
+
+        bmp = wx.ArtProvider.GetBitmap(wx.ART_PASTE, wx.ART_TOOLBAR)
+        image = bmp.ConvertToImage()
+        paste_bmp = wx.Bitmap(image.Scale(icon_width, icon_height, quality=wx.IMAGE_QUALITY_HIGH))
+        paste_btn = wx.BitmapButton(self, wx.ID_PASTE, bitmap=paste_bmp)
+        paste_btn.SetToolTip(GUIText.PASTE)
+        sizer.Add(paste_btn)
+
+        sizer.AddSpacer(10)
+
+        bmp = wx.ArtProvider.GetBitmap(wx.ART_UNDO, wx.ART_TOOLBAR)
+        image = bmp.ConvertToImage()
+        undo_bmp = wx.Bitmap(image.Scale(icon_width, icon_height, quality=wx.IMAGE_QUALITY_HIGH))
+        undo_btn = wx.BitmapButton(self, wx.ID_UNDO, bitmap=undo_bmp)
+        undo_btn.SetToolTip(GUIText.UNDO)
+        sizer.Add(undo_btn)
+
+        bmp = wx.ArtProvider.GetBitmap(wx.ART_REDO, wx.ART_TOOLBAR)
+        image = bmp.ConvertToImage()
+        redo_bmp = wx.Bitmap(image.Scale(icon_width, icon_height, quality=wx.IMAGE_QUALITY_HIGH))
+        redo_btn = wx.BitmapButton(self, wx.ID_REDO, bitmap=redo_bmp)
+        redo_btn.SetToolTip(GUIText.REDO)
+        sizer.Add(redo_btn)
+        
+        sizer.AddSpacer(10)
+
         bmp = wx.Bitmap(os.path.join(Constants.IMAGES_PATH, "bold.bmp"), wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
-        bold_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
-        self.bold_tool = self.AddTool(wx.ID_BOLD, GUIText.BOLD, bold_bmp,
-                     wx.NullBitmap, wx.ITEM_NORMAL, GUIText.BOLD, "")
+        bold_bmp = wx.Bitmap(image.Scale(icon_width, icon_height, quality=wx.IMAGE_QUALITY_HIGH))
+        bold_btn = wx.BitmapButton(self, wx.ID_BOLD, bitmap=bold_bmp)
+        bold_btn.SetToolTip(GUIText.BOLD)
+        sizer.Add(bold_btn)
+        
         bmp = wx.Bitmap(os.path.join(Constants.IMAGES_PATH, "italic.bmp"), wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
-        italic_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
-        self.italic_tool = self.AddTool(wx.ID_ITALIC, GUIText.ITALIC, italic_bmp,
-                     wx.NullBitmap, wx.ITEM_NORMAL, GUIText.ITALIC, "")
+        italic_bmp = wx.Bitmap(image.Scale(icon_width, icon_height, quality=wx.IMAGE_QUALITY_HIGH))
+        italic_btn = wx.BitmapButton(self, wx.ID_ITALIC, bitmap=italic_bmp)
+        italic_btn.SetToolTip(GUIText.ITALIC)
+        sizer.Add(italic_btn)
+        
         bmp = wx.Bitmap(os.path.join(Constants.IMAGES_PATH, "underline.bmp"), wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
-        underline_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
-        self.underline_tool = self.AddTool(wx.ID_UNDERLINE, GUIText.UNDERLINE, underline_bmp,
-                     wx.NullBitmap, wx.ITEM_NORMAL, GUIText.UNDERLINE, "")
+        underline_bmp = wx.Bitmap(image.Scale(icon_width, icon_height, quality=wx.IMAGE_QUALITY_HIGH))
+        underline_btn = wx.BitmapButton(self, wx.ID_UNDERLINE, bitmap=underline_bmp)
+        underline_btn.SetToolTip(GUIText.UNDERLINE)
+        sizer.Add(underline_btn)
+        
         bmp = wx.Bitmap(os.path.join(Constants.IMAGES_PATH, "strikethrough.bmp"), wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
-        strikethrough_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
-        self.strikethrough_tool = self.AddTool(wx.ID_STRIKETHROUGH, GUIText.STRIKETHROUGH, strikethrough_bmp,
-                     wx.NullBitmap, wx.ITEM_NORMAL, GUIText.STRIKETHROUGH, "")
+        strikethrough_bmp = wx.Bitmap(image.Scale(icon_width, icon_height, quality=wx.IMAGE_QUALITY_HIGH))
+        strikethrough_btn = wx.BitmapButton(self, wx.ID_STRIKETHROUGH, bitmap=strikethrough_bmp)
+        strikethrough_btn.SetToolTip(GUIText.STRIKETHROUGH)
+        sizer.Add(strikethrough_btn)
+        
         bmp = wx.Bitmap(os.path.join(Constants.IMAGES_PATH, "font.bmp"), wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
-        font_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
-        self.font_tool = self.AddTool(wx.ID_SELECT_FONT, GUIText.FONT, font_bmp,
-                     wx.NullBitmap, wx.ITEM_NORMAL, GUIText.FONT, "")
-
+        font_bmp = wx.Bitmap(image.Scale(icon_width, icon_height, quality=wx.IMAGE_QUALITY_HIGH))
+        font_btn = wx.BitmapButton(self, wx.ID_SELECT_FONT, bitmap=font_bmp)
+        font_btn.SetToolTip(GUIText.FONT)
+        sizer.Add(font_btn)
+        
         bmp = wx.Bitmap(os.path.join(Constants.IMAGES_PATH, "increasefontsize.bmp"), wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
-        increasefontsize_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
-        self.increasefontsize_tool = self.AddTool(wx.ID_ZOOM_OUT, "Increase Font Size", increasefontsize_bmp,
-                                                  wx.NullBitmap, wx.ITEM_NORMAL, "Increase Font Size", "")
+        increasefontsize_bmp = wx.Bitmap(image.Scale(icon_width, icon_height, quality=wx.IMAGE_QUALITY_HIGH))
+        increasefontsize_btn = wx.BitmapButton(self, wx.ID_ZOOM_OUT, bitmap=increasefontsize_bmp)
+        increasefontsize_btn.SetToolTip(GUIText.INCREASE_FONT_SIZE)
+        sizer.Add(increasefontsize_btn)
+        
         bmp = wx.Bitmap(os.path.join(Constants.IMAGES_PATH, "decreasefontsize.bmp"), wx.BITMAP_TYPE_ANY)
         image = bmp.ConvertToImage()
-        decreasefontsize_bmp = wx.Bitmap(image.Scale(32, 32, quality=wx.IMAGE_QUALITY_HIGH))
-        self.decreasefontsize_tool = self.AddTool(wx.ID_ZOOM_IN, "Decrease Font Size", decreasefontsize_bmp,
-                                                  wx.NullBitmap, wx.ITEM_NORMAL, "Decrease Font Size", "")
-        self.Realize()
+        decreasefontsize_bmp = wx.Bitmap(image.Scale(icon_width, icon_height, quality=wx.IMAGE_QUALITY_HIGH))
+        decreasefontsize_btn = wx.BitmapButton(self, wx.ID_ZOOM_IN, bitmap=decreasefontsize_bmp)
+        decreasefontsize_btn.SetToolTip(GUIText.DECREASE_FONT_SIZE)
+        sizer.Add(decreasefontsize_btn)
+
+        self.SetSizerAndFit(sizer)

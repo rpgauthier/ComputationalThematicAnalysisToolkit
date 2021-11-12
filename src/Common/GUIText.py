@@ -43,6 +43,8 @@ class Common:
     UNDERLINE = "Underline"
     STRIKETHROUGH = "Strikethrough"
     FONT = "Font"
+    INCREASE_FONT_SIZE = "Increase Font Size"
+    DECREASE_FONT_SIZE = "Decrease Font Size"
 
     NAME = "Name"
     FILENAME = "Filename"
