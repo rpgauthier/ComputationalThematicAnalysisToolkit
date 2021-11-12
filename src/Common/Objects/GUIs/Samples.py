@@ -771,7 +771,7 @@ class TopicSamplePanel(AbstractSamplePanel):
         logger.info("Starting")
         AbstractSamplePanel.__init__(self, parent, sample, dataset, size=size)
 
-        self.selected_parts = None
+        self.selected_parts = {}
         self.computationfields_dialog = None
         main_frame = wx.GetApp().GetTopWindow()
 
@@ -1099,10 +1099,9 @@ class TopicSamplePanel(AbstractSamplePanel):
         if self.sample.document_cutoff != new_cutoff:
             self.sample.document_cutoff = new_cutoff
             self.sample.ApplyDocumentCutoff()
-
-        #self.visualization_panel.Refresh(self.selected_parts)
-        self.DrawLDAPlot(self.selected_parts)
-        self.parts_panel.OnChangeDocumentNumber(None)
+            #self.visualization_panel.Refresh(self.selected_parts)
+            self.DrawLDAPlot(self.selected_parts)
+            self.parts_panel.OnChangeDocumentNumber(None)
 
         logger.info("Finished")
 
@@ -1111,14 +1110,28 @@ class TopicSamplePanel(AbstractSamplePanel):
         logger.info("Starting")
         self.Freeze()
 
+        old_selection = list(self.selected_parts.keys())
+
         #figure out what topics have been selected
         #TODO investigate performance issues occuring here on OSX
         self.ChangeSelections()
-        self.parts_panel.ChangeSelectedParts(self.selected_parts)
-        #update the data and visualizations of selected topics
-        #self.visualization_panel.DrawLDAPlots(self.selected_parts)
-        self.DrawLDAPlot(self.selected_parts)
         
+        selection_changed = False
+        if len(old_selection) == len(self.selected_parts):
+            for part_key in self.selected_parts:
+                if part_key not in old_selection:
+                    selection_changed = True
+                    break
+        else:
+            selection_changed = True
+
+        if selection_changed:
+            self.parts_panel.ChangeSelectedParts(self.selected_parts)
+            self.DrawLDAPlot(self.selected_parts)
+            #update the data and visualizations of selected topics
+            #self.visualization_panel.DrawLDAPlots(self.selected_parts)
+            
+
         self.Thaw()
         logger.info("Finished")
 
@@ -1170,23 +1183,24 @@ class TopicSamplePanel(AbstractSamplePanel):
     
     def ChangeSelections(self):
         selections = self.topiclist_panel.topic_list_ctrl.GetSelections()
-        self.selected_parts = {}
-        if len(selections) == 1:
+        self.selected_parts.clear()
+        merged_part = None
+        if len(selections) >= 1:
             for item in selections:
                 part = self.topiclist_panel.topic_list_model.ItemToObject(item)
-                if isinstance(part, Samples.TopicMergedPart):
-                    for part_key in part.parts_dict:
-                        self.selected_parts[part_key] = part.parts_dict[part_key]
-                else:
-                    for key in self.sample.parts_dict:
-                        self.selected_parts[key] = self.sample.parts_dict[key]
-        elif len(selections) > 1:
-            for item in selections:
-                    part = self.topiclist_panel.topic_list_model.ItemToObject(item)
-                    self.selected_parts[part.key] = part
+                if isinstance(part.parent, Samples.TopicMergedPart) and merged_part == None:
+                    merged_part = part.parent
+                elif isinstance(part.parent, Samples.TopicMergedPart) and merged_part != part.parent:
+                    merged_part = None
+                    break
+                elif not isinstance(part.parent, Samples.TopicMergedPart):
+                    merged_part = None
+                    break
+        
+        if merged_part == None:
+            self.selected_parts.update(self.sample.parts_dict)
         else:
-            for key in self.sample.parts_dict:
-                self.selected_parts[key] = self.sample.parts_dict[key]
+            self.selected_parts.update(merged_part.parts_dict)
     
     def DrawLDAPlot(self, topics):
         logger = logging.getLogger(__name__+".TopicSamplePanel["+str(self.sample.key)+"].DrawLDAPlot")

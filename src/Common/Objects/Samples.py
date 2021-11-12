@@ -664,11 +664,16 @@ class TopicMergedPart(ModelMergedPart):
         self.last_changed_dt = datetime.now()
 
     def GetTopicKeywordsList(self):
-        keyword_set = set()
+        keywords_dict = {}
         for part_key in self.parts_dict:
             part_keywords = self.parts_dict[part_key].GetTopicKeywordsList()
-            keyword_set.update({(keyword[0], 1) for keyword in part_keywords})
-        return list(keyword_set)
+            for keyword, prob in part_keywords:
+                if keyword in keywords_dict:
+                    keywords_dict[keyword] = keywords_dict[keyword] + prob
+                else:
+                    keywords_dict[keyword] = prob
+        keywords_sorted = sorted(keywords_dict.items(), key=lambda x:x[1], reverse=True)
+        return keywords_sorted
 
 class Part(GenericObject):
     def __init__(self, parent, key, name=None):

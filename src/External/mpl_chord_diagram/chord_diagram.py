@@ -241,6 +241,9 @@ def chord_diagram(mat, outer_circle=None, names=None, order=None, width=0.1, pad
     if outer_circle is not None:
         orig_outer_circle = np.copy(outer_circle)
 
+    if np.sum(outer_circle) == 0:
+        outer_circle = np.ones_like(outer_circle)
+
     # mat[i, j]:  i -> j
     num_nodes = mat.shape[0]
 
@@ -332,6 +335,7 @@ def chord_diagram(mat, outer_circle=None, names=None, order=None, width=0.1, pad
 
     # find position for each start and end
     y = x / np.sum(x).astype(float) * (360 - pad*len(x))
+
 
     pos = {}
     arc = []
