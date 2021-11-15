@@ -369,7 +369,12 @@ class DatasetPanel(wx.Panel):
         language_sizer.Add(self.language_ctrl)
         details_sizer1.Add(language_sizer, 0, wx.ALL, 5)
         details_sizer1.AddSpacer(10)
-        
+
+        if main_frame.options_dict['multipledatasets_mode']:
+            self.delete_btn = wx.Button(self, label=GUIText.DELETE)
+            self.delete_btn.SetToolTip(GUIText.DATASET_DELETE_TOOLTIP)
+            details_sizer1.Add(self.delete_btn, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+
         if main_frame.options_dict['adjustable_label_fields_mode']:
             customize_label_fields_ctrl = wx.Button(self, label=GUIText.CUSTOMIZE_LABEL_FIELDS)
             customize_label_fields_ctrl.Bind(wx.EVT_BUTTON, self.OnCustomizeLabelFields)

@@ -406,8 +406,10 @@ class FilterPanel(wx.Panel):
         self.rules_panel.autoapply = not self.rules_panel.autoapply
         if not self.rules_panel.autoapply:
             self.rules_panel.pauserules_btn.SetLabel(GUIText.FILTERS_AUTOAPPLY_RESUME)
+            self.rules_panel.pauserules_btn.SetToolTip(GUIText.FILTERS_AUTOAPPLY_RESUME_TOOLTIP)
         else:
             self.rules_panel.pauserules_btn.SetLabel(GUIText.FILTERS_AUTOAPPLY_PAUSE)
+            self.rules_panel.pauserules_btn.SetToolTip(GUIText.FILTERS_AUTOAPPLY_PAUSE_TOOLTIP)
             self.rules_panel.applyrules_btn.Hide()
             self.rules_panel.cancelrules_btn.Hide()
             self.dataset.filter_rules = self.rules_panel.GetDraftedRules()
@@ -558,8 +560,10 @@ class FilterPanel(wx.Panel):
             self.rules_panel.autoapply = saved_data['autoapply']
         if not self.rules_panel.autoapply:
             self.rules_panel.pauserules_btn.SetLabel(GUIText.FILTERS_AUTOAPPLY_RESUME)
+            self.rules_panel.pauserules_btn.SetToolTip(GUIText.FILTERS_AUTOAPPLY_RESUME_TOOLTIP)
         else:
             self.rules_panel.pauserules_btn.SetLabel(GUIText.FILTERS_AUTOAPPLY_PAUSE)
+            self.rules_panel.pauserules_btn.SetToolTip(GUIText.FILTERS_AUTOAPPLY_PAUSE_TOOLTIP)
         
         if not self.rules_panel.autoapply and 'draft_rules' in saved_data:
             self.rules_panel.DisplayDraftFilterRules(saved_data['draft_rules'])
@@ -839,7 +843,7 @@ class RulesPanel(wx.Panel):
         apply_tools_sizer = wx.BoxSizer()
         tools_sizer.Add(apply_tools_sizer)
         self.pauserules_btn = wx.Button(self, label=GUIText.FILTERS_AUTOAPPLY_PAUSE)
-        self.pauserules_btn.SetToolTip(GUIText.FILTERS_AUTOAPPLY_TOOLTIP)
+        self.pauserules_btn.SetToolTip(GUIText.FILTERS_AUTOAPPLY_PAUSE_TOOLTIP)
         self.pauserules_btn.Bind(wx.EVT_BUTTON, self.parent_frame.OnPauseRules)
         apply_tools_sizer.Add(self.pauserules_btn)
         self.applyrules_btn = wx.Button(self, label=GUIText.FILTERS_MANUALAPPLY)

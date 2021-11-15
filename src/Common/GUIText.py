@@ -387,6 +387,7 @@ class Datasets(Common):
     COMBINED_COMPUTATIONAL_FIELDS = "Combined Computational Fields"
     COMBINED_COMPUTATIONAL_FIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the data."\
                                       "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
+    DATASET_DELETE = "Delete this dataset from the workspace"
     CUSTOMIZE_LABEL_FIELDS = "Customize Label Fields"
     CUSTOMIZE_COMPUTATIONAL_FIELDS = "Customize Computational Fields"
 
@@ -553,6 +554,7 @@ class Collection(Main, Datasets):
     TWITTER_DESC = "Online public comments."
     TWITTER_URL = "https://twitter.com/"
     LOCAL_SOURCES = "Local Sources"
+    CSV_DESC = "Used to import datasets created outside of this toolkit. The csv file must be encoded using utf-8."
 
 
     DATASETSLIST_LABEL = "Datasets List"
@@ -686,7 +688,7 @@ class Filtering(Main, Datasets):
     FILTERS_CREATE_TFIDF_LOWER = ' in the lower '
     FILTERS_CREATE_TFIDF_UPPER = ' in the upper  '
     FILTERS_CREATE_RULE = "Create Rule"
-    FILTERS_CREATE_RULE_TOOLTIP = "Create a new generic rule or expand dropdown to create a custom rule"
+    FILTERS_CREATE_RULE_TOOLTIP = "Create a new rule at the end of the rules list"
     FILTERS_CREATE_RULE_INVALID_ACTION_ERROR = "Please make sure action has been selected."
     FILTERS_CREATE_RULE_INVALID_ADVANCED_ERROR = "Please make sure a valid advanced choice has been selected."
     FILTERS_CREATE_COUNT_RULE_INCOMPLETE_ADVANCED_ERROR = "Please make sure advanced fields are selected and/or filled out."
@@ -700,10 +702,11 @@ class Filtering(Main, Datasets):
     FILTERS_CREATE_TFIDF_RULE_NUMBER_TOOLTIP = "Set the percentage cutoff to use to compare against tf-idf values"
 
     FILTERS_AUTOAPPLY_PAUSE = "Pause Auto-Apply"
+    FILTERS_AUTOAPPLY_PAUSE_TOOLTIP = "Pause to prevent rules from automatically applying as the list is changed.\
+                                      \nUseful when performing multiple rule changes on millions of words."
     FILTERS_AUTOAPPLY_RESUME = "Resume Auto-Apply"
-    FILTERS_AUTOAPPLY_TOOLTIP = "Pause to prevent rules from automatically applying as they are changed.\
-                                \nIf resumed, will auto-apply all drafted rule changes.\
-                                \nUseful when performing multiple rule changes on millions of words."
+    FILTERS_AUTOAPPLY_RESUME_TOOLTIP = "Resume to apply all drafted rule changes and enable automatic application of rules as the list is changed.\
+                                       \nUseful when performing multiple rule changes on millions of words."
     FILTERS_MANUALAPPLY = "Apply Changes"
     FILTERS_MANUALAPPLY_TOOLTIP = "Will apply any drafted rule changes made to the dataset"
     FILTERS_MANUALCANCEL = "Cancel Changes"

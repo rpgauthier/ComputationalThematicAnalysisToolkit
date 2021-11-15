@@ -319,12 +319,9 @@ class DatasetDetailsPanel(wx.Panel):
         self.sizer.Clear(True)
         main_frame = wx.GetApp().GetTopWindow()
         if isinstance(dataset, Datasets.Dataset):
-            if dataset is not None:
-                remove_btn = wx.Button(self, label=GUIText.DELETE)
-                remove_btn.SetToolTip(GUIText.DATASETS_DELETE_TOOLTIP)
-                remove_btn.Bind(wx.EVT_BUTTON, self.OnDeleteDataset)
-                self.sizer.Add(remove_btn)
             dataset_panel = DatasetsGUIs.DatasetPanel(self, self.module, dataset, header=True)
+            if hasattr(dataset_panel, 'delete_btn'):
+                dataset_panel.delete_btn.Bind(wx.EVT_BUTTON, self.OnDeleteDataset)
             self.sizer.Add(dataset_panel)
         else:
             online_box = wx.StaticBox(self, label=GUIText.ONLINE_SOURCES)
@@ -359,10 +356,15 @@ class DatasetDetailsPanel(wx.Panel):
             local_box.SetFont(main_frame.DETAILS_LABEL_FONT)
             local_sizer = wx.StaticBoxSizer(local_box, wx.VERTICAL)
             self.sizer.Add(local_sizer, 0, wx.ALL, 5)
+
+            csv_sizer = wx.BoxSizer()
+            local_sizer.Add(csv_sizer)
             add_csv_btn = wx.Button(self, label=GUIText.DATASETS_IMPORT_CSV)
             add_csv_btn.SetToolTip(GUIText.DATASETS_IMPORT_CSV_TOOLTIP)
             add_csv_btn.Bind(wx.EVT_BUTTON, self.OnAddCSVDataset)
-            local_sizer.Add(add_csv_btn, 0, wx.ALL, 5)
+            csv_sizer.Add(add_csv_btn, 0, wx.ALL, 5)
+            add_csv_description = wx.StaticText(self, label=GUIText.CSV_DESC)
+            csv_sizer.Add(add_csv_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
             
         self.Layout()
         logger.info("Finished")
