@@ -330,7 +330,7 @@ class DatasetPanel(wx.Panel):
                 details_sizer2.Add(end_sizer, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
                 details_sizer2.AddSpacer(10)
 
-            imported_on_sizer = wx.BoxSizer
+            imported_on_sizer = wx.BoxSizer()
             imported_on_label = wx.StaticText(self, label=GUIText.IMPORTED_ON + ": ")
             imported_on_label.SetFont(main_frame.DETAILS_LABEL_FONT)
             imported_on_sizer.Add(imported_on_label)

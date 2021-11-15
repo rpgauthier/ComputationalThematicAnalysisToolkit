@@ -598,7 +598,7 @@ class RetrieveCSVDatasetThread(Thread):
                     else:
                         datetime_value = row[self.datetime_field]
                         if datetime_value != '':
-                            tmp_obj = dateparser.parse(datetime_value)
+                            tmp_obj = dateparser.parse(datetime_value, settings={'RETURN_AS_TIMEZONE_AWARE': False})
                             datetime_obj = datetime(tmp_obj.year, tmp_obj.month, tmp_obj.day,
                                                     tmp_obj.hour, tmp_obj.minute, tmp_obj.second,
                                                     tmp_obj.microsecond, pytz.timezone(self.datetime_tz))
@@ -670,7 +670,10 @@ class RetrieveCSVDatasetThread(Thread):
                     else:
                         datetime_value = row[self.datetime_field]
                         if datetime_value != '':
-                            datetime_obj = dateparser.parse(datetime_value, settings={'TIMEZONE': self.datetime_tz})
+                            tmp_obj = dateparser.parse(datetime_value, settings={'RETURN_AS_TIMEZONE_AWARE': False})
+                            datetime_obj = datetime(tmp_obj.year, tmp_obj.month, tmp_obj.day,
+                                                    tmp_obj.hour, tmp_obj.minute, tmp_obj.second,
+                                                    tmp_obj.microsecond, pytz.timezone(self.datetime_tz))
                             if datetime_obj != None:
                                 datetime_obj = datetime_obj.astimezone(timezone.utc)
                                 datetime_utc = datetime_obj.replace(tzinfo=timezone.utc).timestamp()
