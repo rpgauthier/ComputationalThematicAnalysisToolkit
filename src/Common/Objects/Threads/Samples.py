@@ -4,6 +4,7 @@ import os
 import psutil
 import bz2
 import pickle
+import numpy
 
 import wx
 
@@ -216,7 +217,8 @@ class NMFTrainingThread(Thread):
 
         topics = tfidf_vectorizer.get_feature_names_out()
         topic_pr = model.transform(tfidf)
-        probs = topic_pr / topic_pr.sum(axis=1, keepdims=True)
+        topic_pr_sum = numpy.sum(topic_pr, axis=1, keepdims=True)
+        probs = numpy.divide(topic_pr, topic_pr_sum, out=numpy.zeros_like(topic_pr), where=topic_pr_sum!=0)
 
         with bz2.BZ2File(self.current_workspace_path+"/Samples/"+self.key+'/nmf_model.pk', 'wb') as outfile:
             pickle.dump(model, outfile)
