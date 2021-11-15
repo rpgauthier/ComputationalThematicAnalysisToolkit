@@ -71,9 +71,6 @@ class NotesPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.OnCut, id=wx.ID_CUT)
         self.Bind(wx.EVT_BUTTON, self.OnUndo, id=wx.ID_UNDO)
         self.Bind(wx.EVT_BUTTON, self.OnRedo, id=wx.ID_REDO)
-        #TODO figure out why undo and redo crash application on coding tab
-        #error captured in windows event viewer but doesnt explain what is occuring
-        #need to test if this error is being caused by two richtextctrls in the same frame
         self.Bind(wx.EVT_MENU, self.OnUndo, id=wx.ID_UNDO)
         self.Bind(wx.EVT_MENU, self.OnRedo, id=wx.ID_REDO)
 
