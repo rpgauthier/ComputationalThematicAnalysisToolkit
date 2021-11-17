@@ -7,6 +7,8 @@ import tempfile
 import multiprocessing
 import psutil
 from datetime import datetime
+import uuid
+import xmlschema
 
 import wx
 from wx.adv import HyperlinkCtrl
@@ -17,6 +19,7 @@ import RootApp
 import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
 import Common.Database as Database
+import Common.Objects.Utilities.Generic as GenericUtilities
 from Common.GUIText import Main as GUIText
 import Common.Notes as cn
 import Collection.ModuleCollection as CollectionModule
@@ -51,6 +54,7 @@ class MainFrame(wx.Frame):
         self.model_iter = 0
         self.codes = {}
         self.save_path = ''
+        self.name = 'New_Workspace'
         self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
         Database.DatabaseConnection(self.current_workspace.name).Create()
         
@@ -146,6 +150,22 @@ class MainFrame(wx.Frame):
                                                 GUIText.SAVE_AS_TOOLTIP)
         self.Bind(wx.EVT_MENU, self.OnSaveAs, saveas_file_menuitem)
         file_menu.AppendSeparator()
+
+        importCodesItem = file_menu.Append(wx.ID_ANY,
+                                                   GUIText.IMPORT_CODES,
+                                                   GUIText.IMPORT_CODES_TOOLTIP)
+        self.Bind(wx.EVT_MENU, self.OnImportCodes, importCodesItem)
+        exportCodesItem = file_menu.Append(wx.ID_ANY,
+                                                   GUIText.EXPORT_CODES,
+                                                   GUIText.EXPORT_CODES_TOOLTIP)
+        self.Bind(wx.EVT_MENU, self.OnExportCodes, exportCodesItem)
+        exportWorkspaceItem = file_menu.Append(wx.ID_ANY,
+                                                   GUIText.EXPORT_WORKSPACE,
+                                                   GUIText.EXPORT_WORKSPACE_TOOLTIP)
+        self.Bind(wx.EVT_MENU, self.OnExportWorkspace, exportWorkspaceItem)
+
+        file_menu.AppendSeparator()
+
         exit_file_menuitem = file_menu.Append(wx.ID_EXIT,
                                          GUIText.EXIT,
                                          GUIText.EXIT_TOOLTIP)
@@ -303,7 +323,8 @@ class MainFrame(wx.Frame):
                 self.DocumentsUpdated(self)
                 self.CodesUpdated()
 
-                self.SetTitle(GUIText.APP_NAME+" - "+GUIText.UNSAVED)
+                self.name = GUIText.NEW_WORKSPACE_NAME
+                self.SetTitle(GUIText.APP_NAME+" - "+self.name)
 
                 self.Thaw()
 
@@ -353,7 +374,8 @@ class MainFrame(wx.Frame):
                     self.save_path = file_dialog.GetPath()
                     self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG_FILE + str(self.save_path))
                     logger.info("loading file: %s", self.save_path)
-                    self.SetTitle(GUIText.APP_NAME+" - "+file_dialog.GetFilename())
+                    self.name = file_dialog.GetFilename()[:-4]
+                    self.SetTitle(GUIText.APP_NAME+" - "+self.name)
 
                     #reset objects
                     for doc_key in list(self.document_dialogs.keys()):
@@ -423,7 +445,8 @@ class MainFrame(wx.Frame):
                 self.save_path = ""
                 self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG_FILE + str(Constants.AUTOSAVE_PATH))
                 logger.info("loading file: %s", Constants.AUTOSAVE_PATH)
-                self.SetTitle(GUIText.APP_NAME+" - Last AutoSave")
+                self.name = 'Last_AutoSave'
+                self.SetTitle(GUIText.APP_NAME+" - "+self.name)
 
                 #reset objects
                 for doc_key in list(self.document_dialogs.keys()):
@@ -502,6 +525,7 @@ class MainFrame(wx.Frame):
                           wildcard="*.mta") as file_dialog:
             if file_dialog.ShowModal() == wx.ID_OK:
                 self.save_path = file_dialog.GetPath()
+                self.name = file_dialog.GetFilename()[:-4]
                 self.SetTitle(GUIText.APP_NAME+" - "+file_dialog.GetFilename())
                 try:
                     self.last_load_dt = datetime(1990, 1, 1)
@@ -597,6 +621,155 @@ class MainFrame(wx.Frame):
         logger.info("Finished")
         if self.closing:
             self.OnCloseEnd(event)
+    
+    def OnImportCodes(self, event):
+        logger = logging.getLogger(__name__+".MainFrame.OnImportCodes")
+        logger.info("Starting")
+        main_frame = wx.GetApp().GetTopWindow()
+        if len(main_frame.codes) > 0:
+            confirm_dialog = wx.MessageDialog(self, GUIText.IMPORT_CODES_CONFIRMATION_REQUEST,
+                                            GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+            confirm_dialog.SetOKLabel(GUIText.IMPORT_CODES)
+            confirm_flag = confirm_dialog.ShowModal()
+        else:
+            confirm_flag = wx.ID_OK
+        if confirm_flag == wx.ID_OK:
+
+            with wx.FileDialog(self, GUIText.IMPORT_CODES, defaultDir=Constants.SAVED_WORKSPACES_PATH,
+                            wildcard="Codebook Exchange Format (*.qdc)|*.qdc",
+                            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
+                # cancel if the user changed their mind
+                if file_dialog.ShowModal() == wx.ID_CANCEL:
+                    return
+                # Proceed loading the file chosen by the user
+                pathname = file_dialog.GetPath()
+                try:
+                    def IntegrateImportedCodes(new_codes):
+                        for new_key in list(new_codes.keys()):
+                            new_code = new_codes[new_key]
+                            IntegrateImportedCodes(new_code.subcodes)
+
+                            #Recurively find existing code if it exists
+                            def FindCode(sought_code, codes):
+                                if sought_code.key in codes:
+                                    return codes[sought_code.key]
+                                else:
+                                    for key in codes:
+                                        found_code = FindCode(sought_code, codes[key].subcodes)
+                                        if found_code != None:
+                                            return found_code
+                                return None
+                            found_code = FindCode(new_code, main_frame.codes)
+                            if found_code != None:
+                                #if it does exist ask user if they want to keep both, merge import into imported, merge existing into existing
+                                action_dialog = wx.MessageDialog(self, "Code ["+found_code.name+"] already exists.\nWhat action would you like to take?",  GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+                                action_dialog.SetYesNoCancelLabels("Import as new Code", "Update Existing Code", "Skip")
+                                action = action_dialog.ShowModal()
+
+                                if action == wx.ID_YES:
+                                    old_key = new_code.key
+                                    new_code.key = str(uuid.uuid4())
+                                    new_codes[new_code.key] = new_code
+                                    del new_codes[old_key]
+                                elif action == wx.ID_NO:
+                                    for existing_subcode_key in list(found_code.subcodes.keys()):
+                                        existing_subcode = found_code.subcodes[existing_subcode_key]
+                                        if FindCode(existing_subcode, imported_codes) == None:
+                                            existing_subcode.parent = new_code
+                                            new_code.subcodes[existing_subcode.key] = existing_subcode
+                                            del found_code.subcodes[existing_subcode_key]
+                                    new_code.connections = found_code.connections
+                                    found_code.connections = []
+                                    new_code.doc_positions = found_code.doc_positions
+                                    found_code.doc_positions = {}
+                                    new_code.quotations = found_code.quotations
+                                    for quotation in new_code.quotations:
+                                        quotation.parent = new_code
+                                    found_code.quotations = []
+                                    found_code.DestroyObject()
+                                elif action == wx.CANCEL:
+                                    new_code.DestroyObject()
+
+
+                    imported_codes = GenericUtilities.QDACodeImporter(pathname)
+                    IntegrateImportedCodes(imported_codes)
+                    for code_key in imported_codes:
+                        main_frame.codes[code_key] = imported_codes[code_key]
+                
+                    self.codes_model.Cleared()
+                    self.codes_ctrl.Expander(None)
+                    for dataset_key in self.coding_datasets_panels:
+                        self.coding_datasets_panels[dataset_key].DocumentsUpdated()
+                        self.coding_datasets_panels[dataset_key].codes_model.Cleared()
+                        self.coding_datasets_panels[dataset_key].codes_ctrl.Expander(None)
+                        for document_key in self.coding_datasets_panels[dataset_key].document_windows:
+                            self.coding_datasets_panels[dataset_key].document_windows[document_key].codes_model.Cleared()
+                            self.coding_datasets_panels[dataset_key].document_windows[document_key].codes_ctrl.Expander(None)
+                    main_frame.CodesUpdated()
+                
+                except xmlschema.XMLSchemaValidationError:
+                    wx.LogError("Cannot Load file '%s' as it does not contain a valid REFI-QDA Codebook", pathname)
+                    logger.error("Failed due to xml validation issue when loading file '%s'", pathname)
+                except IOError:
+                    wx.LogError("Cannot open file '%s'", pathname)
+                    logger.error("Failed to open file '%s'", pathname)
+        logger.info("Finished")
+
+    def OnExportCodes(self, event):
+        logger = logging.getLogger(__name__+".MainFrame.OnExportCodes")
+        logger.info("Starting")
+        main_frame = wx.GetApp().GetTopWindow()
+        if len(main_frame.codes) > 0:
+            with wx.FileDialog(self, GUIText.EXPORT_CODES, defaultDir=Constants.SAVED_WORKSPACES_PATH,
+                               defaultFile=self.name+'.qdc',
+                               wildcard="Codebook Exchange Format (*.qdc)|*.qdc",
+                               style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
+                # cancel if the user changed their mind
+                if file_dialog.ShowModal() == wx.ID_CANCEL:
+                    return
+                # save the current contents in the file
+                file_name = file_dialog.GetPath()
+                try:
+                    main_frame = wx.GetApp().GetTopWindow()
+                    GenericUtilities.QDACodeExporter(main_frame.codes, file_name)
+                except xmlschema.XMLSchemaValidationError:
+                    wx.LogError("XML Validation Error Occured when checking created file")
+                    logger.error("XML Validation Failed for file '%s'", file_name)
+                except IOError:
+                    wx.LogError("Cannot save codebook to file")
+                    logger.error("Failed to save removal to file '%s'", file_name)
+        else:
+            wx.MessageBox(GUIText.EXPORT_CODES_ERROR_NO_DATA)
+        logger.info("Finished")
+    
+    def OnExportWorkspace(self, event):
+        logger = logging.getLogger(__name__+".MainFrame.OnExportWorkspace")
+        logger.info("Starting")
+        main_frame = wx.GetApp().GetTopWindow()
+        if len(main_frame.datasets) > 0 or len(main_frame.samples) > 0 or len(main_frame.codes) > 0:
+            with wx.FileDialog(self, GUIText.EXPORT_WORKSPACE, defaultDir=Constants.SAVED_WORKSPACES_PATH,
+                               defaultFile=self.name+'.qdpx',
+                               wildcard="Project Exchange Format (*.qdpx)|*.qdpx",
+                               style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
+                # cancel if the user changed their mind
+                if file_dialog.ShowModal() == wx.ID_CANCEL:
+                    return
+                # save the current contents in the file
+                archive_name = file_dialog.GetPath()
+                file_name = archive_name[:-4] + "qde"
+                try:
+                    main_frame = wx.GetApp().GetTopWindow()
+
+                    GenericUtilities.QDAProjectExporter(self.name, main_frame.datasets, main_frame.samples, main_frame.codes, file_name, archive_name)
+                except xmlschema.XMLSchemaValidationError:
+                    wx.LogError("XML Validation Error Occured when checking created file")
+                    logger.error("XML Validation Failed for file '%s'", file_name)
+                except IOError:
+                    wx.LogError("Cannot save workspace to project file")
+                    logger.error("Failed to save workspace to project file '%s'", file_name)
+        else:
+            wx.MessageBox(GUIText.EXPORT_WORKSPACE_ERROR_NO_DATA)
+        logger.info("Finished")
 
     def OnProgress(self, event):
         self.PulseProgressDialog(event.data)
@@ -956,7 +1129,7 @@ def Main():
     with multiprocessing.get_context("spawn").Pool(processes=pool_num) as pool:
         #start up the GUI
         app = RootApp.RootApp()
-        MainFrame(None, -1, GUIText.APP_NAME+" - "+GUIText.UNSAVED,
+        MainFrame(None, -1, GUIText.APP_NAME+" - "+GUIText.NEW_WORKSPACE_NAME,
                   style=wx.DEFAULT_FRAME_STYLE, pool=pool)
         #start up the main loop
         app.MainLoop()

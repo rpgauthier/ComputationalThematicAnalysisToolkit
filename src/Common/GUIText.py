@@ -99,7 +99,7 @@ class Common:
 
 class Main(Common):
     APP_NAME = "Computational Thematic Analysis Toolkit"
-    UNSAVED = "Unsaved Workspace"
+    NEW_WORKSPACE_NAME = "New_Workspace"
 
     NEW_WARNING = "You have unsaved changes."\
                   "\nAre you sure you want to creating a new workspace?"\
@@ -182,6 +182,17 @@ class Main(Common):
     SAVE_TOOLTIP = "Save Current Workspace"
     SAVE_AS = "Save As"
     SAVE_AS_TOOLTIP = "Save the Current Workspace with a new name"
+    IMPORT_CODES = "Import REFI-QDA Codebook"
+    IMPORT_CODES_TOOLTIP = "Import Codes from file that follows the REFI-QDA Codebook specifications"
+    IMPORT_CODES_CONFIRMATION_REQUEST = "Please confirm you wish to import an external codebook file into this project."\
+                                        "\nWARNING: Existing codes may be updated if they had previously been exported or imported and are present in the external codebook"
+    EXPORT_CODES = "Export REFI-QDA Codebook"
+    EXPORT_CODES_TOOLTIP = "Export Codes to a file that follows the REFI-QDA Codebook specifications"
+    EXPORT_CODES_ERROR_NO_DATA = "Workspace has no codes to export"
+    EXPORT_WORKSPACE = "Export REFI-QDA Project"
+    EXPORT_WORKSPACE_TOOLTIP = "Export Workspace into a file that follows the REFI-QDA Project specifications"
+    EXPORT_WORKSPACE_ERROR_NO_DATA = "Workspace has no data to export"
+    
     EXIT = "Exit"
     EXIT_TOOLTIP = "Exit Application"
     HELP = "Help"
@@ -780,14 +791,6 @@ class Coding(Main):
 
     LOAD_BUSY_MSG_CONFIG = "Loading Coding Configurations"
     SAVE_BUSY_MSG_CONFIG ="Saving Coding Configurations"
-
-    CODES_IMPORT = "Import REFI-QDA Codebook"
-    CODES_IMPORT_TOOLTIP = "Import Codes from file that follows the REFI-QDA Codebook specifications"
-    CODES_IMPORT_CONFIRMATION_REQUEST = "Please confirm you wish to import an external codebook file into this project."\
-                                        "\nWARNING: Existing codes may be updated if they had previously been exported or imported and are present in the external codebook"
-    CODES_EXPORT = "Export REFI-QDA Codebook"
-    CODES_EXPORT_TOOLTIP = "Export Codes to a file that follows the REFI-QDA Codebook specifications"
-    
 
 class Reviewing(Main):
     LOAD_BUSY_MSG_CONFIG = "Loading Reviewing Configurations"
