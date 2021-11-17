@@ -459,7 +459,20 @@ class DocumentPanel(wx.Panel):
             if (self.document.parent.key, self.document.key) in code.doc_positions:
                 new_attr = wx.TextAttr()
                 new_attr.SetFlags(wx.TEXT_ATTR_TEXT_COLOUR)
-                new_attr.SetTextColour(wx.Colour(code.colour_rgb[0], code.colour_rgb[1], code.colour_rgb[2]))
+                new_attr.SetBackgroundColour(wx.Colour(code.colour_rgb[0], code.colour_rgb[1], code.colour_rgb[2]))    
+                colours = []
+                for c in code.colour_rgb:
+                    c = c / 255.0
+                    if c <= 0.03928:
+                        c = c/12.92
+                    else:
+                        c = ((c+0.055)/1.055) ** 2.4
+                    colours.append(c)
+                L = 0.2126 * colours[0] + 0.7152 * colours[1] + 0.0722 * colours[2]
+                if L > 0.179:
+                    new_attr.SetTextColour(wx.Colour(0, 0, 0))
+                else:
+                    new_attr.SetTextColour(wx.Colour(255, 255, 255))
                 for position in code.doc_positions[(self.document.parent.key, self.document.key)]:
                     if position[0] in self.field_positions:
                         start = position[1] + self.field_positions[position[0]][0]

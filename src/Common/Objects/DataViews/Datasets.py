@@ -127,7 +127,7 @@ class DatasetsViewCtrl(dv.DataViewCtrl):
         dv.DataViewCtrl.__init__(self, parent, style=dv.DV_MULTIPLE|dv.DV_ROW_LINES)
 
         self.AssociateModel(model)
-        #model.DecRef()
+        model.DecRef()
 
         editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
         column0 = dv.DataViewColumn(GUIText.NAME, editabletext_renderer, 0, align=wx.ALIGN_LEFT)
@@ -712,7 +712,7 @@ class FieldsViewCtrl(dv.DataViewCtrl):
         dv.DataViewCtrl.__init__(self, parent, style=style)
 
         self.AssociateModel(model)
-        #model.DecRef()
+        model.DecRef()
 
         editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)        
         column0 = dv.DataViewColumn(GUIText.NAME, editabletext_renderer, 0, align=wx.ALIGN_LEFT)

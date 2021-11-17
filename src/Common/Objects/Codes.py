@@ -9,7 +9,7 @@ class Code(GenericObject):
     def __init__(self, name, parent=None, key=None):
         GenericObject.__init__(self, name=name, parent=parent)
 
-        self._colour_rgb = (0,0,0,)
+        self._colour_rgb = (255,255,255,)
         
         self.subcodes = {}
         self.connections = []
