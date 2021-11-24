@@ -2,7 +2,7 @@
 import logging
 import json
 from datetime import datetime
-import re
+import random
 
 import jsonpickle
 import nltk
@@ -21,6 +21,7 @@ import Common.Objects.DataViews.Tokens as TokenDataViews
 import Common.Objects.GUIs.Datasets as DatasetsGUIs
 import Common.Objects.Threads.Datasets as DatasetsThreads
 import Common.CustomEvents as CustomEvents
+import Common.Database as Database
 from Common.GUIText import Filtering as GUIText
 
 class FilteringNotebook(FNB.FlatNotebook):
@@ -631,6 +632,7 @@ class WordsPanel(wx.Panel):
         #create the list to be shown
         self.words_list = TokenDataViews.TokenGrid(self, self.dataset, word_type)
         sizer.Add(self.words_list, proportion=0, flag=wx.EXPAND, border=5)
+        self.words_list.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.OnShowDocumentList) 
 
         border = wx.BoxSizer()
         border.Add(sizer, 1, wx.EXPAND|wx.ALL, 5)
@@ -657,6 +659,25 @@ class WordsPanel(wx.Panel):
             self.search_count_text.SetLabel(str(self.words_list.GetNumberRows())+GUIText.SEARCH_RESULTS_LABEL)
         self.Layout()
         logger.info("Finished")
+    
+    def OnShowDocumentList(self, event):    
+        row = event.GetRow()
+        document_ids = list(set(self.words_list.gridtable.data[row][-1].split(',')))
+        main_frame = wx.GetApp().GetTopWindow()
+        random.seed(0)
+        sample_size = 20
+        if len(document_ids) < 20:
+            sample_size = len(document_ids)
+        sampled_document_ids = random.sample(document_ids, k=sample_size)
+        db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
+        document_keys = db_conn.GetDocumentKeys(sampled_document_ids)
+        documents = []
+        for document_key in document_keys[:20]:
+            documents.append(self.dataset.GetDocument(document_key))
+        word = self.words_list.GetCellValue(row, 0)
+        pos = self.words_list.GetCellValue(row, 1)
+        title = self.word_type + " " + str((word, pos))
+        DocumentListDialog(main_frame, title, self.dataset, documents, size=wx.Size(800,400)).Show()
 
     def UpdateWords(self):
         logger = logging.getLogger(__name__+".WordsPanel["+self.word_type+"]["+str(self.parent_frame.name)+"].UpdateWords")
@@ -1309,3 +1330,22 @@ class CreateRuleDialog(wx.Dialog):
             self.Layout()
             self.Fit()
             logger.info("Finished")
+
+class DocumentListDialog(wx.Dialog):
+    def __init__(self, parent, title, dataset, documents, size):
+        logger = logging.getLogger(__name__+".DocumentsDialog.__init__")
+        logger.info("Starting")
+        wx.Dialog.__init__(self, parent, title=title, size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
+
+        self.dataset = dataset
+        self.documents = documents
+
+        self.sizer = wx.BoxSizer()
+
+        view_model = TokenDataViews.DocumentListViewModel(self.dataset, self.documents)
+        view_ctrl = TokenDataViews.DocumentListViewCtrl(self, view_model) 
+
+        self.sizer.Add(view_ctrl, 1, wx.EXPAND)
+
+        self.SetSizer(self.sizer)
+        logger.info("Finished")

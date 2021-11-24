@@ -2,6 +2,7 @@ import logging
 import sqlite3
 import math
 import os.path
+import ast
 
 import Common.Constants as Constants
 from Common.GUIText import Filtering as GUITextFiltering
@@ -106,6 +107,7 @@ class DatabaseConnection():
                                                             spacy_stopword BOOLEAN,
                                                             tfidf_range_min FLOAT,
                                                             tfidf_range_max FLOAT,
+                                                            document_ids TEXT,
                                                             FOREIGN KEY(dataset_id) REFERENCES datasets(id)
                                                                 ON UPDATE CASCADE
                                                                 ON DELETE CASCADE
@@ -122,6 +124,7 @@ class DatabaseConnection():
                                                             spacy_stopword BOOLEAN,
                                                             tfidf_range_min FLOAT,
                                                             tfidf_range_max FLOAT,
+                                                            document_ids TEXT,
                                                             FOREIGN KEY(dataset_id) REFERENCES datasets(id)
                                                                 ON UPDATE CASCADE
                                                                 ON DELETE CASCADE
@@ -134,15 +137,34 @@ class DatabaseConnection():
             logger.exception("sql failed with sql error")
         logger.info("Finished")
 
-    def Upgrade(self):
-        logger = logging.getLogger(__name__+".Upgrade")
+    def Upgrade0_8_5(self):
+        logger = logging.getLogger(__name__+".Upgrade0_8_5")
         logger.info("Starting")
         try:
             c = self.__conn.cursor()
 
             c.execute("""DROP VIEW IF EXISTS string_tokens_included_view""")
             c.execute("""DROP VIEW IF EXISTS string_tokens_removed_view""")
+
             self.Create()
+            self.__conn.commit()
+            c.close()
+        except sqlite3.Error:
+            logger.exception("sql failed with sql error")
+        logger.info("Finished")
+    
+    def Upgrade0_8_7(self):
+        logger = logging.getLogger(__name__+".Upgrade0_8_7")
+        logger.info("Starting")
+        try:
+            c = self.__conn.cursor()
+
+            c.execute("""ALTER TABLE string_tokens_included
+                         ADD COLUMN document_ids text;
+                         """)
+            c.execute("""ALTER TABLE string_tokens_removed
+                         ADD COLUMN document_ids text;
+                         """)
             self.__conn.commit()
             c.close()
         except sqlite3.Error:
@@ -343,6 +365,24 @@ class DatabaseConnection():
         finally:
             self.__conn.isolation_level = old_isolation_level
         logger.info("Finished")
+    
+    def GetDocumentKeys(self, document_ids):
+        logger = logging.getLogger(__name__+".InsertDataset")
+        logger.info("Starting")
+        document_keys = []
+        try:
+            c = self.__conn.cursor()
+            sql_select_documentkeys = """SELECT document_key
+                                         FROM documents
+                                         WHERE id = ?
+                                         """
+            for document_id in document_ids:
+                c.execute(sql_select_documentkeys, (document_id,))
+                document_keys.append(ast.literal_eval(c.fetchone()[0]))
+        except sqlite3.Error as e:
+            logger.exception("sql failed with error")
+        logger.info("Finished")
+        return document_keys
 
     #Function used during processing
     def InsertStringTokens(self, dataset_key, field_key, tokens):
@@ -906,7 +946,8 @@ class DatabaseConnection():
                                                     num_of_words,
                                                     num_of_docs,
                                                     tfidf_range_min,
-                                                    tfidf_range_max
+                                                    tfidf_range_max,
+                                                    document_ids
                                                  )
                                                  SELECT
                                                     dataset_id,
@@ -931,7 +972,8 @@ class DatabaseConnection():
                                                         WHEN 'stem' THEN ROUND(MAX(stem_tfidf),4)
                                                         WHEN 'lemma' THEN ROUND(MAX(lemma_tfidf),4)
                                                         ELSE ROUND(MAX(text_tfidf),4)
-                                                        END AS tfidf_range_max
+                                                        END AS tfidf_range_max,
+                                                    GROUP_CONCAT(document_id) as document_ids
                                                  FROM string_tokens
                                                  WHERE dataset_id = :dataset_id
                                                  AND included = 1
@@ -967,7 +1009,8 @@ class DatabaseConnection():
                                                     num_of_words,
                                                     num_of_docs,
                                                     tfidf_range_min,
-                                                    tfidf_range_max
+                                                    tfidf_range_max,
+                                                    document_ids
                                                  )
                                                  SELECT
                                                     dataset_id,
@@ -992,7 +1035,8 @@ class DatabaseConnection():
                                                         WHEN 'stem' THEN ROUND(MAX(stem_tfidf),4)
                                                         WHEN 'lemma' THEN ROUND(MAX(lemma_tfidf),4)
                                                         ELSE ROUND(MAX(text_tfidf),4)
-                                                        END AS tfidf_range_max
+                                                        END AS tfidf_range_max,
+                                                    GROUP_CONCAT(document_id) as document_ids
                                                  FROM string_tokens
                                                  WHERE dataset_id = :dataset_id
                                                  AND included = 0
@@ -1098,7 +1142,8 @@ class DatabaseConnection():
                                                 num_of_words,
                                                 num_of_docs,
                                                 tfidf_range_min,
-                                                tfidf_range_max
+                                                tfidf_range_max,
+                                                document_ids
                                          FROM string_tokens_included
                                          WHERE dataset_id = ?
                                          """
@@ -1155,7 +1200,8 @@ class DatabaseConnection():
                                                num_of_words,
                                                num_of_docs,
                                                tfidf_range_min,
-                                               tfidf_range_max
+                                               tfidf_range_max,
+                                               document_ids
                                         FROM string_tokens_removed
                                         WHERE dataset_id = ?
                                         """
@@ -1189,6 +1235,7 @@ class DatabaseConnection():
 
             c.execute(sql, parameters)
             data = c.fetchall()
+
             c.close()
         except sqlite3.Error as e:
             logger.exception("sql failed with error")
