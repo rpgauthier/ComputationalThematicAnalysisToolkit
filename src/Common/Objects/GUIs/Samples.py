@@ -689,6 +689,7 @@ class RandomSamplePanel(AbstractSamplePanel):
     def Load(self, saved_data):
         logger = logging.getLogger(__name__+".RandomSamplePanel["+str(self.sample.key)+"].Load")
         logger.info("Starting")
+        self.parts_panel.parts_ctrl.Expander(None)
         logger.info("Finished")
         return
 
@@ -1238,6 +1239,8 @@ class TopicSamplePanel(AbstractSamplePanel):
             self.sample.GenerateStart(self)
         else:
             self.DisplayModel()
+            self.parts_panel.parts_ctrl.Expander(None)
+            self.topiclist_panel.topic_list_ctrl.Expander(None)
         logger.info("Finished")
 
     def Save(self):

@@ -348,8 +348,6 @@ class DocumentListViewCtrl(dv.DataViewCtrl):
         self.Bind(wx.EVT_MENU, self.OnCopyItems, id=wx.ID_COPY)
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
-        
-        self.Expander(None)
 
     def Expander(self, item):
         model = self.GetModel()
@@ -359,8 +357,20 @@ class DocumentListViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
-        for column in self.Columns:
+        self.AutoSize()
+    
+    def AutoSize(self):
+        remaining_width = self.GetSize().GetWidth()*0.98
+        col_count = self.GetColumnCount()
+        col = 0
+        for column in self.GetColumns():
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+            col_width = column.GetWidth()
+            if col_width > remaining_width/(col_count-col):
+                col_width = remaining_width/(col_count-col)
+                column.SetWidth(col_width)
+            remaining_width = remaining_width - col_width
+            col = col + 1
 
     def UpdateColumns(self):
         model = self.GetModel()
@@ -380,7 +390,7 @@ class DocumentListViewCtrl(dv.DataViewCtrl):
                 renderer = dv.DataViewTextRenderer()
             column = dv.DataViewColumn(field_name, renderer, idx, align=wx.ALIGN_LEFT)
             self.AppendColumn(column)
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+            #column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
             idx = idx+1
 
         for field_name in model.data_column_names:
@@ -393,7 +403,7 @@ class DocumentListViewCtrl(dv.DataViewCtrl):
                 renderer = dv.DataViewTextRenderer()
             column = dv.DataViewColumn(field_name, renderer, idx, align=wx.ALIGN_LEFT)
             self.AppendColumn(column)
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+            #column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
             idx = idx+1
 
         for column in self.Columns:
@@ -401,7 +411,7 @@ class DocumentListViewCtrl(dv.DataViewCtrl):
             column.Reorderable = True
             column.Resizeable = True
         
-        self.Refresh()
+        self.Expander(None)
 
     def OnShowPopup(self, event):
         logger = logging.getLogger(__name__+".PartsViewCtrl.OnShowPopup")

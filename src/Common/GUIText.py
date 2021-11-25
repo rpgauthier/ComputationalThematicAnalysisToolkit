@@ -398,7 +398,7 @@ class Datasets(Common):
     COMBINED_COMPUTATIONAL_FIELDS = "Combined Computational Fields"
     COMBINED_COMPUTATIONAL_FIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the data."\
                                       "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
-    DATASET_DELETE = "Delete this dataset from the workspace"
+    DATASET_DELETE_TOOLTIP = "Delete this dataset from the workspace"
     CUSTOMIZE_LABEL_FIELDS = "Customize Label Fields"
     CUSTOMIZE_COMPUTATIONAL_FIELDS = "Customize Computational Fields"
 

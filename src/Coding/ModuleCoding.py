@@ -104,7 +104,7 @@ class CodingNotebook(FNB.FlatNotebook):
         for dataset_key in self.coding_datasets_panels:
             self.coding_datasets_panels[dataset_key].CodesUpdated()
         self.codes_model.Cleared()
-
+        self.codes_ctrl.Expander(None)
         logger.info("Finished")
 
     def Load(self, saved_data):
@@ -180,7 +180,6 @@ class CodingDatasetPanel(wx.Panel):
         self.splitter.SetSashPosition(int(self.GetSize().GetHeight()/4))
 
         self.sizer.Add(self.splitter, proportion=1, flag=wx.EXPAND|wx.ALL, border=5)
-
         self.SetSizer(self.sizer)
         logger.info("Finished")
     
@@ -223,6 +222,8 @@ class CodingDatasetPanel(wx.Panel):
         #trigger updates of any submodules that use the datasets for rendering
         self.Freeze()
         self.documentlist_panel.DatasetsUpdated()
+        self.codes_model.Cleared()
+        self.codes_ctrl.Expander(None)
         bottom_window = self.splitter.GetWindow2()
         if bottom_window is not self.default_document_panel:
             self.default_document_panel.Show()
@@ -239,7 +240,8 @@ class CodingDatasetPanel(wx.Panel):
         #sets time that dataset was updated to flag for saving
         #trigger updates of any submodules that use the datasets for rendering
         self.documentlist_panel.DocumentsUpdated()
-
+        self.codes_model.Cleared()
+        self.codes_ctrl.Expander(None)
         for node_key in self.document_windows:
             if source != self.document_windows[node_key]:
                 self.document_windows[node_key].RefreshDetails()
@@ -253,7 +255,8 @@ class CodingDatasetPanel(wx.Panel):
         #sets time that dataset was updated to flag for saving
         #trigger updates of any submodules that use the datasets for rendering
         self.documentlist_panel.DocumentsUpdated()
-
+        self.codes_model.Cleared()
+        self.codes_ctrl.Expander(None)
         for node_key in self.document_windows:
             self.document_windows[node_key].RefreshDetails()
         self.codes_model.Cleared()

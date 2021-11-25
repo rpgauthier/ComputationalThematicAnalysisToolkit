@@ -149,14 +149,13 @@ class DatasetsViewCtrl(dv.DataViewCtrl):
             column.Sortable = True
             column.Reorderable = True
             column.Resizeable = True
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+
+        self.Expander(None)
 
         self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
         self.Bind(wx.EVT_MENU, self.OnCopyItems, id=wx.ID_COPY)
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
-
-        self.Expander(None)
 
     def Expander(self, item):
         model = self.GetModel()
@@ -166,7 +165,10 @@ class DatasetsViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
-        for column in self.Columns:
+        self.AutoSize()
+
+    def AutoSize(self):
+        for column in self.GetColumns():
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def OnShowPopup(self, event):
@@ -515,9 +517,12 @@ class DatasetsDataGrid(wx.grid.Grid):
             main_frame.document_dialogs[document.key].SetFocus()
         logger.info("Finish")
 
-    def AutoSize(self):
+    def AutoSize(self, width=None):
         if self.GetNumberRows() > 0:
-            max_size = self.GetSize().GetWidth()*0.98
+            if width is None:
+                max_size = self.GetSize().GetWidth()*0.98
+            else:
+                max_size = width
             dc = wx.ScreenDC()
             font = self.GetLabelFont()
             dc.SetFont(font)
@@ -526,6 +531,7 @@ class DatasetsDataGrid(wx.grid.Grid):
             self.SetColSize(0, content_size)
             max_size = max_size - content_size
 
+            max_label_size = (max_size/2)/len(self.gridtable.label_column_names)
             col_count = 1
             for col_name in self.gridtable.label_column_names:
                 col_type = self.gridtable.label_col_types[col_count-1]
@@ -542,6 +548,9 @@ class DatasetsDataGrid(wx.grid.Grid):
                     contents = self.gridtable.GetValue(0, col_count)
                 contents_size = dc.GetTextExtent(str(contents)).GetWidth()
                 label_size = dc.GetTextExtent(col_name).GetWidth()
+                if contents_size > max_size or label_size > max_label_size:
+                    contents_size = max_label_size
+                    label_size = max_label_size
                 self.SetColSize(col_count, max(contents_size, label_size))
                 max_size = max_size - max(contents_size, label_size)
                 col_count = col_count + 1
@@ -734,13 +743,12 @@ class FieldsViewCtrl(dv.DataViewCtrl):
             column.Sortable = True
             column.Reorderable = True
             column.Resizeable = True
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+
+        self.Expander(None)
         
         self.Bind(wx.EVT_MENU, self.OnCopyItems, id=wx.ID_COPY)
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
-
-        self.Expander(None)
 
     def Expander(self, item):
         model = self.GetModel()
@@ -750,7 +758,10 @@ class FieldsViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
-        for column in self.Columns:
+        self.AutoSize()
+    
+    def AutoSize(self):
+        for column in self.GetColumns():
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def OnCopyItems(self, event):

@@ -511,7 +511,20 @@ class MainFrame(wx.Frame):
         self.load_thread.join()
         self.load_thread = None
         self.CloseProgressDialog(thaw=True)
+
+        wx.CallAfter(self.AutoSize)
+
         logger.info("Finished")
+
+    def AutoSize(self):
+        width = self.main_notebook.GetCurrentPage().GetSize().GetWidth()
+        for dataset_key in self.collection_module.datasetsdata_notebook.dataset_data_tabs:
+            self.collection_module.datasetsdata_notebook.dataset_data_tabs[dataset_key].datasetdata_grid.AutoSize(width)
+        for sample_key in self.sampling_module.sample_panels:
+            self.sampling_module.sample_panels[sample_key].parts_panel.parts_ctrl.AutoSize(width)
+        for dataset_key in self.coding_module.coding_datasets_panels:
+            self.coding_module.coding_datasets_panels[dataset_key].documentlist_panel.documents_ctrl.AutoSize(width)
+
 
     def OnSaveAs(self, event):
         '''Menu Function for creating new save of data'''
@@ -695,17 +708,16 @@ class MainFrame(wx.Frame):
                     IntegrateImportedCodes(imported_codes)
                     for code_key in imported_codes:
                         main_frame.codes[code_key] = imported_codes[code_key]
-                
-                    self.codes_model.Cleared()
-                    self.codes_ctrl.Expander(None)
-                    for dataset_key in self.coding_datasets_panels:
-                        self.coding_datasets_panels[dataset_key].DocumentsUpdated()
-                        self.coding_datasets_panels[dataset_key].codes_model.Cleared()
-                        self.coding_datasets_panels[dataset_key].codes_ctrl.Expander(None)
-                        for document_key in self.coding_datasets_panels[dataset_key].document_windows:
-                            self.coding_datasets_panels[dataset_key].document_windows[document_key].codes_model.Cleared()
-                            self.coding_datasets_panels[dataset_key].document_windows[document_key].codes_ctrl.Expander(None)
-                    main_frame.CodesUpdated()
+                    self.coding_module.codes_model.Cleared()
+                    self.coding_module.codes_ctrl.Expander(None)
+                    for dataset_key in self.coding_module.coding_datasets_panels:
+                        self.coding_module.coding_datasets_panels[dataset_key].DocumentsUpdated()
+                        self.coding_module.coding_datasets_panels[dataset_key].codes_model.Cleared()
+                        self.coding_module.coding_datasets_panels[dataset_key].codes_ctrl.Expander(None)
+                        for document_key in self.coding_module.coding_datasets_panels[dataset_key].document_windows:
+                            self.coding_module.coding_datasets_panels[dataset_key].document_windows[document_key].codes_model.Cleared()
+                            self.coding_module.coding_datasets_panels[dataset_key].document_windows[document_key].codes_ctrl.Expander(None)
+                    self.CodesUpdated()
                 
                 except xmlschema.XMLSchemaValidationError:
                     wx.LogError("Cannot Load file '%s' as it does not contain a valid REFI-QDA Codebook", pathname)

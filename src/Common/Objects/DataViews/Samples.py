@@ -237,8 +237,6 @@ class PartsViewCtrl(dv.DataViewCtrl):
         self.Bind(wx.EVT_MENU, self.OnCopyItems, id=wx.ID_COPY)
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
-        
-        self.Expander(None)
 
     def Expander(self, item):
         model = self.GetModel()
@@ -248,8 +246,29 @@ class PartsViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
-        for column in self.Columns:
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+        self.AutoSize()
+    
+    def AutoSize(self, width=None):
+        if width is None:
+            remaining_width = self.GetSize().GetWidth()*0.98
+        else:
+            remaining_width = width*0.98
+        col_count = self.GetColumnCount()-1
+        column = self.GetColumn(col_count)
+        column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+        remaining_width = remaining_width - column.GetWidth()
+        col = 0
+        for column in self.GetColumns():
+            if col < col_count:
+                column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+                col_width = column.GetWidth()
+                if col_width > remaining_width/(col_count-col):
+                    col_width = remaining_width/(col_count-col)
+                    column.SetWidth(col_width)
+                remaining_width = remaining_width - col_width
+            else:
+                column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+            col = col+1
 
     def UpdateColumns(self):
         model = self.GetModel()
@@ -275,13 +294,11 @@ class PartsViewCtrl(dv.DataViewCtrl):
 
             column = dv.DataViewColumn(field_name, renderer, idx, align=wx.ALIGN_LEFT)
             self.AppendColumn(column)
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
             idx = idx+1
 
         text_renderer = dv.DataViewTextRenderer()
         column1 = dv.DataViewColumn(GUIText.NOTES, text_renderer, idx, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
-        column1.SetWidth(wx.COL_WIDTH_AUTOSIZE)
         idx = idx+1
         
         for column in self.Columns:
@@ -289,6 +306,7 @@ class PartsViewCtrl(dv.DataViewCtrl):
             column.Reorderable = True
             column.Resizeable = True
         
+        self.Expander(None)
         self.Refresh()
 
     def OnShowPopup(self, event):
@@ -466,7 +484,6 @@ class TopicViewCtrl(dv.DataViewCtrl):
             column.Sortable = True
             column.Reorderable = True
             column.Resizeable = True
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
         self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
         copy_id = wx.ID_ANY
@@ -485,7 +502,10 @@ class TopicViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
-        for column in self.Columns:
+        self.AutoSize()
+    
+    def AutoSize(self):
+        for column in self.GetColumns():
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def OnShowPopup(self, event):

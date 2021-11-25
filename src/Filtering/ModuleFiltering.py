@@ -631,7 +631,7 @@ class WordsPanel(wx.Panel):
         sizer.Add(search_sizer, flag=wx.ALIGN_LEFT)
         #create the list to be shown
         self.words_list = TokenDataViews.TokenGrid(self, self.dataset, word_type)
-        sizer.Add(self.words_list, proportion=0, flag=wx.EXPAND, border=5)
+        sizer.Add(self.words_list, proportion=1, flag=wx.EXPAND, border=5)
         self.words_list.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.OnShowDocumentList) 
 
         border = wx.BoxSizer()
@@ -677,7 +677,9 @@ class WordsPanel(wx.Panel):
         word = self.words_list.GetCellValue(row, 0)
         pos = self.words_list.GetCellValue(row, 1)
         title = self.word_type + " " + str((word, pos))
-        DocumentListDialog(main_frame, title, self.dataset, documents, size=wx.Size(800,400)).Show()
+        dialog = DocumentListDialog(main_frame, title, self.dataset, documents, size=wx.Size(800,400))
+        dialog.Show()
+        dialog.view_ctrl.AutoSize()
 
     def UpdateWords(self):
         logger = logging.getLogger(__name__+".WordsPanel["+self.word_type+"]["+str(self.parent_frame.name)+"].UpdateWords")
@@ -1342,10 +1344,10 @@ class DocumentListDialog(wx.Dialog):
 
         self.sizer = wx.BoxSizer()
 
-        view_model = TokenDataViews.DocumentListViewModel(self.dataset, self.documents)
-        view_ctrl = TokenDataViews.DocumentListViewCtrl(self, view_model) 
+        self.view_model = TokenDataViews.DocumentListViewModel(self.dataset, self.documents)
+        self.view_ctrl = TokenDataViews.DocumentListViewCtrl(self, self.view_model) 
 
-        self.sizer.Add(view_ctrl, 1, wx.EXPAND)
+        self.sizer.Add(self.view_ctrl, 1, wx.EXPAND)
 
         self.SetSizer(self.sizer)
         logger.info("Finished")

@@ -484,7 +484,7 @@ class DatasetDataPanel(wx.Panel):
         sizer.Add(controls_sizer, 0, wx.ALL, 5)
 
         self.datasetdata_grid = DatasetsDataViews.DatasetsDataGrid(self, dataset, self.GetSize())
-        sizer.Add(self.datasetdata_grid)
+        sizer.Add(self.datasetdata_grid, 1, wx.EXPAND)
 
         self.SetSizer(sizer)
     

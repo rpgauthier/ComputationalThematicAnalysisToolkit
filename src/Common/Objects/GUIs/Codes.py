@@ -81,6 +81,7 @@ class CodeConnectionsPanel(wx.Panel):
         frame_splitter.SetSashPosition(int(self.GetSize().GetHeight()/2))
 
         self.Layout()
+        self.objects_ctrl.Expander(None)
     
     def OnUpdateUsefulness(self, event):
         choice = self.usefulness_ctrl.GetSelection()
@@ -187,10 +188,10 @@ class DocumentListPanel(wx.Panel):
         #single dataset mode
         self.origins_popup_ctrl.AddItem(GUIText.DATACOLLECTION_LIST, 'dataset', True)
         self.documents_model.samples_filter.append('dataset')
-        self.documents_model.Cleared()
-        self.documents_ctrl.Expander(None)
 
         self.SetSizerAndFit(self.sizer)
+        self.documents_model.Cleared()
+        self.documents_ctrl.Expander(None)
 
         logger.info("Finished")    
 
@@ -286,6 +287,8 @@ class DocumentListPanel(wx.Panel):
         self.documents_model = new_documents_model
         self.documents_ctrl = new_documents_ctrl
         self.Layout()
+        self.documents_model.Cleared()
+        self.documents_ctrl.Expander(None)
         self.Thaw()
         self.DocumentsUpdated()
         logger.info("Finished")
@@ -413,6 +416,7 @@ class DocumentPanel(wx.Panel):
         data_panel.EnableScrolling(True, True)
 
         self.Layout()
+        self.codes_ctrl.Expander(None)
         self.OnShowCode(None)
     
     def OnURL(self, event):

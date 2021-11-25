@@ -146,7 +146,8 @@ class CodesViewCtrl(dv.DataViewCtrl):
             column.SetSortable(True)
             column.SetReorderable(True)
             column.SetResizeable(True)
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+        
+        self.Expander(None)
 
         self.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
         self.Bind(dv.EVT_DATAVIEW_ITEM_ACTIVATED, self.OnOpen)
@@ -161,8 +162,6 @@ class CodesViewCtrl(dv.DataViewCtrl):
         self.EnableDropTarget(wx.DataFormat(wx.DF_UNICODETEXT))
         self.dragnode = None
 
-        self.Expander(None)
-
     def Expander(self, item):
         model = self.GetModel()
         if item != None:
@@ -171,7 +170,10 @@ class CodesViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
-        for column in self.Columns:
+        self.AutoSize()
+    
+    def AutoSize(self):
+        for column in self.GetColumns():
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def OnDrag(self, event):
@@ -288,8 +290,6 @@ class CodesViewCtrl(dv.DataViewCtrl):
                     main_frame.codes[new_code.key] = new_code
                     model.Cleared()
                     self.Expander(None)
-                    for column in self.GetColumns():
-                        column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
                     main_frame.CodesUpdated()
                     break
             else:
@@ -321,8 +321,6 @@ class CodesViewCtrl(dv.DataViewCtrl):
                     node.subcodes[new_subcode.key] = new_subcode
                     model.Cleared()
                     self.Expander(None)
-                    for column in self.GetColumns():
-                        column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
                     main_frame.CodesUpdated()
                     break
             else:
@@ -472,7 +470,8 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
             column.SetSortable(True)
             column.SetReorderable(True)
             column.SetResizeable(True)
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+
+        self.Expander(None)
 
         self.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
         self.Bind(dv.EVT_DATAVIEW_ITEM_ACTIVATED, self.OnOpen)
@@ -487,8 +486,6 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         self.EnableDropTarget(wx.DataFormat(wx.DF_UNICODETEXT))
         self.dragnode = None
 
-        self.Expander(None)
-
     def Expander(self, item):
         model = self.GetModel()
         if item != None:
@@ -497,7 +494,10 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
-        for column in self.Columns:
+        self.AutoSize()
+        
+    def AutoSize(self):
+        for column in self.GetColumns():
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def OnDrag(self, event):
@@ -617,8 +617,6 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
                     main_frame.codes[new_code.key].AddConnection(model.obj)
                     model.Cleared()
                     self.Expander(None)
-                    for column in self.GetColumns():
-                        column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
                     main_frame.CodesUpdated()
                     break
             else:
@@ -652,8 +650,6 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
                     node.subcodes[new_subcode.key].AddConnection(model.obj)
                     model.Cleared()
                     self.Expander(None)
-                    for column in self.GetColumns():
-                        column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
                     main_frame.CodesUpdated()
                     break
             else:
@@ -897,15 +893,14 @@ class CodeConnectionsViewCtrl(dv.DataViewCtrl):
             column.Sortable = True
             column.Reorderable = True
             column.Resizeable = True
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+        
+        self.Expander(None)
 
         self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
         self.Bind(dv.EVT_DATAVIEW_ITEM_ACTIVATED, self.OnOpen)
         self.Bind(wx.EVT_MENU, self.OnCopyItems, id=wx.ID_COPY)
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
-
-        self.Expander(None)
 
     def Expander(self, item):
         model = self.GetModel()
@@ -915,7 +910,10 @@ class CodeConnectionsViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
-        for column in self.Columns:
+        self.AutoSize()
+        
+    def AutoSize(self):
+        for column in self.GetColumns():
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def OnOpen(self, event):
@@ -1376,8 +1374,6 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
 
-        self.Expander(None)
-
     def Expander(self, item):
         model = self.GetModel()
         if item != None:
@@ -1386,8 +1382,32 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
-        for column in self.Columns:
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+        self.AutoSize()
+    
+    def AutoSize(self, width=None):
+        if width is None:
+            remaining_width = self.GetSize().GetWidth()*0.98
+        else:
+            remaining_width = width*0.98
+        col_count = self.GetColumnCount()-2
+        column = self.GetColumn(col_count)
+        column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+        remaining_width = remaining_width - column.GetWidth()
+        column = self.GetColumn(col_count+1)
+        col_width = column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+        remaining_width = remaining_width - column.GetWidth()
+        col = 0
+        for column in self.GetColumns():
+            if col < col_count:
+                column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+                col_width = column.GetWidth()
+                if col_width > remaining_width/(col_count-col):
+                    col_width = remaining_width/(col_count-col)
+                    column.SetWidth(col_width)
+                remaining_width = remaining_width - col_width
+            else:
+                column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+            col = col+1
 
     def UpdateColumns(self):
         model = self.GetModel()
@@ -1406,7 +1426,6 @@ class DocumentViewCtrl(dv.DataViewCtrl):
                 renderer = dv.DataViewTextRenderer()
             column = dv.DataViewColumn(field_name, renderer, idx, align=wx.ALIGN_LEFT)
             self.AppendColumn(column)
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
             idx = idx+1
 
         for field_name in model.data_column_names:
@@ -1424,13 +1443,11 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         text_renderer = dv.DataViewTextRenderer()
         column1 = dv.DataViewColumn(GUIText.NOTES, text_renderer, idx, align=wx.ALIGN_LEFT)
         self.AppendColumn(column1)
-        column1.SetWidth(wx.COL_WIDTH_AUTOSIZE)
         idx = idx+1
 
         int_renderer = dv.DataViewTextRenderer(varianttype="long")
         column2 = dv.DataViewColumn(GUIText.CODES, int_renderer, idx, align=wx.ALIGN_LEFT)
         self.AppendColumn(column2)
-        column2.SetWidth(wx.COL_WIDTH_AUTOSIZE)
         idx = idx+1
         
         idx = 0
@@ -1442,9 +1459,7 @@ class DocumentViewCtrl(dv.DataViewCtrl):
                 self.SetExpanderColumn(column)
             idx = idx + 1
         
-        columns = self.GetColumns()
-        for column in reversed(columns):
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+        self.Expander(None)
 
     def OnShowPopup(self, event):
         logger = logging.getLogger(__name__+".DocumentViewCtrl.OnShowPopup")
@@ -1831,8 +1846,6 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
 
-        self.Expander(None)
-
     def Expander(self, item):
         model = self.GetModel()
         if item != None:
@@ -1841,7 +1854,10 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
-        for column in self.Columns:
+        self.AutoSize()
+    
+    def AutoSize(self):
+        for column in self.GetColumns():
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def UpdateColumns(self):
@@ -1870,11 +1886,14 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
         column3 = dv.DataViewColumn(GUIText.PARAPHRASES, text_renderer, 3, align=wx.ALIGN_LEFT)
         self.AppendColumn(column3)
 
+        idx = 0
         for column in self.Columns:
             column.Sortable = True
             column.Reorderable = True
             column.Resizeable = True
-            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+            idx = idx + 1
+        
+        self.Expander(None)
 
     def OnOpen(self, event):
         logger = logging.getLogger(__name__+".QuotationsViewCtrl.OnOpen")
