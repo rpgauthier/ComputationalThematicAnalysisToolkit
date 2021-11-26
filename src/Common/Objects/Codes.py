@@ -7,7 +7,7 @@ import Common.Objects.Samples as Samples
 
 class Code(GenericObject):
     def __init__(self, name, parent=None, key=None):
-        GenericObject.__init__(self, name=name, parent=parent)
+        GenericObject.__init__(self, name=name, parent=parent, key=key)
 
         self._colour_rgb = (255,255,255,)
         
