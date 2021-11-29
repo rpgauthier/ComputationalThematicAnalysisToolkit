@@ -140,59 +140,65 @@ class LoadThread(Thread):
             with open(self.current_workspace_path+"/config.pk", 'rb') as infile:
                 result['config'] = pickle.load(infile)
 
-            result['datasets'] = {}
-            if "datasets" in result['config']:
-                for key in result['config']['datasets']:
-                    if not isinstance(key, str):
-                        dataset_filename = '_'.join(key)
-                    else:
-                        dataset_filename = key
-                    dataset_filename = dataset_filename + ".pk"
-                    if os.path.isfile(self.current_workspace_path+"/Datasets/"+dataset_filename):
-                        with open(self.current_workspace_path+"/Datasets/"+dataset_filename, 'rb') as infile:
-                            result['datasets'][key] = pickle.load(infile)
-                        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_DATASET+str(result['datasets'][key].name)))
-                    
-
-            result['samples'] = {}
-            if 'samples' in result['config']:
-                for key in result['config']['samples']:
-                    sample_dirname = str(key)
-                    if os.path.exists(self.current_workspace_path+"/Samples/"+sample_dirname):
-                        with open(self.current_workspace_path+"/Samples/"+sample_dirname+"/sample.pk", 'rb') as infile:
-                            result['samples'][key] = pickle.load(infile)
-                            result['samples'][key].Load(self.current_workspace_path)
-                        if result['samples'][key].name != None:
-                            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_SAMPLE+str(result['samples'][key].name)))
-                        else:
-                            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_SAMPLE+str(key)))
-                    
-
-            result['codes'] = {}
-            if "codes" in result['config']:
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_CODES))
-                with open(self.current_workspace_path+"/codes.pk", 'rb') as infile:
-                    result['codes'] = pickle.load(infile)
-        
             if 'version' in result['config']:
                 ver = version.parse(result['config']['version'])
             else:
                 ver = version.parse('0.0.0')
 
-            if ver < version.parse('0.8.5'):
-                self.Upgrade0_8_5(result, ver)
-                ver = version.parse('0.8.5')
-            if ver < version.parse('0.8.6'):
-                self.Upgrade0_8_6(result, ver)
-                ver = version.parse('0.8.6')
-            if ver < version.parse('0.8.7'):
-                self.Upgrade0_8_7(result, ver)
-                ver = version.parse('0.8.7')
+            if ver > version.parse(Constants.CUR_VER):
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_VERSION_FAILURE1 + str(ver)))
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_VERSION_FAILURE2))
+                result = {'error': ""}
+            else:
 
-        except (FileNotFoundError):
-            wx.LogError(GUIText.LOAD_FAILURE + self.save_path)
+                result['datasets'] = {}
+                if "datasets" in result['config']:
+                    for key in result['config']['datasets']:
+                        if not isinstance(key, str):
+                            dataset_filename = '_'.join(key)
+                        else:
+                            dataset_filename = key
+                        dataset_filename = dataset_filename + ".pk"
+                        if os.path.isfile(self.current_workspace_path+"/Datasets/"+dataset_filename):
+                            with open(self.current_workspace_path+"/Datasets/"+dataset_filename, 'rb') as infile:
+                                result['datasets'][key] = pickle.load(infile)
+                            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_DATASET+str(result['datasets'][key].name)))
+                        
+
+                result['samples'] = {}
+                if 'samples' in result['config']:
+                    for key in result['config']['samples']:
+                        sample_dirname = str(key)
+                        if os.path.exists(self.current_workspace_path+"/Samples/"+sample_dirname):
+                            with open(self.current_workspace_path+"/Samples/"+sample_dirname+"/sample.pk", 'rb') as infile:
+                                result['samples'][key] = pickle.load(infile)
+                                result['samples'][key].Load(self.current_workspace_path)
+                            if result['samples'][key].name != None:
+                                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_SAMPLE+str(result['samples'][key].name)))
+                            else:
+                                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_SAMPLE+str(key)))
+                        
+
+                result['codes'] = {}
+                if "codes" in result['config']:
+                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_CODES))
+                    with open(self.current_workspace_path+"/codes.pk", 'rb') as infile:
+                        result['codes'] = pickle.load(infile)
+            
+                if ver < version.parse('0.8.5'):
+                    self.Upgrade0_8_5(result, ver)
+                    ver = version.parse('0.8.5')
+                if ver < version.parse('0.8.6'):
+                    self.Upgrade0_8_6(result, ver)
+                    ver = version.parse('0.8.6')
+                if ver < version.parse('0.8.7'):
+                    self.Upgrade0_8_7(result, ver)
+                    ver = version.parse('0.8.7')
+
+        except:
+            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_OPEN_FAILURE + self.save_path))
             logger.exception("Failed to load workspace[%s]", self.save_path)
-            result=['error']
+            result = {'error' : ""}
         logger.info("Finished")
         wx.PostEvent(self._notify_window, CustomEvents.LoadResultEvent(result))
 

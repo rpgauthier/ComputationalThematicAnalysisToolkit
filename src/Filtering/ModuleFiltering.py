@@ -98,11 +98,6 @@ class FilteringNotebook(FNB.FlatNotebook):
                 self.filters[key].UpdateImpact()
             self.AddPage(self.filters[key], main_frame.datasets[key].name)
             self.filters[key].actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filters[key].actions_menu, main_frame.datasets[key].name)
-
-        #load all filter panels
-        for filter_key in self.filters:
-            if 'filters' in saved_data and filter_key in saved_data['filters']:
-                self.filters[filter_key].Load(saved_data['filters'][filter_key])
         logger.info("Finished")
 
     def Save(self):

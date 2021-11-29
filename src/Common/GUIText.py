@@ -110,7 +110,12 @@ class Main(Common):
                    "\nAre you sure you want to load a different workspace?" \
                    "\nAny unsaved changes will be lost."
     LOAD_REQUEST = "Please Choose Workspace to Load"
-    LOAD_FAILURE = "Cannot open workspace "
+    
+    LOAD_OPEN_FAILURE = "Cannot open workspace "
+    LOAD_VERSION_FAILURE1 = "Workspace was created for toolkit version "
+    LOAD_VERSION_FAILURE2 = "To load the toolkit needs to be updated"
+    LOAD_CANCELED = "Load has been canceled"
+
     SAVE_AS_REQUEST = "Please Choose Name for Workspace being Saved"
     SAVE_AS_FAILURE = "Failed to save workspace "
     SAVE_FAILURE = "Failed to save workspace "
@@ -204,6 +209,18 @@ class Main(Common):
     ABOUT_OSF_URL = "https://osf.io/b72dm/"
     ABOUT_GITHUB = "Github link"
     ABOUT_GITHUB_URL = "https://github.com/rpgauthier/ComputationalThematicAnalysisToolkit"
+
+    #new version dialog labels
+    NEW_VERSION_AVAILABLE = "New Version Available"
+    CURRENT_VERSION_LABEL = "The toolkit you are using is Version "
+    LATEST_VERSION_LABEL = " is avaliable for download."
+    APP_INSTRUCTIONS = "To upgrade please perform the following steps:"
+    APP_INSTRUCTION1 = "1) Download the approriate installer from "
+    LATEST_RELEASE = "Latest Release"
+    LATEST_RELEASE_URL = "https://github.com/rpgauthier/ComputationalThematicAnalysisToolkit/releases/latest"
+    APP_INSTRUCTION2 = "2) Close the application"
+    APP_INSTRUCTION3 = "3) Run the downloaded installer"
+    WORKSPACE_INSTRUCTIONS = "Once installed any workspace you load will be automatically upgraded."
 
     #Module/Notes Labels
     GENERAL_LABEL = "General"

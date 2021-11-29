@@ -9,6 +9,8 @@ import psutil
 from datetime import datetime
 import uuid
 import xmlschema
+import requests
+from packaging import version
 
 import wx
 from wx.adv import HyperlinkCtrl
@@ -57,6 +59,7 @@ class MainFrame(wx.Frame):
         self.name = 'New_Workspace'
         self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
         Database.DatabaseConnection(self.current_workspace.name).Create()
+        self.load_workspace = None
         
         self.last_load_dt = datetime.now()
         self.load_thread = None
@@ -219,6 +222,8 @@ class MainFrame(wx.Frame):
         self.Fit()
         self.Show(True)
 
+        self.VersionCheck()
+
         logger.info("Finished")
 
     #Functions called by actions on the GUI (menus or buttons)
@@ -377,36 +382,10 @@ class MainFrame(wx.Frame):
                     self.name = file_dialog.GetFilename()[:-4]
                     self.SetTitle(GUIText.APP_NAME+" - "+self.name)
 
-                    #reset objects
-                    for doc_key in list(self.document_dialogs.keys()):
-                        doc_dialog = self.document_dialogs[doc_key]
-                        doc_dialog.Destroy()
-                    self.document_dialogs.clear()
-                    for code_key in list(self.codeconnections_dialogs.keys()):
-                        code_dialog = self.codeconnections_dialogs[code_key]
-                        code_dialog.Destroy()
-                    self.codeconnections_dialogs.clear()
-                    for key in self.codes:
-                        self.codes[key].DestroyObject()
-                    self.codes.clear()
-                    for key in self.samples:
-                        self.samples[key].DestroyObject()
-                    self.samples.clear()
-                    for key in self.datasets:
-                        self.datasets[key].DestroyObject()
-                    self.datasets.clear()
-
-                    #update gui based on reset objects to prevent errors
-                    self.DatasetsUpdated(autosave=False)
-                    self.SamplesUpdated()
-                    self.DocumentsUpdated(self)
-                    self.CodesUpdated()
-
-                    self.current_workspace.cleanup()
-                    self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
+                    self.load_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
 
                     self.last_load_dt = datetime.now()
-                    self.load_thread = MainThreads.LoadThread(self, self.save_path, self.current_workspace.name)
+                    self.load_thread = MainThreads.LoadThread(self, self.save_path, self.load_workspace.name)
         logger.info("Finished")
     
     def OnRestoreLoadStart(self, event):
@@ -448,36 +427,10 @@ class MainFrame(wx.Frame):
                 self.name = 'Last_AutoSave'
                 self.SetTitle(GUIText.APP_NAME+" - "+self.name)
 
-                #reset objects
-                for doc_key in list(self.document_dialogs.keys()):
-                    doc_dialog = self.document_dialogs[doc_key]
-                    doc_dialog.Destroy()
-                self.document_dialogs.clear()
-                for code_key in list(self.codeconnections_dialogs.keys()):
-                    code_dialog = self.codeconnections_dialogs[code_key]
-                    code_dialog.Destroy()
-                self.codeconnections_dialogs.clear()
-                for key in self.codes:
-                    self.codes[key].DestroyObject()
-                self.codes.clear()
-                for key in self.samples:
-                    self.samples[key].DestroyObject()
-                self.samples.clear()
-                for key in self.datasets:
-                    self.datasets[key].DestroyObject()
-                self.datasets.clear()
-
-                #update gui based on reset objects to prevent errors
-                self.DatasetsUpdated(autosave=False)
-                self.SamplesUpdated()
-                self.DocumentsUpdated(self)
-                self.CodesUpdated()
-
-                self.current_workspace.cleanup()
-                self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
+                self.load_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
 
                 self.last_load_dt = datetime.now()
-                self.load_thread = MainThreads.LoadThread(self, Constants.AUTOSAVE_PATH, self.current_workspace.name, restoreload=True)
+                self.load_thread = MainThreads.LoadThread(self, Constants.AUTOSAVE_PATH, self.load_workspace.name, restoreload=True)
         else:
             wx.MessageBox(GUIText.NO_AUTOSAVE_ERROR)
         logger.info("Finished")
@@ -486,33 +439,66 @@ class MainFrame(wx.Frame):
         logger = logging.getLogger(__name__+".MainFrame.OnLoadEnd")
         logger.info("Starting")
         #once load thread has finished loading data files into memory run the GUI with the loaded data
-        
-        saved_data = event.data['config']
+        if 'error' in event.data:
+            self.CloseProgressDialog(message=GUIText.LOAD_CANCELED, thaw=True)
+            self.load_workspace.cleanup()
+            self.load_workspace = None
+        else:
+            saved_data = event.data['config']
 
-        self.ModeChange()
-        
-        self.datasets.update(event.data['datasets'])
-        self.samples.update(event.data['samples'])
-        self.codes.update(event.data['codes'])
-        self.model_iter = saved_data['model_iter']
-        self.options_dict = saved_data['options']
+            #reset objects
+            for doc_key in list(self.document_dialogs.keys()):
+                doc_dialog = self.document_dialogs[doc_key]
+                doc_dialog.Destroy()
+            self.document_dialogs.clear()
+            for code_key in list(self.codeconnections_dialogs.keys()):
+                code_dialog = self.codeconnections_dialogs[code_key]
+                code_dialog.Destroy()
+            self.codeconnections_dialogs.clear()
+            for key in self.codes:
+                self.codes[key].DestroyObject()
+            self.codes.clear()
+            for key in self.samples:
+                self.samples[key].DestroyObject()
+            self.samples.clear()
+            for key in self.datasets:
+                self.datasets[key].DestroyObject()
+            self.datasets.clear()
 
-        self.collection_module.Load(saved_data['collection_module'])
-        self.filtering_module.Load(saved_data['filtering_module'])
-        self.sampling_module.Load(saved_data['sampling_module'])
-        self.coding_module.Load(saved_data['coding_module'])
-        #self.reviewing_module.Load(saved_data['reviewing_module'])
-        self.reporting_module.Load(saved_data['reporting_module'])
+            #update gui based on reset objects to prevent errors
+            self.DatasetsUpdated(autosave=False)
+            self.SamplesUpdated()
+            self.DocumentsUpdated(self)
+            self.CodesUpdated()
 
-        self.toggle_notes_menuitem.Check(check=saved_data['notes_check'])
-        self.OnToggleNotes(None)
-        self.notes_panel.Load(saved_data['notes'])
+            self.current_workspace.cleanup()
+            self.current_workspace = self.load_workspace
+            self.load_workspace = None
 
-        self.load_thread.join()
-        self.load_thread = None
-        self.CloseProgressDialog(thaw=True)
+            self.ModeChange()
+            
+            self.datasets.update(event.data['datasets'])
+            self.samples.update(event.data['samples'])
+            self.codes.update(event.data['codes'])
+            self.model_iter = saved_data['model_iter']
+            self.options_dict = saved_data['options']
 
-        wx.CallAfter(self.AutoSize)
+            self.collection_module.Load(saved_data['collection_module'])
+            self.filtering_module.Load(saved_data['filtering_module'])
+            self.sampling_module.Load(saved_data['sampling_module'])
+            self.coding_module.Load(saved_data['coding_module'])
+            #self.reviewing_module.Load(saved_data['reviewing_module'])
+            self.reporting_module.Load(saved_data['reporting_module'])
+
+            self.toggle_notes_menuitem.Check(check=saved_data['notes_check'])
+            self.OnToggleNotes(None)
+            self.notes_panel.Load(saved_data['notes'])
+
+            self.load_thread.join()
+            self.load_thread = None
+            self.CloseProgressDialog(thaw=True)
+
+            wx.CallAfter(self.AutoSize)
 
         logger.info("Finished")
 
@@ -826,7 +812,7 @@ class MainFrame(wx.Frame):
 
             if exit_flag == wx.ID_YES:
                 self.closing = True
-                self.PulseProgressDialog(text=GUIText.SAVE_BUSY_LABEL)
+                self.PulseProgressDialog(GUIText.SAVE_BUSY_LABEL)
                 self.OnSaveStart(None)
             elif exit_flag == wx.ID_NO:
                 self.OnCloseEnd(event)
@@ -891,9 +877,9 @@ class MainFrame(wx.Frame):
             self.progress_dialog.Show()
         self.progress_dialog_references += 1
     
-    def PulseProgressDialog(self, text=""):
+    def PulseProgressDialog(self, message=""):
         if self.progress_dialog is not None:
-            self.progress_dialog.Pulse(text)
+            self.progress_dialog.Pulse(message)
     
     def CloseProgressDialog(self, message=GUIText.FINISHED, thaw=False, close=False):
         if self.progress_dialog is not None:
@@ -953,6 +939,19 @@ class MainFrame(wx.Frame):
         self.coding_module.DocumentsUpdated(self)
         #self.reviewing_module.ModeChange()
         self.reporting_module.ModeChange()
+        
+    def VersionCheck(self):
+        logger = logging.getLogger(__name__+".MainFrame.VersionCheck")
+        logger.info("Starting")
+        try:
+            response = requests.get("https://api.github.com/repos/rpgauthier/ComputationalThematicAnalysisToolkit/releases/latest")
+            tag_name = response.json()['tag_name']
+            latest_version = version.parse(tag_name)
+            current_version = version.parse(Constants.CUR_VER)
+            if latest_version > current_version:
+                NewVersionDialog(self, current_version, latest_version).Show()
+        except ConnectionError:
+            logger.exception("Version check failed due to connection error")
 
 class CustomProgressDialog(wx.Dialog):
     def __init__(self, parent, title, warning=""):
@@ -1121,7 +1120,40 @@ class AboutDialog(wx.Dialog):
         self.SetSizer(sizer)
         self.Layout()
 
-        
+class NewVersionDialog(wx.Dialog):
+    def __init__(self, parent, current_version, latest_version):
+        wx.Dialog.__init__(self, parent, title=GUIText.NEW_VERSION_AVAILABLE, style=wx.DEFAULT_DIALOG_STYLE)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(sizer)
+
+        current_label = wx.StaticText(self, label=GUIText.CURRENT_VERSION_LABEL+str(current_version)+".")
+        sizer.Add(current_label, 0, wx.CENTRE|wx.ALL, 5)
+        sizer.AddSpacer(5)
+
+        current_label = wx.StaticText(self, label=str(latest_version)+GUIText.LATEST_VERSION_LABEL)
+        sizer.Add(current_label, 0, wx.CENTRE|wx.ALL, 5)
+        sizer.AddSpacer(5)
+
+        app_label = wx.StaticText(self, label=GUIText.APP_INSTRUCTIONS)
+        sizer.Add(app_label, 0, wx.CENTRE|wx.ALL, 5)
+        app1_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        app1_label = wx.StaticText(self, label=GUIText.APP_INSTRUCTION1)
+        app1_sizer.Add(app1_label)
+        latest_release_url = HyperlinkCtrl(self, label=GUIText.LATEST_RELEASE, url=GUIText.LATEST_RELEASE_URL)
+        app1_sizer.Add(latest_release_url)
+        sizer.Add(app1_sizer, 0, wx.CENTRE|wx.ALL, 5)
+        app2_label = wx.StaticText(self, label=GUIText.APP_INSTRUCTION2)
+        sizer.Add(app2_label, 0, wx.CENTRE|wx.ALL, 5)
+        app3_label = wx.StaticText(self, label=GUIText.APP_INSTRUCTION3)
+        sizer.Add(app3_label, 0, wx.CENTRE|wx.ALL, 5)
+        sizer.AddSpacer(5)
+
+        workspace_label = wx.StaticText(self, label=GUIText.WORKSPACE_INSTRUCTIONS)
+        sizer.Add(workspace_label, 0, wx.CENTRE|wx.ALL, 5)
+
+
+        self.Fit()
 
 def Main():
     '''setup the main tasks for the application'''
