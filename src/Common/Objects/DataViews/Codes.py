@@ -2394,7 +2394,7 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
             return True
         # Any Code is a container
         node = self.ItemToObject(item)
-        if isinstance(node, Codes.Code):
+        if isinstance(node, Codes.Code) or isinstance(node, Codes.Theme):
             return True
         return False
     
@@ -2620,6 +2620,7 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
         wx.TheClipboard.SetData(clipdata)
         wx.TheClipboard.Close()
     
+    #TODO figure out why this is not working with themes
     def OnAddItem(self, event):
         model = self.GetModel()
         item = self.selected_item
