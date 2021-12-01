@@ -70,7 +70,7 @@ class ReportingPanel(wx.Panel):
         quote_filter_combo_ctrl.SetMinSize(size)
 
         main_frame = wx.GetApp().GetTopWindow()
-        self.quotations_model = CodesDataViews.SelectedQuotationsViewModel(main_frame.codes)
+        self.quotations_model = CodesDataViews.SelectedQuotationsViewModel()
         self.quotations_ctrl = CodesDataViews.SelectedQuotationsViewCtrl(self, self.quotations_model)
         sizer.Add(self.quotations_ctrl, 1, wx.EXPAND|wx.ALL, 5)
 

@@ -55,6 +55,7 @@ class MainFrame(wx.Frame):
         self.samples = {}
         self.model_iter = 0
         self.codes = {}
+        self.themes = {}
         self.save_path = ''
         self.name = 'New_Workspace'
         self.current_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
@@ -71,8 +72,9 @@ class MainFrame(wx.Frame):
         self.options_dialog = None
         self.about_dialog = None
 
-        self.codeconnections_dialogs = {}
+        self.code_dialogs = {}
         self.document_dialogs = {}
+        self.theme_dialogs = {}
 
 
         #Workspace's Options
@@ -84,7 +86,7 @@ class MainFrame(wx.Frame):
                              'filtering',
                              'sampling',
                              'coding',
-                             #'reviewing',
+                             'reviewing',
                              'reporting']
 
         #frame and notebook for notes to make accessible when moving between modules
@@ -109,8 +111,8 @@ class MainFrame(wx.Frame):
         self.main_notebook.InsertPage(self.module_order.index('sampling'), self.sampling_module, GUIText.SAMPLING_LABEL)
         self.coding_module = CodingModule.CodingNotebook(self.main_notebook, size=self.GetSize())
         self.main_notebook.InsertPage(self.module_order.index('coding'), self.coding_module, GUIText.CODING_LABEL)
-        #self.reviewing_module = ReviewingModule.ReviewingPanel(self.main_notebook, size=self.GetSize())
-        #self.main_notebook.InsertPage(self.module_order.index('reviewing'), self.reviewing_module, GUIText.REVIEWING_LABEL)
+        self.reviewing_module = ReviewingModule.ReviewingPanel(self.main_notebook, size=self.GetSize())
+        self.main_notebook.InsertPage(self.module_order.index('reviewing'), self.reviewing_module, GUIText.REVIEWING_LABEL)
         self.reporting_module = ReportingModule.ReportingPanel(self.main_notebook, size=self.GetSize())
         self.main_notebook.InsertPage(self.module_order.index('reporting'), self.reporting_module, GUIText.REPORTING_LABEL)
         
@@ -188,7 +190,7 @@ class MainFrame(wx.Frame):
         #self.collection_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.collection_module.actions_menu, GUIText.COLLECTION_LABEL)
         self.filtering_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.filtering_module.actions_menu, GUIText.FILTERING_MENU_LABEL)
         #self.sampling_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.sampling_module.actions_menu, GUIText.SAMPLING_MENU_LABEL)
-        self.coding_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.coding_module.actions_menu, GUIText.CODING_LABEL)
+        #self.coding_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.coding_module.actions_menu, GUIText.CODING_LABEL)
         #self.reviewing_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.reviewing_module.actions_menu, GUIText.REVIEWING_LABEL)
         #self.reporting_module.actions_menu_menuitem = self.actions_menu.AppendSubMenu(self.reporting_module.actions_menu, GUIText.REPORTING_LABEL)
         self.menu_bar.Append(self.actions_menu, GUIText.ACTIONS)
@@ -299,12 +301,18 @@ class MainFrame(wx.Frame):
                 self.Freeze()
 
                 #reset objects
+                for key in self.theme_dialogs:
+                    self.theme_dialogs[key].Destroy()    
+                self.theme_dialogs.clear()
+                for key in self.themes:
+                    self.themes[key].DestroyObject()
+                self.themes.clear()
                 for key in self.document_dialogs:
                     self.document_dialogs[key].Destroy()    
                 self.document_dialogs.clear()
-                for key in self.codeconnections_dialogs:
-                    self.codeconnections_dialogs[key].Destroy()    
-                self.codeconnections_dialogs.clear()
+                for key in self.code_dialogs:
+                    self.code_dialogs[key].Destroy()    
+                self.code_dialogs.clear()
                 for key in self.codes:
                     self.codes[key].DestroyObject()
                 self.codes.clear()
@@ -447,14 +455,20 @@ class MainFrame(wx.Frame):
             saved_data = event.data['config']
 
             #reset objects
+            for key in self.theme_dialogs:
+                self.theme_dialogs[key].Destroy()    
+            self.theme_dialogs.clear()
+            for key in self.themes:
+                self.themes[key].DestroyObject()
+            self.themes.clear()
             for doc_key in list(self.document_dialogs.keys()):
                 doc_dialog = self.document_dialogs[doc_key]
                 doc_dialog.Destroy()
             self.document_dialogs.clear()
-            for code_key in list(self.codeconnections_dialogs.keys()):
-                code_dialog = self.codeconnections_dialogs[code_key]
+            for code_key in list(self.code_dialogs.keys()):
+                code_dialog = self.code_dialogs[code_key]
                 code_dialog.Destroy()
-            self.codeconnections_dialogs.clear()
+            self.code_dialogs.clear()
             for key in self.codes:
                 self.codes[key].DestroyObject()
             self.codes.clear()
@@ -480,15 +494,21 @@ class MainFrame(wx.Frame):
             self.datasets.update(event.data['datasets'])
             self.samples.update(event.data['samples'])
             self.codes.update(event.data['codes'])
+            self.themes.update(event.data['themes'])
             self.model_iter = saved_data['model_iter']
             self.options_dict = saved_data['options']
-
-            self.collection_module.Load(saved_data['collection_module'])
-            self.filtering_module.Load(saved_data['filtering_module'])
-            self.sampling_module.Load(saved_data['sampling_module'])
-            self.coding_module.Load(saved_data['coding_module'])
-            #self.reviewing_module.Load(saved_data['reviewing_module'])
-            self.reporting_module.Load(saved_data['reporting_module'])
+            if 'collection_module' in saved_data:
+                self.collection_module.Load(saved_data['collection_module'])
+            if 'filtering_module' in saved_data:
+                self.filtering_module.Load(saved_data['filtering_module'])
+            if 'sampling_module' in saved_data:
+                self.sampling_module.Load(saved_data['sampling_module'])
+            if 'reporting_module' in saved_data:
+                self.coding_module.Load(saved_data['reporting_module'])
+            if 'reviewing_module' in saved_data:
+                self.reviewing_module.Load(saved_data['reviewing_module'])
+            if 'reporting_module' in saved_data:
+                self.reporting_module.Load(saved_data['reporting_module'])
 
             self.toggle_notes_menuitem.Check(check=saved_data['notes_check'])
             self.OnToggleNotes(None)
@@ -567,14 +587,15 @@ class MainFrame(wx.Frame):
             config_data['samples'] = list(self.samples.keys())
             config_data['model_iter'] = self.model_iter
             config_data['codes'] = True
+            config_data['themes'] = True
             config_data['collection_module'] = self.collection_module.Save()
             config_data['filtering_module'] = self.filtering_module.Save()
             config_data['sampling_module'] = self.sampling_module.Save()
             config_data['coding_module'] = self.coding_module.Save()
-            #config_data['reviewing_module'] = self.reviewing_module.Save()
+            config_data['reviewing_module'] = self.reviewing_module.Save()
             config_data['reporting_module'] = self.reporting_module.Save()
 
-            self.save_thread = MainThreads.SaveThread(self, self.save_path, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, notes_text, self.last_load_dt)
+            self.save_thread = MainThreads.SaveThread(self, self.save_path, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, self.themes, notes_text, self.last_load_dt)
 
     def AutoSaveStart(self):
         '''function for auto saving data after completing important operations'''
@@ -597,11 +618,12 @@ class MainFrame(wx.Frame):
         config_data['samples'] = list(self.samples.keys())
         config_data['model_iter'] = self.model_iter
         config_data['codes'] = True
+        config_data['themes'] = True
         config_data['collection_module'] = self.collection_module.Save()
         config_data['filtering_module'] = self.filtering_module.Save()
         config_data['sampling_module'] = self.sampling_module.Save()
         config_data['coding_module'] = self.coding_module.Save()
-        #config_data['reviewing_module'] = self.reviewing_module.Save()
+        config_data['reviewing_module'] = self.reviewing_module.Save()
         config_data['reporting_module'] = self.reporting_module.Save()
 
         self.save_thread = MainThreads.SaveThread(self, Constants.AUTOSAVE_PATH, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, notes_text, self.last_load_dt, autosave=True)
@@ -624,8 +646,7 @@ class MainFrame(wx.Frame):
     def OnImportCodes(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnImportCodes")
         logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        if len(main_frame.codes) > 0:
+        if len(self.codes) > 0:
             confirm_dialog = wx.MessageDialog(self, GUIText.IMPORT_CODES_CONFIRMATION_REQUEST,
                                             GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
             confirm_dialog.SetOKLabel(GUIText.IMPORT_CODES)
@@ -643,66 +664,20 @@ class MainFrame(wx.Frame):
                 # Proceed loading the file chosen by the user
                 pathname = file_dialog.GetPath()
                 try:
-                    def IntegrateImportedCodes(new_codes):
-                        for new_key in list(new_codes.keys()):
-                            new_code = new_codes[new_key]
-                            IntegrateImportedCodes(new_code.subcodes)
-
-                            #Recurively find existing code if it exists
-                            def FindCode(sought_code, codes):
-                                if sought_code.key in codes:
-                                    return codes[sought_code.key]
-                                else:
-                                    for key in codes:
-                                        found_code = FindCode(sought_code, codes[key].subcodes)
-                                        if found_code != None:
-                                            return found_code
-                                return None
-                            found_code = FindCode(new_code, main_frame.codes)
-                            if found_code != None:
-                                #if it does exist ask user if they want to keep both, merge import into imported, merge existing into existing
-                                action_dialog = wx.MessageDialog(self, "Code ["+found_code.name+"] already exists.\nWhat action would you like to take?",  GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
-                                action_dialog.SetYesNoCancelLabels("Import as new Code", "Update Existing Code", "Skip")
-                                action = action_dialog.ShowModal()
-
-                                if action == wx.ID_YES:
-                                    old_key = new_code.key
-                                    new_code.key = str(uuid.uuid4())
-                                    new_codes[new_code.key] = new_code
-                                    del new_codes[old_key]
-                                elif action == wx.ID_NO:
-                                    for existing_subcode_key in list(found_code.subcodes.keys()):
-                                        existing_subcode = found_code.subcodes[existing_subcode_key]
-                                        if FindCode(existing_subcode, imported_codes) == None:
-                                            existing_subcode.parent = new_code
-                                            new_code.subcodes[existing_subcode.key] = existing_subcode
-                                            del found_code.subcodes[existing_subcode_key]
-                                    new_code.connections = found_code.connections
-                                    found_code.connections = []
-                                    new_code.doc_positions = found_code.doc_positions
-                                    found_code.doc_positions = {}
-                                    new_code.quotations = found_code.quotations
-                                    for quotation in new_code.quotations:
-                                        quotation.parent = new_code
-                                    found_code.quotations = []
-                                    found_code.DestroyObject()
-                                elif action == wx.CANCEL:
-                                    new_code.DestroyObject()
-
-
-                    imported_codes = GenericUtilities.QDACodeImporter(pathname)
-                    IntegrateImportedCodes(imported_codes)
-                    for code_key in imported_codes:
-                        main_frame.codes[code_key] = imported_codes[code_key]
+                    imported_codes, imported_themes = GenericUtilities.QDACodeImporter(pathname)
+                    GenericUtilities.IntegrateImportedCodes(self, imported_codes)
+                    GenericUtilities.IntegrateImportedThemes(self, imported_themes)
                     self.coding_module.codes_model.Cleared()
                     self.coding_module.codes_ctrl.Expander(None)
                     for dataset_key in self.coding_module.coding_datasets_panels:
-                        self.coding_module.coding_datasets_panels[dataset_key].DocumentsUpdated()
+                        self.coding_module.coding_datasets_panels[dataset_key].DocumentsUpdated(self)
                         self.coding_module.coding_datasets_panels[dataset_key].codes_model.Cleared()
                         self.coding_module.coding_datasets_panels[dataset_key].codes_ctrl.Expander(None)
                         for document_key in self.coding_module.coding_datasets_panels[dataset_key].document_windows:
                             self.coding_module.coding_datasets_panels[dataset_key].document_windows[document_key].codes_model.Cleared()
                             self.coding_module.coding_datasets_panels[dataset_key].document_windows[document_key].codes_ctrl.Expander(None)
+                    self.reviewing_module.themes_model.Cleared()
+                    self.reviewing_module.themes_ctrl.Expander(None)
                     self.CodesUpdated()
                 
                 except xmlschema.XMLSchemaValidationError:
@@ -716,8 +691,7 @@ class MainFrame(wx.Frame):
     def OnExportCodes(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnExportCodes")
         logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        if len(main_frame.codes) > 0:
+        if len(self.codes) > 0:
             with wx.FileDialog(self, GUIText.EXPORT_CODES, defaultDir=Constants.SAVED_WORKSPACES_PATH,
                                defaultFile=self.name+'.qdc',
                                wildcard="Codebook Exchange Format (*.qdc)|*.qdc",
@@ -728,8 +702,7 @@ class MainFrame(wx.Frame):
                 # save the current contents in the file
                 file_name = file_dialog.GetPath()
                 try:
-                    main_frame = wx.GetApp().GetTopWindow()
-                    GenericUtilities.QDACodeExporter(main_frame.codes, file_name)
+                    GenericUtilities.QDACodeExporter(self.codes, self.themes, file_name)
                 except xmlschema.XMLSchemaValidationError:
                     wx.LogError("XML Validation Error Occured when checking created file")
                     logger.error("XML Validation Failed for file '%s'", file_name)
@@ -743,8 +716,7 @@ class MainFrame(wx.Frame):
     def OnExportWorkspace(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnExportWorkspace")
         logger.info("Starting")
-        main_frame = wx.GetApp().GetTopWindow()
-        if len(main_frame.datasets) > 0 or len(main_frame.samples) > 0 or len(main_frame.codes) > 0:
+        if len(self.datasets) > 0 or len(self.samples) > 0 or len(self.codes) > 0:
             with wx.FileDialog(self, GUIText.EXPORT_WORKSPACE, defaultDir=Constants.SAVED_WORKSPACES_PATH,
                                defaultFile=self.name+'.qdpx',
                                wildcard="Project Exchange Format (*.qdpx)|*.qdpx",
@@ -756,9 +728,7 @@ class MainFrame(wx.Frame):
                 archive_name = file_dialog.GetPath()
                 file_name = archive_name[:-4] + "qde"
                 try:
-                    main_frame = wx.GetApp().GetTopWindow()
-
-                    GenericUtilities.QDAProjectExporter(self.name, main_frame.datasets, main_frame.samples, main_frame.codes, file_name, archive_name)
+                    GenericUtilities.QDAProjectExporter(self.name, self.datasets, self.samples, self.codes, self.themes, file_name, archive_name)
                 except xmlschema.XMLSchemaValidationError:
                     wx.LogError("XML Validation Error Occured when checking created file")
                     logger.error("XML Validation Failed for file '%s'", file_name)
@@ -802,6 +772,10 @@ class MainFrame(wx.Frame):
                 for key in self.codes:
                     if self.codes[key].last_changed_dt > self.last_load_dt:
                         check_flag = True
+            if not check_flag and len(self.themes) != 0:
+                for key in self.themes:
+                    if self.themes[key].last_changed_dt > self.last_load_dt:
+                        check_flag = True
             if check_flag:
                 confirm_dialog = wx.MessageDialog(self, GUIText.CLOSE_WARNING,
                                               GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
@@ -828,14 +802,20 @@ class MainFrame(wx.Frame):
         logger.info("Starting")
 
         #reset objects
+        for key in list(self.theme_dialogs.keys()):
+            self.theme_dialogs[key].Destroy()    
+        self.theme_dialogs.clear()
+        for key in self.themes:
+            self.themes[key].DestroyObject()
+        self.themes.clear()
         for doc_key in list(self.document_dialogs.keys()):
             doc_dialog = self.document_dialogs[doc_key]
             doc_dialog.Destroy()
         self.document_dialogs.clear()
-        for code_key in list(self.codeconnections_dialogs.keys()):
-            code_dialog = self.codeconnections_dialogs[code_key]
+        for code_key in list(self.code_dialogs.keys()):
+            code_dialog = self.code_dialogs[code_key]
             code_dialog.Destroy()
-        self.codeconnections_dialogs.clear()
+        self.code_dialogs.clear()
         for key in self.codes:
             self.codes[key].DestroyObject()
         self.codes.clear()
@@ -926,10 +906,21 @@ class MainFrame(wx.Frame):
         logger.info("Starting")
         for key in self.document_dialogs:
             self.document_dialogs[key].RefreshDetails()
-        for key in self.codeconnections_dialogs:
-            self.codeconnections_dialogs[key].RefreshDetails()
+        for key in self.code_dialogs:
+            self.code_dialogs[key].RefreshDetails()
+        for key in self.theme_dialogs:
+            self.theme_dialogs[key].RefreshDetails()
         self.coding_module.CodesUpdated()
-        #self.reviewing_module.CodesUpdated()
+        self.reviewing_module.CodesUpdated()
+        self.reporting_module.CodesUpdated()
+        logger.info("Finished")
+    
+    def ThemesUpdated(self):
+        logger = logging.getLogger(__name__+".MainFrame.ThemesUpdated")
+        logger.info("Starting")
+        for key in self.theme_dialogs:
+            self.theme_dialogs[key].RefreshDetails()
+        self.reviewing_module.CodesUpdated()
         self.reporting_module.CodesUpdated()
         logger.info("Finished")
 
@@ -937,7 +928,7 @@ class MainFrame(wx.Frame):
         self.collection_module.ModeChange()
         self.sampling_module.ModeChange()
         self.coding_module.DocumentsUpdated(self)
-        #self.reviewing_module.ModeChange()
+        self.reviewing_module.ModeChange()
         self.reporting_module.ModeChange()
         
     def VersionCheck(self):

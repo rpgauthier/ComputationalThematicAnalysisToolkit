@@ -5,17 +5,17 @@ from datetime import datetime
 
 import wx
 import wx.adv
-from wx.core import CheckListBox
 import wx.richtext
 import wx.dataview as dv
 
 from Common.GUIText import Coding as GUIText
 import Common.Constants as Constants
 import Common.Notes as Notes
+import Common.Objects.Codes as Codes
 import Common.Objects.DataViews.Codes as CodesDataViews
 import Common.Objects.GUIs.Generic as GenericGUIs
 
-class CodeConnectionsDialog(wx.Dialog):
+class CodeDialog(wx.Dialog):
     def __init__(self, parent, code, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".CodeConnectionsDialog["+str(code.key)+"].__init__")
         logger.info("Starting")
@@ -47,7 +47,7 @@ class CodeConnectionsPanel(wx.Panel):
         objects_panel = wx.Panel(frame_splitter, style=wx.TAB_TRAVERSAL|wx.SUNKEN_BORDER)
         objects_panel_sizer = wx.BoxSizer(wx.VERTICAL)
         main_frame = wx.GetApp().GetTopWindow()
-        self.objects_model = CodesDataViews.CodeConnectionsViewModel(code, main_frame.datasets, main_frame.samples)
+        self.objects_model = CodesDataViews.CodeConnectionsViewModel(code)
         self.objects_ctrl = CodesDataViews.CodeConnectionsViewCtrl(objects_panel, self.objects_model)
         objects_panel_sizer.Add(self.objects_ctrl, 1, wx.EXPAND, 5)
         objects_panel.SetSizer(objects_panel_sizer)
@@ -110,6 +110,103 @@ class CodeConnectionsPanel(wx.Panel):
             self.usefulness_ctrl.Select(2)
         self.notes_panel.Unbind(wx.EVT_TEXT)
         self.notes_panel.SetNote(self.code.notes)
+        self.notes_panel.Bind(wx.EVT_TEXT, self.OnUpdateNotes)
+
+class ThemeDialog(wx.Dialog):
+    def __init__(self, parent, theme, size=wx.DefaultSize):
+        logger = logging.getLogger(__name__+".ThemesDialog["+str(theme.name)+"]["+str(theme.key)+"].__init__")
+        logger.info("Starting")
+        wx.Dialog.__init__(self, parent, title=str(theme.name), size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
+
+        self.theme = theme
+
+        self.sizer = wx.BoxSizer()
+        self.theme_panel = ThemePanel(self, self.theme, size=self.GetSize())
+        self.sizer.Add(self.theme_panel, 1, wx.EXPAND)
+        self.SetSizer(self.sizer)
+        logger.info("Finished")
+    
+    def RefreshDetails(self):
+        self.theme_panel.RefreshDetails()
+
+class ThemePanel(wx.Panel):
+    def __init__(self, parent, theme, size):
+        wx.Panel.__init__(self, parent, size=size)
+
+        self.theme = theme
+
+        frame_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(frame_sizer)
+
+        frame_splitter = wx.SplitterWindow(self, style=wx.SP_BORDER)
+        frame_sizer.Add(frame_splitter, 1, wx.EXPAND)
+
+        objects_panel = wx.Panel(frame_splitter, style=wx.TAB_TRAVERSAL|wx.SUNKEN_BORDER)
+        objects_panel_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_frame = wx.GetApp().GetTopWindow()
+        self.themes_model = CodesDataViews.ThemesViewModel(theme)
+        self.themes_ctrl = CodesDataViews.ThemesViewCtrl(objects_panel, self.themes_model, theme=theme)
+        objects_panel_sizer.Add(self.themes_ctrl, 1, wx.EXPAND, 5)
+        objects_panel.SetSizer(objects_panel_sizer)
+
+        edit_panel = wx.Panel(frame_splitter, style=wx.TAB_TRAVERSAL|wx.SUNKEN_BORDER)
+        edit_panel_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        usefulness_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        usefulness_label = wx.StaticText(edit_panel, label=GUIText.USEFULNESS_LABEL+" ", style=wx.ALIGN_LEFT)
+        usefulness_sizer.Add(usefulness_label, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.usefulness_ctrl = wx.Choice(edit_panel, choices=[GUIText.NOT_SURE, GUIText.USEFUL, GUIText.NOT_USEFUL], style=wx.ALIGN_LEFT)
+        usefulness_sizer.Add(self.usefulness_ctrl)
+        self.usefulness_ctrl.Bind(wx.EVT_CHOICE, self.OnUpdateUsefulness)
+        if self.theme.usefulness_flag is None:
+            self.usefulness_ctrl.Select(0)
+        elif self.theme.usefulness_flag:
+            self.usefulness_ctrl.Select(1)
+        elif not self.theme.usefulness_flag:
+            self.usefulness_ctrl.Select(2)
+        edit_panel_sizer.Add(usefulness_sizer, 0, wx.ALL, 5)
+
+        self.notes_panel = Notes.NotesPanel(edit_panel)
+        self.notes_panel.SetNote(theme.notes)
+        self.notes_panel.Bind(wx.EVT_TEXT, self.OnUpdateNotes)
+        edit_panel_sizer.Add(self.notes_panel, 1, wx.EXPAND, 5)
+        
+        edit_panel.SetSizer(edit_panel_sizer)
+
+        frame_splitter.SetMinimumPaneSize(20)
+        frame_splitter.SplitHorizontally(objects_panel, edit_panel)
+        frame_splitter.SetSashPosition(int(self.GetSize().GetHeight()/2))
+
+        self.Layout()
+        self.themes_ctrl.Expander(None)
+    
+    def OnUpdateUsefulness(self, event):
+        choice = self.usefulness_ctrl.GetSelection()
+        if choice == 0:
+            self.theme.usefulness_flag = None
+        elif choice == 1:
+            self.theme.usefulness_flag = True
+        elif choice == 2:
+            self.theme.usefulness_flag = False
+        main_frame = wx.GetApp().GetTopWindow()
+        main_frame.DocumentsUpdated(self)
+
+    def OnUpdateNotes(self, event):
+        self.theme.notes, self.theme.notes_string = self.notes_panel.GetNote()
+        main_frame = wx.GetApp().GetTopWindow()
+        main_frame.DocumentsUpdated(self)
+    
+    def RefreshDetails(self):
+        self.themes_model.Cleared()
+        self.themes_ctrl.Expander(None)
+        if self.theme.usefulness_flag is None:
+            self.usefulness_ctrl.Select(0)
+        elif self.theme.usefulness_flag:
+            self.usefulness_ctrl.Select(1)
+        elif not self.theme.usefulness_flag:
+            self.usefulness_ctrl.Select(2)
+        self.notes_panel.Unbind(wx.EVT_TEXT)
+        self.notes_panel.SetNote(self.theme.notes)
         self.notes_panel.Bind(wx.EVT_TEXT, self.OnUpdateNotes)
 
 class DocumentListPanel(wx.Panel):
@@ -181,7 +278,7 @@ class DocumentListPanel(wx.Panel):
         controls_sizer.Add(self.search_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
         
         main_frame = wx.GetApp().GetTopWindow()
-        self.documents_model = CodesDataViews.DocumentViewModel(main_frame.datasets[self.dataset_key], main_frame.samples)
+        self.documents_model = CodesDataViews.DocumentViewModel(main_frame.datasets[self.dataset_key])
         self.documents_ctrl = CodesDataViews.DocumentViewCtrl(self, self.documents_model)
         self.sizer.Add(self.documents_ctrl, 1, wx.ALL|wx.EXPAND, 5)
 
@@ -279,7 +376,7 @@ class DocumentListPanel(wx.Panel):
         logger.info("Starting")
         self.Freeze()
         main_frame = wx.GetApp().GetTopWindow()
-        new_documents_model = CodesDataViews.DocumentViewModel(main_frame.datasets[self.dataset_key], main_frame.samples)
+        new_documents_model = CodesDataViews.DocumentViewModel(main_frame.datasets[self.dataset_key])
         new_documents_model.samples_filter.extend(self.documents_model.samples_filter)
         new_documents_ctrl = CodesDataViews.DocumentViewCtrl(self, new_documents_model)
         self.sizer.Replace(self.documents_ctrl, new_documents_ctrl)
@@ -656,28 +753,27 @@ class DocumentPanel(wx.Panel):
         self.notes_panel.Bind(wx.EVT_TEXT, self.OnUpdateNotes)
 
 class CreateQuotationDialog(wx.Dialog):
-    def __init__(self, parent, code, datasets, size=wx.DefaultSize):
-        logger = logging.getLogger(__name__+".CreateQuotationDialog["+str(code.key)+"].__init__")
+    def __init__(self, parent, node, size=wx.DefaultSize):
+        logger = logging.getLogger(__name__+".CreateQuotationDialog["+str(node.key)+"].__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=str(code.name), size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
+        wx.Dialog.__init__(self, parent, title=str(node.name), size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.code = code
-        self.datasets = datasets
+        self.node = node
 
         instruction_label = wx.StaticText(self, label="Choose a document:")
         sizer.Add(instruction_label, 0, wx.ALL, 5)
 
         #single dataset mode
-        main_frame = wx.GetApp().GetTopWindow()
-        self.positions_model = CodesDataViews.DocumentPositionsViewModel(self.code, self.datasets)
+        self.positions_model = CodesDataViews.DocumentPositionsViewModel(self.node)
         self.positions_ctrl = CodesDataViews.DocumentPositionsViewCtrl(self, self.positions_model)
+        self.positions_model.Cleared()
+        self.positions_ctrl.Expander(None)
         self.positions_ctrl.ToggleWindowStyle(wx.dataview.DV_MULTIPLE)
         self.positions_ctrl.SetWindowStyle(wx.dataview.DV_SINGLE)
         sizer.Add(self.positions_ctrl, 1, wx.EXPAND, 5)
 
-        self.positions_model.Cleared()
-
+        
         controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
         ok_button = wx.FindWindowById(wx.ID_OK, self)
         ok_button.SetLabel(GUIText.CREATE_QUOTATION)
@@ -698,3 +794,50 @@ class CreateQuotationDialog(wx.Dialog):
         else:
             self.EndModal(wx.ID_OK)
         logger.info("Finished")
+
+class IncludeCodesDialog(wx.Dialog):
+    def __init__(self, parent, size=wx.DefaultSize):
+        logger = logging.getLogger(__name__+".IncludeCodesDialog.__init__")
+        logger.info("Starting")
+        wx.Dialog.__init__(self, parent, title=GUIText.INCLUDE_CODES, size=size, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER|wx.MAXIMIZE_BOX|wx.MINIMIZE_BOX)
+
+        self.included_code_keys = []
+
+        main_frame = wx.GetApp().GetTopWindow()
+
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(self.sizer)
+
+        self.error_label = wx.StaticText(self, label="")
+        self.error_label.SetForegroundColour(wx.Colour(255, 0, 0))
+        self.sizer.Add(self.error_label, 0, wx.ALL, 5)
+        self.error_label.Hide()
+
+        
+        
+        self.codes_model = CodesDataViews.CodesViewModel()
+        self.codes_ctrl = CodesDataViews.CodesViewCtrl(self, self.codes_model)
+        self.sizer.Add(self.codes_ctrl, 1, wx.EXPAND|wx.ALL, 5)
+
+        #Retriever button to collect the requested data
+        controls_sizer = self.CreateButtonSizer(wx.OK|wx.CANCEL)
+        ok_button = wx.FindWindowById(wx.ID_OK, self)
+        ok_button.SetLabel(GUIText.INCLUDE_CODES)
+        self.sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
+
+        self.Layout()
+
+        ok_button.Bind(wx.EVT_BUTTON, self.OnSelect)
+        logger.info("Finished")
+    
+    def OnSelect(self, event):
+        for item in self.codes_ctrl.GetSelections():
+            node = self.codes_model.ItemToObject(item)
+            if isinstance(node, Codes.Code):
+                self.included_code_keys.append(node.key)
+        
+        if len(self.included_code_keys) == 0:
+            self.error_label.SetLabel("To be able to include codes at least one code must be selected")
+            self.error_label.Show()
+        else:
+            self.EndModal(wx.ID_OK)

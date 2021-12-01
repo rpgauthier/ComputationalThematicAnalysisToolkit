@@ -119,3 +119,17 @@ class GenericObject(object):
                 code_objs.append(codes[code_key])
             code_objs.extend(self.GetCodeConnections(codes[code_key].subcodes))
         return code_objs
+
+class Connection(object):
+    def __init__(self, parent, obj):
+        self.parent = parent
+        self.obj = obj
+    
+    def GetKey(self):
+        if isinstance(self.parent, Connection):
+            key = (self.parent.GetKey(), self.obj.key)
+        elif self.parent != None:
+            key = (self.parent.key, self.obj.key)
+        else:
+            key = (self.obj.key,)
+        return key

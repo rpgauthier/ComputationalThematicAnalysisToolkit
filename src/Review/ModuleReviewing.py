@@ -3,6 +3,7 @@ import logging
 import wx
 
 from Common.GUIText import Reviewing as GUIText
+import Common.Objects.DataViews.Codes as Codes
 import Common.Notes as Notes
 
 class ReviewingPanel(wx.Panel):
@@ -10,10 +11,16 @@ class ReviewingPanel(wx.Panel):
         logger = logging.getLogger(__name__+".ReportingPanel.__init__")
         logger.info("Starting")
         super().__init__(*args, **kw)
-        wx.StaticText(self, label="Not Yet Implimented")
-        
-        #Notes panel for module
         main_frame = wx.GetApp().GetTopWindow()
+        
+        sizer = wx.BoxSizer()
+        self.SetSizer(sizer)
+
+        self.themes_model = Codes.ThemesViewModel() 
+        self.themes_ctrl = Codes.ThemesViewCtrl(self, self.themes_model)
+        sizer.Add(self.themes_ctrl, 1, wx.EXPAND, 5)
+
+        #Notes panel for module
         self.notes_panel = Notes.NotesPanel(main_frame.notes_notebook, self)
         main_frame.notes_notebook.AddPage(self.notes_panel, GUIText.REVIEWING_LABEL)
 
@@ -30,6 +37,8 @@ class ReviewingPanel(wx.Panel):
         #updates the datasets to perform a global refresh
         logger = logging.getLogger(__name__+".ReviewingPanel.CodesUpdated")
         logger.info("Starting")
+        self.themes_model.Cleared()
+        self.themes_ctrl.Expander(None)
         logger.info("Finished")
     
     def ModeChange(self):
@@ -42,6 +51,8 @@ class ReviewingPanel(wx.Panel):
         logger = logging.getLogger(__name__+".ReviewingPanel.Load")
         logger.info("Starting")
         self.Freeze()
+        self.themes_model.Cleared()
+        self.themes_ctrl.Expander(None)
         if 'notes' in saved_data:
             self.notes_panel.Load(saved_data['notes'])
         self.Thaw()

@@ -23,7 +23,7 @@ import Common.Objects.Codes as Codes
 # Thread class that executes processing
 class SaveThread(Thread):
     """Load Thread Class."""
-    def __init__(self, notify_window, save_path, current_workspace_path, config_data, datasets, samples, codes, notes_text, last_load_dt, autosave=False):
+    def __init__(self, notify_window, save_path, current_workspace_path, config_data, datasets, samples, codes, themes, notes_text, last_load_dt, autosave=False):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self._notify_window = notify_window
@@ -33,6 +33,7 @@ class SaveThread(Thread):
         self.datasets = datasets
         self.samples = samples
         self.codes = codes
+        self.themes = themes
         self.notes_text = notes_text
         self.last_load_dt = last_load_dt
         self.autosave = autosave
@@ -92,6 +93,11 @@ class SaveThread(Thread):
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_CODES))
             with open(self.current_workspace_path+"/codes.pk", 'wb') as outfile:
                 pickle.dump(self.codes, outfile)
+            
+            if not self.autosave:
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_THEMES))
+            with open(self.current_workspace_path+"/themes.pk", 'wb') as outfile:
+                pickle.dump(self.themes, outfile)
 
             if not self.autosave:
                 wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.SAVE_BUSY_MSG_COMPRESSING))
@@ -184,6 +190,12 @@ class LoadThread(Thread):
                     wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_CODES))
                     with open(self.current_workspace_path+"/codes.pk", 'rb') as infile:
                         result['codes'] = pickle.load(infile)
+                
+                result['themes'] = {}
+                if "themes" in result['config']:
+                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_THEMES))
+                    with open(self.current_workspace_path+"/themes.pk", 'rb') as infile:
+                        result['themes'] = pickle.load(infile)
             
                 if ver < version.parse('0.8.5'):
                     self.Upgrade0_8_5(result, ver)

@@ -7,6 +7,7 @@ import wx.dataview as dv
 
 from Common.GUIText import Coding as GUIText
 import Common.Constants as Constants
+import Common.Objects.Generic as Generic
 import Common.Objects.Codes as Codes
 import Common.Objects.GUIs.Codes as CodesGUIs
 import Common.Objects.Datasets as Datasets
@@ -18,9 +19,10 @@ import Common.Objects.Samples as Samples
 #   1. References:  int
 #   2. Notes: string
 class CodesViewModel(dv.PyDataViewModel):
-    def __init__(self, codes):
+    def __init__(self):
         dv.PyDataViewModel.__init__(self)
-        self.codes = codes
+        main_frame = wx.GetApp().GetTopWindow()
+        self.codes = main_frame.codes
         self.UseWeakRefs(True)
 
     def GetColumnCount(self):
@@ -219,7 +221,8 @@ class CodesViewCtrl(dv.DataViewCtrl):
         self.drag_node = None
         model.Cleared()
         self.Expander(None)
-
+        main_frame.CodesUpdated()
+        
     def OnOpen(self, event):
         logger = logging.getLogger(__name__+".ObjectCodesViewCtrl.OnOpen")
         logger.info("Starting")
@@ -228,10 +231,10 @@ class CodesViewCtrl(dv.DataViewCtrl):
             model = self.GetModel()
             node = model.ItemToObject(item)
             main_frame = wx.GetApp().GetTopWindow()
-            if node.key not in main_frame.codeconnections_dialogs:
-                main_frame.codeconnections_dialogs[node.key] = CodesGUIs.CodeConnectionsDialog(main_frame, node, size=wx.Size(400,400))
-            main_frame.codeconnections_dialogs[node.key].Show()
-            main_frame.codeconnections_dialogs[node.key].SetFocus()
+            if node.key not in main_frame.code_dialogs:
+                main_frame.code_dialogs[node.key] = CodesGUIs.CodeDialog(main_frame, node, size=wx.Size(400,400))
+            main_frame.code_dialogs[node.key].Show()
+            main_frame.code_dialogs[node.key].SetFocus()
         logger.info("Finished")
 
     def OnShowPopup(self, event):
@@ -392,8 +395,8 @@ class CodesViewCtrl(dv.DataViewCtrl):
 #   1. References:  int
 #   2. Notes: string
 class ObjectCodesViewModel(CodesViewModel):
-    def __init__(self, codes, obj):
-        CodesViewModel.__init__(self, codes)
+    def __init__(self, obj):
+        CodesViewModel.__init__(self)
         self.obj = obj
 
     def GetColumnCount(self):
@@ -542,6 +545,7 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         self.drag_node = None
         model.Cleared()
         self.Expander(None)
+        main_frame.CodesUpdated()
         wx.PostEvent(self.GetEventHandler(), dv.DataViewEvent(dv.EVT_DATAVIEW_SELECTION_CHANGED.typeId, self, dv.DataViewItem()))
 
     def OnOpen(self, event):
@@ -552,10 +556,10 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
             model = self.GetModel()
             node = model.ItemToObject(item)
             main_frame = wx.GetApp().GetTopWindow()
-            if node.key not in main_frame.codeconnections_dialogs:
-                main_frame.codeconnections_dialogs[node.key] = CodesGUIs.CodeConnectionsDialog(main_frame, node, size=wx.Size(400,400))
-            main_frame.codeconnections_dialogs[node.key].Show()
-            main_frame.codeconnections_dialogs[node.key].SetFocus()
+            if node.key not in main_frame.code_dialogs:
+                main_frame.code_dialogs[node.key] = CodesGUIs.CodeDialog(main_frame, node, size=wx.Size(400,400))
+            main_frame.code_dialogs[node.key].Show()
+            main_frame.code_dialogs[node.key].SetFocus()
         logger.info("Finished")
 
     def OnShowPopup(self, event):
@@ -727,11 +731,12 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
 #   2. Notes: string
 #TODO need to rework ViewModel to show dynamic label columns instead of just document ids
 class CodeConnectionsViewModel(dv.PyDataViewModel):
-    def __init__(self, code, datasets, samples):
+    def __init__(self, code):
         dv.PyDataViewModel.__init__(self)
         self.code = code
-        self.datasets = datasets
-        self.samples = samples
+        main_frame = wx.GetApp().GetTopWindow()
+        self.datasets = main_frame.datasets
+        self.samples = main_frame.samples
         self.UseWeakRefs(True)
     
     def UpdateColumnNames(self):
@@ -958,10 +963,11 @@ class CodeConnectionsViewCtrl(dv.DataViewCtrl):
 #     1. Notes: string
 #     2. Data:    string
 class DocumentViewModel(dv.PyDataViewModel):
-    def __init__(self, dataset, samples_data):
+    def __init__(self, dataset):
         dv.PyDataViewModel.__init__(self)
         self.dataset = dataset
-        self.samples_data = samples_data
+        main_frame = wx.GetApp().GetTopWindow()
+        self.samples = main_frame.samples
         self.UseWeakRefs(True)
 
         self.search_filter = ""
@@ -1016,9 +1022,9 @@ class DocumentViewModel(dv.PyDataViewModel):
                 if len(dataset_children) > 0:
                     subchildren.extend(dataset_children)
                     possible_children.append(item)
-            for key in self.samples_data:
+            for key in self.samples:
                 if key in self.samples_filter:
-                    item = self.ObjectToItem(self.samples_data[key])
+                    item = self.ObjectToItem(self.samples[key])
                     sample_children = []
                     self.GetChildren(item, sample_children)
                     if len(sample_children) > 0:
@@ -1187,9 +1193,9 @@ class DocumentViewModel(dv.PyDataViewModel):
                 if item in parent_children:
                     return parent_item
                 
-                for sample_key in self.samples_data:
+                for sample_key in self.samples:
                     sample_children = []
-                    sample_item = self.ObjectToItem(self.samples_data[sample_key])
+                    sample_item = self.ObjectToItem(self.samples[sample_key])
                     self.GetChildren(sample_item, sample_children)
                     for part_item in sample_children:
                         part_node = self.ItemToObject(part_item)
@@ -1511,16 +1517,545 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         wx.TheClipboard.Close()
         logger.info("Finished")
 
+# This model acts as a bridge between the CodesViewCtrl and the codes of the workspace.
+# This model provides these data columns:
+#   0. Node:   string
+#   1. Code:   string
+#   2. Notes: string
+#   3. Number of Codes:  int
+class ThemesViewModel(dv.PyDataViewModel):
+    def __init__(self, theme=None):
+        dv.PyDataViewModel.__init__(self)
+        main_frame = wx.GetApp().GetTopWindow()
+        self.theme = theme
+        if theme == None:
+            self.themes = main_frame.themes
+        else:
+            self.themes = {theme.key: theme}
+        self.codes = main_frame.codes
+
+        self.connection_objs = {}
+        self.UseWeakRefs(True)
+
+    def GetColumnCount(self):
+        '''Report how many columns this model provides data for.'''
+        return 4
+
+    def GetChildren(self, parent, children):
+        # If the parent item is invalid then it represents the hidden root
+        # item, so we'll use the genre objects as its children and they will
+        # end up being the collection of visible roots in our tree.
+        if not parent:
+            if self.theme != None:
+                theme = self.theme
+                for subtheme_key in theme.subthemes:
+                    child_key = (subtheme_key,)
+                    if child_key not in self.connection_objs:
+                        self.connection_objs[child_key] = Generic.Connection(None, theme.subthemes[subtheme_key])
+                    children.append(self.ObjectToItem(self.connection_objs[child_key]))
+                for code in self.theme.GetCodes(self.codes):
+                    child_key = (code.key,)
+                    if child_key not in self.connection_objs:
+                        self.connection_objs[child_key] = Generic.Connection(None, code)
+                    children.append(self.ObjectToItem(self.connection_objs[child_key]))
+            else:
+                for theme_key in self.themes:
+                    if isinstance(self.themes[theme_key], Codes.Theme):
+                        child_key = (theme_key,)
+                        if child_key not in self.connection_objs:
+                            self.connection_objs[child_key] = Generic.Connection(None, self.themes[theme_key])
+                        children.append(self.ObjectToItem(self.connection_objs[child_key]))
+        # Otherwise we'll fetch the python object associated with the parent
+        # item and make DV items for each of it's child objects.
+        else:
+            node = self.ItemToObject(parent)
+            if isinstance(node, Generic.Connection) and isinstance(node.obj, Codes.Theme):
+                node_key = node.GetKey()
+                for subtheme_key in node.obj.subthemes:
+                    child_key = (node_key, subtheme_key,)
+                    if child_key not in self.connection_objs:
+                        self.connection_objs[child_key] = Generic.Connection(node, node.obj.subthemes[subtheme_key])
+                    children.append(self.ObjectToItem(self.connection_objs[child_key]))
+                for code in node.obj.GetCodes(self.codes):
+                    child_key = (node_key, code.key,)
+                    if child_key not in self.connection_objs:
+                        self.connection_objs[child_key] = Generic.Connection(node, code)
+                    children.append(self.ObjectToItem(self.connection_objs[child_key]))
+        return len(children)
+
+    def IsContainer(self, item):
+        ''' Return True if the item has children, False otherwise.'''
+        # The hidden root is a container
+        if not item:
+            return True
+        # Any node that has a list of lower nodes
+        node = self.ItemToObject(item)
+        if isinstance(node.obj, Codes.Theme):
+            return True
+        return False
+    
+    def HasContainerColumns(self, item):
+        if not item:
+            return False
+        node = self.ItemToObject(item)
+        if isinstance(node.obj, Codes.Theme):
+            return True
+        return False
+
+    def GetParent(self, item):
+        if not item:
+            return dv.NullDataViewItem
+        node = self.ItemToObject(item)
+        if isinstance(node, Generic.Connection):
+            if node.parent != None:
+                return self.ObjectToItem(node.parent)
+            else:
+                return dv.NullDataViewItem
+
+    def GetValue(self, item, col):
+        ''''Fetch the data object for this item's column.'''
+        node = self.ItemToObject(item)
+        if isinstance(node.obj, Codes.Theme):
+            mapper = { 0 : node.obj.name,
+                       1 : GUIText.THEME,
+                       2 : "\U0001F6C8" if node.obj.notes != "" else "",
+                       3 : len(node.obj.code_keys),
+                       }
+            return mapper[col]
+        elif isinstance(node.obj, Codes.Code):
+            mapper = { 0 : node.obj.name,
+                       1 : GUIText.CODE,
+                       2 : "\U0001F6C8" if node.obj.notes != "" else "",
+                       3 : 1,
+                       }
+            return mapper[col]
+        else:
+            raise RuntimeError("unknown node type")
+
+    def SetValue(self, value, item, col):
+        '''only allowing updating of key as rest is connected to data retrieved'''
+        node = self.ItemToObject(item)
+        if col == 0 and isinstance(node.obj, Codes.Theme) and node.obj.name != value:
+            if value == "":
+                wx.MessageBox(GUIText.RENAME_THEME_BLANK_ERROR,
+                              GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+            else:
+                node.obj.name = value
+        return True
+    
+    def GetAttr(self, item, col, attr):
+        res = super().GetAttr(item, col, attr)
+        node = self.ItemToObject(item)
+        if isinstance(node.obj, Codes.Theme) or isinstance(node.obj, Codes.Code):
+            color = wx.Colour(node.obj.colour_rgb[0], node.obj.colour_rgb[1], node.obj.colour_rgb[2] )
+            attr.SetBackgroundColour(color)
+            colours = []
+            for c in node.obj.colour_rgb:
+                c = c / 255.0
+                if c <= 0.03928:
+                    c = c/12.92
+                else:
+                    c = ((c+0.055)/1.055) ** 2.4
+                colours.append(c)
+            L = 0.2126 * colours[0] + 0.7152 * colours[1] + 0.0722 * colours[2]
+            if L > 0.179:
+                attr.SetColour(wx.Colour(0, 0, 0))
+            else:
+                attr.SetColour(wx.Colour(255, 255, 255))
+        return res
+    
+    def Cleared(self):
+        self.connection_objs.clear()
+        res = super().Cleared()
+        return res
+
+#this view enables displaying of fields for different datasets
+class ThemesViewCtrl(dv.DataViewCtrl):
+    def __init__(self, parent, model, style=dv.DV_MULTIPLE|dv.DV_ROW_LINES, theme=None):
+        dv.DataViewCtrl.__init__(self, parent, style=style)
+
+        self.theme = theme
+        self.selected_item = None
+
+        self.AssociateModel(model)
+        model.DecRef()
+
+        editabletext_renderer = dv.DataViewTextRenderer(mode=dv.DATAVIEW_CELL_EDITABLE)
+        column0 = dv.DataViewColumn(GUIText.NAMES, editabletext_renderer, 0, align=wx.ALIGN_LEFT)
+        self.AppendColumn(column0)
+        text_renderer = dv.DataViewTextRenderer()
+        column1 = dv.DataViewColumn(GUIText.TYPE, text_renderer, 1, align=wx.ALIGN_LEFT)
+        self.AppendColumn(column1)
+        text_renderer = dv.DataViewTextRenderer()
+        column2 = dv.DataViewColumn(GUIText.NOTES, text_renderer, 2, align=wx.ALIGN_LEFT)
+        self.AppendColumn(column2)
+        int_renderer = dv.DataViewTextRenderer(varianttype="long")
+        column3 = dv.DataViewColumn(GUIText.NUMBER_OF_CODES, int_renderer, 3, align=wx.ALIGN_LEFT)
+        self.AppendColumn(column3)
+
+        for i in range(0, len(self.Columns)):
+            column = self.Columns[i]
+            column.SetSortable(True)
+            column.SetReorderable(True)
+            column.SetResizeable(True)
+        
+        self.Expander(None)
+
+        self.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.OnShowPopup)
+        self.Bind(dv.EVT_DATAVIEW_ITEM_ACTIVATED, self.OnOpen)
+        self.Bind(wx.EVT_MENU, self.OnCopyItems, id=wx.ID_COPY)
+        accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
+        self.SetAcceleratorTable(accel_tbl)
+
+        self.Bind(dv.EVT_DATAVIEW_ITEM_BEGIN_DRAG, self.OnDrag)
+        self.Bind(dv.EVT_DATAVIEW_ITEM_DROP_POSSIBLE, self.OnDropPossible)
+        self.Bind(dv.EVT_DATAVIEW_ITEM_DROP, self.OnDrop)
+        self.EnableDragSource(wx.DataFormat(wx.DF_UNICODETEXT))
+        self.EnableDropTarget(wx.DataFormat(wx.DF_UNICODETEXT))
+        self.dragnode = None
+
+    def Expander(self, item):
+        model = self.GetModel()
+        if item != None:
+            self.Expand(item)
+        children = []
+        model.GetChildren(item, children)
+        for child in children:
+            self.Expander(child)
+        self.AutoSize()
+    
+    def AutoSize(self):
+        for column in self.GetColumns():
+            column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
+
+    def OnDrag(self, event):
+        item = event.GetItem()
+        if item:
+            self.drag_node = self.GetModel().ItemToObject(item)
+            key = self.drag_node.GetKey()
+            obj = wx.TextDataObject()
+            obj.SetText(str(key))
+            event.SetDataObject(obj)
+    
+    def OnDropPossible(self, event):
+        item = event.GetItem()
+        if not item.IsOk():
+            return True
+        else:
+            node = self.GetModel().ItemToObject(item)
+            if node == self.drag_node:
+                return False
+            else:
+                return True
+
+    def OnDrop(self, event):
+        item = event.GetItem()
+        main_frame = wx.GetApp().GetTopWindow()
+        model = self.GetModel()
+        if item.IsOk():
+            node = model.ItemToObject(item)
+            if node != self.drag_node and isinstance(node.obj, Codes.Theme):
+                if isinstance(self.drag_node.obj, Codes.Theme) and node not in self.drag_node.obj.GetDescendants():
+                    if self.drag_node.obj.parent is not None:
+                        del self.drag_node.obj.parent.subthemes[self.drag_node.obj.key]
+                    else:
+                        del main_frame.themes[self.drag_node.obj.key]
+                    node.obj.subthemes[self.drag_node.obj.key] = self.drag_node.obj
+                    self.drag_node.obj.parent = node.obj
+                if isinstance(self.drag_node.obj, Codes.Code) and self.drag_node.obj.key not in node.obj.code_keys:
+                    node.obj.code_keys.append(self.drag_node.obj.key)
+        else:
+            if isinstance(self.drag_node.obj, Codes.Theme):
+                if self.drag_node.obj.parent is not None:
+                    del self.drag_node.obj.parent.subthemes[self.drag_node.obj.key]
+                else:
+                    if self.theme == None:
+                        del main_frame.themes[self.drag_node.obj.key]
+                    else:
+                        del self.drag_node.obj.parent.subthemes[self.drag_node.obj.key]
+                if self.theme == None:
+                    main_frame.themes[self.drag_node.obj.key] = self.drag_node.obj
+                else:
+                    self.theme.subthemes[self.drag_node.obj.key] = self.drag_node.obj
+                self.drag_node.obj.parent = None
+            if self.theme != None and isinstance(self.drag_node.obj, Codes.Code) and self.drag_node.obj.key not in self.theme.code_keys:
+                self.theme.code_keys.append(self.drag_node.obj.key)
+        self.drag_node = None
+        model.Cleared()
+        self.Expander(None)
+        main_frame.ThemesUpdated()
+
+    def OnOpen(self, event):
+        logger = logging.getLogger(__name__+".ThemesViewCtrl.OnOpen")
+        logger.info("Starting")
+        item = event.GetItem()
+        if item:
+            model = self.GetModel()
+            node = model.ItemToObject(item)
+            main_frame = wx.GetApp().GetTopWindow()
+            if isinstance(node, Generic.Connection) and isinstance(node.obj, Codes.Code):
+                if node.obj.key not in main_frame.code_dialogs:
+                    main_frame.code_dialogs[node.obj.key] = CodesGUIs.CodeDialog(main_frame, node.obj, size=wx.Size(400,400))
+                main_frame.code_dialogs[node.obj.key].Show()
+                main_frame.code_dialogs[node.obj.key].SetFocus()
+            elif isinstance(node, Generic.Connection) and isinstance(node.obj, Codes.Theme):
+                if node.obj.key not in main_frame.theme_dialogs:
+                    main_frame.theme_dialogs[node.obj.key] = CodesGUIs.ThemeDialog(main_frame, node.obj, size=wx.Size(400,400))
+                main_frame.theme_dialogs[node.obj.key].Show()
+                main_frame.theme_dialogs[node.obj.key].SetFocus()
+        logger.info("Finished")
+
+    def OnShowPopup(self, event):
+        menu = wx.Menu()
+        copy_menuitem = menu.Append(wx.ID_COPY, GUIText.COPY)
+        self.Bind(wx.EVT_MENU, self.OnCopyItems, copy_menuitem)
+        menu.AppendSeparator()
+        if isinstance(self.GetModel(), ThemesViewModel):
+            model = self.GetModel()
+            multiple_selected = False
+            has_themes_selected = False
+            has_codes_selected = False
+            if self.HasSelection():
+                count = 0
+                self.selected_item = None
+                for item in self.GetSelections():
+                    node = model.ItemToObject(item)
+                    count = count + 1
+                    if isinstance(node.obj, Codes.Theme):
+                        has_themes_selected = True
+                    if isinstance(node.obj, Codes.Code):
+                        has_codes_selected = True
+                
+                if count == 1:
+                    self.selected_item = event.GetItem()
+                elif count > 1:
+                    multiple_selected = True
+                    self.selected_item = None
+
+            add_theme_menuitem = menu.Append(wx.ID_ADD, GUIText.ADD_NEW_THEME)
+            self.Bind(wx.EVT_MENU, self.OnAddTheme, add_theme_menuitem)
+            if not multiple_selected and has_themes_selected:
+                add_subtheme_menuitem = menu.Append(wx.ID_ANY, GUIText.ADD_NEW_SUBTHEME)
+                self.Bind(wx.EVT_MENU, self.OnAddSubTheme, add_subtheme_menuitem)
+            if has_themes_selected:
+                delete_codes_menuitem = menu.Append(wx.ID_ANY, GUIText.DELETE_THEMES)
+                self.Bind(wx.EVT_MENU, self.OnDeleteThemes, delete_codes_menuitem)
+            menu.AppendSeparator()
+            if (has_themes_selected or has_codes_selected) and not multiple_selected:
+                change_colour_menuitem = menu.Append(wx.ID_ANY, GUIText.CHANGE_COLOUR)
+                self.Bind(wx.EVT_MENU, self.OnChangeColour, change_colour_menuitem)
+                menu.AppendSeparator()
+            if not multiple_selected and (has_themes_selected or self.theme != None):
+                add_code_menuitem = menu.Append(wx.ID_ANY, GUIText.INCLUDE_CODES)
+                self.Bind(wx.EVT_MENU, self.OnIncludeCodes, add_code_menuitem)
+            if has_codes_selected:
+                add_code_menuitem = menu.Append(wx.ID_ANY, GUIText.REMOVE_CODES)
+                self.Bind(wx.EVT_MENU, self.OnRemoveCodes, add_code_menuitem)
+        self.PopupMenu(menu)
+
+    def OnCopyItems(self, event):
+        selected_items = []
+        model = self.GetModel()
+        for item in self.GetSelections():
+            obj_name = model.GetValue(item, 0)
+            obj_type = model.GetValue(item, 1)
+            notes = model.GetValue(item, 2)
+            num_codes = model.GetValue(item, 3)
+            selected_items.append('\t'.join([obj_name, obj_type, notes, str(num_codes)]).strip())
+        clipdata = wx.TextDataObject()
+        clipdata.SetText("\n".join(selected_items))
+        wx.TheClipboard.Open()
+        wx.TheClipboard.SetData(clipdata)
+        wx.TheClipboard.Close()
+    
+    #bring up menu on right click
+    def OnAddTheme(self, event):
+        logger = logging.getLogger(__name__+".ThemesViewCtrl.OnAddTheme")
+        logger.info("Starting")
+        new_name = None
+        model = self.GetModel()
+        main_frame = wx.GetApp().GetTopWindow()
+        add_dialog = wx.TextEntryDialog(main_frame, message=GUIText.ADD_NEW_THEME, caption=GUIText.NEW_THEME)
+        ok_button = wx.FindWindowById(wx.ID_OK, add_dialog)
+        ok_button.SetLabel(GUIText.ADD_NEW_THEME)
+        while new_name is None:
+            rc = add_dialog.ShowModal()
+            if rc == wx.ID_OK:
+                new_name = add_dialog.GetValue()
+                if new_name == '':
+                    wx.MessageBox(GUIText.NEW_THEME_BLANK_ERROR,
+                                  GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                    new_name = None
+                else:
+                    if self.theme != None:
+                        new_subtheme = Codes.Theme(new_name, parent = self.theme)
+                        self.theme.subthemes[new_subtheme.key] = new_subtheme
+                    else:
+                        new_theme = Codes.Theme(new_name)
+                        main_frame.themes[new_theme.key] = new_theme
+                    model.Cleared()
+                    self.Expander(None)
+                    main_frame.ThemesUpdated()
+                    break
+            else:
+                break
+        logger.info("Finished")
+    
+    #bring up menu on right click
+    def OnAddSubTheme(self, event):
+        logger = logging.getLogger(__name__+".ThemesViewCtrl.OnAddSubTheme")
+        logger.info("Starting")
+        new_name = None
+        model = self.GetModel()
+        main_frame = wx.GetApp().GetTopWindow()
+        item = self.selected_item
+        node = model.ItemToObject(item)
+        add_dialog = wx.TextEntryDialog(main_frame, message=GUIText.ADD_NEW_SUBTHEME, caption=GUIText.NEW_SUBTHEME)
+        ok_button = wx.FindWindowById(wx.ID_OK, add_dialog)
+        ok_button.SetLabel(GUIText.ADD_NEW_SUBTHEME)
+        while new_name is None:
+            rc = add_dialog.ShowModal()
+            if rc == wx.ID_OK:
+                new_name = add_dialog.GetValue()
+                if new_name == '':
+                    wx.MessageBox(GUIText.NEW_THEME_BLANK_ERROR,
+                                  GUIText.ERROR, wx.OK | wx.ICON_ERROR)
+                    new_name = None
+                else:
+                    new_subtheme = Codes.Theme(new_name, parent=node.obj)
+                    node.obj.subthemes[new_subtheme.key] = new_subtheme
+                    model.Cleared()
+                    self.Expander(None)
+                    main_frame.ThemesUpdated()
+                    break
+            else:
+                break
+        logger.info("Finished")
+
+    def OnDeleteThemes(self, event):
+        logger = logging.getLogger(__name__+".ThemesViewCtrl.OnDeleteCodes")
+        logger.info("Starting")
+        #confirmation
+        confirm_dialog = wx.MessageDialog(self, GUIText.CONFIRM_DELETE_THEME,
+                                          GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
+        confirm_dialog.SetOKLabel(GUIText.DELETE_THEMES)
+        if confirm_dialog.ShowModal() == wx.ID_OK:
+            model = self.GetModel() 
+            main_frame = wx.GetApp().GetTopWindow()
+            delete_themes = []
+            for item in self.GetSelections():
+                node = model.ItemToObject(item)
+                if isinstance(node.obj, Codes.Theme):
+                    delete_themes.append(node.obj)
+            
+            for theme in delete_themes:
+                def DeleteTheme(theme):
+                    for subtheme_key in list(theme.subthemes.keys()):
+                        DeleteTheme(theme.subthemes[subtheme_key])
+
+                    if theme.parent != None:
+                        theme.DestroyObject()
+                    elif theme.key in main_frame.themes:
+                        theme.DestroyObject()
+                        del main_frame.themes[theme.key]
+                DeleteTheme(theme)
+            self.selected_item = None
+            model.Cleared()
+            self.Expander(None)
+            main_frame.ThemesUpdated()
+        logger.info("Finished")
+
+    #bring up menu on right click
+    def OnIncludeCodes(self, event):
+        logger = logging.getLogger(__name__+".ThemesViewCtrl.OnIncludeCode")
+        logger.info("Starting")
+        included_codes = None
+        model = self.GetModel()
+        main_frame = wx.GetApp().GetTopWindow()
+        if self.selected_item != None:
+            item = self.selected_item
+            theme = model.ItemToObject(item).obj
+        elif self.theme != None:
+            theme = self.theme
+        include_codes_dialog = CodesGUIs.IncludeCodesDialog(main_frame, wx.Size(400, 400))
+        while included_codes == None:
+            rc = include_codes_dialog.ShowModal()
+            if rc == wx.ID_OK:
+                included_code_keys = include_codes_dialog.included_code_keys
+                for code_key in included_code_keys:
+                    if code_key not in theme.code_keys:
+                        theme.code_keys.append(code_key)
+                theme.last_changed_dt = datetime.now()
+                model.Cleared()
+                self.Expander(None)
+                main_frame.ThemesUpdated()
+                break
+            else:
+                break
+        logger.info("Finished")
+    
+    def OnRemoveCodes(self, event):
+        logger = logging.getLogger(__name__+".ThemesViewCtrl.OnRemoveCodes")
+        logger.info("Starting")
+        #confirmation
+        model = self.GetModel() 
+        main_frame = wx.GetApp().GetTopWindow()
+        remove_codes = []
+        for item in self.GetSelections():
+            node = model.ItemToObject(item)
+            if isinstance(node.obj, Codes.Code):
+                remove_codes.append(node)
+        for node in remove_codes:
+            if node.parent != None:
+                node.parent.obj.code_keys.remove(node.obj.key)
+                node.parent.obj.last_changed_dt = datetime.now()
+            elif self.theme != None:
+                self.theme.code_keys.remove(node.obj.key)
+                self.theme.last_changed_dt = datetime.now()
+        self.selected_item = None
+        model.Cleared()
+        self.Expander(None)
+        main_frame.ThemesUpdated()
+        logger.info("Finished")
+
+    def OnChangeColour(self, event):
+        logger = logging.getLogger(__name__+".ThemesViewCtrl.OnChangeColour")
+        logger.info("Starting")
+
+        model = self.GetModel() 
+        main_frame = wx.GetApp().GetTopWindow()
+        item = self.selected_item
+        node = model.ItemToObject(item)
+        
+        cur_colour = wx.Colour(node.obj.colour_rgb[0], node.obj.colour_rgb[1], node.obj.colour_rgb[2])
+
+        cur_colour_data = wx.ColourData()
+        cur_colour_data.SetColour(cur_colour)
+
+        colour_dlg = wx.ColourDialog(self, cur_colour_data)
+        
+        if colour_dlg.ShowModal() == wx.ID_OK:
+            new_colour_data = colour_dlg.GetColourData()
+            new_colour = new_colour_data.GetColour()
+            node.obj.colour_rgb = (new_colour.Red(), new_colour.Green(), new_colour.Blue(),)
+            self.UnselectAll()
+            main_frame.ThemesUpdated()
+        logger.info("Finished")
+
 # This model acts as a bridge between the DocumentConnectionsViewCtrl and the connections.
 # This model provides these data columns:
 #   0. Code:   string
 #   1. References:  int
 #   2. Notes: string
 class DocumentPositionsViewModel(dv.PyDataViewModel):
-    def __init__(self, code, datasets):
+    def __init__(self, node):
         dv.PyDataViewModel.__init__(self)
-        self.code = code
-        self.datasets = datasets
+        self.root_node = node
+        main_frame = wx.GetApp().GetTopWindow()
+        self.datasets = main_frame.datasets
+        self.codes = main_frame.codes
+
+        self.connection_objs = {}
 
     def GetColumnCount(self):
         '''Report how many columns this model provides data for.'''
@@ -1531,50 +2066,112 @@ class DocumentPositionsViewModel(dv.PyDataViewModel):
         # item, so we'll use the genre objects as its children and they will
         # end up being the collection of visible roots in our tree.
         if not parent:
-            if len(self.datasets) != 1:
-                for dataset_key in self.datasets:
-                    children.append(self.ObjectToItem(self.datasets[dataset_key]))
-                return len(children)
-            else:
-                for obj in self.code.GetConnections(self.datasets, {}):
-                    if isinstance(obj, Datasets.Document):
-                        children.append(self.ObjectToItem(obj))
-                return len(children)
-        
-        node = self.ItemToObject(parent)
-        if isinstance(node, Datasets.Dataset):
-            for dataset_key, document_key in self.code.doc_positions:
-                if dataset_key == node.key:
-                    children.append(self.ObjectToItem(self.datasets[dataset_key].documents[document_key]))
-            return len(children)
-        elif isinstance(node, Datasets.Document):
-            if (node.parent.key, node.key) in self.code.doc_positions:
-                positions = self.code.doc_positions[(node.parent.key, node.key)]
-                for field_key, start, end in positions:
-                    field = self.datasets[node.parent.key].available_fields[field_key]
-                    field_data = self.datasets[node.parent.key].data[node.doc_id][field.name]
-                    field_string = '------'+str(field.name)+'------\n'
-                    if isinstance(field_data, list):
-                        for entry in field_data:
-                            if field.fieldtype == 'url':
-                                field_string = field_string + entry + '\n------------\n'
-                            elif field.fieldtype == 'UTC-timestamp':
-                                value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
-                                field_string = field_string + value_str + ' UTC\n------------\n'
-                            else:
-                                field_string = field_string + str(entry) + '\n------------\n'
+            if isinstance(self.root_node, Codes.Theme):
+                for subtheme_key in self.root_node.subthemes:
+                    child_key = (subtheme_key,)
+                    if child_key not in self.connection_objs:
+                        self.connection_objs[child_key] = Generic.Connection(None, self.root_node.subthemes[subtheme_key])
+                    children.append(self.ObjectToItem(self.connection_objs[child_key]))
+                for code in self.root_node.GetCodes(self.codes):
+                    child_key = (code.key,)
+                    if child_key not in self.connection_objs:
+                        self.connection_objs[child_key] = Generic.Connection(None, code)
+                    children.append(self.ObjectToItem(self.connection_objs[child_key]))
+            elif isinstance(self.root_node, Codes.Code):
+                if len(self.datasets) != 1:
+                    for dataset_key in self.datasets:
+                        child_key = (dataset_key,)
+                        if child_key not in self.connection_objs:
+                            self.connection_objs[child_key] = Generic.Connection(None, self.datasets[dataset_key])
+                        children.append(self.ObjectToItem(self.connection_objs[child_key]))
+                else:
+                    for obj in self.root_node.GetConnections(self.datasets, {}):
+                        if isinstance(obj, Datasets.Document):
+                            child_key = (obj.key,)
+                            if child_key not in self.connection_objs:
+                                self.connection_objs[child_key] = Generic.Connection(None, obj)
+                            children.append(self.ObjectToItem(self.connection_objs[child_key]))
+                for subcode_key in self.root_node.subcodes:
+                    child_key = (subcode_key,)
+                    if child_key not in self.connection_objs:
+                        self.connection_objs[child_key] = Generic.Connection(None, self.root_node.subcodes[subcode_key])
+                    children.append(self.ObjectToItem(self.connection_objs[child_key]))
+        else:
+            node = self.ItemToObject(parent)
+            if isinstance(node, Generic.Connection):
+                node_key = node.GetKey()
+                if isinstance(node.obj, Codes.Theme):
+                    for subtheme_key in node.obj.subthemes:
+                        child_key = (node_key, subtheme_key,)
+                        if child_key not in self.connection_objs:
+                            self.connection_objs[child_key] = Generic.Connection(node, node.obj.subthemes[subtheme_key])
+                        children.append(self.ObjectToItem(self.connection_objs[child_key]))
+                    for code in self.root_node.GetCodes(self.codes):
+                        child_key = (node_key, code.key,)
+                        if child_key not in self.connection_objs:
+                            self.connection_objs[child_key] = Generic.Connection(node, code)
+                        children.append(self.ObjectToItem(self.connection_objs[child_key]))
+                elif isinstance(node.obj, Codes.Code):
+                    if len(self.datasets) != 1:
+                        for dataset_key in self.datasets:
+                            child_key = (node_key, dataset_key,)
+                            if child_key not in self.connection_objs:
+                                self.connection_objs[child_key] = Generic.Connection(node, self.datasets[dataset_key])
+                            children.append(self.ObjectToItem(self.connection_objs[child_key]))
                     else:
-                        if field.fieldtype == 'url':
-                            field_string = field_string + field_data + '\n------------\n'
-                        elif field.fieldtype == 'UTC-timestamp':
-                            value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
-                            field_string = field_string + value_str+' UTC\n------------\n'
-                        else:
-                            field_string = field_string + field_data + '\n------------\n'
-                    selected_text = (node.parent.key, node.key, field.name, field_string[start:end])
-                    children.append(self.ObjectToItem(selected_text))
-            return len(children)
-        return 0
+                        for obj in node.obj.GetConnections(self.datasets, {}):
+                            if isinstance(obj, Datasets.Document):
+                                child_key = (node_key, obj.key,)
+                                if child_key not in self.connection_objs:
+                                    self.connection_objs[child_key] = Generic.Connection(node, obj)
+                                children.append(self.ObjectToItem(self.connection_objs[child_key]))
+                    for subcode_key in node.obj.subcodes:
+                        child_key = (node_key, subcode_key,)
+                        if child_key not in self.connection_objs:
+                            self.connection_objs[child_key] = Generic.Connection(node, node.obj.subcodes[subcode_key])
+                        children.append(self.ObjectToItem(self.connection_objs[child_key]))
+                elif isinstance(node.obj, Datasets.Dataset):
+                    for dataset_key, document_key in node.parent.doc_positions:
+                        if dataset_key == node.obj.key:
+                            child_key = (node_key, document_key,)
+                            if child_key not in self.connection_objs:
+                                self.connection_objs[child_key] = Generic.Connection(node, self.datasets[dataset_key].documents[document_key])
+                            children.append(self.ObjectToItem(self.connection_objs[child_key]))
+                elif isinstance(node.obj, Datasets.Document):
+                    doc_position_key = (node.obj.parent.key, node.obj.key,)
+                    if isinstance(node.parent, Generic.Connection):
+                        if isinstance(node.parent.obj, Datasets.Dataset):
+                            parent_code = node.parent.parent.obj
+                        elif isinstance(node.parent.obj, Codes.Code):
+                            parent_code = node.parent.obj
+                    else:
+                        parent_code = self.root_node
+                    if doc_position_key in parent_code.doc_positions:
+                        positions = parent_code.doc_positions[doc_position_key]
+                        for field_key, start, end in positions:
+                            field = self.datasets[doc_position_key[0]].available_fields[field_key]
+                            field_data = self.datasets[doc_position_key[0]].data[node.obj.doc_id][field.name]
+                            field_string = '------'+str(field.name)+'------\n'
+                            if isinstance(field_data, list):
+                                for entry in field_data:
+                                    if field.fieldtype == 'url':
+                                        field_string = field_string + entry + '\n------------\n'
+                                    elif field.fieldtype == 'UTC-timestamp':
+                                        value_str = datetime.utcfromtimestamp(entry).strftime(Constants.DATETIME_FORMAT)
+                                        field_string = field_string + value_str + ' UTC\n------------\n'
+                                    else:
+                                        field_string = field_string + str(entry) + '\n------------\n'
+                            else:
+                                if field.fieldtype == 'url':
+                                    field_string = field_string + field_data + '\n------------\n'
+                                elif field.fieldtype == 'UTC-timestamp':
+                                    value_str = datetime.utcfromtimestamp(field_data).strftime(Constants.DATETIME_FORMAT)
+                                    field_string = field_string + value_str+' UTC\n------------\n'
+                                else:
+                                    field_string = field_string + field_data + '\n------------\n'
+                            selected_text = (node, field.name, field_string[start:end])
+                            children.append(self.ObjectToItem(selected_text))
+        return len(children)
 
     def IsContainer(self, item):
         ''' Return True if the item has children, False otherwise.'''
@@ -1582,9 +2179,7 @@ class DocumentPositionsViewModel(dv.PyDataViewModel):
         if not item:
             return True
         node = self.ItemToObject(item)
-        if isinstance(node, Datasets.Dataset):
-            return True
-        if isinstance(node, Datasets.Document):
+        if isinstance(node, Generic.Connection):
             return True
         return False
     
@@ -1592,45 +2187,72 @@ class DocumentPositionsViewModel(dv.PyDataViewModel):
         return False
 
     def GetParent(self, item):
-        if not item:
-            return dv.NullDataViewItem    
-        node = self.ItemToObject(item)
-        if isinstance(node, Datasets.Document):
-            return self.ObjectToItem(node.parent)
-        elif isinstance(node, tuple):
-            return self.ObjectToItem(self.dataset.documents[node[0]])
-        return dv.NullDataViewItem
+        parent = dv.NullDataViewItem
+        if item:
+            node = self.ItemToObject(item)
+            if isinstance(node, Generic.Connection):
+                if node.parent != None:
+                    parent = self.ObjectToItem(node.parent)
+            elif isinstance(node, tuple):
+                parent = self.ObjectToItem(node[0])
+        return parent
 
     def GetValue(self, item, col):
         ''''Fetch the data object for this item's column.'''
         node = self.ItemToObject(item)
-        if isinstance(node, Datasets.Dataset):
-            mapper = { 0: str(node.name),
-                       1 : "",
-                       2 : "",
+        if isinstance(node, tuple):
+            mapper = { 0 : "",
+                       1 : str(node[1]),
+                       2 : str(node[2]),
                        }
-        elif isinstance(node, Datasets.Document):
-            if node.url != "":
-                segmented_url = node.url.split("/")
+            return mapper[col]
+        elif isinstance(node, Generic.Connection) and isinstance(node.obj, Datasets.Document):
+            if node.obj.url != "":
+                segmented_url = node.obj.url.split("/")
                 if segmented_url[len(segmented_url)-1] != '':
                     node_id = segmented_url[len(segmented_url)-1]
                 else:
                     node_id = segmented_url[len(segmented_url)-2]
             else:
-                node_id = node.doc_id[2]
+                node_id = node.obj.doc_id[2]
             mapper = { 0 : str(node_id),
                        1 : "",
                        2 : "",
                        }
             return mapper[col]
-        elif isinstance(node, tuple):
-            mapper = { 0 : "",
-                       1 : str(node[2]),
-                       2 : str(node[3]),
+        elif isinstance(node, Generic.Connection):
+            mapper = { 0: str(node.obj.name),
+                       1 : "",
+                       2 : "",
                        }
             return mapper[col]
         else:
             raise RuntimeError("unknown node type")
+    
+    def GetAttr(self, item, col, attr):
+        res = super().GetAttr(item, col, attr)
+        node = self.ItemToObject(item)
+        if isinstance(node, Generic.Connection) and (isinstance(node.obj, Codes.Theme) or isinstance(node.obj, Codes.Code)):
+            color = wx.Colour(node.obj.colour_rgb[0], node.obj.colour_rgb[1], node.obj.colour_rgb[2] )
+            attr.SetBackgroundColour(color)
+            colours = []
+            for c in node.obj.colour_rgb:
+                c = c / 255.0
+                if c <= 0.03928:
+                    c = c/12.92
+                else:
+                    c = ((c+0.055)/1.055) ** 2.4
+                colours.append(c)
+            L = 0.2126 * colours[0] + 0.7152 * colours[1] + 0.0722 * colours[2]
+            if L > 0.179:
+                attr.SetColour(wx.Colour(0, 0, 0))
+            else:
+                attr.SetColour(wx.Colour(255, 255, 255))
+        return res
+    
+    def Cleared(self):
+        self.connection_objs.clear()
+        return super().Cleared()
 
 #this view enables displaying of connection objects
 class DocumentPositionsViewCtrl(dv.DataViewCtrl):
@@ -1662,6 +2284,15 @@ class DocumentPositionsViewCtrl(dv.DataViewCtrl):
         self.Bind(wx.EVT_MENU, self.OnCopyItems, id=wx.ID_COPY)
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
+
+    def Expander(self, item):
+        model = self.GetModel()
+        if item != None:
+            self.Expand(item)
+        children = []
+        model.GetChildren(item, children)
+        for child in children:
+            self.Expander(child)
 
     def OnOpen(self, event):
         logger = logging.getLogger(__name__+".DocumentConnectionsViewCtrl.OnOpen")
@@ -1705,11 +2336,14 @@ class DocumentPositionsViewCtrl(dv.DataViewCtrl):
         wx.TheClipboard.Close()
 
 class SelectedQuotationsViewModel(dv.PyDataViewModel):
-    def __init__(self, codes):
+    def __init__(self):
         dv.PyDataViewModel.__init__(self)
-        self.codes = codes
+        main_frame = wx.GetApp().GetTopWindow()
+        self.codes = main_frame.codes
+        self.themes = main_frame.themes
         
         self.search_filter = ""
+        self.theme_usefulness_filter = []
         self.code_usefulness_filter = []
         self.quote_usefulness_filter = []
 
@@ -1724,6 +2358,10 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
         # item, so we'll use the genre objects as its children and they will
         # end up being the collection of visible roots in our tree.
         if not parent:
+            for theme_key in self.themes:
+                theme = self.themes[theme_key]
+                if len(self.theme_usefulness_filter) == 0 or theme.usefulness_flag in self.theme_usefulness_filter:
+                    children.append(self.ObjectToItem(theme))
             for code_key in self.codes:
                 code = self.codes[code_key]
                 if len(self.code_usefulness_filter) == 0 or code.usefulness_flag in self.code_usefulness_filter:
@@ -1731,7 +2369,15 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
             return len(children)
 
         node = self.ItemToObject(parent)
-        if isinstance(node, Codes.Code):
+        if isinstance(node, Codes.Theme):
+            for quotation in node.quotations:
+                if len(self.quote_usefulness_filter) == 0 or quotation.usefulness_flag in self.quote_usefulness_filter:
+                    children.append(self.ObjectToItem(quotation))
+            for subtheme_key in node.subthemes:
+                subtheme = node.subthemes[subtheme_key]
+                if len(self.theme_usefulness_filter) == 0 or subtheme.usefulness_flag in self.theme_usefulness_filter:
+                    children.append(self.ObjectToItem(subtheme))
+        elif isinstance(node, Codes.Code):
             for quotation in node.quotations:
                 if len(self.quote_usefulness_filter) == 0 or quotation.usefulness_flag in self.quote_usefulness_filter:
                     children.append(self.ObjectToItem(quotation))
@@ -1759,6 +2405,11 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
         if not item:
             return dv.NullDataViewItem
         node = self.ItemToObject(item)
+        if isinstance(node, Codes.Theme):
+            if node.parent != None:
+                return self.ObjectToItem(node.parent)
+            else:
+                return dv.NullDataViewItem
         if isinstance(node, Codes.Code):
             if node.parent != None:
                 return self.ObjectToItem(node.parent)
@@ -1770,6 +2421,13 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
     def GetValue(self, item, col):
         ''''Fetch the data object for this item's column.'''
         node = self.ItemToObject(item)
+        if isinstance(node, Codes.Theme):
+            mapper = { 0 : node.name,
+                       1 : "",
+                       2 : "",
+                       3 : "",
+                       }
+            return mapper[col]
         if isinstance(node, Codes.Code):
             mapper = { 0 : node.name,
                        1 : "",
@@ -1902,11 +2560,16 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
         model = self.GetModel()
         node = model.ItemToObject(item)
         main_frame = wx.GetApp().GetTopWindow()
+        if isinstance(node, Codes.Theme):
+            if node.key not in main_frame.theme_dialogs:
+                main_frame.theme_dialogs[node.key] = CodesGUIs.ThemeDialog(main_frame, node, size=wx.Size(400,400))
+            main_frame.theme_dialogs[node.key].Show()
+            main_frame.theme_dialogs[node.key].SetFocus()
         if isinstance(node, Codes.Code):
-            if node.key not in main_frame.codeconnections_dialogs:
-                main_frame.codeconnections_dialogs[node.key] = CodesGUIs.CodeConnectionsDialog(main_frame, node, size=wx.Size(400,400))
-            main_frame.codeconnections_dialogs[node.key].Show()
-            main_frame.codeconnections_dialogs[node.key].SetFocus()
+            if node.key not in main_frame.code_dialogs:
+                main_frame.code_dialogs[node.key] = CodesGUIs.CodeDialog(main_frame, node, size=wx.Size(400,400))
+            main_frame.code_dialogs[node.key].Show()
+            main_frame.code_dialogs[node.key].SetFocus()
         elif isinstance(node, Codes.Quotation):
             document = main_frame.datasets[node.dataset_key].documents[node.document_key]
             if node.key not in main_frame.document_dialogs:
@@ -1924,7 +2587,7 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
         model = self.GetModel()
         if item:
             node = model.ItemToObject(item)
-            if isinstance(node, Codes.Code):
+            if isinstance(node, Codes.Code) or isinstance(node, Codes.Theme):
                 add_menuitem = menu.Append(wx.ID_ADD,
                                     GUIText.ADD)
                 self.Bind(wx.EVT_MENU, self.OnAddItem, add_menuitem)
@@ -1961,16 +2624,16 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
         model = self.GetModel()
         item = self.selected_item
         node = model.ItemToObject(item)
-        if isinstance(node, Codes.Code):
+        if isinstance(node, Codes.Code) or isinstance(node, Codes.Theme):
             main_frame = wx.GetApp().GetTopWindow()
-            dialog = CodesGUIs.CreateQuotationDialog(main_frame, node, main_frame.datasets)
+            dialog = CodesGUIs.CreateQuotationDialog(main_frame, node)
             if dialog.ShowModal() == wx.ID_OK:
                 quote_item = dialog.positions_ctrl.GetSelection()
                 quote_node = dialog.positions_model.ItemToObject(quote_item)
-                if isinstance(quote_node, Datasets.Document):
-                    node.quotations.append(Codes.Quotation(node, quote_node.parent.key, quote_node.key))
+                if isinstance(quote_node, Generic.Connection) and isinstance(quote_node.obj, Datasets.Document):
+                    node.quotations.append(Codes.Quotation(node, quote_node.obj.parent.key, quote_node.obj.key))
                 elif isinstance(quote_node, tuple):
-                    node.quotations.append(Codes.Quotation(node, quote_node[0], quote_node[1], quote_node[3]))
+                    node.quotations.append(Codes.Quotation(node, quote_node[0].obj.parent.key, quote_node[0].obj.key, quote_node[2]))
                     
             model.Cleared()
             self.Expander(None)
@@ -1987,3 +2650,4 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
                     node.DestroyObject()
             model.Cleared()
             self.Expander(None)
+

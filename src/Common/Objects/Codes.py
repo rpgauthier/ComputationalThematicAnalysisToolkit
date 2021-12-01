@@ -205,3 +205,76 @@ class Quotation(GenericObject):
                 self.parent.quotations.remove(self)
             self.parent.last_changed_dt = datetime.now()
             self.parent = None
+
+class Theme(GenericObject):
+    def __init__(self, name, parent=None, key=None):
+        GenericObject.__init__(self, name=name, parent=parent, key=key)
+
+        self._colour_rgb = (255,255,255,)
+
+        self.subthemes = {}
+        
+        self.code_keys = []
+
+        self.quotations = []
+
+    def __repr__(self):
+        return 'Theme[%s][%s]' % (self.name, self.key,)
+
+    @property
+    def colour_rgb(self):
+        return self._colour_rgb
+    @colour_rgb.setter
+    def colour_rgb(self, value):
+        self._colour_rgb = value
+        self._last_changed_dt = datetime.now()
+
+    @property
+    def last_changed_dt(self):
+        for subcode_key in self.subthemes:
+            tmp_last_changed_dt = self.subthemes[subcode_key].last_changed_dt
+            if tmp_last_changed_dt > self._last_changed_dt:
+                self._last_changed_dt = tmp_last_changed_dt
+        for quotation in self.quotations:
+            tmp_last_changed_dt = quotation.last_changed_dt
+            if tmp_last_changed_dt > self._last_changed_dt:
+                self._last_changed_dt = tmp_last_changed_dt
+        return self._last_changed_dt
+    @last_changed_dt.setter
+    def last_changed_dt(self, value):
+        self._last_changed_dt = value
+    
+    def GetAncestors(self):
+        ancestors = []
+        if self.parent != None:
+            ancestors.append(self.parent)
+            ancestors.extend(self.parent.GetAncestors())
+        return ancestors
+
+    def GetDescendants(self):
+        descendants = []
+        for subtheme in self.subthemes.values():
+            descendants.append(subtheme)
+            descendants.extend(subtheme.GetDescendants())
+        return descendants
+
+    def GetCodes(self, codes):
+        included_codes = []
+        for key in codes:
+            if key in self.code_keys:
+                included_codes.append(codes[key])
+            included_codes.extend(self.GetCodes(codes[key].subcodes))
+        return included_codes
+    
+    def DestroyObject(self):
+        #any childrens
+        for theme_key in list(self.subthemes.keys()):
+            self.subthemes[theme_key].DestroyObject()
+        #remove self from parent if any
+        if self.parent is not None:
+            if self.key in self.parent.subthemes:
+                if self.parent.subthemes[self.key] == self:
+                    del self.parent.subthemes[self.key]
+            self.parent.last_changed_dt = datetime.now()
+            self.parent = None
+

@@ -31,6 +31,8 @@ class Common:
     ACTIONS = "Actions"
     VIEW = "View"
 
+    CHANGE_COLOUR = "Change Colour"
+
     COPY = "Copy"
     CUT = "Cut"
     PASTE = "Paste"
@@ -66,6 +68,8 @@ class Common:
     PART = "Part"
     MERGED_TOPIC = "Merged Topic"
     TOPIC = "Topic"
+    CODE = "Code"
+    THEME = "Theme"
 
     USEFULNESS_LABEL = "Usefulness"
     NOT_SURE = "Not Sure"
@@ -86,6 +90,8 @@ class Common:
     WEBSITE = "Website"
     NOTES = "Notes"
     CODES = "Codes"
+    THEMES = "Themes"
+    NUMBER_OF_CODES = "# of Codes"
 
     SIZE_WARNING_MSG = "WARNING: may take some time for large datasets"
 
@@ -131,6 +137,7 @@ class Main(Common):
     LOAD_BUSY_MSG_DATASET = "Loaded Dataset: "
     LOAD_BUSY_MSG_SAMPLE = "Loaded Sample: "
     LOAD_BUSY_MSG_CODES = "Loading Codes"
+    LOAD_BUSY_MSG_THEMES = "Loading Themes"
     LOAD_BUSY_MSG_CONFIG = "Loading Configurations."
 
     SAVE_BUSY_LABEL = "Saving Workspace"
@@ -142,6 +149,7 @@ class Main(Common):
     SAVE_BUSY_MSG_DATASETS = "Saving Dataset: "
     SAVE_BUSY_MSG_SAMPLES = "Saving Sample: "
     SAVE_BUSY_MSG_CODES = "Saving Codes"
+    SAVE_BUSY_MSG_THEMES = "Saving Themes"
     SAVE_BUSY_MSG_COMPRESSING = "Writing Saved Data"
 
     UPGRADE_BUSY_MSG_WORKSPACE1 = "Upgrading Workspace version from  "
@@ -783,6 +791,7 @@ class Coding(Main):
     SHOW_USEFULNESS = "Show Usefulness"
     SHOW_DOCS_FROM = "Show Documents From"
 
+    NAMES = "Names"
     REFERENCES = "References"
 
     ADD_NEW_CODE= "Add New Code"
@@ -793,16 +802,26 @@ class Coding(Main):
     NEW_SUBCODE_TOOLTIP = ""
     DELETE_CODES = "Delete Codes"
     CONFIRM_DELETE_CODES = "Are you sure you want to delete selected codes?"
-    CHANGE_COLOUR = "Change Colour"
-
     NEW_CODE_BLANK_ERROR = "New code name is blank.\nCodes need to have a name."
     RENAME_CODE_BLANK_ERROR = "Code's new name is blank.\nCodes need to have names."
 
-    CREATE_QUOTATION = "Create Quotation"
+    ADD_NEW_THEME= "Add New Theme"
+    NEW_THEME = "New Theme"
+    NEW_THEME_TOOLTIP = ""
+    ADD_NEW_SUBTHEME = "Add New Sub-Theme"
+    NEW_SUBTHEME = "New Sub-Theme"
+    NEW_SUBTHEME_TOOLTIP = ""
+    DELETE_THEMES = "Delete Themes"
+    CONFIRM_DELETE_THEME = "Are you sure you want to delete selected themes?"
+    INCLUDE_CODES = "Include Codes"
+    REMOVE_CODES = "Remove Codes"
+    NEW_THEME_BLANK_ERROR = "New theme name is blank.\nThemes need to have a name."
+    RENAME_THEME_BLANK_ERROR = "Theme's new name is blank.\nThemes need to have names."
 
     QUOTATIONS = "Quotations"
     PARAPHRASES = "Paraphrases"
-
+    
+    CREATE_QUOTATION = "Create Quotation"
     DELETE_QUOTATIONS = "Delete Quotations"
     CONFIRM_DELETE_QUOTATIONS = "Are you sure you want to delete selected quotations?"
 
