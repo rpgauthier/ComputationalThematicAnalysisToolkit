@@ -2,7 +2,7 @@
 
 ## Installation Instructions
 
-To Access most recent version 0.8.3: 
+To Access most recent version: https://github.com/rpgauthier/ComputationalThematicAnalysisToolkit/releases/latest
 
 Installers avaliable for Windows 10 x64 and OSX 
 
