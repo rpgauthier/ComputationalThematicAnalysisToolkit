@@ -726,7 +726,7 @@ class MainFrame(wx.Frame):
                     return
                 # save the current contents in the file
                 archive_name = file_dialog.GetPath()
-                file_name = "project.qde"
+                file_name = self.current_workspace.name+"/project.qde"
                 try:
                     GenericUtilities.QDAProjectExporter(self.name, self.datasets, self.samples, self.codes, self.themes, file_name, archive_name)
                 except xmlschema.XMLSchemaValidationError:

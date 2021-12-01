@@ -1,8 +1,6 @@
 import logging
-import os.path
 
 import matplotlib as mpl
-from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 mpl.use('WXAgg')
 import networkx as nx
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
@@ -242,7 +240,7 @@ class ThemePlotPlanel(wx.Panel):
             bg_colour, fg_colour = GenericUtilities.BackgroundAndForegroundColour(colour_rgb)
             colour_rgb_background = (bg_colour.Red()/255, bg_colour.Green()/255, bg_colour.Blue()/255,)
             colour_rgb_foreground = (fg_colour.Red()/255, fg_colour.Green()/255, fg_colour.Blue()/255,)
-            nx.draw_networkx_nodes(G, pos, ax=axis, nodelist=colours_nodes[colour_rgb], node_color=colour_rgb_background, alpha=0)
+            nx.draw_networkx_nodes(G, pos, ax=axis, nodelist=colours_nodes[colour_rgb], alpha=0)
             if len(colours_labels[colour_rgb]) > 0:
                 ret = nx.draw_networkx_labels(G, pos, ax=axis, labels=colours_labels[colour_rgb], font_color=colour_rgb_foreground, bbox=dict(facecolor=colour_rgb_background, alpha=1))
                 self.labels.update(ret)
