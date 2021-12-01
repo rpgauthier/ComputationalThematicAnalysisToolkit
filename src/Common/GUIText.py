@@ -829,6 +829,7 @@ class Coding(Main):
     SAVE_BUSY_MSG_CONFIG ="Saving Coding Configurations"
 
 class Reviewing(Main):
+    DOCUMENTS = "Documents"
     LOAD_BUSY_MSG_CONFIG = "Loading Reviewing Configurations"
     SAVE_BUSY_MSG_CONFIG ="Saving Reviewing Configurations"
 

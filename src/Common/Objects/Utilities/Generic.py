@@ -407,3 +407,20 @@ def IntegrateImportedThemes(main_frame, new_themes):
     #import any themes that did not already exist
     for new_theme_key in new_themes:
         main_frame.themes[new_theme_key] = new_themes[new_theme_key]
+
+def BackgroundAndForegroundColour(colour_rgb):
+    bg_colour = wx.Colour(colour_rgb[0], colour_rgb[1], colour_rgb[2])
+    colours = []
+    for c in colour_rgb:
+        c = c / 255.0
+        if c <= 0.03928:
+            c = c/12.92
+        else:
+            c = ((c+0.055)/1.055) ** 2.4
+        colours.append(c)
+    L = 0.2126 * colours[0] + 0.7152 * colours[1] + 0.0722 * colours[2]
+    if L > 0.179:
+        fg_colour = wx.Colour(0, 0, 0)
+    else:
+       fg_colour = wx.Colour(255, 255, 255)
+    return bg_colour, fg_colour

@@ -8,6 +8,7 @@ import wx.dataview as dv
 from Common.GUIText import Coding as GUIText
 import Common.Constants as Constants
 import Common.Objects.Generic as Generic
+import Common.Objects.Utilities.Generic as GenericUtilities
 import Common.Objects.Codes as Codes
 import Common.Objects.GUIs.Codes as CodesGUIs
 import Common.Objects.Datasets as Datasets
@@ -106,21 +107,9 @@ class CodesViewModel(dv.PyDataViewModel):
         res = super().GetAttr(item, col, attr)
         node = self.ItemToObject(item)
         if isinstance(node, Codes.Code):
-            color = wx.Colour(node.colour_rgb[0], node.colour_rgb[1], node.colour_rgb[2] )
-            attr.SetBackgroundColour(color)
-            colours = []
-            for c in node.colour_rgb:
-                c = c / 255.0
-                if c <= 0.03928:
-                    c = c/12.92
-                else:
-                    c = ((c+0.055)/1.055) ** 2.4
-                colours.append(c)
-            L = 0.2126 * colours[0] + 0.7152 * colours[1] + 0.0722 * colours[2]
-            if L > 0.179:
-                attr.SetColour(wx.Colour(0, 0, 0))
-            else:
-                attr.SetColour(wx.Colour(255, 255, 255))
+            bg_colour, fg_colour = GenericUtilities.BackgroundAndForegroundColour(node.colour_rgb)
+            attr.SetBackgroundColour(bg_colour)
+            attr.SetColour(fg_colour)
         return res
 
 #this view enables displaying of fields for different datasets
@@ -1647,21 +1636,9 @@ class ThemesViewModel(dv.PyDataViewModel):
         res = super().GetAttr(item, col, attr)
         node = self.ItemToObject(item)
         if isinstance(node.obj, Codes.Theme) or isinstance(node.obj, Codes.Code):
-            color = wx.Colour(node.obj.colour_rgb[0], node.obj.colour_rgb[1], node.obj.colour_rgb[2] )
-            attr.SetBackgroundColour(color)
-            colours = []
-            for c in node.obj.colour_rgb:
-                c = c / 255.0
-                if c <= 0.03928:
-                    c = c/12.92
-                else:
-                    c = ((c+0.055)/1.055) ** 2.4
-                colours.append(c)
-            L = 0.2126 * colours[0] + 0.7152 * colours[1] + 0.0722 * colours[2]
-            if L > 0.179:
-                attr.SetColour(wx.Colour(0, 0, 0))
-            else:
-                attr.SetColour(wx.Colour(255, 255, 255))
+            bg_colour, fg_colour = GenericUtilities.BackgroundAndForegroundColour(node.obj.colour_rgb)
+            attr.SetBackgroundColour(bg_colour)
+            attr.SetColour(fg_colour)
         return res
     
     def Cleared(self):
@@ -2233,21 +2210,9 @@ class DocumentPositionsViewModel(dv.PyDataViewModel):
         res = super().GetAttr(item, col, attr)
         node = self.ItemToObject(item)
         if isinstance(node, Generic.Connection) and (isinstance(node.obj, Codes.Theme) or isinstance(node.obj, Codes.Code)):
-            color = wx.Colour(node.obj.colour_rgb[0], node.obj.colour_rgb[1], node.obj.colour_rgb[2] )
-            attr.SetBackgroundColour(color)
-            colours = []
-            for c in node.obj.colour_rgb:
-                c = c / 255.0
-                if c <= 0.03928:
-                    c = c/12.92
-                else:
-                    c = ((c+0.055)/1.055) ** 2.4
-                colours.append(c)
-            L = 0.2126 * colours[0] + 0.7152 * colours[1] + 0.0722 * colours[2]
-            if L > 0.179:
-                attr.SetColour(wx.Colour(0, 0, 0))
-            else:
-                attr.SetColour(wx.Colour(255, 255, 255))
+            bg_colour, fg_colour = GenericUtilities.BackgroundAndForegroundColour(node.obj.colour_rgb)
+            attr.SetBackgroundColour(bg_colour)
+            attr.SetColour(fg_colour)
         return res
     
     def Cleared(self):
@@ -2470,21 +2435,9 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
         res = super().GetAttr(item, col, attr)
         node = self.ItemToObject(item)
         if isinstance(node, Codes.Code):
-            color = wx.Colour(node.colour_rgb[0], node.colour_rgb[1], node.colour_rgb[2] )
-            attr.SetBackgroundColour(color)
-            colours = []
-            for c in node.colour_rgb:
-                c = c / 255.0
-                if c <= 0.03928:
-                    c = c/12.92
-                else:
-                    c = ((c+0.055)/1.055) ** 2.4
-                colours.append(c)
-            L = 0.2126 * colours[0] + 0.7152 * colours[1] + 0.0722 * colours[2]
-            if L > 0.179:
-                attr.SetColour(wx.Colour(0, 0, 0))
-            else:
-                attr.SetColour(wx.Colour(255, 255, 255))
+            bg_colour, fg_colour = GenericUtilities.BackgroundAndForegroundColour(node.colour_rgb)
+            attr.SetBackgroundColour(bg_colour)
+            attr.SetColour(fg_colour)
         return res
 
 class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
