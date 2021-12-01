@@ -160,10 +160,8 @@ def QDAProjectExporter(name, datasets, samples, codes, themes, file_name, archiv
     tree = ET.ElementTree(project_element)
 
     tree.write(file_name, encoding='utf-8', xml_declaration=True, pretty_print=True)
-    #TODO check if this now works on OSX since xml name space issue was resolved
-    if platform.system() == 'Windows':
-        codebook_schema = xmlschema.XMLSchema('./External/REFI-QDA/Project-mrt2019.xsd')
-        codebook_schema.validate(file_name)
+    codebook_schema = xmlschema.XMLSchema('./External/REFI-QDA/Project-mrt2019.xsd')
+    codebook_schema.validate(file_name)
     
     with ZipFile(archive_name, 'w') as zipObj:
         zipObj.write(file_name, basename(file_name))
@@ -240,10 +238,8 @@ def QDACodeExporter(codes, themes, file_name):
     tree = ET.ElementTree(codebook_element)
 
     tree.write(file_name, encoding='utf-8', xml_declaration=True, pretty_print=True)
-    #TODO check if this now works on OSX since xml name space issue was resolved
-    if platform.system() == 'Windows':
-        codebook_schema = xmlschema.XMLSchema('./External/REFI-QDA/Codebook-mrt2019.xsd')
-        codebook_schema.validate(file_name)
+    codebook_schema = xmlschema.XMLSchema('./External/REFI-QDA/Codebook-mrt2019.xsd')
+    codebook_schema.validate(file_name)
 
 def QDACodeImporter(file_name):
     codes = {}
