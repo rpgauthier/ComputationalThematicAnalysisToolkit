@@ -467,7 +467,6 @@ class DocumentPanel(wx.Panel):
 
         codes_panel = wx.Panel(top_frame_splitter, style=wx.TAB_TRAVERSAL|wx.SUNKEN_BORDER)
         codes_panel_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_frame = wx.GetApp().GetTopWindow()
         self.codes_model = CodesDataViews.ObjectCodesViewModel(self.document)
         self.codes_ctrl = CodesDataViews.ObjectCodesViewCtrl(codes_panel, self.codes_model)
         codes_panel_sizer.Add(self.codes_ctrl, 1, wx.ALL|wx.EXPAND, 5)

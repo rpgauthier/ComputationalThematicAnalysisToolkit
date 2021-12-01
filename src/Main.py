@@ -681,7 +681,7 @@ class MainFrame(wx.Frame):
                     self.CodesUpdated()
                 
                 except xmlschema.XMLSchemaValidationError:
-                    wx.LogError("Cannot Load file '%s' as it does not contain a valid REFI-QDA Codebook", pathname)
+                    wx.LogError("XML Validation Error Occured when checking file being imported")
                     logger.error("Failed due to xml validation issue when loading file '%s'", pathname)
                 except IOError:
                     wx.LogError("Cannot open file '%s'", pathname)
@@ -726,7 +726,7 @@ class MainFrame(wx.Frame):
                     return
                 # save the current contents in the file
                 archive_name = file_dialog.GetPath()
-                file_name = archive_name[:-4] + "qde"
+                file_name = "project.qde"
                 try:
                     GenericUtilities.QDAProjectExporter(self.name, self.datasets, self.samples, self.codes, self.themes, file_name, archive_name)
                 except xmlschema.XMLSchemaValidationError:
