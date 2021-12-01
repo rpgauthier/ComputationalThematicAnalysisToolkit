@@ -45,6 +45,18 @@ class ReportingPanel(wx.Panel):
         view_sizer = wx.StaticBoxSizer(view_box, wx.HORIZONTAL)
         controls_sizer.Add(view_sizer)
 
+        theme_filter_combo_ctrl = wx.ComboCtrl(self, value=GUIText.THEME_FILTERS, style=wx.TE_READONLY)
+        self.theme_filter_popup_ctrl = GenericGUIs.CheckListBoxComboPopup(GUIText.CODE_FILTERS)
+        theme_filter_combo_ctrl.SetPopupControl(self.theme_filter_popup_ctrl)
+        view_sizer.Add(theme_filter_combo_ctrl, 1)
+        theme_filter_combo_ctrl.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.OnFilterThemes)
+        self.theme_filter_popup_ctrl.AddItem(GUIText.NOT_SURE, Constants.NOT_SURE, True)
+        self.theme_filter_popup_ctrl.AddItem(GUIText.USEFUL, Constants.USEFUL, True)
+        self.theme_filter_popup_ctrl.AddItem(GUIText.NOT_USEFUL, Constants.NOT_USEFUL, True)
+        longest_string = max([GUIText.CODE_FILTERS, GUIText.NOT_SURE, GUIText.USEFUL, GUIText.NOT_USEFUL], key=len)
+        size = theme_filter_combo_ctrl.GetSizeFromText(longest_string)
+        theme_filter_combo_ctrl.SetMinSize(size)
+
         code_filter_combo_ctrl = wx.ComboCtrl(self, value=GUIText.CODE_FILTERS, style=wx.TE_READONLY)
         self.code_filter_popup_ctrl = GenericGUIs.CheckListBoxComboPopup(GUIText.CODE_FILTERS)
         code_filter_combo_ctrl.SetPopupControl(self.code_filter_popup_ctrl)
@@ -71,6 +83,15 @@ class ReportingPanel(wx.Panel):
 
         main_frame = wx.GetApp().GetTopWindow()
         self.quotations_model = CodesDataViews.SelectedQuotationsViewModel()
+        self.quotations_model.theme_usefulness_filter.append(None)
+        self.quotations_model.theme_usefulness_filter.append(True)
+        self.quotations_model.theme_usefulness_filter.append(False)
+        self.quotations_model.code_usefulness_filter.append(None)
+        self.quotations_model.code_usefulness_filter.append(True)
+        self.quotations_model.code_usefulness_filter.append(False)
+        self.quotations_model.quote_usefulness_filter.append(None)
+        self.quotations_model.quote_usefulness_filter.append(True)
+        self.quotations_model.quote_usefulness_filter.append(False)
         self.quotations_ctrl = CodesDataViews.SelectedQuotationsViewCtrl(self, self.quotations_model)
         sizer.Add(self.quotations_ctrl, 1, wx.EXPAND|wx.ALL, 5)
 
@@ -118,6 +139,21 @@ class ReportingPanel(wx.Panel):
             node = self.quotations_model.ItemToObject(item)
             if hasattr(node, "usefulness_flag"):
                 node.usefulness_flag = False
+        self.quotations_model.Cleared()
+        self.quotations_ctrl.Expander(None)
+        logger.info("Finished")
+    
+    def OnFilterThemes(self, event):
+        logger = logging.getLogger(__name__+".ReportingPanel.OnFilterCodes")
+        logger.info("Starting")
+        self.quotations_model.theme_usefulness_filter.clear()
+        checked_keys = self.theme_filter_popup_ctrl.GetCheckedKeys()
+        if Constants.NOT_SURE in checked_keys:
+            self.quotations_model.theme_usefulness_filter.append(None)
+        if Constants.USEFUL in checked_keys:
+            self.quotations_model.theme_usefulness_filter.append(True)
+        if Constants.NOT_USEFUL in checked_keys:
+            self.quotations_model.theme_usefulness_filter.append(False)
         self.quotations_model.Cleared()
         self.quotations_ctrl.Expander(None)
         logger.info("Finished")

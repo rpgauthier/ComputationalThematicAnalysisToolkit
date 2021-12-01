@@ -2325,30 +2325,30 @@ class SelectedQuotationsViewModel(dv.PyDataViewModel):
         if not parent:
             for theme_key in self.themes:
                 theme = self.themes[theme_key]
-                if len(self.theme_usefulness_filter) == 0 or theme.usefulness_flag in self.theme_usefulness_filter:
+                if theme.usefulness_flag in self.theme_usefulness_filter:
                     children.append(self.ObjectToItem(theme))
             for code_key in self.codes:
                 code = self.codes[code_key]
-                if len(self.code_usefulness_filter) == 0 or code.usefulness_flag in self.code_usefulness_filter:
+                if code.usefulness_flag in self.code_usefulness_filter:
                     children.append(self.ObjectToItem(code))
             return len(children)
 
         node = self.ItemToObject(parent)
         if isinstance(node, Codes.Theme):
             for quotation in node.quotations:
-                if len(self.quote_usefulness_filter) == 0 or quotation.usefulness_flag in self.quote_usefulness_filter:
+                if quotation.usefulness_flag in self.quote_usefulness_filter:
                     children.append(self.ObjectToItem(quotation))
             for subtheme_key in node.subthemes:
                 subtheme = node.subthemes[subtheme_key]
-                if len(self.theme_usefulness_filter) == 0 or subtheme.usefulness_flag in self.theme_usefulness_filter:
+                if subtheme.usefulness_flag in self.theme_usefulness_filter:
                     children.append(self.ObjectToItem(subtheme))
         elif isinstance(node, Codes.Code):
             for quotation in node.quotations:
-                if len(self.quote_usefulness_filter) == 0 or quotation.usefulness_flag in self.quote_usefulness_filter:
+                if quotation.usefulness_flag in self.quote_usefulness_filter:
                     children.append(self.ObjectToItem(quotation))
             for subcode_key in node.subcodes:
                 subcode = node.subcodes[subcode_key]
-                if len(self.code_usefulness_filter) == 0 or subcode.usefulness_flag in self.code_usefulness_filter:
+                if subcode.usefulness_flag in self.code_usefulness_filter:
                     children.append(self.ObjectToItem(subcode))
         return len(children)
 
