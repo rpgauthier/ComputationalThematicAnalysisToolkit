@@ -1,6 +1,7 @@
+import logging
+import os.path
 import xmlschema
 import lxml.etree as ET
-import platform
 import uuid
 from datetime import datetime
 from zipfile import ZipFile, ZipInfo
@@ -8,13 +9,15 @@ from os.path import basename
 
 import wx
 
-from Common.GUIText import Main as GUIText
+import Common.GUIText as GUIText
 import Common.Constants as Constants
 import Common.Objects.Datasets as Datasets
 import Common.Objects.Samples as Samples
 import Common.Objects.Codes as Codes
 
 def QDAProjectExporter(name, datasets, samples, codes, themes, file_name, archive_name):
+    logger = logging.getLogger(__name__+".QDAProjectExporter")
+    logger.info("Starting")
     #setup root element
     project_element = ET.Element('Project',
                                  nsmap={'xsd':"http://www.w3.org/2001/XMLSchema",
@@ -106,6 +109,44 @@ def QDAProjectExporter(name, datasets, samples, codes, themes, file_name, archiv
         new_case = ET.SubElement(cases_element, 'Case')
         new_case.set('guid', dataset.key)
         new_case.set('name', dataset.name)
+        desc = ET.SubElement(new_case, 'Description')
+        desc_text = ""
+        desc_text += GUIText.Datasets.SOURCE + ": " + str(dataset.dataset_source) + "\n"
+        desc_text += GUIText.Datasets.TYPE + ": " + str(dataset.dataset_type) + "\n"
+        desc_text += GUIText.Datasets.LANGUAGE + ":" + str(dataset.language) + "\n"
+        desc_text += GUIText.Datasets.DOCUMENT_NUM + ": " + str(dataset.total_docs) + "\n"
+        retrieval_details = dataset.retrieval_details
+        if dataset.dataset_source == "Reddit":
+            desc_text += GUIText.Datasets.RETRIEVED_ON + ": " + dataset.created_dt.strftime(Constants.DATE_FORMAT) + "\n"
+            desc_text += GUIText.Datasets.REDDIT_SUBREDDIT + ": "+ str(retrieval_details['subreddit']) + "\n"
+            if 'search' in retrieval_details and retrieval_details['search'] != '':
+                desc_text += GUIText.Datasets.SEARCH + ": " + str(retrieval_details['search']) + "\n"
+            desc_text += GUIText.Datasets.START_DATE + ": "+ str(retrieval_details['start_date']) + "\n"
+            desc_text += GUIText.Datasets.END_DATE + ": "+ str(retrieval_details['end_date']) + "\n"
+            if 'submission_count' in retrieval_details and (dataset.dataset_type == "submission" or dataset.dataset_type == 'discussion'):
+                desc_text += GUIText.Datasets.REDDIT_SUBMISSIONS_NUM + ": " + str(retrieval_details['submission_count']) + "\n"
+            if 'comment_count' in retrieval_details and (dataset.dataset_type == "comment" or dataset.dataset_type == 'discussions'):
+                desc_text += GUIText.Datasets.REDDIT_COMMENTS_NUM + ": " + str(retrieval_details['comment_count']) + "\n"
+        elif dataset.dataset_source == "Twitter":
+            desc_text += GUIText.Datasets.RETRIEVED_ON + ": " + dataset.created_dt.strftime(Constants.DATE_FORMAT) + "\n"
+            desc_text += GUIText.Datasets.QUERY + ": " + str(retrieval_details['query']) + "\n"
+            desc_text += GUIText.Datasets.START_DATE + ": "+ str(retrieval_details['start_date']) + "\n"
+            desc_text += GUIText.Datasets.END_DATE + ": "+ str(retrieval_details['end_date']) + "\n"
+        elif dataset.dataset_source == "CSV":
+            desc_text += GUIText.Datasets.IMPORTED_ON + ": " + dataset.created_dt.strftime(Constants.DATE_FORMAT) + "\n"
+            desc_text += GUIText.Datasets.FILENAME + ": "+ str(retrieval_details['filename']) + "\n"
+            desc_text += GUIText.Datasets.CSV_IDFIELD + ": "+ str(retrieval_details['id_field']) + "\n"
+            if 'url_field' in retrieval_details and retrieval_details['url_field'] != '':
+                desc_text += GUIText.Datasets.CSV_URLFIELD + ": " + str(retrieval_details['url_field']) + "\n"
+            if 'datetime_field' in retrieval_details and retrieval_details['datetime_field'] != '':
+                desc_text += GUIText.Datasets.CSV_DATETIMEFIELD + ": " + str(retrieval_details['datetime_field']) + " " + str(retrieval_details['datetime_field']) + "\n"
+            if 'start_date' in retrieval_details and retrieval_details['start_date'] != '':
+                desc_text += GUIText.Datasets.START_DATE + ": "+ str(datetime.utcfromtimestamp(dataset.retrieval_details['start_date']).strftime(Constants.DATETIME_FORMAT)) + "\n"
+            if 'end_date' in retrieval_details and retrieval_details['end_date'] != '':
+                desc_text += GUIText.Datasets.END_DATE + ": "+ str(datetime.utcfromtimestamp(dataset.retrieval_details['end_date']).strftime(Constants.DATETIME_FORMAT)) + "\n"
+            if 'row_count' in retrieval_details:
+                desc_text += GUIText.Datasets.CSV_ROWS_NUM + ": " + str(retrieval_details['row_count']) + "\n"
+        desc.text = desc_text
         for document_key in dataset.selected_documents:
             document = dataset.documents[document_key]
             if document.key not in included_documents:
@@ -118,6 +159,44 @@ def QDAProjectExporter(name, datasets, samples, codes, themes, file_name, archiv
         new_case.set('guid', sample.key)
         new_case.set('name', sample.name)
         dataset = datasets[sample.dataset_key]
+        desc = ET.SubElement(new_case, 'Description')
+        desc_text = ""
+        if isinstance(sample, Samples.Sample):
+            desc_text += GUIText.Samples.SAMPLE_TYPE + ": " + str(sample.sample_type) + "\n"
+            desc_text += GUIText.Common.DATASET + ": " + str(dataset.name) + "\n"
+            desc_text += GUIText.Common.CREATED_ON + ": " + sample.created_dt.strftime("%Y-%m-%d %H:%M:%S") + "\n"
+        if isinstance(sample, Samples.RandomSample):
+            desc_text += GUIText.Samples.NUMBER_OF_DOCUMENTS + ": " + str(len(sample.doc_ids)) + "\n"
+            for part in sample.parts_dict.values():
+                desc_text += part.name + "("+GUIText.Samples.NUMBER_OF_DOCUMENTS+"): " + str(part.document_num) + "\n"
+        elif isinstance(sample, Samples.TopicSample):
+            desc_text += GUIText.Samples.GENERATE_TIME + ": " + str(sample.end_dt - sample.start_dt).split('.')[0] + "\n"
+            desc_text += GUIText.Samples.NUMBER_OF_TOPICS + ": " + str(sample.num_topics) + "\n"
+            if hasattr(sample, 'num_passes'):
+                desc_text += GUIText.Samples.NUMBER_OF_PASSES + ": " + str(sample.num_passes) + "\n"
+            desc_text += GUIText.Samples.NUMBER_OF_DOCUMENTS + ": " + str(len(sample.tokensets)) + "\n"
+            desc_text += GUIText.Filtering.FILTERS_RULES + ": " + str(sample.applied_filter_rules) + "\n"
+            desc_text += GUIText.Filtering.COMPUTATIONAL_FIELDS + ": " + str(sample.fields_list) + "\n"
+            for part in sample.parts_dict.values():
+                if isinstance(part, Samples.TopicMergedPart):
+                    desc_text += part.name + "(label): " + str(part.label) + "\n"
+                    desc_text += part.name + "(word_list): " + str(part.word_list) + "\n"
+                    for subpart in part.parts_dict.values():
+                        if isinstance(subpart, Samples.TopicPart):
+                            desc_text += part.name + "("+subpart.name+")("+GUIText.Samples.LABEL+"): " + subpart.label + "\n"
+                            desc_text += part.name + "("+subpart.name+")("+GUIText.Samples.WORDS+"): " + str(subpart.word_list) + "\n"
+                            desc_text += part.name + "("+subpart.name+")("+GUIText.Samples.NUMBER_OF_DOCUMENTS+"): " + str(subpart.document_num) + "\n"
+                        elif isinstance(subpart, Samples.TopicUnknownPart):
+                            desc_text += part.name + "("+subpart.name+")("+GUIText.Samples.LABEL+"): " + subpart.label
+                            desc_text += part.name + "("+subpart.name+")("+GUIText.Samples.NUMBER_OF_DOCUMENTS+"): " + str(subpart.document_num) + "\n"
+                elif isinstance(part, Samples.TopicPart):
+                    desc_text += part.name + "("+GUIText.Samples.LABEL+"): " + str(part.label) + "\n"
+                    desc_text += part.name + "("+GUIText.Samples.WORDS+"): " + str(part.word_list) + "\n"
+                    desc_text += part.name + "("+GUIText.Samples.NUMBER_OF_DOCUMENTS+"): " + str(part.document_num) + "\n"
+                elif isinstance(part, Samples.TopicUnknownPart):
+                    desc_text += part.name + "("+GUIText.Samples.LABEL+"): " + str(part.label) + "\n"
+                    desc_text += part.name + "("+GUIText.Samples.NUMBER_OF_DOCUMENTS+"): " + str(part.document_num) + "\n"
+        desc.text = desc_text
         for document_key in sample.selected_documents:
             document = dataset.documents[document_key]
             if document.key not in included_documents:
@@ -160,9 +239,11 @@ def QDAProjectExporter(name, datasets, samples, codes, themes, file_name, archiv
     tree = ET.ElementTree(project_element)
 
     tree.write(file_name, encoding='utf-8', xml_declaration=True, pretty_print=True)
-    if platform.system() == 'Windows':
-        codebook_schema = xmlschema.XMLSchema('./External/REFI-QDA/Project-mrt2019.xsd')
-        codebook_schema.validate(file_name)
+    logger.info("loading xsd")
+    codebook_schema = xmlschema.XMLSchema(os.path.join(Constants.XSD_PATH, 'Project-mrt2019.xsd'))
+    logger.info("validating xml")
+    codebook_schema.validate(file_name)
+    logger.info("Finished")
     
     with ZipFile(archive_name, 'w') as zipObj:
         zipObj.write(file_name, basename(file_name))
@@ -172,6 +253,8 @@ def QDAProjectExporter(name, datasets, samples, codes, themes, file_name, archiv
 
 #TODO NOT YET IMPLIMENTED
 def QDAProjectImporter(pathname):
+    logger = logging.getLogger(__name__+".QDAProjectExporter")
+    logger.info("Starting")
     datasets = {}
     samples = {}
     codes = {}
@@ -182,6 +265,8 @@ def QDAProjectImporter(pathname):
     return datasets, samples, codes
 
 def QDACodeExporter(codes, themes, file_name):
+    logger = logging.getLogger(__name__+".QDACodeExporter")
+    logger.info("Starting")
     attr_qname = ET.QName("http://www.w3.org/2001/XMLSchema-instance", "schemaLocation")
     codebook_element = ET.Element('CodeBook',
                                   {attr_qname: 'urn:QDA-XML:codebook:1.0 Codebook.xsd'},
@@ -239,11 +324,16 @@ def QDACodeExporter(codes, themes, file_name):
     tree = ET.ElementTree(codebook_element)
 
     tree.write(file_name, encoding='utf-8', xml_declaration=True, pretty_print=True)
-    if platform.system() == 'Windows':
-        codebook_schema = xmlschema.XMLSchema('./External/REFI-QDA/Codebook-mrt2019.xsd')
-        codebook_schema.validate(file_name)
+    logger.info("Loading xsd")
+    codebook_schema = xmlschema.XMLSchema(os.path.join(Constants.XSD_PATH, 'Codebook-mrt2019.xsd'))
+    logger.info("Validating XML")
+    codebook_schema.validate(file_name)
+    logger.info("Finished")
+    
 
 def QDACodeImporter(file_name):
+    logger = logging.getLogger(__name__+".QDACodeImporter")
+    logger.info("Starting")
     codes = {}
     themes = {}
     
@@ -298,7 +388,7 @@ def QDACodeImporter(file_name):
             for set_element in list(sets_element):
                 theme = SetElementToTheme(set_element)
                 themes[theme.key] = theme
-        
+    logger.info("Finished")
     return codes, themes
 
 def IntegrateImportedCodes(main_frame, imported_codes):
@@ -321,7 +411,7 @@ def IntegrateImportedCodes(main_frame, imported_codes):
                 #if it does exist ask user if they want to keep both, merge import into imported, merge existing into existing
                 action_dialog = wx.MessageDialog(main_frame, "Imported Code ["+new_code.name+"] already exists as Code ["+found_code.name+"]."\
                                                         "\nWhat action would you like to take?",
-                                                    GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+                                                    GUIText.Main.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
                 action_dialog.SetYesNoCancelLabels("Import as new Code", "Update Existing Code", "Skip")
                 action = action_dialog.ShowModal()
 
@@ -361,7 +451,7 @@ def IntegrateImportedThemes(main_frame, new_themes):
             action_dialog = wx.MessageDialog(main_frame,
                                                 "Imported Theme ["+new_theme.name+"] existed as a SubTheme ["+existing_subtheme.name+"] of ["+existing_subtheme.parent.name+"]."\
                                                 "\nWhat action would you like to take?",
-                                                GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+                                                GUIText.Main.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
             action_dialog.SetYesNoCancelLabels("Import as new Theme", "Update Existing SubTheme", "Skip")
             action = action_dialog.ShowModal()
             if action == wx.ID_YES:
@@ -385,7 +475,7 @@ def IntegrateImportedThemes(main_frame, new_themes):
             action_dialog = wx.MessageDialog(main_frame,
                                              "Imported Theme ["+new_theme.name+"] existed as Theme ["+existing_theme.name+"]."\
                                              "\nWhat action would you like to take?",
-                                             GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
+                                             GUIText.Main.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
             action_dialog.SetYesNoCancelLabels("Import as new Theme", "Update Existing Theme", "Skip")
             action = action_dialog.ShowModal()
             if action == wx.ID_YES:

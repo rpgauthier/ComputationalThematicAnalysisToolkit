@@ -195,16 +195,63 @@ class Main(Common):
     SAVE_TOOLTIP = "Save Current Workspace"
     SAVE_AS = "Save As"
     SAVE_AS_TOOLTIP = "Save the Current Workspace with a new name"
-    IMPORT_CODES = "Import REFI-QDA Codebook"
-    IMPORT_CODES_TOOLTIP = "Import Codes from file that follows the REFI-QDA Codebook specifications"
-    IMPORT_CODES_CONFIRMATION_REQUEST = "Please confirm you wish to import an external codebook file into this project."\
-                                        "\nWARNING: Existing codes may be updated if they had previously been exported or imported and are present in the external codebook"
-    EXPORT_CODES = "Export REFI-QDA Codebook"
-    EXPORT_CODES_TOOLTIP = "Export Codes to a file that follows the REFI-QDA Codebook specifications"
-    EXPORT_CODES_ERROR_NO_DATA = "Workspace has no codes to export"
-    EXPORT_WORKSPACE = "Export REFI-QDA Project"
-    EXPORT_WORKSPACE_TOOLTIP = "Export Workspace into a file that follows the REFI-QDA Project specifications"
-    EXPORT_WORKSPACE_ERROR_NO_DATA = "Workspace has no data to export"
+
+    IMPORT_CODEBOOK = "Import REFI-QDA Codebook"
+    IMPORT_CODEBOOK_TOOLTIP = "Import Codes from file that follows the REFI-QDA Codebook specifications"
+    IMPORT_CODEBOOK_INFO = "When importing a REFI-QDA Codebook the following mappings will occur:"\
+                           "\n1) Codes will become Codes"\
+                           "\n1a) Any Codes' Descriptions will become Notes"\
+                           "\n2) Sets will become Themes"\
+                           "\n1a) Any Sets' Descriptions will become Theme Notes"\
+                           "\n2a) Any Sets' MemberCodes will become Theme to Code References"
+    IMPORT_CODEBOOK_CONFIRMATION_REQUEST = "Please confirm you wish to import an external codebook file into this project."\
+                                           "\nWARNING: Existing codes may be updated if they had previously been exported or imported and are present in the external codebook"
+    IMPORT_CODEBOOK_ERROR_IO = "Cannot load specified codebook file.\nPlease check that you have read access to the file and directory."
+    IMPORT_CODEBOOK_ERROR_XML = "XML Error occured when importing codebook file."
+    
+    EXPORT_CODEBOOK = "Export REFI-QDA Codebook"
+    EXPORT_CODEBOOK_TOOLTIP = "Export Codes and Themes to a file that follows the REFI-QDA Codebook specifications"
+    EXPORT_CODEBOOK_INFO = "When creating a REFI-QDA Codebook the following mappings will occur:"\
+                           "\1) Codes will becoming Codes"\
+                           "\n1a) Quotations will not be included"\
+                           "\n1b) Any Code notes will become Descriptions"\
+                           "\n2) Themes will become Sets"\
+                           "\n2a) All Themes will lose hierarchy information and be treated as independent"\
+                           "\n2b) Quotations will not be included"\
+                           "\n2c) Any Theme notes will become Descriptions"\
+                           "\n2d) Any Theme to Code References will become Sets' MemberCodes"
+    EXPORT_CODEBOOK_SUCCESS = "Codes and Themes were successfully exported as an REFI-QDA Codebook."
+    EXPORT_CODES_ERROR_NO_DATA = "Workspace has no codes to export as a Codebook.\nIf exporting themes please create atleast one temporary code."
+    EXPORT_CODEBOOK_ERROR_XML = "XML Error occured when checking created codebook."
+    EXPORT_CODEBOOK_ERROR_IO = "Cannot save specified codebook file.\nPlease check that you have write access to directory and if replacing a file it is not locked."
+    
+    EXPORT_PROJECT = "Export REFI-QDA Project"
+    EXPORT_PROJECT_TOOLTIP = "Export Workspace into a file that follows the REFI-QDA Project specifications"
+    EXPORT_PROJECT_INFO = "When creating a REFI-QDA Project the following mappings will occur:"\
+                          "\n1) Any tab notes will not be included"\
+                          "\n2) Datasets will becoming Cases"\
+                          "\n2a) Unselected data will not be included"\
+                          "\n2b) Dataset Details will become a Description"\
+                          "\n3) Samples will become Cases"\
+                          "\n3a) Unselected data will not be included"\
+                          "\n3b) Sample Details will become a Description"\
+                          "\n4) Selected Documents will become TextSources"\
+                          "\n4a) Any Document content will become a plain text file"\
+                          "\n4b) Any Document notes will become Descriptions"\
+                          "\n5) Codes will becoming Codes"\
+                          "\n5a) Quotations will not be included"\
+                          "\n5b) Any Code notes will become Descriptions"\
+                          "\n5c) Selected Documents of a code will become PlainTextSelections that cover the full Documents"\
+                          "\n5d) Selected Lines of Documents of a code will become PlainTextSelections that cover the selected text"\
+                          "\n6) Themes will become Sets"\
+                          "\n6a) All Themes will lose hierarchy information and be treated as independent"\
+                          "\n6b) Quotations will not be included"\
+                          "\n6c) Any Theme notes will become Descriptions"\
+                          "\n6d) Code References will become MemberCodes"
+    EXPORT_PROJECT_SUCCESS = "Workspace was successfully exported as an REFI-QDA Project."
+    EXPORT_PROJECT_ERROR_NO_DATA = "Workspace has no data to export as a Project."
+    EXPORT_PROJECT_ERROR_XML = "XML Error Occured when checking created project."
+    EXPORT_PROJECT_ERROR_IO = "Cannot save specified project file.\nPlease check that you have write access to directory and if replacing a file it is not locked."
     
     EXIT = "Exit"
     EXIT_TOOLTIP = "Exit Application"

@@ -23,6 +23,7 @@ else:
     ROOT_PATH = os.getcwd()
 FONTS_PATH = os.path.join(ROOT_PATH, 'Fonts')
 IMAGES_PATH = os.path.join(ROOT_PATH, 'Images')
+XSD_PATH = os.path.join(ROOT_PATH, 'External/XSD')
 
 SAVE_DATA_PATH = os.path.realpath(os.path.expanduser('~/Documents/ComputationalThematicAnalysisToolkit.nosync'))
 old_SAVE_DATA_PATH = os.path.realpath(os.path.expanduser('~/Documents/ComputationalThematicAnalysisToolkit'))

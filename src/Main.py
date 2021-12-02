@@ -7,8 +7,6 @@ import tempfile
 import multiprocessing
 import psutil
 from datetime import datetime
-import uuid
-import xmlschema
 import requests
 from packaging import version
 
@@ -157,16 +155,16 @@ class MainFrame(wx.Frame):
         file_menu.AppendSeparator()
 
         importCodesItem = file_menu.Append(wx.ID_ANY,
-                                                   GUIText.IMPORT_CODES,
-                                                   GUIText.IMPORT_CODES_TOOLTIP)
+                                                   GUIText.IMPORT_CODEBOOK,
+                                                   GUIText.IMPORT_CODEBOOK_TOOLTIP)
         self.Bind(wx.EVT_MENU, self.OnImportCodes, importCodesItem)
         exportCodesItem = file_menu.Append(wx.ID_ANY,
-                                                   GUIText.EXPORT_CODES,
-                                                   GUIText.EXPORT_CODES_TOOLTIP)
+                                                   GUIText.EXPORT_CODEBOOK,
+                                                   GUIText.EXPORT_CODEBOOK_TOOLTIP)
         self.Bind(wx.EVT_MENU, self.OnExportCodes, exportCodesItem)
         exportWorkspaceItem = file_menu.Append(wx.ID_ANY,
-                                                   GUIText.EXPORT_WORKSPACE,
-                                                   GUIText.EXPORT_WORKSPACE_TOOLTIP)
+                                                   GUIText.EXPORT_PROJECT,
+                                                   GUIText.EXPORT_PROJECT_TOOLTIP)
         self.Bind(wx.EVT_MENU, self.OnExportWorkspace, exportWorkspaceItem)
 
         file_menu.AppendSeparator()
@@ -626,7 +624,7 @@ class MainFrame(wx.Frame):
         config_data['reviewing_module'] = self.reviewing_module.Save()
         config_data['reporting_module'] = self.reporting_module.Save()
 
-        self.save_thread = MainThreads.SaveThread(self, Constants.AUTOSAVE_PATH, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, notes_text, self.last_load_dt, autosave=True)
+        self.save_thread = MainThreads.SaveThread(self, Constants.AUTOSAVE_PATH, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, self.themes, notes_text, self.last_load_dt, autosave=True)
     
     def OnSaveEnd(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnSaveEnd")
@@ -646,16 +644,24 @@ class MainFrame(wx.Frame):
     def OnImportCodes(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnImportCodes")
         logger.info("Starting")
-        if len(self.codes) > 0:
-            confirm_dialog = wx.MessageDialog(self, GUIText.IMPORT_CODES_CONFIRMATION_REQUEST,
-                                            GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
-            confirm_dialog.SetOKLabel(GUIText.IMPORT_CODES)
-            confirm_flag = confirm_dialog.ShowModal()
-        else:
-            confirm_flag = wx.ID_OK
-        if confirm_flag == wx.ID_OK:
 
-            with wx.FileDialog(self, GUIText.IMPORT_CODES, defaultDir=Constants.SAVED_WORKSPACES_PATH,
+        confirm_dialog = wx.Dialog(self, title=GUIText.IMPORT_CODEBOOK)
+        confirm_sizer = wx.BoxSizer(wx.VERTICAL)
+        confirm_info = wx.StaticText(confirm_dialog, label=GUIText.IMPORT_CODEBOOK_INFO)
+        confirm_sizer.Add(confirm_info, 0, wx.ALIGN_LEFT|wx.ALL, 5)
+        if len(self.codes) > 0:
+            confirm_warning = wx.StaticText(confirm_dialog, label=GUIText.IMPORT_CODEBOOK_CONFIRMATION_REQUEST)
+            confirm_sizer.Add(confirm_warning, 0, wx.ALIGN_LEFT|wx.ALL, 5)
+        controls_sizer = confirm_dialog.CreateButtonSizer(wx.OK|wx.CANCEL)
+        ok_button = wx.FindWindowById(wx.ID_OK, confirm_dialog)
+        ok_button.SetLabel(GUIText.IMPORT_CODEBOOK)
+        confirm_sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
+        confirm_dialog.SetSizer(confirm_sizer)
+        confirm_dialog.Layout()
+        confirm_dialog.Fit()
+        confirm_flag = confirm_dialog.ShowModal()
+        if confirm_flag == wx.ID_OK:
+            with wx.FileDialog(self, GUIText.IMPORT_CODEBOOK, defaultDir=Constants.SAVED_WORKSPACES_PATH,
                             wildcard="Codebook Exchange Format (*.qdc)|*.qdc",
                             style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
                 # cancel if the user changed their mind
@@ -679,20 +685,31 @@ class MainFrame(wx.Frame):
                     self.reviewing_module.themes_model.Cleared()
                     self.reviewing_module.themes_ctrl.Expander(None)
                     self.CodesUpdated()
-                
-                except xmlschema.XMLSchemaValidationError:
-                    wx.LogError("XML Validation Error Occured when checking file being imported")
-                    logger.error("Failed due to xml validation issue when loading file '%s'", pathname)
                 except IOError:
-                    wx.LogError("Cannot open file '%s'", pathname)
+                    wx.LogError(GUIText.IMPORT_CODEBOOK_ERROR_IO)
                     logger.error("Failed to open file '%s'", pathname)
+                except:
+                    wx.LogError(GUIText.IMPORT_CODEBOOK_ERROR_XML)
+                    logger.error("Failed due to xml issue when loading file '%s'", pathname)
         logger.info("Finished")
 
     def OnExportCodes(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnExportCodes")
         logger.info("Starting")
-        if len(self.codes) > 0:
-            with wx.FileDialog(self, GUIText.EXPORT_CODES, defaultDir=Constants.SAVED_WORKSPACES_PATH,
+        confirm_dialog = wx.Dialog(self, title=GUIText.EXPORT_CODEBOOK)
+        confirm_sizer = wx.BoxSizer(wx.VERTICAL)
+        confirm_info = wx.StaticText(confirm_dialog, label=GUIText.EXPORT_CODEBOOK_INFO)
+        confirm_sizer.Add(confirm_info, 0, wx.ALIGN_LEFT|wx.ALL, 5)
+        controls_sizer = confirm_dialog.CreateButtonSizer(wx.OK|wx.CANCEL)
+        ok_button = wx.FindWindowById(wx.ID_OK, confirm_dialog)
+        ok_button.SetLabel(GUIText.EXPORT_CODEBOOK)
+        confirm_sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
+        confirm_dialog.SetSizer(confirm_sizer)
+        confirm_dialog.Layout()
+        confirm_dialog.Fit()
+        confirm_flag = confirm_dialog.ShowModal()
+        if confirm_flag == wx.ID_OK and len(self.codes) > 0:
+            with wx.FileDialog(self, GUIText.EXPORT_CODEBOOK, defaultDir=Constants.SAVED_WORKSPACES_PATH,
                                defaultFile=self.name+'.qdc',
                                wildcard="Codebook Exchange Format (*.qdc)|*.qdc",
                                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
@@ -703,21 +720,35 @@ class MainFrame(wx.Frame):
                 file_name = file_dialog.GetPath()
                 try:
                     GenericUtilities.QDACodeExporter(self.codes, self.themes, file_name)
-                except xmlschema.XMLSchemaValidationError:
-                    wx.LogError("XML Validation Error Occured when checking created file")
-                    logger.error("XML Validation Failed for file '%s'", file_name)
+                    wx.MessageBox(GUIText.EXPORT_CODEBOOK_SUCCESS, GUIText.EXPORT_CODEBOOK)
                 except IOError:
-                    wx.LogError("Cannot save codebook to file")
+                    wx.LogError(GUIText.EXPORT_CODEBOOK_ERROR_IO)
                     logger.error("Failed to save removal to file '%s'", file_name)
-        else:
+                except:
+                    wx.LogError(GUIText.EXPORT_CODEBOOK_ERROR_XML)
+                    logger.error("XML Failed for file '%s'", file_name)
+                
+        elif confirm_flag == wx.ID_OK:
             wx.MessageBox(GUIText.EXPORT_CODES_ERROR_NO_DATA)
         logger.info("Finished")
     
     def OnExportWorkspace(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnExportWorkspace")
         logger.info("Starting")
-        if len(self.datasets) > 0 or len(self.samples) > 0 or len(self.codes) > 0:
-            with wx.FileDialog(self, GUIText.EXPORT_WORKSPACE, defaultDir=Constants.SAVED_WORKSPACES_PATH,
+        confirm_dialog = wx.Dialog(self, title=GUIText.EXPORT_PROJECT)
+        confirm_sizer = wx.BoxSizer(wx.VERTICAL)
+        confirm_info = wx.StaticText(confirm_dialog, label=GUIText.EXPORT_PROJECT_INFO)
+        confirm_sizer.Add(confirm_info, 0, wx.ALIGN_LEFT|wx.ALL, 5)
+        controls_sizer = confirm_dialog.CreateButtonSizer(wx.OK|wx.CANCEL)
+        ok_button = wx.FindWindowById(wx.ID_OK, confirm_dialog)
+        ok_button.SetLabel(GUIText.EXPORT_PROJECT)
+        confirm_sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
+        confirm_dialog.SetSizer(confirm_sizer)
+        confirm_dialog.Layout()
+        confirm_dialog.Fit()
+        confirm_flag = confirm_dialog.ShowModal()
+        if confirm_flag == wx.ID_OK and (len(self.datasets) > 0 or len(self.samples) > 0 or len(self.codes) > 0):
+            with wx.FileDialog(self, GUIText.EXPORT_PROJECT, defaultDir=Constants.SAVED_WORKSPACES_PATH,
                                defaultFile=self.name+'.qdpx',
                                wildcard="Project Exchange Format (*.qdpx)|*.qdpx",
                                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
@@ -729,14 +760,16 @@ class MainFrame(wx.Frame):
                 file_name = self.current_workspace.name+"/project.qde"
                 try:
                     GenericUtilities.QDAProjectExporter(self.name, self.datasets, self.samples, self.codes, self.themes, file_name, archive_name)
-                except xmlschema.XMLSchemaValidationError:
-                    wx.LogError("XML Validation Error Occured when checking created file")
-                    logger.error("XML Validation Failed for file '%s'", file_name)
+                    wx.MessageBox(GUIText.EXPORT_PROJECT_SUCCESS, GUIText.EXPORT_PROJECT)
                 except IOError:
-                    wx.LogError("Cannot save workspace to project file")
+                    wx.LogError(GUIText.EXPORT_PROJECT_ERROR_IO)
                     logger.error("Failed to save workspace to project file '%s'", file_name)
-        else:
-            wx.MessageBox(GUIText.EXPORT_WORKSPACE_ERROR_NO_DATA)
+                except:
+                    wx.LogError(GUIText.EXPORT_PROJECT_ERROR_XML)
+                    logger.error("XML Failed for file '%s'", file_name)
+                
+        elif confirm_flag == wx.ID_OK:
+            wx.MessageBox(GUIText.EXPORT_PROJECT_ERROR_NO_DATA)
         logger.info("Finished")
 
     def OnProgress(self, event):
@@ -941,7 +974,7 @@ class MainFrame(wx.Frame):
             current_version = version.parse(Constants.CUR_VER)
             if latest_version > current_version:
                 NewVersionDialog(self, current_version, latest_version).Show()
-        except ConnectionError:
+        except:
             logger.exception("Version check failed due to connection error")
 
 class CustomProgressDialog(wx.Dialog):
