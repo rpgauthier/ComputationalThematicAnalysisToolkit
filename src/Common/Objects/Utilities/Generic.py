@@ -456,15 +456,15 @@ def IntegrateImportedThemes(main_frame, new_themes):
             if action == wx.ID_YES:
                 new_theme.key = str(uuid.uuid4())
                 subthemes[new_theme.key] = new_theme
-                del new_theme[subtheme_key]
+                del new_themes[subtheme_key]
             elif action == wx.ID_NO:
                 existing_subtheme.name = new_theme.name
                 existing_subtheme.notes = new_theme.notes
                 existing_subtheme.notes_string = new_theme.notes_string
                 existing_subtheme.code_keys = new_theme.code_keys
-                del new_theme[subtheme_key]
+                del new_themes[subtheme_key]
             else:
-                del new_theme[subtheme_key]
+                del new_themes[subtheme_key]
             SubThemeMerger(existing_subtheme.subthemes)
     #handle merges for any themes that already exist
     for theme_key in main_frame.themes:
@@ -480,15 +480,15 @@ def IntegrateImportedThemes(main_frame, new_themes):
             if action == wx.ID_YES:
                 new_theme.key = str(uuid.uuid4())
                 main_frame.themes[new_theme.key] = new_theme
-                del new_theme[theme_key]
+                del new_themes[theme_key]
             elif action == wx.ID_NO:
                 existing_theme.name = new_theme.name
                 existing_theme.notes = new_theme.notes
                 existing_theme.notes_string = new_theme.notes_string
                 existing_theme.code_keys = new_theme.code_keys
-                del new_theme[theme_key]
+                del new_themes[theme_key]
             else:
-                del new_theme[theme_key]
+                del new_themes[theme_key]
             SubThemeMerger(existing_theme.subthemes)
 
     #import any themes that did not already exist
