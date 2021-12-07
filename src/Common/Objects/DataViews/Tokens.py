@@ -374,9 +374,7 @@ class DocumentListViewCtrl(dv.DataViewCtrl):
 
     def UpdateColumns(self):
         model = self.GetModel()
-        if self.ColumnCount:
-            for i in reversed(range(0, self.ColumnCount)):
-                self.DeleteColumn(self.GetColumn(i))
+        self.ClearColumns()
 
         #add data columns
         idx = 0

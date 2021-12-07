@@ -1406,9 +1406,7 @@ class DocumentViewCtrl(dv.DataViewCtrl):
 
     def UpdateColumns(self):
         model = self.GetModel()
-        if self.ColumnCount:
-            for i in reversed(range(0, self.ColumnCount)):
-                self.DeleteColumn(self.GetColumn(i))
+        self.ClearColumns()
 
         idx = 0
         for field_name in model.label_column_names:
@@ -2472,9 +2470,7 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
             column.SetWidth(wx.COL_WIDTH_AUTOSIZE)
 
     def UpdateColumns(self):
-        if self.ColumnCount:
-            for i in reversed(range(0, self.ColumnCount)):
-                self.DeleteColumn(self.GetColumn(i))
+        self.ClearColumns()
 
         text_renderer = dv.DataViewTextRenderer()
         column0 = dv.DataViewColumn(GUIText.ID, text_renderer, 0, align=wx.ALIGN_LEFT)

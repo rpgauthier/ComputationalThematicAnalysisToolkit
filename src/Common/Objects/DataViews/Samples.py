@@ -272,9 +272,7 @@ class PartsViewCtrl(dv.DataViewCtrl):
 
     def UpdateColumns(self):
         model = self.GetModel()
-        if self.ColumnCount:
-            for i in reversed(range(0, self.ColumnCount)):
-                self.DeleteColumn(self.GetColumn(i))
+        self.ClearColumns()
 
         renderer = dv.DataViewToggleRenderer(mode=dv.DATAVIEW_CELL_ACTIVATABLE)
         column0 = dv.DataViewColumn("", renderer, 0, flags=dv.DATAVIEW_CELL_ACTIVATABLE)
