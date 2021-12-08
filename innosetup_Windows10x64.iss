@@ -6,7 +6,7 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{8C273F29-5012-4F2E-8241-2A9EF5E4E9DB}
 AppName=Computational Thematic Anlaysis Toolkit
-AppVersion=0.8.7
+AppVersion=0.8.8
 AppPublisher=Robert P Gauthier
 AppPublisherURL=https://github.com/rpgauthier/ComputationalThematicAnalysisToolkit
 AppSupportURL=https://github.com/rpgauthier/ComputationalThematicAnalysisToolkit
