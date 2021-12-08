@@ -406,7 +406,7 @@ class DocumentListPanel(wx.Panel):
             if key not in cur_keys:
                 self.origins_popup_ctrl.AddItem(main_frame.samples[key].name, key, True)
                 self.documents_model.samples_filter.append(key)
-
+        logger.info("Finished Setting Origins Filters")
         self.documents_model.Cleared()
         self.documents_ctrl.Expander(None)
         logger.info("Finished")

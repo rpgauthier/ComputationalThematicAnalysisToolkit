@@ -153,15 +153,16 @@ class CodesViewCtrl(dv.DataViewCtrl):
         self.EnableDropTarget(wx.DataFormat(wx.DF_UNICODETEXT))
         self.dragnode = None
 
-    def Expander(self, item):
+    def Expander(self, item, autosize_flg=True):
         model = self.GetModel()
         if item != None:
             self.Expand(item)
         children = []
         model.GetChildren(item, children)
         for child in children:
-            self.Expander(child)
-        self.AutoSize()
+            self.Expander(child, False)
+        if autosize_flg:
+            self.AutoSize()
     
     def AutoSize(self):
         for column in self.GetColumns():
@@ -478,7 +479,7 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         self.EnableDropTarget(wx.DataFormat(wx.DF_UNICODETEXT))
         self.dragnode = None
 
-    def Expander(self, item):
+    def Expander(self, item, autosize_flg=True):
         model = self.GetModel()
         if item != None:
             self.Expand(item)
@@ -486,7 +487,8 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
         model.GetChildren(item, children)
         for child in children:
             self.Expander(child)
-        self.AutoSize()
+        if autosize_flg:
+            self.AutoSize()
         
     def AutoSize(self):
         for column in self.GetColumns():
@@ -896,15 +898,16 @@ class CodeConnectionsViewCtrl(dv.DataViewCtrl):
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
 
-    def Expander(self, item):
+    def Expander(self, item, autosize_flg=True):
         model = self.GetModel()
         if item != None:
             self.Expand(item)
         children = []
         model.GetChildren(item, children)
         for child in children:
-            self.Expander(child)
-        self.AutoSize()
+            self.Expander(child, False)
+        if autosize_flg:
+            self.AutoSize()
         
     def AutoSize(self):
         for column in self.GetColumns():
@@ -1369,15 +1372,16 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
 
-    def Expander(self, item):
+    def Expander(self, item, autosize_flg=True):
         model = self.GetModel()
         if item != None:
             self.Expand(item)
         children = []
         model.GetChildren(item, children)
         for child in children:
-            self.Expander(child)
-        self.AutoSize()
+            self.Expander(child, False)
+        if autosize_flg:
+            self.AutoSize()
     
     def AutoSize(self, width=None):
         if width is None:
@@ -1689,15 +1693,16 @@ class ThemesViewCtrl(dv.DataViewCtrl):
         self.EnableDropTarget(wx.DataFormat(wx.DF_UNICODETEXT))
         self.dragnode = None
 
-    def Expander(self, item):
+    def Expander(self, item, autosize_flg=True):
         model = self.GetModel()
         if item != None:
             self.Expand(item)
         children = []
         model.GetChildren(item, children)
         for child in children:
-            self.Expander(child)
-        self.AutoSize()
+            self.Expander(child, False)
+        if autosize_flg:
+            self.AutoSize()
     
     def AutoSize(self):
         for column in self.GetColumns():
@@ -2455,15 +2460,16 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
 
-    def Expander(self, item):
+    def Expander(self, item, autosize_flg=True):
         model = self.GetModel()
         if item != None:
             self.Expand(item)
         children = []
         model.GetChildren(item, children)
         for child in children:
-            self.Expander(child)
-        self.AutoSize()
+            self.Expander(child, False)
+        if autosize_flg:
+            self.AutoSize()
     
     def AutoSize(self):
         for column in self.GetColumns():

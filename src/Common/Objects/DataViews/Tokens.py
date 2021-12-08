@@ -349,15 +349,16 @@ class DocumentListViewCtrl(dv.DataViewCtrl):
         accel_tbl = wx.AcceleratorTable([(wx.ACCEL_CTRL, ord('C'), wx.ID_COPY)])
         self.SetAcceleratorTable(accel_tbl)
 
-    def Expander(self, item):
+    def Expander(self, item, autosize_flg=True):
         model = self.GetModel()
         if item != None:
             self.Expand(item)
         children = []
         model.GetChildren(item, children)
         for child in children:
-            self.Expander(child)
-        self.AutoSize()
+            self.Expander(child, False)
+        if autosize_flg:
+            self.AutoSize()
     
     def AutoSize(self):
         remaining_width = self.GetSize().GetWidth()*0.98
