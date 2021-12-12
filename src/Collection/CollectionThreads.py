@@ -126,13 +126,13 @@ class RetrieveRedditDatasetThread(Thread):
                 if self.pushshift_flg:
                     try:
                         wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_MSG))
-                        self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
+                        self.UpdateDataFiles(subreddit, self.start_date, self.end_date, "RS_")
                     except RuntimeError:
                         status_flag = False
                         error_msg = GUIText.RETRIEVAL_FAILED_ERROR
                 if status_flag:
                     wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_SUBMISSION_MSG))
-                    raw_submission_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RS_")
+                    raw_submission_data = self.ImportDataFiles(subreddit, self.start_date, self.end_date, "RS_")
                     submission_data = {}
                     wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_SUBMISSION_MSG))
                     for submission in raw_submission_data:
@@ -140,7 +140,7 @@ class RetrieveRedditDatasetThread(Thread):
                         submission_data[key] = submission
                         submission_data[key]["data_source"] = "Reddit"
                         submission_data[key]["data_type"] = "submission"
-                        submission_data[key]["url"] = "https://www.reddit.com/r/"+self.subreddit+"/comments/"+submission['id']+"/"
+                        submission_data[key]["url"] = "https://www.reddit.com/r/"+subreddit+"/comments/"+submission['id']+"/"
                     data.update(submission_data)
                     retrieval_details['submission_count'] = retrieval_details['submission_count'] + len(submission_data)
         elif self.dataset_type == "comment":
@@ -150,13 +150,13 @@ class RetrieveRedditDatasetThread(Thread):
                 if self.pushshift_flg:
                     try:
                         wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_DOWNLOADING_COMMENTS_MSG))
-                        self.UpdateDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
+                        self.UpdateDataFiles(subreddit, self.start_date, self.end_date, "RC_")
                     except RuntimeError:
                         status_flag = False
                         error_msg = GUIText.RETRIEVAL_FAILED_ERROR
                 if status_flag:
                     wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_IMPORTING_COMMENT_MSG))
-                    raw_comment_data = self.ImportDataFiles(self.subreddit, self.start_date, self.end_date, "RC_")
+                    raw_comment_data = self.ImportDataFiles(subreddit, self.start_date, self.end_date, "RC_")
                     comment_data = {}
                     wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUIText.RETRIEVING_BUSY_PREPARING_COMMENT_MSG))
                     for comment in raw_comment_data:
@@ -166,7 +166,7 @@ class RetrieveRedditDatasetThread(Thread):
                         comment_data[key]["data_type"] = "comment"
                         link_id = comment['link_id'].split('_')
                         comment_data[key]["submission_id"] = link_id[1]
-                        comment_data[key]["url"] = "https://www.reddit.com/r/"+self.subreddit+"/comments/"+link_id[1]+"/_/"+comment['id']+"/"
+                        comment_data[key]["url"] = "https://www.reddit.com/r/"+subreddit+"/comments/"+link_id[1]+"/_/"+comment['id']+"/"
                     data.update(comment_data)
                     retrieval_details['comment_count'] = retrieval_details['comment_count'] + len(comment_data)
         if self.search != "":
