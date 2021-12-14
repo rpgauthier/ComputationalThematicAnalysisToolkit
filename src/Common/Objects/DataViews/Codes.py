@@ -1212,7 +1212,8 @@ class DocumentViewModel(dv.PyDataViewModel):
         node = self.ItemToObject(item)
         if isinstance(node, Datasets.Dataset):
             col_start = len(self.label_column_names)+len(self.data_column_names)
-            mapper = { 0 : str(node.name)+" / "+str(node.dataset_source)+" / "+str(DatasetsUtilities(node)),
+            dataset_type = DatasetsUtilities.DatasetTypeLabel(node)
+            mapper = { 0 : str(node.name)+" / "+str(node.dataset_source)+" / "+str(dataset_type),
                        col_start+0 : "\U0001F6C8" if node.notes != "" else "",
                        col_start+1 : len(node.codes)
                        }
