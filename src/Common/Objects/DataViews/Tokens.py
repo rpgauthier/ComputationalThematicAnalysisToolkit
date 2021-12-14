@@ -118,16 +118,10 @@ class TokenGrid(wx.grid.Grid):
         self.EnableEditing(False)
         self.UseNativeColHeader(True)
         self.HideRowLabels()
-        #TODO assess if this is causing unintented behaviour on OSX
         self.SetSelectionMode(wx.grid.Grid.SelectRows)
         self.SetCellHighlightPenWidth(0)
-        self.Bind(wx.grid.EVT_GRID_SELECT_CELL, self.OnSelect)
         self.Bind(wx.grid.EVT_GRID_COL_SORT, self.OnSort)
         logger.info("Finished")
-
-    #TODO assess if this is causing unintented behaviour on OSX
-    def OnSelect(self, event):
-        self.SelectRow(event.GetRow())
 
     def OnSort(self, event):
         logger = logging.getLogger(__name__+".TokenGrid.OnSort")
