@@ -11,7 +11,6 @@ import spacy.lang.fr.stop_words
 
 import wx
 import wx.grid
-import wx.lib.splitter as splitter
 #import wx.lib.agw.flatnotebook as FNB
 import External.wxPython.flatnotebook_fix as FNB
 import wx.lib.scrolledpanel
@@ -184,13 +183,19 @@ class FilterPanel(wx.Panel):
     def OnRemoveRows(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnRemoveRows")
         logger.info("Starting")
-        selection = self.included_words_panel.words_list.GetSelectedRows()
+        selection = []
+        selected_row = self.included_words_panel.words_list.GetFirstSelected()
+        while selected_row != -1:
+            selection.append(selected_row)
+            selected_row = self.included_words_panel.words_list.GetNextSelected(selected_row)
         if len(selection) > 0:
             new_rules = []
             for row in selection:
-                word = self.included_words_panel.words_list.GetCellValue(row, 0)
-                pos = self.included_words_panel.words_list.GetCellValue(row, 1)
-                new_rules.append((Constants.FILTER_RULE_ANY, word, pos, Constants.FILTER_RULE_REMOVE))
+                word = self.included_words_panel.words_list.data[row][0]
+                pos = self.included_words_panel.words_list.data[row][1]
+                new_rule = (Constants.FILTER_RULE_ANY, word, pos, Constants.FILTER_RULE_REMOVE)
+                if new_rule not in new_rules:
+                    new_rules.append(new_rule)
             if self.rules_panel.autoapply:
                 for new_rule in new_rules:
                     self.dataset.AddFilterRule(new_rule)
@@ -203,13 +208,19 @@ class FilterPanel(wx.Panel):
     def OnAddRows(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnAddRows")
         logger.info("Starting")
-        selection = self.removed_words_panel.words_list.GetSelectedRows()
+        selection = []
+        selected_row = self.removed_words_panel.words_list.GetFirstSelected()
+        while selected_row != -1:
+            selection.append(selected_row)
+            selected_row = self.removed_words_panel.words_list.GetNextSelected(selected_row)
         if len(selection) > 0:
             new_rules = []
             for row in selection:
-                word = self.removed_words_panel.words_list.GetCellValue(row, 0)
-                pos = self.removed_words_panel.words_list.GetCellValue(row, 1)
-                new_rules.append((Constants.FILTER_RULE_ANY, word, pos, Constants.FILTER_RULE_INCLUDE))
+                word = self.removed_words_panel.words_list.data[row][0]
+                pos = self.removed_words_panel.words_list.data[row][1]
+                new_rule = (Constants.FILTER_RULE_ANY, word, pos, Constants.FILTER_RULE_INCLUDE)
+                if new_rule not in new_rules:
+                    new_rules.append(new_rule)
             if self.rules_panel.autoapply:
                 for new_rule in new_rules:
                     self.dataset.AddFilterRule(new_rule)
@@ -222,12 +233,18 @@ class FilterPanel(wx.Panel):
     def OnRemoveWords(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnRemoveWords")
         logger.info("Starting")
-        selection = self.included_words_panel.words_list.GetSelectedRows()
+        selection = []
+        selected_row = self.included_words_panel.words_list.GetFirstSelected()
+        while selected_row != -1:
+            selection.append(selected_row)
+            selected_row = self.included_words_panel.words_list.GetNextSelected(selected_row)
         if len(selection) > 0:
             new_rules = []
             for row in selection:
-                word = self.included_words_panel.words_list.GetCellValue(row, 0)
-                new_rules.append((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE))
+                word = self.included_words_panel.words_list.data[row][0]
+                new_rule = (Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_REMOVE)
+                if new_rule not in new_rules:
+                    new_rules.append(new_rule)
             if self.rules_panel.autoapply:
                 for new_rule in new_rules:
                     self.dataset.AddFilterRule(new_rule)
@@ -240,12 +257,18 @@ class FilterPanel(wx.Panel):
     def OnAddWords(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnAddWords")
         logger.info("Starting")
-        selection = self.removed_words_panel.words_list.GetSelectedRows()
+        selection = []
+        selected_row = self.removed_words_panel.words_list.GetFirstSelected()
+        while selected_row != -1:
+            selection.append(selected_row)
+            selected_row = self.removed_words_panel.words_list.GetNextSelected(selected_row)
         if len(selection) > 0:
             new_rules = []
             for row in selection:
-                word = self.removed_words_panel.words_list.GetCellValue(row, 0)
-                new_rules.append((Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_INCLUDE))
+                word = self.removed_words_panel.words_list.data[row][0]
+                new_rule = (Constants.FILTER_RULE_ANY, word, Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_INCLUDE)
+                if new_rule not in new_rules:
+                    new_rules.append(new_rule)
             if self.rules_panel.autoapply:
                 for new_rule in new_rules:
                     self.dataset.AddFilterRule(new_rule)
@@ -258,12 +281,18 @@ class FilterPanel(wx.Panel):
     def OnRemovePOS(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnRemovePOS")
         logger.info("Starting")
-        selection = self.included_words_panel.words_list.GetSelectedRows()
+        selection = []
+        selected_row = self.included_words_panel.words_list.GetFirstSelected()
+        while selected_row != -1:
+            selection.append(selected_row)
+            selected_row = self.included_words_panel.words_list.GetNextSelected(selected_row)
         if len(selection) > 0:
             new_rules = []
             for row in selection:
-                pos = self.included_words_panel.words_list.GetCellValue(row, 1)
-                new_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, pos, Constants.FILTER_RULE_REMOVE))
+                pos = self.included_words_panel.words_list.data[row][1]
+                new_rule = (Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, pos, Constants.FILTER_RULE_REMOVE)
+                if new_rule not in new_rules:
+                    new_rules.append(new_rule)
             if self.rules_panel.autoapply:
                 for new_rule in new_rules:
                     self.dataset.AddFilterRule(new_rule)
@@ -276,12 +305,18 @@ class FilterPanel(wx.Panel):
     def OnAddPOS(self, event):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].OnAddPOS")
         logger.info("Starting")
-        selection = self.removed_words_panel.words_list.GetSelectedRows()
+        selection = []
+        selected_row = self.removed_words_panel.words_list.GetFirstSelected()
+        while selected_row != -1:
+            selection.append(selected_row)
+            selected_row = self.removed_words_panel.words_list.GetNextSelected(selected_row)
         if len(selection) > 0:
             new_rules = []
             for row in selection:
-                pos = self.removed_words_panel.words_list.GetCellValue(row, 1)
-                new_rules.append((Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, pos, Constants.FILTER_RULE_INCLUDE))
+                pos = self.removed_words_panel.words_list.data[row][1]
+                new_rule = (Constants.FILTER_RULE_ANY, Constants.FILTER_RULE_ANY, pos, Constants.FILTER_RULE_INCLUDE)
+                if new_rule not in new_rules:
+                    new_rules.append(new_rule)
             if self.rules_panel.autoapply:
                 for new_rule in new_rules:
                     self.dataset.AddFilterRule(new_rule)
@@ -604,7 +639,6 @@ class WordsPanel(wx.Panel):
                           GUIText.FILTERS_TFIDF_MAX]
 
         #setup the included entries panel
-        #self.SetScrollbars(1, 1, 1, 1)
         #border and Label for area
         self.label_box = wx.StaticBox(self, label="")
         self.label_box.SetFont(main_frame.GROUP_LABEL_FONT)
@@ -625,9 +659,9 @@ class WordsPanel(wx.Panel):
         search_sizer.Add(self.search_count_text, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         sizer.Add(search_sizer, flag=wx.ALIGN_LEFT)
         #create the list to be shown
-        self.words_list = TokenDataViews.TokenGrid(self, self.dataset, word_type)
+        self.words_list = TokenDataViews.TokenListCtrl(self, self.dataset, word_type)
         sizer.Add(self.words_list, proportion=1, flag=wx.EXPAND, border=5)
-        self.words_list.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.OnShowDocumentList) 
+        self.words_list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnShowDocumentList) 
 
         border = wx.BoxSizer()
         border.Add(sizer, 1, wx.EXPAND|wx.ALL, 5)
@@ -656,8 +690,8 @@ class WordsPanel(wx.Panel):
         logger.info("Finished")
     
     def OnShowDocumentList(self, event):    
-        row = event.GetRow()
-        document_ids = list(set(self.words_list.gridtable.data[row][-1].split(',')))
+        row = event.GetIndex()
+        document_ids = list(set(self.words_list.data[row][-1].split(',')))
         main_frame = wx.GetApp().GetTopWindow()
         random.seed(0)
         sample_size = 20
@@ -669,8 +703,8 @@ class WordsPanel(wx.Panel):
         documents = []
         for document_key in document_keys[:20]:
             documents.append(self.dataset.GetDocument(document_key))
-        word = self.words_list.GetCellValue(row, 0)
-        pos = self.words_list.GetCellValue(row, 1)
+        word = self.words_list.GetItemText(row, 0)
+        pos = self.words_list.GetItemText(row, 1)
         title = self.word_type + " " + str((word, pos))
         dialog = DocumentListDialog(main_frame, title, self.dataset, documents, size=wx.Size(800,400))
         dialog.Show()
@@ -687,10 +721,10 @@ class WordsPanel(wx.Panel):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         self.Freeze()
-        main_frame.StepProgressDialog(GUIText.FILTERS_DISPLAY_STRINGS_BUSY_MSG1+self.word_type+GUIText.FILTERS_DISPLAY_STRINGS_BUSY_MSG2+str(self.parent_frame.name), enable=True)
+        main_frame.StepProgressDialog(GUIText.FILTERS_DISPLAY_STRINGS_BUSY_STEP1+self.word_type+GUIText.FILTERS_DISPLAY_STRINGS_BUSY_STEP2+str(self.parent_frame.name), enable=True)
         try:
             search_term = self.searchctrl.GetValue()
-            self.words_list.Update(search_term)
+            self.words_list.ResetData(search_term)
         finally:
             self.Thaw()
         logger.info("Finished")
@@ -702,22 +736,19 @@ class IncludedWordsPanel(WordsPanel):
         WordsPanel.__init__(self, parent, parent_frame, dataset, "Included", style=style)
         self.label_box.SetLabel(GUIText.FILTERS_INCLUDED_LIST)
 
-        self.words_list.Bind(wx.grid.EVT_GRID_CELL_BEGIN_DRAG, self.OnDragStart)
-        self.words_list.Bind(wx.grid.EVT_GRID_CELL_RIGHT_CLICK, self.OnPopupMenu)
-
-        self.words_list.EnableDragCell()
-
+        self.words_list.Bind(wx.EVT_LIST_BEGIN_DRAG, self.OnDragStart)
+        self.words_list.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnPopupMenu)
+        
         logger.info("Finished")
 
     def OnDragStart(self, event):
-        row = event.GetRow()
-        selected = self.words_list.GetSelectedRows()
-        if row not in selected:
-            for selected_row in selected:
-                self.words_list.DeselectRow(selected_row)
-            self.words_list.SelectRow(row)
-            selected = self.words_list.GetSelectedRows()
-        
+        row = event.GetIndex()
+        if not self.words_list.IsSelected(row):
+            selected_row = self.words_list.GetFirstSelected()
+            while selected_row != -1:
+                self.words_list.Select(selected_row, 0)
+                selected_row = self.words_list.GetNextSelected()
+            self.words_list.Select(row)
         tobj = wx.TextDataObject(Constants.FILTER_RULE_REMOVE)
         src = wx.DropSource(self.words_list)
         self.parent_frame.drag_source = self.words_list
@@ -725,12 +756,13 @@ class IncludedWordsPanel(WordsPanel):
         src.DoDragDrop(True)
     
     def OnPopupMenu(self, event):
-        row = event.GetRow()
-        selected = self.words_list.GetSelectedRows()
-        if row not in selected:
-            for selected_row in selected:
-                self.words_list.DeselectRow(selected_row)
-            self.words_list.SelectRow(row)
+        row = event.GetIndex()
+        if not self.words_list.IsSelected(row):
+            selected_row = self.words_list.GetFirstSelected()
+            while selected_row != -1:
+                self.words_list.Select(selected_row, 0)
+                selected_row = self.words_list.GetNextSelected()
+            self.words_list.Select(row)
         popup_menu = wx.Menu()
         rows_menuitem = popup_menu.Append(wx.ID_ANY, GUIText.FILTERS_REMOVE_ROWS, GUIText.FILTERS_REMOVE_ROWS_TOOLTIP)
         popup_menu.Bind(wx.EVT_MENU, self.parent_frame.OnRemoveRows, rows_menuitem)
@@ -738,6 +770,7 @@ class IncludedWordsPanel(WordsPanel):
         popup_menu.Bind(wx.EVT_MENU, self.parent_frame.OnRemoveWords, words_menuitem)
         pos_menuitem = popup_menu.Append(wx.ID_ANY, GUIText.FILTERS_REMOVE_POS, GUIText.FILTERS_REMOVE_POS_TOOLTIP)
         popup_menu.Bind(wx.EVT_MENU, self.parent_frame.OnRemovePOS, pos_menuitem)
+        #TODO COPY MENUITEM
         self.words_list.PopupMenu(popup_menu)
 
 class RemovedWordsPanel(WordsPanel):
@@ -748,22 +781,19 @@ class RemovedWordsPanel(WordsPanel):
         WordsPanel.__init__(self, parent, parent_frame, dataset, "Removed", style=style)
         self.label_box.SetLabel(GUIText.FILTERS_REMOVED_LIST)
 
-        self.words_list.Bind(wx.grid.EVT_GRID_CELL_BEGIN_DRAG, self.OnDragStart)
-        self.words_list.Bind(wx.grid.EVT_GRID_CELL_RIGHT_CLICK, self.OnPopupMenu)
-
-        self.words_list.EnableDragCell()
+        self.words_list.Bind(wx.EVT_LIST_BEGIN_DRAG, self.OnDragStart)
+        self.words_list.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.OnPopupMenu)
         
         logger.info("Finished")
 
     def OnDragStart(self, event):
-        row = event.GetRow()
-        selected = self.words_list.GetSelectedRows()
-        if row not in selected:
-            for selected_row in selected:
-                self.words_list.DeselectRow(selected_row)
-            self.words_list.SelectRow(row)
-            selected = self.words_list.GetSelectedRows()
-        
+        row = event.GetIndex()
+        if not self.words_list.IsSelected(row):
+            selected_row = self.words_list.GetFirstSelected()
+            while selected_row != -1:
+                self.words_list.Select(selected_row, 0)
+                selected_row = self.words_list.GetNextSelected()
+            self.words_list.Select(row)
         tobj = wx.TextDataObject(Constants.FILTER_RULE_INCLUDE)
         src = wx.DropSource(self.words_list) 
         self.parent_frame.drag_source = self.words_list
@@ -771,12 +801,13 @@ class RemovedWordsPanel(WordsPanel):
         src.DoDragDrop(True)
     
     def OnPopupMenu(self, event):
-        row = event.GetRow()
-        selected = self.words_list.GetSelectedRows()
-        if row not in selected:
-            for selected_row in selected:
-                self.words_list.DeselectRow(selected_row)
-            self.words_list.SelectRow(row)
+        row = event.GetIndex()
+        if not self.words_list.IsSelected(row):
+            selected_row = self.words_list.GetFirstSelected()
+            while selected_row != -1:
+                self.words_list.Select(selected_row, 0)
+                selected_row = self.words_list.GetNextSelected()
+            self.words_list.Select(row)
         popup_menu = wx.Menu()
         rows_menuitem = popup_menu.Append(wx.ID_ANY, GUIText.FILTERS_ADD_ROWS, GUIText.FILTERS_ADD_ENTRIES_TOOLTIP)
         popup_menu.Bind(wx.EVT_MENU, self.parent_frame.OnAddRows, rows_menuitem)
@@ -784,6 +815,7 @@ class RemovedWordsPanel(WordsPanel):
         popup_menu.Bind(wx.EVT_MENU, self.parent_frame.OnAddWords, words_menuitem)
         pos_menuitem = popup_menu.Append(wx.ID_ANY, GUIText.FILTERS_ADD_POS, GUIText.FILTERS_ADD_POS_TOOLTIP)
         popup_menu.Bind(wx.EVT_MENU, self.parent_frame.OnAddPOS, pos_menuitem)
+        #TODO COPY MENUITEM
         self.words_list.PopupMenu(popup_menu)
 
 class WordsTextDropTarget(wx.TextDropTarget):

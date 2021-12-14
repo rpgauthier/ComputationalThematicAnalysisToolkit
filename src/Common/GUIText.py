@@ -825,12 +825,13 @@ class Filtering(Main, Datasets):
     FILTERS_IMPORT_SPACY_TOOLTIP = "Append spaCy stop words to removal list"
 
     FILTERS_APPLYING_RULES_BUSY_LABEL = "Applying Rules"
-    FILTERS_APPLYING_RULES_BUSY_MSG = "Applying Filter Rules"
+    FILTERS_APPLYING_RULES_STEP = "Applying Filter Rules"
+    FILTERS_APPLYING_RULES_GROUP_MSG = "- applied rule group containing:"
     FILTERS_CHANGING_TOKENIZATION_BUSY_LABEL = "Changing Tokenization Method"
-    FILTERS_UPDATING_COUNTS = "Updating Impact Counts"
+    FILTERS_UPDATING_COUNTS_STEP = "Updating Impact Counts"
     
-    FILTERS_DISPLAY_STRINGS_BUSY_MSG1 = "Displaying "
-    FILTERS_DISPLAY_STRINGS_BUSY_MSG2 = "Strings for Dataset: "
+    FILTERS_DISPLAY_STRINGS_BUSY_STEP1 = "Displaying "
+    FILTERS_DISPLAY_STRINGS_BUSY_STEP2 = " Strings for Dataset: "
 
     IMPACT_LABEL = "Impact"
 

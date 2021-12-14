@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 
 import wx
 
+from Common.GUIText import Filtering as GUITextFiltering
 import Common.Constants as Constants
 import Common.CustomEvents as CustomEvents
-from Common.GUIText import Filtering as GUITextFiltering
 
 class DatabaseConnection():
     def __init__(self, current_workspace_path):
@@ -867,7 +867,10 @@ class DatabaseConnection():
                         estimated_loop_time = new_estimated_loop_time
                     elapsed_time = datetime.now() - start_time
                     wx.PostEvent(main_frame, CustomEvents.ProgressStepEstimatedTimeEvent(elapsed_time + (estimated_loop_time * remaining_loops)))
-                    logger.info("Completed Applying Rule Group %s", str(cur_rule_group))
+                    wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_GROUP_MSG))
+                    for cur_rule in cur_rule_group:
+                        wx.PostEvent(main_frame, CustomEvents.ProgressEvent("-- "+str(cur_rule)))
+                    logger.info("Completed Applying Rule Group containing [%s] rules", str(len(cur_rule_group)))
 
                     start_loop_time = datetime.now()
                     cur_rule_action = next_rule_action
@@ -878,7 +881,10 @@ class DatabaseConnection():
                 #execute the rule group
                 c.execute(sql, sql_parameters)
                 self.__conn.commit()
-                logger.info("Completed Applying Rule Group %s", str(cur_rule_group))
+                wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_GROUP_MSG))
+                for cur_rule in cur_rule_group:
+                    wx.PostEvent(main_frame, CustomEvents.ProgressEvent("-- "+str(cur_rule)))
+                logger.info("Completed Applying Rule Group containing [%s] rules", str(len(cur_rule_group)))
 
             c.close()
         except sqlite3.Error as e:
@@ -932,7 +938,10 @@ class DatabaseConnection():
                         estimated_loop_time = new_estimated_loop_time
                     elapsed_time = datetime.now() - start_time
                     wx.PostEvent(main_frame, CustomEvents.ProgressStepEstimatedTimeEvent(elapsed_time + (estimated_loop_time * remaining_loops)))
-                    logger.info("Completed Applying Rule Group %s", str(cur_rule_group))
+                    wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_GROUP_MSG))
+                    for cur_rule in cur_rule_group:
+                        wx.PostEvent(main_frame, CustomEvents.ProgressEvent("-- "+str(cur_rule)))
+                    logger.info("Completed Applying Rule Group containing [%s] rules", str(len(cur_rule_group)))
 
                     start_loop_time = datetime.now()
                     cur_rule_action = next_rule_action
@@ -943,7 +952,10 @@ class DatabaseConnection():
                 #execute the rule group
                 c.execute(sql, sql_parameters)
                 self.__conn.commit()
-                logger.info("Completed Applying Rule Group %s", str(cur_rule_group))
+                wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_GROUP_MSG))
+                for cur_rule in cur_rule_group:
+                    wx.PostEvent(main_frame, CustomEvents.ProgressEvent("-- "+str(cur_rule)))
+                logger.info("Completed Applying Rule Group containing [%s] rules", str(len(cur_rule_group)))
 
             c.close()
         except sqlite3.Error as e:

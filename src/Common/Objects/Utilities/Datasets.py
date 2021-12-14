@@ -238,7 +238,7 @@ def ApplyFilterAllRules(dataset, main_frame):
     logger = logging.getLogger(__name__+".ApplyFilterAllRules")
     logger.info("Starting")
     db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
-    wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label':GUITextFiltering.FILTERS_APPLYING_RULES_BUSY_MSG, 'enable':True}))
+    wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label':GUITextFiltering.FILTERS_APPLYING_RULES_STEP, 'enable':True}))
     mapped_rules = []
     for field_name, word, pos, action in dataset.filter_rules:
         include = False
@@ -253,14 +253,14 @@ def ApplyFilterAllRules(dataset, main_frame):
         if include:
             mapped_rules.append((field_name, word, pos, action))
     db_conn.ApplyAllDatasetRules(dataset.key, mapped_rules)
-    wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label':GUITextFiltering.FILTERS_UPDATING_COUNTS, 'enable':True}))
+    wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label':GUITextFiltering.FILTERS_UPDATING_COUNTS_STEP, 'enable':True}))
     db_conn.RefreshStringTokensIncluded(dataset.key)
     db_conn.RefreshStringTokensRemoved(dataset.key)
     included_counts = db_conn.GetIncludedStringTokensCounts(dataset.key)
     dataset.total_docs_remaining = included_counts['documents']
     dataset.total_tokens_remaining = included_counts['tokens']
     dataset.total_uniquetokens_remaining = included_counts['unique_tokens']
-    wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label':GUITextFiltering.FILTERS_UPDATING_COUNTS, 'enable':False}))
+    wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label':GUITextFiltering.FILTERS_UPDATING_COUNTS_STEP, 'enable':False}))
     logger.info("Finished")
 
 def ApplyFilterNewRules(dataset, main_frame, new_rules):
@@ -268,7 +268,7 @@ def ApplyFilterNewRules(dataset, main_frame, new_rules):
     logger.info("Starting")
     if len(new_rules) > 0:
         db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
-        wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label': GUITextFiltering.FILTERS_APPLYING_RULES_BUSY_MSG, 'enable':True}))
+        wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label': GUITextFiltering.FILTERS_APPLYING_RULES_STEP, 'enable':True}))
         mapped_rules = []
         for field_name, word, pos, action in new_rules:
             include = False
@@ -283,14 +283,14 @@ def ApplyFilterNewRules(dataset, main_frame, new_rules):
             if include:
                 mapped_rules.append((field_name, word, pos, action))
         db_conn.ApplyNewDatasetRules(dataset.key, mapped_rules)
-        wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label': GUITextFiltering.FILTERS_UPDATING_COUNTS, 'enable':True}))
+        wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label': GUITextFiltering.FILTERS_UPDATING_COUNTS_STEP, 'enable':True}))
         db_conn.RefreshStringTokensIncluded(dataset.key)
         db_conn.RefreshStringTokensRemoved(dataset.key)
         included_counts = db_conn.GetIncludedStringTokensCounts(dataset.key)
         dataset.total_docs_remaining = included_counts['documents']
         dataset.total_tokens_remaining = included_counts['tokens']
         dataset.total_uniquetokens_remaining = included_counts['unique_tokens']
-        wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label': GUITextFiltering.FILTERS_UPDATING_COUNTS, 'enable':False}))
+        wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label': GUITextFiltering.FILTERS_UPDATING_COUNTS_STEP, 'enable':False}))
     logger.info("Finished")
 
 def DatasetTypeLabel(dataset):
