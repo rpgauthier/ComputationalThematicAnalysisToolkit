@@ -13,6 +13,7 @@ from Common.GUIText import Filtering as FilteringGUIText
 import Common.Constants as Constants
 import Common.Objects.Datasets as Datasets
 import Common.Objects.GUIs.Codes as CodesGUIs
+import Common.Objects.Utilities.Datasets as DatasetsUtilities
 
 # This model acts as a bridge between the DatasetsViewCtrl and the dataset to
 # organizes it hierarchically as a collection of Datasets.
@@ -66,9 +67,10 @@ class DatasetsViewModel(dv.PyDataViewModel):
         ''''Fetch the data object for this item's column.'''
         node = self.ItemToObject(item)
         if isinstance(node, Datasets.Dataset):
+            dataset_type = DatasetsUtilities.DatasetTypeLabel(node)
             mapper = { 0 : node.name,
                        1 : node.dataset_source,
-                       2 : node.dataset_type,
+                       2 : dataset_type,
                        3 : len(node.data),
                        4 : node.created_dt.strftime("%Y-%m-%d, %H:%M:%S")
                        }
@@ -701,9 +703,10 @@ class ChosenFieldsViewModel(dv.PyDataViewModel):
         ''''Fetch the data object for this item's column.'''
         node = self.ItemToObject(item)
         if isinstance(node, Datasets.Field):
+            dataset_type = DatasetsUtilities.DatasetTypeLabel(node.dataset)
             mapper = { 0 : node.dataset.name,
                        1 : node.dataset.dataset_source,
-                       2 : node.dataset.dataset_type,
+                       2 : dataset_type,
                        3 : node.name,
                        4 : node.desc
                        }

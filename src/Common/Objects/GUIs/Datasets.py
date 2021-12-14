@@ -13,6 +13,7 @@ import Common.CustomEvents as CustomEvents
 import Common.Objects.Datasets as Datasets
 import Common.Objects.Threads.Datasets as DatasetsThreads
 import Common.Objects.DataViews.Datasets as DatasetsDataViews
+import Common.Objects.Utilities.Datasets as DatasetsUtilities
 import Common.Database as Database
 import Collection.SubModuleFields as SubModuleFields
 
@@ -102,9 +103,11 @@ class DatasetDetailsDialog(wx.Dialog):
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
         if dataset.dataset_source == "Reddit":
-            self.SetTitle(GUIText.RETRIEVED_REDDIT_LABEL)
+            self.SetTitle(GUIText.REDDIT_RETRIEVED_LABEL)
+        elif dataset.dataset_source == "Twitter":
+            self.SetTitle(GUIText.TWITTER_RETRIEVED_LABEL)
         elif dataset.dataset_source == "CSV":
-            self.SetTitle(GUIText.RETRIEVED_CSV_LABEL)
+            self.SetTitle(GUIText.CSV_RETRIEVED_LABEL)
         dataset_panel = DatasetPanel(self, self.module, dataset)
         self.sizer.Add(dataset_panel)
 
@@ -153,7 +156,8 @@ class DatasetPanel(wx.Panel):
         type_label = wx.StaticText(self, label=GUIText.TYPE + ": ")
         type_label.SetFont(main_frame.DETAILS_LABEL_FONT)
         type_sizer.Add(type_label)
-        type_name = wx.StaticText(self, label=dataset.dataset_type)
+        
+        type_name = wx.StaticText(self, label=DatasetsUtilities.DatasetTypeLabel(dataset))
         type_sizer.Add(type_name)
         details_sizer2.Add(type_sizer, 0, wx.ALL, 5)
         details_sizer2.AddSpacer(10)
@@ -257,7 +261,7 @@ class DatasetPanel(wx.Panel):
         if dataset.dataset_source == 'Twitter':
             if dataset.retrieval_details['query']:
                 query_sizer = wx.BoxSizer()
-                query_label = wx.StaticText(self, label=GUIText.QUERY + ": ")
+                query_label = wx.StaticText(self, label=GUIText.TWITTER_QUERY + ": ")
                 query_label.SetFont(main_frame.DETAILS_LABEL_FONT)
                 query_sizer.Add(query_label)
                 query_text = wx.StaticText(self, label="\""+dataset.retrieval_details['query']+"\"")
@@ -422,11 +426,15 @@ class DatasetPanel(wx.Panel):
         logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnChangeDatasetName")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
+        main_frame.CreateProgressDialog(GUIText.CHANGING_NAME_LABEL,
+                                        freeze=True)
         try:
+            main_frame.StepProgressDialog(GUIText.CHANGING_NAME_STEP, enable=True)
             node = self.dataset
             if isinstance(node, Datasets.Dataset):
                 new_name = self.name_ctrl.GetValue()
                 if node.name != new_name:
+                    main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_MSG1 + node.name + GUIText.CHANGING_NAME_MSG2 + new_name)
                     node.name = new_name
                     main_frame.DatasetsUpdated()
         finally:
@@ -445,7 +453,7 @@ class DatasetPanel(wx.Panel):
         language_index = self.language_ctrl.GetSelection()
         if node.language != Constants.AVAILABLE_DATASET_LANGUAGES1[language_index]:
             main_frame.CreateProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_LABEL, freeze=True)
-            main_frame.PulseProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_PREPARING_MSG)
+            main_frame.StepProgressDialog(GUIText.CHANGING_LANGUAGE_STEP, enable=True)
             node.language = Constants.AVAILABLE_DATASET_LANGUAGES1[language_index]
             main_frame.multiprocessing_inprogress_flag = True
             self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, node, rerun=True)

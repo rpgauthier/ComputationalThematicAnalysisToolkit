@@ -194,25 +194,27 @@ class MainFrame(wx.Frame):
         self.menu_bar.Append(self.actions_menu, GUIText.ACTIONS)
 
         if platform.system() == 'Darwin':
+            #OSX App Menu
             app_menu = self.menu_bar.OSXGetAppleMenu()
             about_menuitem = app_menu.Insert(0, wx.ID_ANY, GUIText.ABOUT)
             self.Bind(wx.EVT_MENU, self.OnAbout, about_menuitem)
             app_menu.InsertSeparator(1)
             options_file_menuitem = app_menu.Insert(2, wx.ID_ANY,
-                                                    GUIText.OPTIONS_LABEL)
+                                                    GUIText.OPTIONS)
             self.Bind(wx.EVT_MENU, self.OnOptions, options_file_menuitem)
             app_menu.InsertSeparator(3)
         else:
-            #Help menu
+            #Option MenuItem into File Menu
+            options_file_menuitem = file_menu.Insert(0, wx.ID_ANY,
+                                                    GUIText.OPTIONS)
+            self.Bind(wx.EVT_MENU, self.OnOptions, options_file_menuitem)
+            file_menu.InsertSeparator(1)
+            #Help Menu
             self.help_menu = wx.Menu()
             about_menuitem = self.help_menu.Append(wx.ID_ANY, GUIText.ABOUT)
             self.Bind(wx.EVT_MENU, self.OnAbout, about_menuitem)
-            self.menu_bar.Append(self.help_menu, GUIText.HELP)
-            #Option Menu Item
-            options_file_menuitem = file_menu.Insert(0, wx.ID_ANY,
-                                                    GUIText.OPTIONS_LABEL)
-            self.Bind(wx.EVT_MENU, self.OnOptions, options_file_menuitem)
-            file_menu.InsertSeparator(1)
+            self.menu_bar.Append(self.help_menu, GUIText.HELP_MENU)
+            
         
         self.SetMenuBar(self.menu_bar)
 
@@ -386,7 +388,7 @@ class MainFrame(wx.Frame):
                     self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG)
 
                     self.save_path = file_dialog.GetPath()
-                    self.StepProgressDialog(GUIText.LOAD_BUSY_MSG_FILE + str(self.save_path), enable=True)
+                    self.StepProgressDialog(GUIText.LOAD_BUSY_MSG_FILE_STEP + str(self.save_path), enable=True)
                     logger.info("loading file: %s", self.save_path)
                     self.name = file_dialog.GetFilename()[:-4]
                     self.SetTitle(GUIText.APP_NAME+" - "+self.name)
@@ -431,7 +433,7 @@ class MainFrame(wx.Frame):
                 self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG)
 
                 self.save_path = ""
-                self.StepProgressDialog(GUIText.LOAD_BUSY_MSG_FILE + str(Constants.AUTOSAVE_PATH), enable=True)
+                self.StepProgressDialog(GUIText.LOAD_BUSY_MSG_FILE_STEP + str(Constants.AUTOSAVE_PATH), enable=True)
                 logger.info("loading file: %s", Constants.AUTOSAVE_PATH)
                 self.name = 'Last_AutoSave'
                 self.SetTitle(GUIText.APP_NAME+" - "+self.name)
@@ -453,7 +455,7 @@ class MainFrame(wx.Frame):
             self.load_workspace.cleanup()
             self.load_workspace = None
         else:
-            self.StepProgressDialog(GUIText.LOAD_BUSY_MSG_MEMORY, enable=True)
+            self.StepProgressDialog(GUIText.LOAD_BUSY_MSG_MEMORY_STEP, enable=True)
             saved_data = event.data['config']
 
             #reset objects
@@ -574,7 +576,7 @@ class MainFrame(wx.Frame):
                                       freeze=True)
             self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG)
 
-            self.StepProgressDialog(GUIText.SAVE_BUSY_MSG_FILE + str(self.save_path), enable=True)
+            self.StepProgressDialog(GUIText.SAVE_BUSY_MSG_STEP + str(self.save_path), enable=True)
             logger.info("saving file: %s", self.save_path)
 
             self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_NOTES)
@@ -600,15 +602,18 @@ class MainFrame(wx.Frame):
             self.save_thread = MainThreads.SaveThread(self, self.save_path, self.current_workspace.name, config_data, self.datasets, self.samples, self.codes, self.themes, notes_text, self.last_load_dt)
 
     def AutoSaveStart(self):
-        '''function for auto saving data after completing important operations'''
+        '''
+        function for auto saving data after completing important operations
+        only called as part of another long running operation
+        '''
         logger = logging.getLogger(__name__+".MainFrame.OnAutoSaveStart")
         logger.info("Starting")
         self.autosave_flag = True
         self.CreateProgressDialog(title=GUIText.SAVE_BUSY_LABEL,
                                   warning=GUIText.SIZE_WARNING_MSG,
                                   freeze=True)
-        self.StepProgressDialog(GUIText.AUTO_SAVE_BUSY_LABEL, enable=True)
         self.PulseProgressDialog(GUIText.AUTO_SAVE_BUSY_MSG)
+        self.StepProgressDialog(GUIText.AUTO_SAVE_BUSY_STEP, enable=True)
         logger.info("auto saving workspace to [%s]", Constants.AUTOSAVE_PATH)
 
         notes_text = self.notes_notebook.Save()
@@ -650,7 +655,7 @@ class MainFrame(wx.Frame):
         logger = logging.getLogger(__name__+".MainFrame.OnImportCodes")
         logger.info("Starting")
 
-        confirm_dialog = wx.Dialog(self, title=GUIText.IMPORT_CODEBOOK)
+        confirm_dialog = wx.Dialog(self, title=GUIText.IMPORT_CODEBOOK_LABEL)
         confirm_sizer = wx.BoxSizer(wx.VERTICAL)
         confirm_info = wx.StaticText(confirm_dialog, label=GUIText.IMPORT_CODEBOOK_INFO)
         confirm_sizer.Add(confirm_info, 0, wx.ALIGN_LEFT|wx.ALL, 5)
@@ -659,14 +664,14 @@ class MainFrame(wx.Frame):
             confirm_sizer.Add(confirm_warning, 0, wx.ALIGN_LEFT|wx.ALL, 5)
         controls_sizer = confirm_dialog.CreateButtonSizer(wx.OK|wx.CANCEL)
         ok_button = wx.FindWindowById(wx.ID_OK, confirm_dialog)
-        ok_button.SetLabel(GUIText.IMPORT_CODEBOOK)
+        ok_button.SetLabel(GUIText.IMPORT_CODEBOOK_LABEL)
         confirm_sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
         confirm_dialog.SetSizer(confirm_sizer)
         confirm_dialog.Layout()
         confirm_dialog.Fit()
         confirm_flag = confirm_dialog.ShowModal()
         if confirm_flag == wx.ID_OK:
-            with wx.FileDialog(self, GUIText.IMPORT_CODEBOOK, defaultDir=Constants.SAVED_WORKSPACES_PATH,
+            with wx.FileDialog(self, GUIText.IMPORT_CODEBOOK_LABEL, defaultDir=Constants.SAVED_WORKSPACES_PATH,
                             wildcard="Codebook Exchange Format (*.qdc)|*.qdc",
                             style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
                 # cancel if the user changed their mind
@@ -690,6 +695,7 @@ class MainFrame(wx.Frame):
                     self.reviewing_module.themes_model.Cleared()
                     self.reviewing_module.themes_ctrl.Expander(None)
                     self.CodesUpdated()
+                    wx.MessageBox(GUIText.IMPORT_CODEBOOK_SUCCESS, GUIText.IMPORT_CODEBOOK_LABEL)
                 except IOError:
                     wx.LogError(GUIText.IMPORT_CODEBOOK_ERROR_IO)
                     logger.error("Failed to open file '%s'", pathname)
@@ -701,20 +707,20 @@ class MainFrame(wx.Frame):
     def OnExportCodes(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnExportCodes")
         logger.info("Starting")
-        confirm_dialog = wx.Dialog(self, title=GUIText.EXPORT_CODEBOOK)
+        confirm_dialog = wx.Dialog(self, title=GUIText.EXPORT_CODEBOOK_LABEL)
         confirm_sizer = wx.BoxSizer(wx.VERTICAL)
         confirm_info = wx.StaticText(confirm_dialog, label=GUIText.EXPORT_CODEBOOK_INFO)
         confirm_sizer.Add(confirm_info, 0, wx.ALIGN_LEFT|wx.ALL, 5)
         controls_sizer = confirm_dialog.CreateButtonSizer(wx.OK|wx.CANCEL)
         ok_button = wx.FindWindowById(wx.ID_OK, confirm_dialog)
-        ok_button.SetLabel(GUIText.EXPORT_CODEBOOK)
+        ok_button.SetLabel(GUIText.EXPORT_CODEBOOK_LABEL)
         confirm_sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
         confirm_dialog.SetSizer(confirm_sizer)
         confirm_dialog.Layout()
         confirm_dialog.Fit()
         confirm_flag = confirm_dialog.ShowModal()
         if confirm_flag == wx.ID_OK and len(self.codes) > 0:
-            with wx.FileDialog(self, GUIText.EXPORT_CODEBOOK, defaultDir=Constants.SAVED_WORKSPACES_PATH,
+            with wx.FileDialog(self, GUIText.EXPORT_CODEBOOK_LABEL, defaultDir=Constants.SAVED_WORKSPACES_PATH,
                                defaultFile=self.name+'.qdc',
                                wildcard="Codebook Exchange Format (*.qdc)|*.qdc",
                                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
@@ -725,7 +731,7 @@ class MainFrame(wx.Frame):
                 file_name = file_dialog.GetPath()
                 try:
                     GenericUtilities.QDACodeExporter(self.codes, self.themes, file_name)
-                    wx.MessageBox(GUIText.EXPORT_CODEBOOK_SUCCESS, GUIText.EXPORT_CODEBOOK)
+                    wx.MessageBox(GUIText.EXPORT_CODEBOOK_SUCCESS, GUIText.EXPORT_CODEBOOK_LABEL)
                 except IOError:
                     wx.LogError(GUIText.EXPORT_CODEBOOK_ERROR_IO)
                     logger.error("Failed to save removal to file '%s'", file_name)
@@ -740,20 +746,20 @@ class MainFrame(wx.Frame):
     def OnExportWorkspace(self, event):
         logger = logging.getLogger(__name__+".MainFrame.OnExportWorkspace")
         logger.info("Starting")
-        confirm_dialog = wx.Dialog(self, title=GUIText.EXPORT_PROJECT)
+        confirm_dialog = wx.Dialog(self, title=GUIText.EXPORT_PROJECT_LABEL)
         confirm_sizer = wx.BoxSizer(wx.VERTICAL)
         confirm_info = wx.StaticText(confirm_dialog, label=GUIText.EXPORT_PROJECT_INFO)
         confirm_sizer.Add(confirm_info, 0, wx.ALIGN_LEFT|wx.ALL, 5)
         controls_sizer = confirm_dialog.CreateButtonSizer(wx.OK|wx.CANCEL)
         ok_button = wx.FindWindowById(wx.ID_OK, confirm_dialog)
-        ok_button.SetLabel(GUIText.EXPORT_PROJECT)
+        ok_button.SetLabel(GUIText.EXPORT_PROJECT_LABEL)
         confirm_sizer.Add(controls_sizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
         confirm_dialog.SetSizer(confirm_sizer)
         confirm_dialog.Layout()
         confirm_dialog.Fit()
         confirm_flag = confirm_dialog.ShowModal()
         if confirm_flag == wx.ID_OK and (len(self.datasets) > 0 or len(self.samples) > 0 or len(self.codes) > 0):
-            with wx.FileDialog(self, GUIText.EXPORT_PROJECT, defaultDir=Constants.SAVED_WORKSPACES_PATH,
+            with wx.FileDialog(self, GUIText.EXPORT_PROJECT_LABEL, defaultDir=Constants.SAVED_WORKSPACES_PATH,
                                defaultFile=self.name+'.qdpx',
                                wildcard="Project Exchange Format (*.qdpx)|*.qdpx",
                                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
@@ -765,7 +771,7 @@ class MainFrame(wx.Frame):
                 file_name = self.current_workspace.name+"/project.qde"
                 try:
                     GenericUtilities.QDAProjectExporter(self.name, self.datasets, self.samples, self.codes, self.themes, file_name, archive_name)
-                    wx.MessageBox(GUIText.EXPORT_PROJECT_SUCCESS, GUIText.EXPORT_PROJECT)
+                    wx.MessageBox(GUIText.EXPORT_PROJECT_SUCCESS, GUIText.EXPORT_PROJECT_LABEL)
                 except IOError:
                     wx.LogError(GUIText.EXPORT_PROJECT_ERROR_IO)
                     logger.error("Failed to save workspace to project file '%s'", file_name)
@@ -876,7 +882,7 @@ class MainFrame(wx.Frame):
         self.DocumentsUpdated(self)
         self.CodesUpdated()
 
-        self.StepProgressDialog(GUIText.SHUTDOWN_BUSY_POOL, enable=True)
+        self.StepProgressDialog(GUIText.SHUTDOWN_BUSY_POOL_MSG, enable=True)
         logger.info("Starting to shut down of process pool")
         self.pool.close()
         self.pool.join()
@@ -1069,7 +1075,7 @@ class CustomProgressDialog(wx.Dialog):
             self.current_step_time_label.SetLabel(str(elapsed_step_time).split('.')[0])
             if self.step_remaining_time_estimate != None:
                 if elapsed_step_time > self.step_remaining_time_estimate:
-                    self.estimated_step_time_label.SetLabel(GUIText.OF_AN_ESTIMATED+GUIText.UNKNOWN)
+                    self.estimated_step_time_label.SetLabel(GUIText.OF_AN_ESTIMATED_LABEL+GUIText.UNKNOWN)
                     self.step_remaining_time_estimate == None
                     self.gauge.Pulse()
                 else:
@@ -1079,7 +1085,7 @@ class CustomProgressDialog(wx.Dialog):
     def StartStep(self, label):
         if self.step_start_time != None:
             elapsed_step_time = datetime.now() - self.step_start_time
-            self.text.AppendText("\n"+GUIText.COMPLETED_IN+ str(elapsed_step_time).split('.')[0])
+            self.text.AppendText("\n"+GUIText.COMPLETED_IN_LABEL+ str(elapsed_step_time).split('.')[0])
         self.current_step_text.SetLabel(label)
         self.text.AppendText("\n"+label)
         self.step_start_time = datetime.now()
@@ -1093,7 +1099,7 @@ class CustomProgressDialog(wx.Dialog):
     def EndStep(self):
         if self.step_start_time != None:
             elapsed_step_time = datetime.now() - self.step_start_time
-            self.text.AppendText("\n"+GUIText.COMPLETED_IN+ str(elapsed_step_time).split('.')[0])
+            self.text.AppendText("\n"+GUIText.COMPLETED_IN_LABEL+ str(elapsed_step_time).split('.')[0])
             self.step_start_time = None
             self.step_remaining_time_estimate = None
             self.estimated_step_time_label.SetLabel("")
@@ -1105,7 +1111,7 @@ class CustomProgressDialog(wx.Dialog):
             self.gauge.Pulse()
         else:
             self.step_remaining_time_estimate = value
-            self.estimated_step_time_label.SetLabel(GUIText.OF_AN_ESTIMATED+str(value).split('.')[0])
+            self.estimated_step_time_label.SetLabel(GUIText.OF_AN_ESTIMATED_LABEL+str(value).split('.')[0])
             per = (datetime.now() - self.step_start_time) / self.step_remaining_time_estimate
             self.gauge.SetValue(int(per*100))
             self.Fit()
@@ -1136,22 +1142,22 @@ class OptionsDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
 
-        advanced_box = wx.StaticBox(self, label=GUIText.OPTIONS_ADVANCED_MODES)
+        advanced_box = wx.StaticBox(self, label=GUIText.OPTIONS_ADVANCED_MODES_LABEL)
         advanced_box.SetFont(main_frame.GROUP_LABEL_FONT)
         advanced_sizer = wx.StaticBoxSizer(advanced_box, wx.VERTICAL)
         sizer.Add(advanced_sizer, 0, wx.ALL, 5)
 
-        self.multipledatasets_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_MULTIPLEDATASETS)
+        self.multipledatasets_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_MULTIPLEDATASETS_LABEL)
         self.multipledatasets_ctrl.SetValue(main_frame.options_dict['multipledatasets_mode'])
         self.multipledatasets_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeMultipleDatasetMode)
         advanced_sizer.Add(self.multipledatasets_ctrl, 0, wx.ALL, 5)
 
-        self.adjustable_label_fields_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_ADJUSTABLE_LABEL_FIELDS)
+        self.adjustable_label_fields_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_ADJUSTABLE_LABEL_FIELDS_LABEL)
         self.adjustable_label_fields_ctrl.SetValue(main_frame.options_dict['adjustable_label_fields_mode'])
         self.adjustable_label_fields_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeAdjustableLabelFieldsMode)
         advanced_sizer.Add(self.adjustable_label_fields_ctrl, 0, wx.ALL, 5)
 
-        self.adjustable_computation_fields_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_ADJUSTABLE_COMPUTATIONAL_FIELDS)
+        self.adjustable_computation_fields_ctrl = wx.CheckBox(self, label=GUIText.OPTIONS_ADJUSTABLE_COMPUTATIONAL_FIELDS_LABEL)
         self.adjustable_computation_fields_ctrl.SetValue(main_frame.options_dict['adjustable_computation_fields_mode'])
         self.adjustable_computation_fields_ctrl.Bind(wx.EVT_CHECKBOX, self.ChangeAdjustableComputationalFieldsMode)
         advanced_sizer.Add(self.adjustable_computation_fields_ctrl, 0, wx.ALL, 5)
@@ -1214,7 +1220,7 @@ class OptionsDialog(wx.Dialog):
 
 class AboutDialog(wx.Dialog):
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent, title=GUIText.ABOUT, style=wx.DEFAULT_DIALOG_STYLE)
+        wx.Dialog.__init__(self, parent, title=GUIText.ABOUT_LABEL, style=wx.DEFAULT_DIALOG_STYLE)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.AddStretchSpacer()
@@ -1227,15 +1233,15 @@ class AboutDialog(wx.Dialog):
         sizer.Add(name_text, 0, wx.CENTER)
         sizer.AddSpacer(10)
 
-        version_text = wx.StaticText(self, label=GUIText.ABOUT_VERSION + Constants.CUR_VER)
+        version_text = wx.StaticText(self, label=GUIText.ABOUT_VERSION_LABEL + Constants.CUR_VER)
         sizer.Add(version_text, 0, wx.CENTRE)
         sizer.AddSpacer(5)
 
-        osf_url = HyperlinkCtrl(self, label=GUIText.ABOUT_OSF, url=GUIText.ABOUT_OSF_URL)
+        osf_url = HyperlinkCtrl(self, label=GUIText.ABOUT_OSF_LABEL, url=GUIText.ABOUT_OSF_URL)
         sizer.Add(osf_url, 0, wx.CENTRE)
         sizer.AddSpacer(5)
 
-        github_url = HyperlinkCtrl(self, label=GUIText.ABOUT_GITHUB, url=GUIText.ABOUT_GITHUB_URL)
+        github_url = HyperlinkCtrl(self, label=GUIText.ABOUT_GITHUB_LABEL, url=GUIText.ABOUT_GITHUB_URL)
         sizer.Add(github_url, 0, wx.CENTRE)
         sizer.AddSpacer(5)
 
@@ -1245,7 +1251,7 @@ class AboutDialog(wx.Dialog):
 
 class NewVersionDialog(wx.Dialog):
     def __init__(self, parent, current_version, latest_version):
-        wx.Dialog.__init__(self, parent, title=GUIText.NEW_VERSION_AVAILABLE, style=wx.DEFAULT_DIALOG_STYLE)
+        wx.Dialog.__init__(self, parent, title=GUIText.NEW_VERSION_LABEL, style=wx.DEFAULT_DIALOG_STYLE)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(sizer)
@@ -1263,7 +1269,7 @@ class NewVersionDialog(wx.Dialog):
         app1_sizer = wx.BoxSizer(wx.HORIZONTAL)
         app1_label = wx.StaticText(self, label=GUIText.APP_INSTRUCTION1)
         app1_sizer.Add(app1_label)
-        latest_release_url = HyperlinkCtrl(self, label=GUIText.LATEST_RELEASE, url=GUIText.LATEST_RELEASE_URL)
+        latest_release_url = HyperlinkCtrl(self, label=GUIText.LATEST_RELEASE_LABEL, url=GUIText.LATEST_RELEASE_URL)
         app1_sizer.Add(latest_release_url)
         sizer.Add(app1_sizer, 0, wx.CENTRE|wx.ALL, 5)
         app2_label = wx.StaticText(self, label=GUIText.APP_INSTRUCTION2)

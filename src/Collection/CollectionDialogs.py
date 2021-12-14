@@ -53,7 +53,7 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
     def __init__(self, parent):
         logger = logging.getLogger(__name__+".RedditRetrieverDialog.__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=GUIText.RETRIEVE_REDDIT_LABEL, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
+        wx.Dialog.__init__(self, parent, title=GUIText.REDDIT_RETRIEVE_LABEL, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         self.retrieval_thread = None
         self.available_fields = {}
 
@@ -93,7 +93,9 @@ class RedditDatasetRetrieverDialog(AbstractRetrieverDialog):
         #choose type of dataset to retrieve
         dataset_type_sizer = wx.BoxSizer(wx.HORIZONTAL)
         dataset_type_label = wx.StaticText(self, label=GUIText.TYPE+" ")
-        self.dataset_type_choice = wx.Choice(self, choices=[GUIText.REDDIT_DISCUSSIONS, GUIText.REDDIT_SUBMISSIONS, GUIText.REDDIT_COMMENTS])
+        self.dataset_type_choice = wx.Choice(self, choices=[GUIText.REDDIT_DISCUSSIONS,
+                                                            GUIText.REDDIT_SUBMISSIONS,
+                                                            GUIText.REDDIT_COMMENTS])
         self.dataset_type_choice.Bind(wx.EVT_CHOICE, self.OnDatasetTypeChosen)
         dataset_type_sizer.Add(dataset_type_label, 0, wx.ALIGN_CENTRE_VERTICAL)
         dataset_type_sizer.Add(self.dataset_type_choice)
@@ -384,7 +386,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
     def __init__(self, parent):
         logger = logging.getLogger(__name__+".TwitterRetrieverDialog.__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=GUIText.RETRIEVE_TWITTER_LABEL, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
+        wx.Dialog.__init__(self, parent, title=GUIText.TWITTER_RETRIEVE_LABEL, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         self.retrieval_thread = None
         self.available_fields = {}
         self.dataset_type = "tweet"
@@ -441,7 +443,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         sizer.Add(consumer_secret_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
         # search by query
-        self.query_radioctrl = wx.RadioButton(self, label=GUIText.QUERY+": ", style=wx.RB_GROUP)
+        self.query_radioctrl = wx.RadioButton(self, label=GUIText.TWITTER_QUERY+": ", style=wx.RB_GROUP)
         self.query_radioctrl.SetToolTip(GUIText.TWITTER_QUERY_RADIOBUTTON_TOOLTIP)
         self.query_radioctrl.SetValue(True)
 
@@ -464,7 +466,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         self.attributes_radioctrl = wx.RadioButton(self, label=GUIText.TWITTER_TWEET_ATTRIBUTES+": ")
         self.attributes_radioctrl.SetToolTip(GUIText.TWITTER_TWEET_ATTRIBUTES_RADIOBUTTON_TOOLTIP)
 
-        self.keywords_checkbox_ctrl = wx.CheckBox(self, label=GUIText.KEYWORDS+": ")
+        self.keywords_checkbox_ctrl = wx.CheckBox(self, label=GUIText.TWITTER_KEYWORDS+": ")
         self.keywords_ctrl = wx.TextCtrl(self)
         self.keywords_ctrl.SetHint(GUIText.TWITTER_KEYWORDS_PLACEHOLDER)
         keywords_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -472,7 +474,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         keywords_sizer.Add(self.keywords_checkbox_ctrl)
         keywords_sizer.Add(self.keywords_ctrl, wx.EXPAND)
 
-        self.hashtags_checkbox_ctrl = wx.CheckBox(self, label=GUIText.HASHTAGS+": ")
+        self.hashtags_checkbox_ctrl = wx.CheckBox(self, label=GUIText.TWITTER_HASHTAGS+": ")
         self.hashtags_ctrl = wx.TextCtrl(self)
         self.hashtags_ctrl.SetHint(GUIText.TWITTER_HASHTAGS_PLACEHOLDER)
         hashtags_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -480,7 +482,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         hashtags_sizer.Add(self.hashtags_checkbox_ctrl)
         hashtags_sizer.Add(self.hashtags_ctrl, wx.EXPAND)
 
-        self.account_checkbox_ctrl = wx.CheckBox(self, label=GUIText.TWITTER_LABEL+" "+GUIText.ACCOUNTS+": ")
+        self.account_checkbox_ctrl = wx.CheckBox(self, label=GUIText.TWITTER_LABEL+" "+GUIText.TWITTER_ACCOUNTS+": ")
         self.account_ctrl = wx.TextCtrl(self)
         self.account_ctrl.SetHint(GUIText.TWITTER_ACCOUNT_PLACEHOLDER)
         account_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -498,7 +500,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         attributes_sizer.Add(attributes_options_sizer, 0, wx.EXPAND)
 
         # add 'search by' elements to box
-        search_box = wx.StaticBox(self, label=GUIText.SEARCH_BY)
+        search_box = wx.StaticBox(self, label=GUIText.REDDIT_SEARCH_BY)
         self.search_by_sizer = wx.StaticBoxSizer(search_box, wx.VERTICAL)
         self.search_by_sizer.Add(query_sizer, 0, wx.EXPAND)
         self.search_by_sizer.Add(attributes_sizer, 0, wx.EXPAND)
@@ -707,7 +709,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
         
         # generate query
         query = ""
-        if selected_option[0].GetLabel() == GUIText.QUERY+": ":
+        if selected_option[0].GetLabel() == GUIText.TWITTER_QUERY+": ":
             query = self.query_ctrl.GetValue().strip()
         elif selected_option[0].GetLabel() == GUIText.TWITTER_TWEET_ATTRIBUTES+": ":
             query_items = [] # individual sub-queries, which are joined by UNION (OR) to form the overall query
@@ -718,14 +720,14 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
                 text_field = sizer.GetChildren()[2].GetWindow()
                 if checkbox.GetValue() and text_field.GetValue() != "":
                     text = text_field.GetValue()
-                    if checkbox.GetLabel() == GUIText.KEYWORDS+": ":
+                    if checkbox.GetLabel() == GUIText.TWITTER_KEYWORDS+": ":
                         keywords = text.split(",")
                         for phrase in keywords:
                             phrase = phrase.strip()
                             if " " in phrase: # multi-word keyword
                                 phrase = "\""+phrase+"\""
                             query_items.append(phrase)
-                    elif checkbox.GetLabel() == GUIText.HASHTAGS+": ":
+                    elif checkbox.GetLabel() == GUIText.TWITTER_HASHTAGS+": ":
                         text = text.replace(",", " ")
                         hashtags = text.split()
                         for hashtag in hashtags:
@@ -733,7 +735,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
                             if hashtag[0] != "#": # hashtags must start with '#' symbol
                                 hashtag = "#"+hashtag
                             query_items.append(hashtag)
-                    elif checkbox.GetLabel() == GUIText.TWITTER_LABEL+" "+GUIText.ACCOUNTS+": ":
+                    elif checkbox.GetLabel() == GUIText.TWITTER_LABEL+" "+GUIText.TWITTER_ACCOUNTS+": ":
                         text = text.replace(",", " ")
                         accounts = text.split()
                         for account in accounts:
@@ -876,7 +878,7 @@ class CSVDatasetRetrieverDialog(AbstractRetrieverDialog):
     def __init__(self, parent):
         logger = logging.getLogger(__name__+".CSVRetrieverDialog.__init__")
         logger.info("Starting")
-        wx.Dialog.__init__(self, parent, title=GUIText.RETRIEVE_CSV_LABEL, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
+        wx.Dialog.__init__(self, parent, title=GUIText.CSV_RETRIEVE_LABEL, style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         self.retrieval_thread = None
         self.available_fields = {}
 

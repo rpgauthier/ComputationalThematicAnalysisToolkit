@@ -33,6 +33,8 @@ class Common:
     ACTIONS = "Actions"
     VIEW = "View"
 
+    DELETE_CONFIRMATION = " will be deleted. Are you sure you want to proceed?"
+
     CHANGE_COLOUR = "Change Colour"
 
     COPY = "Copy"
@@ -138,19 +140,17 @@ class Main(Common):
 
     LOAD_BUSY_LABEL = "Loading Workspace"
     LOAD_BUSY_MSG = "Please Wait while data is loaded.\n"
-    LOAD_BUSY_MSG_FILE = "Loading File: "
-    LOAD_BUSY_MSG_DATASET = "Loaded Dataset: "
-    LOAD_BUSY_MSG_SAMPLE = "Loaded Sample: "
-    LOAD_BUSY_MSG_CODES = "Loading Codes"
-    LOAD_BUSY_MSG_THEMES = "Loading Themes"
-    LOAD_BUSY_MSG_CONFIG = "Loading Configurations"
-    LOAD_BUSY_MSG_MEMORY = "Loading Memory"
+    LOAD_BUSY_MSG_FILE_STEP = "Loading File: "
+    LOAD_BUSY_MSG_DATASET_MSG = "Loaded Dataset: "
+    LOAD_BUSY_MSG_SAMPLE_MSG = "Loaded Sample: "
+    LOAD_BUSY_MSG_CODES_MSG = "Loading Codes"
+    LOAD_BUSY_MSG_THEMES_MSG = "Loading Themes"
+    LOAD_BUSY_MSG_CONFIG_MSG = "Loading Configurations"
+    LOAD_BUSY_MSG_MEMORY_STEP = "Loading Memory"
 
     SAVE_BUSY_LABEL = "Saving Workspace"
     SAVE_BUSY_MSG = "Please wait while data is saved.\n"
-    AUTO_SAVE_BUSY_LABEL = "Autosaving Workspace"
-    AUTO_SAVE_BUSY_MSG = "- please wait while data is autosaved."
-    SAVE_BUSY_MSG_FILE = "Saving File: "
+    SAVE_BUSY_MSG_STEP = "Saving File: "
     SAVE_BUSY_MSG_NOTES = "Saving Notes to text."
     SAVE_BUSY_MSG_CONFIG = "Saving Configurations"
     SAVE_BUSY_MSG_DATASETS = "Saving Dataset: "
@@ -159,42 +159,34 @@ class Main(Common):
     SAVE_BUSY_MSG_THEMES = "Saving Themes"
     SAVE_BUSY_MSG_COMPRESSING = "Writing Saved Data"
 
-    UPGRADE_BUSY_MSG_WORKSPACE1 = "Upgrading Workspace version from  "
-    UPGRADE_BUSY_MSG_WORKSPACE2 = " to "
-    UPGRADE_BUSY_MSG_DATASETS = "Upgrading Datasets"
-    UPGRADE_BUSY_MSG_DATABASE = "Upgrading Database"
-    UPGRADE_BUSY_MSG_DATABASE_CREATE = "Converting Workspace to Use Database"
-    UPGRADE_BUSY_MSG_SAMPLES = "Upgrading Samples"
-    UPGRADE_BUSY_MSG_CODES = "Upgrading Codes"
+    AUTO_SAVE_BUSY_MSG = "Please wait while data is autosaved.\n"
+    AUTO_SAVE_BUSY_STEP = "Autosaving Workspace"
+
+    UPGRADE_BUSY_MSG_WORKSPACE_STEP1 = "Upgrading Workspace version from  "
+    UPGRADE_BUSY_MSG_WORKSPACE_STEP2 = " to "
+    UPGRADE_BUSY_MSG_DATASETS_MSG = "Upgrading Datasets"
+    UPGRADE_BUSY_MSG_DATABASE_MSG = "Upgrading Database"
+    UPGRADE_BUSY_MSG_DATABASE_CREATE_MSG = "Converting Workspace to Use Database"
+    UPGRADE_BUSY_MSG_SAMPLES_MSG = "Upgrading Samples"
+    UPGRADE_BUSY_MSG_CODES_MSG = "Upgrading Codes"
+    UPGRADE_BUSY_MSG_THEMES_MSG = "Upgrading Themes"
 
     SHUTDOWN_BUSY_LABEL = "Shutting Down Application"
-    SHUTDOWN_BUSY_POOL = "Shutting down Process Pool"
+    SHUTDOWN_BUSY_POOL_MSG = "Shutting down Process Pool"
     
-    SAMPLE_CHANGE_NAME = "Change Sample Name"
     NAME_MISSING_ERROR = "Please enter a Name."
     FILENAME_MISSING_ERROR = "Please enter a Filename"
     NAME_DUPLICATE_ERROR = "Same name already exists."\
                            "\nPlease choose a different name."
-
-    DELETE_CONFIRMATION = " will be deleted. Are you sure you want to proceed?"
-
-    CONSUMER_KEY_MISSING_ERROR = "You need to enter a Consumer Key."
-    CONSUMER_SECRET_MISSING_ERROR = "You need to enter a Consumer Secret."
-    INVALID_CREDENTIALS_ERROR = "Invalid credentials."
-    INSUFFICIENT_CREDENTIALS_ERROR = "Your credentials do not allow access to this resource."
     
-    OPTIONS_ADVANCED_MODES = "Advanced Modes"
-    OPTIONS_MULTIPLEDATASETS = "Allow Multiple Datasets Mode (not yet fully tested)"
-    OPTIONS_ADJUSTABLE_LABEL_FIELDS = "Allow adjusting label fields during retrieval"
-    OPTIONS_ADJUSTABLE_COMPUTATIONAL_FIELDS = "Allow adjusting computational fields during retrieval"
-
-    OF_AN_ESTIMATED = "of an estimated "
-    COMPLETED_IN = "- completed in "
+    OF_AN_ESTIMATED_LABEL = "of an estimated "
+    COMPLETED_IN_LABEL = "- completed in "
 
     #Menu related text
-    MODE_MENU = "Mode"
     SHOW_HIDE = "Show/Hide "
+    #File Menu
     FILE_MENU = "File"
+    OPTIONS = "Options"
     NEW = "New"
     NEW_TOOLTIP = "Create a New Workspace"
     RESUME = "Resume"
@@ -205,9 +197,31 @@ class Main(Common):
     SAVE_TOOLTIP = "Save Current Workspace"
     SAVE_AS = "Save As"
     SAVE_AS_TOOLTIP = "Save the Current Workspace with a new name"
-
     IMPORT_CODEBOOK = "Import REFI-QDA Codebook"
     IMPORT_CODEBOOK_TOOLTIP = "Import Codes from file that follows the REFI-QDA Codebook specifications"
+    EXPORT_CODEBOOK = "Export REFI-QDA Codebook"
+    EXPORT_CODEBOOK_TOOLTIP = "Export Codes and Themes to a file that follows the REFI-QDA Codebook specifications"
+    EXPORT_PROJECT = "Export REFI-QDA Project"
+    EXPORT_PROJECT_TOOLTIP = "Export Workspace into a file that follows the REFI-QDA Project specifications"
+    EXIT = "Exit"
+    EXIT_TOOLTIP = "Exit Application"
+    #Help Menu
+    HELP_MENU = "Help"
+    ABOUT = "About"
+
+    #Options Dialog
+    OPTIONS_LABEL = OPTIONS
+    OPTIONS_ADVANCED_MODES_LABEL = "Advanced Modes"
+    OPTIONS_MULTIPLEDATASETS_LABEL = "Allow Multiple Datasets Mode (not yet fully tested)"
+    OPTIONS_ADJUSTABLE_LABEL_FIELDS_LABEL = "Allow adjusting label fields during retrieval"
+    OPTIONS_ADJUSTABLE_COMPUTATIONAL_FIELDS_LABEL = "Allow adjusting computational fields during retrieval"
+    CONSUMER_KEY_MISSING_ERROR = "You need to enter a Consumer Key."
+    CONSUMER_SECRET_MISSING_ERROR = "You need to enter a Consumer Secret."
+    INVALID_CREDENTIALS_ERROR = "Invalid credentials."
+    INSUFFICIENT_CREDENTIALS_ERROR = "Your credentials do not allow access to this resource."
+
+    #Import Codebook Dialogs
+    IMPORT_CODEBOOK_LABEL = IMPORT_CODEBOOK
     IMPORT_CODEBOOK_INFO = "When importing a REFI-QDA Codebook the following mappings will occur:"\
                            "\n1) Codes will become Codes"\
                            "\n1a) Any Codes' Descriptions will become Notes"\
@@ -216,11 +230,12 @@ class Main(Common):
                            "\n2a) Any Sets' MemberCodes will become Theme to Code References"
     IMPORT_CODEBOOK_CONFIRMATION_REQUEST = "Please confirm you wish to import an external codebook file into this project."\
                                            "\nWARNING: Existing codes may be updated if they had previously been exported or imported and are present in the external codebook"
+    IMPORT_CODEBOOK_SUCCESS = "Codes and Themes were successfully imported from an REFI-QDA Codebook."
     IMPORT_CODEBOOK_ERROR_IO = "Cannot load specified codebook file.\nPlease check that you have read access to the file and directory."
     IMPORT_CODEBOOK_ERROR_XML = "XML Error occured when importing codebook file."
     
-    EXPORT_CODEBOOK = "Export REFI-QDA Codebook"
-    EXPORT_CODEBOOK_TOOLTIP = "Export Codes and Themes to a file that follows the REFI-QDA Codebook specifications"
+    #Export Codebook Dialogs
+    EXPORT_CODEBOOK_LABEL = EXPORT_CODEBOOK
     EXPORT_CODEBOOK_INFO = "When creating a REFI-QDA Codebook the following mappings will occur:"\
                            "\1) Codes will becoming Codes"\
                            "\n1a) Quotations will not be included"\
@@ -235,8 +250,8 @@ class Main(Common):
     EXPORT_CODEBOOK_ERROR_XML = "XML Error occured when checking created codebook."
     EXPORT_CODEBOOK_ERROR_IO = "Cannot save specified codebook file.\nPlease check that you have write access to directory and if replacing a file it is not locked."
     
-    EXPORT_PROJECT = "Export REFI-QDA Project"
-    EXPORT_PROJECT_TOOLTIP = "Export Workspace into a file that follows the REFI-QDA Project specifications"
+    #Export Project Dialog
+    EXPORT_PROJECT_LABEL = EXPORT_PROJECT
     EXPORT_PROJECT_INFO = "When creating a REFI-QDA Project the following mappings will occur:"\
                           "\n1) Any tab notes will not be included"\
                           "\n2) Datasets will becoming Cases"\
@@ -262,32 +277,28 @@ class Main(Common):
     EXPORT_PROJECT_ERROR_NO_DATA = "Workspace has no data to export as a Project."
     EXPORT_PROJECT_ERROR_XML = "XML Error Occured when checking created project."
     EXPORT_PROJECT_ERROR_IO = "Cannot save specified project file.\nPlease check that you have write access to directory and if replacing a file it is not locked."
-    
-    EXIT = "Exit"
-    EXIT_TOOLTIP = "Exit Application"
-    HELP = "Help"
-    ABOUT = "About"
 
     #About dialog labels
-    ABOUT_VERSION = "Version: "
-    ABOUT_OSF = "OSF link"
+    ABOUT_LABEL = ABOUT
+    ABOUT_VERSION_LABEL = "Version: "
+    ABOUT_OSF_LABEL = "OSF link"
     ABOUT_OSF_URL = "https://osf.io/b72dm/"
-    ABOUT_GITHUB = "Github link"
+    ABOUT_GITHUB_LABEL = "Github link"
     ABOUT_GITHUB_URL = "https://github.com/rpgauthier/ComputationalThematicAnalysisToolkit"
 
     #new version dialog labels
-    NEW_VERSION_AVAILABLE = "New Version Available"
+    NEW_VERSION_LABEL = "New Version Available"
     CURRENT_VERSION_LABEL = "The toolkit you are using is Version "
     LATEST_VERSION_LABEL = " is avaliable for download."
     APP_INSTRUCTIONS = "To upgrade please perform the following steps:"
     APP_INSTRUCTION1 = "1) Download the approriate installer from "
-    LATEST_RELEASE = "Latest Release"
+    LATEST_RELEASE_LABEL = "Latest Release"
     LATEST_RELEASE_URL = "https://github.com/rpgauthier/ComputationalThematicAnalysisToolkit/releases/latest"
-    APP_INSTRUCTION2 = "2) Close the application"
+    APP_INSTRUCTION2 = "2) Close this application"
     APP_INSTRUCTION3 = "3) Run the downloaded installer"
     WORKSPACE_INSTRUCTIONS = "Once installed any workspace you load will be automatically upgraded."
 
-    #Module/Notes Labels
+    #Module Labels
     GENERAL_LABEL = "General"
     COLLECTION_LABEL = "Data Collection"
     FILTERING_LABEL = "Data Cleaning & Filtering"
@@ -297,153 +308,105 @@ class Main(Common):
     CODING_LABEL = "Coding"
     REVIEWING_LABEL = "Reviewing"
     REPORTING_LABEL = "Reporting"
-    OPTIONS_LABEL = "Options"
     NOTES_LABEL = "Notes"
     TWITTER_LABEL = "Twitter"
 
 class Datasets(Common):
-
-    RETRIEVE_REDDIT_LABEL = "Retrieve New Reddit Dataset"
-    RETRIEVE_TWITTER_LABEL = "Retrieve New Twitter Dataset"
-    RETRIEVE_CSV_LABEL = "Retrieve New CSV Dataset"
-    GROUPED_DATASET_LABEL = "Grouped Dataset Details"
-    RETRIEVED_REDDIT_LABEL = "Retrieved Reddit Dataset Details"
-    RETRIEVED_CSV_LABEL = "Retrieved CSV Dataset Details"
-    NAME_TOOLTIP = "Choose a unique name for the new dataset"
-    CONSUMER_KEY_TOOLTIP = "The API key of a project created in the Twitter Developer portal. Do not include quotes."
-    CONSUMER_SECRET_TOOLTIP = "The API secret of a project created in the Twitter Developer portal. Do not include quotes."
-    START_DATE_TOOLTIP = "Needs to be less than of equal to End Date"
-    END_DATE_TOOLTIP = "Needs to be greater than of equal to Start Date"
-    DATE_ERROR = "Start Date needs to be before End Date"
-    TYPE_ERROR = "Please select a Dataset Type"
-    NAME_EXISTS_ERROR = "Name must be unique"
-    RETRIEVAL_FAILED_ERROR = "Retrieval failed for one or more datasets.\nPlease try again later."
-    RETRIEVAL_FAILED_SUBMISSION = "Failed to retrieve submissions for month "
-    RETRIEVAL_FAILED_COMMENT = "Failed to retrieve comments for month "
-    NO_RETRIEVAL_CONNECTION_ERROR = "Unable to Connect to Internet.\nPlease check your network status."
-    NO_DATA_RETRIEVED_ERROR = "No data retrieved.\nPlease trying again later as requested data may not yet be available."
-    NO_DATA_AVAILABLE_ERROR = "No data available.\nPlease try enabling data retrieval."
-
-    REDDIT_ARCHIVED_TOOLTIP = "Use the local subreddit archive to create the dataset."
-    REDDIT_UPDATE_PUSHSHIFT_TOOLTIP = "For any part of the period between the start and end dates that the local subreddit archive does not have data,"\
-                                       "update the archive using pushshift.io API"\
-                                       "\nThen use the archive to create the dataset."\
-                                       "\nWARNING: This operation may take between several minutes to hours depending on sizze of existing local subreddit archive"
-    REDDIT_FULL_PUSHSHIFT_TOOLTIP = "Remove any existing local subreddit archive."\
-                                    "Then retrieve a new archive from pushshift.io API for the period between the start and end dates."\
-                                    "Then use the archive to create the dataset"\
-                                    "\nWARNING: This operation is a slow and may take several hours"
-    REDDIT_UPDATE_REDDITAPI_TOOLTIP = "For any part of the period between the start and end dates that the local subreddit archive does not have data,"\
-                                      "update the archive using pushshift.io API"\
-                                      "Then update the local subreddit archive for the period between the start and end dates using the Reddit API."\
-                                      "Then use the updated archive to create the dataset"\
-                                      "\nWARNING: This operation is slow and may take several hours"
-    REDDIT_FULL_REDDITAPI_TOOLTIP = "Remove any existing local subreddit archive."\
-                                    "Then retrieve a new archive from pushshift.io API for the period between the start and end dates."\
-                                    "Then update the archive for the period between the start and end dates using the Reddit API."\
-                                    "Then use the updated archive to create the dataset"\
-                                    "\nWARNING: This operation is slow and may take several hours"
-    REDDIT_SUBMISSIONS_TOOLTIP = "Will retrieve any Reddit submissions between the start and end dates"
-    REDDIT_COMMENTS_TOOLTIP = "Will retrieve any Reddit comments between the start and end dates"
-    REDDIT_DISCUSSIONS = "Discussions"
-    REDDIT_DISCUSSIONS_TOOLTIP = "Will group any Reddit submissions and/or comments retrieved into discussions"
-    RETRIVAL_REDDIT_SUBMISSION_ERROR = "an error occured when retrieving Submissions." \
-                                               "\nPlease try again later."
-    RETRIVAL_REDDIT_COMMENT_ERROR = "an error occured when retrieving Comments."\
-                                            "\nPlease try again later."
-
-    RETRIEVING_LABEL = "Retrieval Inprogress for Dataset: "
-    RETRIEVING_BEGINNING_MSG = "Please wait while dataset is retrieved.\n"
-    RETRIEVING_BUSY_REMOVE_SUBREDDIT_ARCHIVE_MSG = "Deleting local archive for subreddit: "
-    RETRIEVING_BUSY_PUSHSHIFT_DATA = "Retrieving Data from Pushshift"
-    RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_STEP = "Downloading Submission Data"
-    RETRIEVING_BUSY_DOWNLOADING_COMMENTS_STEP = "Downloading Comment Data"
-    RETRIEVING_BUSY_DOWNLOADING_TWITTER_TWEETS_STEP = "Downloading Twitter tweets data"
-    RETRIEVING_BUSY_DOWNLOADING_ALL_MSG = "- all data for month: "
-    RETRIEVING_BUSY_DOWNLOADING_NEW_MSG = "- new data for month: "
-    RETRIEVING_BUSY_IMPORTING_SUBMISSION_MSG = "Importing required submission data"
-    RETRIEVING_BUSY_IMPORTING_COMMENT_MSG = "Importing required comment data"
-    RETRIEVING_BUSY_IMPORTING_TWITTER_TWEET_MSG = "Importing required Twitter tweets data"
-    RETRIEVING_BUSY_IMPORTING_FILE_MSG = "- importing from file: "
-
-    RETRIEVING_BUSY_PREPARING_DISCUSSION_MSG = "Preparing Discussion Data for Application use"
-    RETRIEVING_BUSY_PREPARING_SUBMISSION_MSG = "Preparing Submission Data for Application use"
-    RETRIEVING_BUSY_PREPARING_COMMENT_MSG = "Preparing Comment Data for Application use."
-    RETRIEVING_BUSY_SEARCHING_DATA_MSG1 = "Selecting Data that contains ["
-    RETRIEVING_BUSY_SEARCHING_DATA_MSG2 = "] in a text field."
-    
-    RETRIEVING_BUSY_IMPORTING_CSV_MSG = "Importing from file: "
-    RETRIEVING_BUSY_PREPARING_CSV_MSG = "Preparing CSV Data for Application use."
-    RETRIEVING_BUSY_PREPARING_TWITTER_MSG = "Preparing Twitter Data for Application use."
-    RETRIEVING_BUSY_CONSTRUCTING_MSG = "Datasets are being constructed."
-
-    TWITTER_RATE_LIMIT_REACHED_MSG = "Warning: Twitter API rate limit has been reached. The number of tweets will be shortened."
-
-    TOKENIZING_BUSY_STEP = "Tokenizing Data"
-    TOKENIZING_BUSY_STARTING_FIELD_MSG = "- Starting to tokenize field: "
-    TOKENIZING_BUSY_COMPLETED_FIELD_MSG1 = "-- completed tokenizing threads "
-    TOKENIZING_BUSY_COMPLETED_FIELD_MSG2 = " of "
-    TOKENIZING_BUSY_COMPLETED_FIELD_MSG3 = " for field: "
-
-    TOKENIZING_BUSY_STEP_TFIDF_STEP = "Calculating TFIDF values"
-    TOKENIZING_BUSY_STARTING_TFIDF_MSG = "- Starting to calculate TFIDF values"
-    TOKENIZING_BUSY_COMPLETED_TFIDF_MSG = "- Completed to calculating TFIDF values"
-
-    CHANGING_NAME_BUSY_LABEL = "Changing Name"
-    CHANGING_NAME_BUSY_PREPARING_MSG = "Preparing to Update Dataset Name\n"
-    CHANGING_NAME_BUSY_MSG1 = "Changing From: "
-    CHANGING_NAME_BUSY_MSG2 = " To: "
-
-    CHANGING_LANGUAGE_BUSY_LABEL = "Changing Language"
-    CHANGING_LANGUAGE_BUSY_PREPARING_MSG = "Preparing to Update Dataset Language\n"
-
-
-    REFRESHING_DATASETS_BUSY_MSG = "Refreshing Data for Dataset: "
-
-    #common Fields
+    #common
     DESCRIPTION = "Description"
     DOCUMENT_NUM = "# of Documents"
     RETRIEVED_ON = "Retrieved On"
     IMPORTED_ON = "Imported On"
     PREPARED_ON = "Prepared On"
     LANGUAGE = "Language"
-    QUERY = "Query"
-    SEARCH_BY = "Search by"
-    KEYWORDS = "Keywords"
-    HASHTAGS = "Hashtags"
-    ACCOUNTS = "Accounts"
-
-    #Retrieval specific fields
+    UTC = "UTC"
+    CUSTOMIZE_LABEL_FIELDS = "Customize Label Fields"
+    CUSTOMIZE_COMPUTATIONAL_FIELDS = "Customize Computational Fields"
+    DATASET_DELETE_TOOLTIP = "Delete this dataset from the workspace"
+    REFRESHING_DATASETS_BUSY_MSG = "Refreshing Data for Dataset: "
+    
+    #Common Dialog
     DATASET_CONFIGURATIONS = "Dataset Configurations"
+    NAME_TOOLTIP = "Choose a unique name for the new dataset"
+    NAME_EXISTS_ERROR = "Name must be unique"
+    TYPE_ERROR = "Please select a Dataset Type"
     DATA_CONSTRAINTS = "Data Constraints"
+    START_DATE = "Start Date"
+    #START_DATETIME = "Start Date & Time"
+    START_DATE_TOOLTIP = "Needs to be less than of equal to End Date"
+    END_DATE = "End Date"
+    #END_DATETIME = "End Date & Time"
+    END_DATE_TOOLTIP = "Needs to be greater than of equal to Start Date"
+    DATE_ERROR = "Start Date needs to be before End Date"
     SPECIAL_DATA_FIELDS = "Special Data Fields"
     ETHICAL_CONSIDERATIONS = "Ethical Considerations"
-    START_DATE = "Start Date"
-    END_DATE = "End Date"
-    START_DATETIME = "Start Date & Time"
-    END_DATETIME = "End Date & Time"
-    UTC = "UTC"
-
+    LABEL_FIELDS = "Label Fields"
+    LABEL_FIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
+                             "\nIf a field occurs multiple times for the same id, the first occurance will be used."
+    COMBINED_LABEL_FIELDS = "Combined Label Fields"
+    COMBINED_LABEL_FIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
+                                      "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
+    COMPUTATIONAL_FIELDS = "Computational Fields"
+    COMPUTATIONAL_FIELDS_TOOLTIP = "Choose fields you want computational methods to use when identifing samples of interest from the data."\
+                             "\nIf a field occurs multiple times for the same id, the first occurance will be used."
+    COMBINED_COMPUTATIONAL_FIELDS = "Combined Computational Fields"
+    COMBINED_COMPUTATIONAL_FIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the data."\
+                                      "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
+    
+    
+    #Reddit Specific Dialog
+    REDDIT_RETRIEVE_LABEL = "Retrieve New Reddit Dataset"
+    REDDIT_RETRIEVED_LABEL = "Retrieved Reddit Dataset Details"
     REDDIT_LABEL = "Reddit"
     REDDIT_SUBREDDIT = "www.reddit.com/r/"
     REDDIT_SUBREDDIT_TOOLTIP = "Exact case-sensitive spelling of the subreddit for retrieval."\
                                "\nIf you require multiple subreddits in the same dataset then seperate the subreddit names by comma."
     REDDIT_SUBREDDIT_MISSING_ERROR = "Please enter a Subreddit."
+    REDDIT_SEARCH_BY = "Search by"
+    REDDIT_CONTAINS_TEXT = "Contains Text"
+    REDDIT_DISCUSSIONS = "Discussions"
+    REDDIT_DISCUSSIONS_TOOLTIP = "Will group any Reddit submissions and/or comments retrieved into discussions"
     REDDIT_SUBMISSIONS = "Submissions"
+    REDDIT_SUBMISSIONS_TOOLTIP = "Will retrieve any Reddit submissions between the start and end dates"
     REDDIT_COMMENTS = "Comments"
+    REDDIT_COMMENTS_TOOLTIP = "Will retrieve any Reddit comments between the start and end dates"
     REDDIT_SUBMISSIONS_NUM = "# of Submissions"
     REDDIT_COMMENTS_NUM = "# of Comments"
-    REDDIT_CONTAINS_TEXT = "Contains Text"
-
+    REDDIT_ARCHIVED_TOOLTIP = "Use the local subreddit archive to create the dataset."
     REDDIT_ARCHIVED = "Local Subreddit Archive"
-    REDDIT_UPDATE_PUSHSHIFT = "Local Subreddit Archive updated using Pushshift.io"
-    REDDIT_FULL_PUSHSHIFT = "Full retrieval from Pushshift.io"
     
+    REDDIT_UPDATE_PUSHSHIFT = "Local Subreddit Archive updated using Pushshift.io"
+    REDDIT_UPDATE_PUSHSHIFT_TOOLTIP = "For any part of the period between the start and end dates that the local subreddit archive does not have data,"\
+                                       "update the archive using pushshift.io API"\
+                                       "\nThen use the archive to create the dataset."\
+                                       "\nWARNING: This operation may take between several minutes to hours depending on sizze of existing local subreddit archive"
+    REDDIT_FULL_PUSHSHIFT = "Full retrieval from Pushshift.io"
+    REDDIT_FULL_PUSHSHIFT_TOOLTIP = "Remove any existing local subreddit archive."\
+                                    "Then retrieve a new archive from pushshift.io API for the period between the start and end dates."\
+                                    "Then use the archive to create the dataset"\
+                                    "\nWARNING: This operation is a slow and may take several hours"
     REDDIT_UPDATE_REDDITAPI = "Local Subreddit Archive and updated using Pushshift.io and Reddit API"
+    REDDIT_UPDATE_REDDITAPI_TOOLTIP = "For any part of the period between the start and end dates that the local subreddit archive does not have data,"\
+                                      "update the archive using pushshift.io API"\
+                                      "Then update the local subreddit archive for the period between the start and end dates using the Reddit API."\
+                                      "Then use the updated archive to create the dataset"\
+                                      "\nWARNING: This operation is slow and may take several hours"
     REDDIT_FULL_REDDITAPI = "Full retrieved from Pushshift.io and updated using Reddit API"
-
+    REDDIT_FULL_REDDITAPI_TOOLTIP = "Remove any existing local subreddit archive."\
+                                    "Then retrieve a new archive from pushshift.io API for the period between the start and end dates."\
+                                    "Then update the archive for the period between the start and end dates using the Reddit API."\
+                                    "Then use the updated archive to create the dataset"\
+                                    "\nWARNING: This operation is slow and may take several hours"
+    
+    #Twitter Specific Dialog
+    TWITTER_RETRIEVE_LABEL = "Retrieve New Twitter Dataset"
+    TWITTER_RETRIEVED_LABEL = "Retrieved Twitter Dataset Details"
     TWITTER_LABEL = "Twitter"
+    CONSUMER_KEY_TOOLTIP = "The API key of a project created in the Twitter Developer portal. Do not include quotes."
+    CONSUMER_SECRET_TOOLTIP = "The API secret of a project created in the Twitter Developer portal. Do not include quotes."
+    TWITTER_TWEETS = "Tweets"
     TWITTER_TWEETS_NUM = "# of Tweets"
+    TWITTER_QUERY = "Query"
     TWITTER_QUERY_HYPERLINK = "https://developer.twitter.com/en/docs/twitter-api/v1/tweets/search/guides/standard-operators"
     TWITTER_QUERY_TOOLTIP = "Query needs to follow these rules: " + TWITTER_QUERY_HYPERLINK
     TWITTER_QUERY_RADIOBUTTON_TOOLTIP = "Use a Twitter query to create the dataset, using these rules: " + TWITTER_QUERY_HYPERLINK
@@ -451,10 +414,16 @@ class Datasets(Common):
     TWITTER_QUERY_PLACEHOLDER = "ex. life OR technology from:google"
     TWITTER_TWEET_ATTRIBUTES = "Tweet Attributes"
     TWITTER_TWEET_ATTRIBUTES_RADIOBUTTON_TOOLTIP = "Use specific tweet attributes to create the dataset."
+    TWITTER_KEYWORDS = "Keywords"
     TWITTER_KEYWORDS_PLACEHOLDER = "ex. COVID vaccine, health, safety"
+    TWITTER_HASHTAGS = "Hashtags"
     TWITTER_HASHTAGS_PLACEHOLDER = "ex. #toronto, #raptors"
+    TWITTER_ACCOUNTS = "Accounts"
     TWITTER_ACCOUNT_PLACEHOLDER = "ex. JustinTrudeau"
 
+    #CSV Specific Dialog
+    CSV_RETRIEVE_LABEL = "Retrieve New CSV Dataset"
+    CSV_RETRIEVED_LABEL = "Retrieved CSV Dataset Details"
     CSV_LABEL = "CSV"
     CSV_ROWS_NUM = "# of Rows"
     CSV_DATASETFIELD = "Dataset Field"
@@ -473,21 +442,57 @@ class Datasets(Common):
     CSV_DATETIMEFIELD_TOOLTIP = "Choose a field to use as datetime to documents."
     CSV_DATETIMETZ_MISSING_ERROR = "Please choose the time zone for the contents of the datatime field"
     
-    LABEL_FIELDS = "Label Fields"
-    LABEL_FIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
-                             "\nIf a field occurs multiple times for the same id, the first occurance will be used."
-    COMBINED_LABEL_FIELDS = "Combined Label Fields"
-    COMBINED_LABEL_FIELDS_TOOLTIP = "Choose additional fields you need to use when identifying and interpreting the data."\
-                                      "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
-    COMPUTATIONAL_FIELDS = "Computational Fields"
-    COMPUTATIONAL_FIELDS_TOOLTIP = "Choose fields you want computational methods to use when identifing samples of interest from the data."\
-                             "\nIf a field occurs multiple times for the same id, the first occurance will be used."
-    COMBINED_COMPUTATIONAL_FIELDS = "Combined Computational Fields"
-    COMBINED_COMPUTATIONAL_FIELDS_TOOLTIP = "Choose fields you want machine learning to use when identifing samples of interest from the data."\
-                                      "\nIf a field occurs multiple times for the same id, it's content's will be concatinated."
-    DATASET_DELETE_TOOLTIP = "Delete this dataset from the workspace"
-    CUSTOMIZE_LABEL_FIELDS = "Customize Label Fields"
-    CUSTOMIZE_COMPUTATIONAL_FIELDS = "Customize Computational Fields"
+    #Retrieval Streps and Messages
+    #Common
+    RETRIEVING_LABEL = "Retrieval Inprogress for Dataset: "
+    RETRIEVING_BEGINNING_MSG = "Please wait while dataset is retrieved.\n"
+    RETRIEVING_DOWNLOADING_ALL_MSG = "- all data for month: "
+    RETRIEVING_DOWNLOADING_NEW_MSG = "- new data for month: "
+    RETRIEVING_IMPORTING_FILE_MSG = "- importing from file: "
+    RETRIEVING_BUSY_CONSTRUCTING_STEP = "Datasets are being constructed."
+    RETRIEVAL_FAILED_ERROR = "Retrieval failed for one or more datasets.\nPlease try again later."
+    NO_DATA_AVAILABLE_ERROR = "No data retrieved.\nPlease trying again later as requested data may not yet be available."
+    #Reddit
+    RETRIEVING_REDDIT_REMOVE_SUBREDDIT_ARCHIVE_STEP = "Deleting local archive for subreddit: "
+    RETRIEVING_REDDIT_DOWNLOADING_SUBMISSIONS_STEP = "Downloading Submission Data"
+    RETRIEVING_REDDIT_DOWNLOADING_COMMENTS_STEP = "Downloading Comment Data"
+    RETRIEVAL_REDDIT_FAILED_SUBMISSION = "- failed to retrieve submissions for month "
+    RETRIEVAL_REDDIT_FAILED_COMMENT = "- failed to retrieve comments for month "
+    RETRIEVING_REDDIT_IMPORTING_SUBMISSION_STEP = "Importing required submission data"
+    RETRIEVING_REDDIT_IMPORTING_COMMENT_STEP = "Importing required comment data"
+    RETRIEVING_REDDIT_PREPARING_DISCUSSION_STEP = "Preparing Discussion Data for Application use"
+    RETRIEVING_REDDIT_PREPARING_SUBMISSION_STEP = "Preparing Submission Data for Application use"
+    RETRIEVING_REDDIT_PREPARING_COMMENT_STEP = "Preparing Comment Data for Application use."
+    RETRIEVING_REDDIT_SEARCHING_DATA_STEP1 = "Selecting Data that contains ["
+    RETRIEVING_REDDIT_SEARCHING_DATA_STEP2 = "] in a text field."
+    #Twitter
+    RETRIEVING_TWITTER_DOWNLOADING_TWEETS_STEP = "Downloading Twitter tweets data"
+    RETRIEVING_TWITTER_IMPORTING_TWEET_STEP = "Importing required Twitter tweets data"
+    RETRIEVING_TWITTER_RATE_LIMIT_WARNING = "Twitter API rate limit has been reached. The number of tweets will be shortened."
+    RETRIEVING_TWITTER_BUSY_PREPARING_DATA_STEP = "Preparing Twitter Data for Application use."
+    #CSV
+    RETRIEVING_CSV_IMPORTING_FILE_STEP = "Importing from file: "
+    RETRIEVING_CSV_PREPARING_DATA_STEP = "Preparing CSV Data for Application use."
+    
+    #Tokenizing 
+    TOKENIZING_BUSY_STEP = "Tokenizing Data"
+    TOKENIZING_BUSY_STARTING_FIELD_MSG = "- Starting to tokenize field: "
+    TOKENIZING_BUSY_COMPLETED_FIELD_MSG1 = "-- completed tokenizing threads "
+    TOKENIZING_BUSY_COMPLETED_FIELD_MSG2 = " of "
+    TOKENIZING_BUSY_COMPLETED_FIELD_MSG3 = " for field: "
+    TOKENIZING_BUSY_STEP_TFIDF_STEP = "Calculating TFIDF values"
+    TOKENIZING_BUSY_STARTING_TFIDF_MSG = "- Starting to calculate TFIDF values"
+    TOKENIZING_BUSY_COMPLETED_TFIDF_MSG = "- Completed to calculating TFIDF values"
+
+    #Changing Name
+    CHANGING_NAME_LABEL = "Changing Name"
+    CHANGING_NAME_STEP = "Updating Dataset Name"
+    CHANGING_NAME_MSG1 = "- changing from: "
+    CHANGING_NAME_MSG2 = " to: "
+
+    #Changing Language
+    CHANGING_LANGUAGE_BUSY_LABEL = "Changing Language"
+    CHANGING_LANGUAGE_STEP = "Updating Dataset Language"
 
 class Samples(Main):
     #Model types
@@ -524,15 +529,9 @@ class Samples(Main):
     CREATE_BITERM_TOOLTIP = "Create a new Biterm Topic Model of a dataset"
     CREATE_NMF = "Create " + NMF_LABEL
     CREATE_NMF_TOOLTIP = "Create a new Non-Negative Matrix Factorization Topic Model of a dataset"
-    DELETE_TOOLTIP = "Remove selected sample from workspace"
     
-    DELETE_SAMPLE = "Delete Sample"
-    DELETE_SAMPLE_CONFIRM1 = "Are you sure you want to delete sample: "
-    DELETE_SAMPLE_CONFIRM2 = "\nWARNING this action cannot be undone."
-
-    DELETE_TOPIC = "Delete Topic"
-    CONFIRM_DELETE_TOPIC1 = "Are you sure you want to delete the topic: "
-    CONFIRM_DELETE_TOPIC2 = "\nWARNING this action cannot be undone."
+    DELETE_SAMPLE_LABEL = "Delete Sample"
+    DELETE_SAMPLE_WARNING = "\nWARNING this action cannot be undone."
 
     MERGE_TOPIC_LABEL = "Merge Topics"
     MERGE_TOPIC_SHORTHELP = "Create a new Merged Topic from selected Topics"
@@ -540,6 +539,7 @@ class Samples(Main):
     SPLIT_TOPIC_SHORTHELP = "Remove selected topics from their Merged Topic"
     REMOVE_TOPIC_LABEL = "Remove Topics"
     REMOVE_TOPIC_SHORTHELP = "Remove selected topics from the model"
+    REMOVE_TOPIC_WARNING = "\nWARNING this action cannot be undone."
     PROBABILITY_CUTOFF_LABEL = "Probability Cutoff "
     PROBABILITY_CUTOFF_TOOLTIP = "Include documents in a topic when the model predicts the probability of the topic being present in the document is greater or equal to the cutoff"
 
@@ -842,7 +842,8 @@ class Filtering(Main, Datasets):
     SAVE_FILTERING_BUSY_MSG = "Saving Data Cleaning & Filtering for dataset: "
 
 class Sampling(Samples):
-    SAMPLE_NAME = "Sample Name "
+    SAMPLE_NAME_LABEL = "Sample Name "
+    SAMPLE_CHANGE_NAME_LABEL = "Change Sample Name"
 
 class Coding(Main):
     CODING_NOTES_LABEL = "Coding Notes"

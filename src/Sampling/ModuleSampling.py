@@ -53,9 +53,9 @@ class SamplingNotebook(FNB.FlatNotebook):
 
         if page != self.create_page:
             old_key = page.sample.key
-            with wx.TextEntryDialog(self, GUIText.SAMPLE_NAME, value=old_key) as dialog:
+            with wx.TextEntryDialog(self, GUIText.SAMPLE_NAME_LABEL, value=old_key) as dialog:
                 ok_button = wx.FindWindowById(wx.ID_OK, dialog)
-                ok_button.SetLabel(GUIText.SAMPLE_CHANGE_NAME)
+                ok_button.SetLabel(GUIText.SAMPLE_CHANGE_NAME_LABEL)
                 if dialog.ShowModal() == wx.ID_OK:
                     new_name = dialog.GetValue().replace(" ", "_")
                     main_frame = wx.GetApp().GetTopWindow()
@@ -101,9 +101,9 @@ class SamplingNotebook(FNB.FlatNotebook):
         selection = event.GetSelection()
         page = self.GetPage(selection)
         if page.sample.key in main_frame.samples:
-            confirm_dialog = wx.MessageDialog(self, GUIText.DELETE_SAMPLE_CONFIRM1+str(page.sample)+GUIText.DELETE_SAMPLE_CONFIRM2,
+            confirm_dialog = wx.MessageDialog(self, str(page.sample)+GUIText.DELETE_CONFIRMATION+GUIText.DELETE_SAMPLE_WARNING,
                                               GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
-            confirm_dialog.SetOKCancelLabels(GUIText.DELETE_SAMPLE, GUIText.SKIP)
+            confirm_dialog.SetOKCancelLabels(GUIText.DELETE_SAMPLE_LABEL, GUIText.SKIP)
             if confirm_dialog.ShowModal() == wx.ID_OK:
                 main_frame.samples[page.sample.key].DestroyObject()
                 del main_frame.samples[page.sample.key]

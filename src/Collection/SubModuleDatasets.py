@@ -171,14 +171,15 @@ class DatasetsListPanel(wx.Panel):
         logger = logging.getLogger(__name__+".DatasetsPanel.OnChangeDatasetName")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
-        main_frame.CreateProgressDialog(GUIText.CHANGING_NAME_BUSY_LABEL,
+        main_frame.CreateProgressDialog(GUIText.CHANGING_NAME_LABEL,
                                         freeze=True)
         try:
-            main_frame.StepProgressDialog(GUIText.CHANGING_NAME_BUSY_PREPARING_MSG, enable=True)
+            main_frame.StepProgressDialog(GUIText.CHANGING_NAME_STEP, enable=True)
             node = self.datasets_model.ItemToObject(event.GetItem())
             if isinstance(node, Datasets.Dataset):
                 new_name = event.GetValue()
                 if node.name != new_name:
+                    main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_MSG1 + node.name + GUIText.CHANGING_NAME_MSG2 + new_name)
                     node.name = new_name
                     main_frame.DatasetsUpdated()
         finally:
@@ -189,6 +190,7 @@ class DatasetsListPanel(wx.Panel):
         logger = logging.getLogger(__name__+".DatasetsPanel.OnDeleteDatasets")
         logger.info("Starting")
         delete_nodes = []
+        cancelled = False
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.CreateProgressDialog(GUIText.DELETING_BUSY_LABEL,
                                         freeze=True)
@@ -210,7 +212,7 @@ class DatasetsListPanel(wx.Panel):
                         delete_nodes.append(node)
                     elif confirm_flg == wx.ID_CANCEL:
                         delete_nodes = []
-                        main_frame.StepProgressDialog(GUIText.CANCELED, enable=True)
+                        cancelled = True
                         break
             if len(delete_nodes) > 0:
                 remaining_loops = len(delete_nodes)
@@ -232,7 +234,10 @@ class DatasetsListPanel(wx.Panel):
                 main_frame.DatasetsUpdated()
 
         finally:
-            main_frame.CloseProgressDialog(thaw=True)
+            if cancelled:
+                main_frame.CloseProgressDialog(GUIText.CANCELED, thaw=True)
+            else:
+                main_frame.CloseProgressDialog(thaw=True)
         logger.info("Finished")
 
     def DatasetsUpdated(self):

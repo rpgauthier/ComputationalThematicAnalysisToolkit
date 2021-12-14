@@ -263,7 +263,6 @@ def ApplyFilterAllRules(dataset, main_frame):
     wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label':GUITextFiltering.FILTERS_UPDATING_COUNTS, 'enable':False}))
     logger.info("Finished")
 
-
 def ApplyFilterNewRules(dataset, main_frame, new_rules):
     logger = logging.getLogger(__name__+".ApplyFilterNewRules")
     logger.info("Starting")
@@ -293,3 +292,22 @@ def ApplyFilterNewRules(dataset, main_frame, new_rules):
         dataset.total_uniquetokens_remaining = included_counts['unique_tokens']
         wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label': GUITextFiltering.FILTERS_UPDATING_COUNTS, 'enable':False}))
     logger.info("Finished")
+
+def DatasetTypeLabel(dataset):
+    if dataset.dataset_source == 'Reddit':
+        if dataset.dataset_type == 'discussion':
+            dataset_type = GUIText.REDDIT_DISCUSSIONS
+        elif dataset.dataset_type == 'submission':
+            dataset_type = GUIText.REDDIT_SUBMISSIONS
+        elif dataset.dataset_type == 'comment':
+            dataset_type = GUIText.REDDIT_COMMENTS
+        else:
+            dataset_type = dataset.dataset_type
+    elif dataset.dataset_source == 'Twitter':
+        if dataset.dataset_type == 'tweet':
+            dataset_type = GUIText.TWITTER_TWEETS
+        else:
+            dataset_type = dataset.dataset_type
+    else:
+        dataset_type = dataset.dataset_type
+    return dataset_type

@@ -142,7 +142,7 @@ class LoadThread(Thread):
             else:
                 shutil.copytree(self.save_path, self.current_workspace_path, dirs_exist_ok=True)
 
-            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_CONFIG))
+            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_CONFIG_MSG))
             with open(self.current_workspace_path+"/config.pk", 'rb') as infile:
                 result['config'] = pickle.load(infile)
 
@@ -168,7 +168,7 @@ class LoadThread(Thread):
                         if os.path.isfile(self.current_workspace_path+"/Datasets/"+dataset_filename):
                             with open(self.current_workspace_path+"/Datasets/"+dataset_filename, 'rb') as infile:
                                 result['datasets'][key] = pickle.load(infile)
-                            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_DATASET+str(result['datasets'][key].name)))
+                            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_DATASET_MSG+str(result['datasets'][key].name)))
                         
 
                 result['samples'] = {}
@@ -180,20 +180,20 @@ class LoadThread(Thread):
                                 result['samples'][key] = pickle.load(infile)
                                 result['samples'][key].Load(self.current_workspace_path)
                             if result['samples'][key].name != None:
-                                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_SAMPLE+str(result['samples'][key].name)))
+                                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_SAMPLE_MSG+str(result['samples'][key].name)))
                             else:
-                                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_SAMPLE+str(key)))
+                                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_SAMPLE_MSG+str(key)))
                         
 
                 result['codes'] = {}
                 if "codes" in result['config']:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_CODES))
+                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_CODES_MSG))
                     with open(self.current_workspace_path+"/codes.pk", 'rb') as infile:
                         result['codes'] = pickle.load(infile)
                 
                 result['themes'] = {}
                 if "themes" in result['config']:
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_THEMES))
+                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_THEMES_MSG))
                     with open(self.current_workspace_path+"/themes.pk", 'rb') as infile:
                         result['themes'] = pickle.load(infile)
 
@@ -217,7 +217,7 @@ class LoadThread(Thread):
         wx.PostEvent(self._notify_window, CustomEvents.LoadResultEvent(result))
 
     def Upgrade0_8_5(self, result, ver):
-        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE2+'0.8.5',
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE_STEP1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE_STEP2+'0.8.5',
                                                                           'enable':True}))
         def UpgradeConfig(config, ver):
             if ver < version.parse('0.8.1'):
@@ -241,7 +241,7 @@ class LoadThread(Thread):
 
         def UpgradeDatasets(result, ver):
             for dataset in result['datasets'].values():
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATASETS))
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATASETS_MSG))
                 if ver < version.parse('0.8.1'):
                     #convert metadata fields list to dict of objects
                     if hasattr(dataset, "_metadata_fields_list"):
@@ -320,11 +320,11 @@ class LoadThread(Thread):
                         dataset.documents[document_key]._uuid = str(uuid.uuid4())
 
         def UpgradeDatabase(result, ver):
-            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATABASE))
+            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATABASE_MSG))
             if ver < version.parse('0.8.1'):
                 #create database for token based operations
                 if not os.path.isfile(self.current_workspace_path+"\\workspace_sqlite3.db"):
-                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATABASE_CREATE))
+                    wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATABASE_CREATE_MSG))
                     db_conn = Database.DatabaseConnection(self.current_workspace_path)
                     db_conn.Create()
                     for dataset_key in result['datasets']:
@@ -373,7 +373,7 @@ class LoadThread(Thread):
 
         def UpgradeSamples(result, ver):
             for sample in result['samples'].values():
-                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_SAMPLES))
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_SAMPLES_MSG))
                 if ver < version.parse('0.8.1'):
                     if not hasattr(sample, "_field_list"):
                         sample._fields_list = list(result['datasets'][sample.dataset_key].computational_fields.keys())
@@ -396,7 +396,7 @@ class LoadThread(Thread):
                                     sample.parts_dict[part_key].parts_dict[subpart_key]._uuid = str(uuid.uuid4())
 
         def UpgradeCodes(result, ver):
-            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_CODES))
+            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_CODES_MSG))
             for code_key in result['codes']:
                 code = result['codes'][code_key]
                 if ver < version.parse('0.8.1'):
@@ -455,11 +455,11 @@ class LoadThread(Thread):
         #upgrade codes
         UpgradeCodes(result, ver)
 
-        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE2+'0.8.5',
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE_STEP1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE_STEP2+'0.8.5',
                                                                           'enable':False}))
 
     def Upgrade0_8_6(self, result, ver):
-        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE2+'0.8.6',
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE_STEP1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE_STEP2+'0.8.6',
                                                                           'enable':True}))
         #Updated config
         if 'adjustable_includedfields_mode' in result['config']['options']:
@@ -648,15 +648,15 @@ class LoadThread(Thread):
                     dataset.retrieval_details['end_date'] = end_datetime
                 dataset.last_changed_dt = datetime.now()
 
-        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE2+'0.8.5',
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE_STEP1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE_STEP2+'0.8.5',
                                                                           'enable':False}))
 
     def Upgrade0_8_7(self, result, ver):
-        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE2+'0.8.7',
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE_STEP1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE_STEP2+'0.8.7',
                                                                           'enable':True}))
 
         def UpgradeDatabase(result, ver):
-            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATABASE))
+            wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATABASE_MSG))
             db_conn = Database.DatabaseConnection(self.current_workspace_path)
             db_conn.Upgrade0_8_7()
             for dataset_key in result['datasets']:
@@ -665,5 +665,5 @@ class LoadThread(Thread):
         
         UpgradeDatabase(result, ver)
 
-        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE2+'0.8.5',
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE_STEP1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE_STEP2+'0.8.5',
                                                                           'enable':False}))

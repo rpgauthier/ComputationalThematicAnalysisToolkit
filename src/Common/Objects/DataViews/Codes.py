@@ -6,12 +6,14 @@ import wx
 import wx.dataview as dv
 
 from Common.GUIText import Coding as GUIText
+from Common.GUIText import Datasets as DatasetsGUIText
 import Common.Constants as Constants
 import Common.Objects.Generic as Generic
 import Common.Objects.Utilities.Generic as GenericUtilities
 import Common.Objects.Codes as Codes
 import Common.Objects.GUIs.Codes as CodesGUIs
 import Common.Objects.Datasets as Datasets
+import Common.Objects.Utilities.Datasets as DatasetsUtilities
 import Common.Objects.Samples as Samples
 
 # This model acts as a bridge between the CodesViewCtrl and the codes of the workspace.
@@ -1210,7 +1212,7 @@ class DocumentViewModel(dv.PyDataViewModel):
         node = self.ItemToObject(item)
         if isinstance(node, Datasets.Dataset):
             col_start = len(self.label_column_names)+len(self.data_column_names)
-            mapper = { 0 : str(node.name)+" / "+str(node.dataset_source)+" / "+str(node.dataset_type),
+            mapper = { 0 : str(node.name)+" / "+str(node.dataset_source)+" / "+str(DatasetsUtilities(node)),
                        col_start+0 : "\U0001F6C8" if node.notes != "" else "",
                        col_start+1 : len(node.codes)
                        }

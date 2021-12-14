@@ -129,7 +129,7 @@ def QDAProjectExporter(name, datasets, samples, codes, themes, file_name, archiv
                 desc_text += GUIText.Datasets.REDDIT_COMMENTS_NUM + ": " + str(retrieval_details['comment_count']) + "\n"
         elif dataset.dataset_source == "Twitter":
             desc_text += GUIText.Datasets.RETRIEVED_ON + ": " + dataset.created_dt.strftime(Constants.DATE_FORMAT) + "\n"
-            desc_text += GUIText.Datasets.QUERY + ": " + str(retrieval_details['query']) + "\n"
+            desc_text += GUIText.Datasets.TWITTER_QUERY + ": " + str(retrieval_details['query']) + "\n"
             desc_text += GUIText.Datasets.START_DATE + ": "+ str(retrieval_details['start_date']) + "\n"
             desc_text += GUIText.Datasets.END_DATE + ": "+ str(retrieval_details['end_date']) + "\n"
         elif dataset.dataset_source == "CSV":

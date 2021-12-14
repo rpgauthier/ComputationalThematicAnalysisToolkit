@@ -224,7 +224,7 @@ class SampleCreatePanel(wx.Panel):
             new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
             main_frame.samples[new_sample.key] = new_sample
             new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt)
-            main_frame.StepProgressDialog(GUIText.GENERATING_LDA_MSG3, enable=true)
+            main_frame.StepProgressDialog(GUIText.GENERATING_LDA_MSG3, enable=True)
             parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.name, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
             main_frame.CloseProgressDialog(message=GUIText.GENERATED_LDA_COMPLETED_PART1,
@@ -1040,9 +1040,9 @@ class TopicSamplePanel(AbstractSamplePanel):
         old_mergedparts = []
         for item in selections:
             node = self.topiclist_panel.topic_list_model.ItemToObject(item)
-            confirm_dialog = wx.MessageDialog(self, GUIText.CONFIRM_DELETE_TOPIC1+str(node)+GUIText.CONFIRM_DELETE_TOPIC2,
+            confirm_dialog = wx.MessageDialog(self, str(node)+GUIText.DELETE_CONFIRMATION+GUIText.REMOVE_TOPIC_WARNING,
                                               GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.YES_NO | wx.CANCEL)
-            confirm_dialog.SetYesNoLabels(GUIText.DELETE_TOPIC, GUIText.SKIP)
+            confirm_dialog.SetYesNoLabels(GUIText.REMOVE_TOPIC_LABEL, GUIText.SKIP)
             confirm_flg = confirm_dialog.ShowModal()
             if confirm_flg == wx.ID_YES:
                 if isinstance(node, Samples.TopicPart):
