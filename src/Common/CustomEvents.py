@@ -13,6 +13,30 @@ class ProgressEvent(wx.PyEvent):
         self.SetEventType(EVT_PROGRESS_ID)
         self.data = data
 
+PROGRESS_STEP_EVT_ID = wx.NewIdRef()
+def EVT_PROGRESS_STEP(win, func):
+    """Define Result Event."""
+    win.Connect(-1, -1, PROGRESS_STEP_EVT_ID, func)
+class ProgressStepEvent(wx.PyEvent):
+    """Simple event to carry arbitrary progress data."""
+    def __init__(self, data):
+        """Init Result Event."""
+        wx.PyEvent.__init__(self)
+        self.SetEventType(PROGRESS_STEP_EVT_ID)
+        self.data = data
+
+PROGRESS_STEP_ESTIMATED_TIME_EVT_ID = wx.NewIdRef()
+def EVT_PROGRESS_STEP_ESTIMATED_TIME(win, func):
+    """Define Result Event."""
+    win.Connect(-1, -1, PROGRESS_STEP_ESTIMATED_TIME_EVT_ID, func)
+class ProgressStepEstimatedTimeEvent(wx.PyEvent):
+    """Simple event to carry arbitrary progress data."""
+    def __init__(self, data):
+        """Init Result Event."""
+        wx.PyEvent.__init__(self)
+        self.SetEventType(PROGRESS_STEP_ESTIMATED_TIME_EVT_ID)
+        self.data = data
+
 RETRIEVE_EVT_RESULT_ID = wx.NewIdRef()
 def RETRIEVE_EVT_RESULT(win, func):
     """Define Result Event."""

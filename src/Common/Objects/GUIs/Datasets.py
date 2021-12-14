@@ -41,7 +41,7 @@ class DataNotebook(FNB.FlatNotebook):
                 self.DeletePage(index)
             del self.dataset_data_tabs[key]
         for key in main_frame.datasets:
-            main_frame.PulseProgressDialog(GUIText.REFRESHING_DATASETS_BUSY_MSG+str(main_frame.datasets[key].name))
+            main_frame.StepProgressDialog(GUIText.REFRESHING_DATASETS_BUSY_MSG+str(main_frame.datasets[key].name), enable=True)
             if key in self.dataset_data_tabs:
                 self.dataset_data_tabs[key].Update()
             else:

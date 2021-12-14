@@ -132,7 +132,7 @@ class SampleCreatePanel(wx.Panel):
                 main_frame.CreateProgressDialog(GUIText.GENERATING_DEFAULT_LABEL,
                                     warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
                                     freeze=False)
-                main_frame.PulseProgressDialog(GUIText.GENERATING_DEFAULT_MSG)
+                main_frame.StepProgressDialog(GUIText.GENERATING_DEFAULT_MSG, enable=True)
                 name = model_parameters['name']
                 main_frame.PulseProgressDialog(GUIText.GENERATING_RANDOM_SUBLABEL+str(name))
                 dataset_key = model_parameters['dataset_key']
@@ -155,7 +155,7 @@ class SampleCreatePanel(wx.Panel):
                     main_frame.CreateProgressDialog(GUIText.GENERATING_DEFAULT_LABEL,
                                         warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
                                         freeze=False)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_DEFAULT_MSG)
+                    main_frame.StepProgressDialog(GUIText.GENERATING_DEFAULT_MSG, enable=True)
                     self.start_dt = datetime.now()
                     model_parameters = create_dialog.model_parameters
                     name = model_parameters['name']
@@ -171,7 +171,7 @@ class SampleCreatePanel(wx.Panel):
                     main_frame.CreateProgressDialog(GUIText.GENERATING_DEFAULT_LABEL,
                                         warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
                                         freeze=False)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_DEFAULT_MSG)
+                    main_frame.StepProgressDialog(GUIText.GENERATING_DEFAULT_MSG, enable=True)
                     self.start_dt = datetime.now()
                     model_parameters = create_dialog.model_parameters
                     name = model_parameters['name']
@@ -187,7 +187,7 @@ class SampleCreatePanel(wx.Panel):
                     main_frame.CreateProgressDialog(GUIText.GENERATING_DEFAULT_LABEL,
                                         warning=GUIText.GENERATE_WARNING+"\n"+GUIText.SIZE_WARNING_MSG,
                                         freeze=False)
-                    main_frame.PulseProgressDialog(GUIText.GENERATING_DEFAULT_MSG)
+                    main_frame.StepProgressDialog(GUIText.GENERATING_DEFAULT_MSG, enable=True)
                     self.start_dt = datetime.now()
                     model_parameters = create_dialog.model_parameters
                     name = model_parameters['name']
@@ -224,7 +224,7 @@ class SampleCreatePanel(wx.Panel):
             new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
             main_frame.samples[new_sample.key] = new_sample
             new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt)
-            main_frame.PulseProgressDialog(GUIText.GENERATING_LDA_MSG3)
+            main_frame.StepProgressDialog(GUIText.GENERATING_LDA_MSG3, enable=true)
             parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.name, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
             main_frame.CloseProgressDialog(message=GUIText.GENERATED_LDA_COMPLETED_PART1,
@@ -239,7 +239,7 @@ class SampleCreatePanel(wx.Panel):
             new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
             main_frame.samples[new_sample.key] = new_sample
             new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt)
-            main_frame.PulseProgressDialog(GUIText.GENERATING_BITERM_MSG3)
+            main_frame.StepProgressDialog(GUIText.GENERATING_BITERM_MSG3, enable=True)
             parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.name, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
             main_frame.CloseProgressDialog(message=GUIText.GENERATED_BITERM_COMPLETED_PART1,
@@ -254,7 +254,7 @@ class SampleCreatePanel(wx.Panel):
             new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
             main_frame.samples[new_sample.key] = new_sample
             new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt)
-            main_frame.PulseProgressDialog(GUIText.GENERATING_NMF_MSG3)
+            main_frame.StepProgressDialog(GUIText.GENERATING_NMF_MSG3, enable=True)
             parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.name, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
             main_frame.CloseProgressDialog(message=GUIText.GENERATED_NMF_COMPLETED_PART1,
@@ -532,7 +532,7 @@ class SampleRulesDialog(wx.Dialog):
                                             freeze=True)
             main_frame.PulseProgressDialog(GUIText.RESTORE_BEGINNING_MSG)
 
-            main_frame.PulseProgressDialog(GUIText.RESTORE_REPLACINGRULES_MSG)
+            main_frame.StepProgressDialog(GUIText.RESTORE_REPLACINGRULES_MSG, enable=True)
             self.dataset.tokenization_choice = self.sample.tokenization_choice
             self.dataset.filter_rules.clear()
             self.dataset.filter_rules.extend(self.sample.applied_filter_rules)
@@ -602,7 +602,7 @@ class SampleComputationalFieldsDialog(wx.Dialog):
 
             db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
 
-            main_frame.PulseProgressDialog(GUIText.RESTORE_REPLACINGFIELDS_MSG)
+            main_frame.StepProgressDialog(GUIText.RESTORE_REPLACINGFIELDS_MSG, enable=True)
             #1) remove from the dataset any currently included fields
             for field_key in list(self.dataset.computational_fields.keys()):
                 if field_key not in self.fields:

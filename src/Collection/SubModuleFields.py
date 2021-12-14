@@ -112,7 +112,7 @@ class FieldsPanel(wx.Panel):
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
 
-        main_frame.PulseProgressDialog(GUIText.ADDING_FIELDS_BUSY_PREPARING_MSG)
+        main_frame.StepProgressDialog(GUIText.ADDING_LABEL_FIELDS_BUSY_LABEL, enable=True)
         for item in self.available_fields_ctrl.GetSelections():
             node = self.available_fields_model.ItemToObject(item)
             main_frame.PulseProgressDialog(GUIText.ADDING_FIELDS_BUSY_MSG+str(node.name))
@@ -157,8 +157,8 @@ class FieldsPanel(wx.Panel):
             main_frame.CreateProgressDialog(GUIText.REMOVING_LABEL_FIELDS_BUSY_LABEL,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
-        
-        main_frame.PulseProgressDialog(GUIText.REMOVING_FIELDS_BUSY_PREPARING_MSG)
+
+        main_frame.StepProgressDialog(GUIText.REMOVING_FIELDS_BUSY_LABEL, enable=True)
         for item in self.chosen_fields_ctrl.GetSelections():
             node = self.chosen_fields_model.ItemToObject(item)
             main_frame.PulseProgressDialog(GUIText.REMOVING_FIELDS_BUSY_MSG+str(node.name))

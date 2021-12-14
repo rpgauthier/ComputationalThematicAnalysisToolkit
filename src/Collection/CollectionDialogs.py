@@ -797,7 +797,7 @@ class TwitterDatasetRetrieverDialog(AbstractRetrieverDialog):
             item = self.computational_fields_ctrl.GetNextItem(item)
 
         if status_flag:
-            main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+query,
+            main_frame.CreateProgressDialog(title=GUIText.RETRIEVING_LABEL+name,
                                             warning=GUIText.SIZE_WARNING_MSG,
                                             freeze=True)
             self.Hide()

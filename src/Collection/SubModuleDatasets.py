@@ -1,4 +1,5 @@
 '''Code for the submodule that controls grouping of data'''
+from datetime import datetime, timedelta
 import logging
 
 import wx
@@ -173,7 +174,7 @@ class DatasetsListPanel(wx.Panel):
         main_frame.CreateProgressDialog(GUIText.CHANGING_NAME_BUSY_LABEL,
                                         freeze=True)
         try:
-            main_frame.PulseProgressDialog(GUIText.CHANGING_NAME_BUSY_PREPARING_MSG)
+            main_frame.StepProgressDialog(GUIText.CHANGING_NAME_BUSY_PREPARING_MSG, enable=True)
             node = self.datasets_model.ItemToObject(event.GetItem())
             if isinstance(node, Datasets.Dataset):
                 new_name = event.GetValue()
@@ -192,7 +193,10 @@ class DatasetsListPanel(wx.Panel):
         main_frame.CreateProgressDialog(GUIText.DELETING_BUSY_LABEL,
                                         freeze=True)
         try:
+            main_frame.StepProgressDialog(GUIText.DELETING_BUSY_LABEL, enable=True)
             main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_PREPARING_MSG)
+            start_time = datetime.now()
+            remaining_loops = len(delete_nodes)
             #perform delete on any selected groups or grouped datasets
             for item in self.datasets_ctrl.GetSelections():
                 node = self.datasets_model.ItemToObject(item)
@@ -206,17 +210,27 @@ class DatasetsListPanel(wx.Panel):
                         delete_nodes.append(node)
                     elif confirm_flg == wx.ID_CANCEL:
                         delete_nodes = []
-                        main_frame.PulseProgressDialog(GUIText.CANCELED)
+                        main_frame.StepProgressDialog(GUIText.CANCELED, enable=True)
                         break
             if len(delete_nodes) > 0:
+                remaining_loops = len(delete_nodes)
+                estimated_loop_time = timedelta()
                 db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
                 for node in delete_nodes:
+                    start_loop_time = datetime.now()
                     main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_REMOVING_MSG+str(node.name))
                     if node.key in main_frame.datasets:
                         del main_frame.datasets[node.key]
                     db_conn.DeleteDatasetFromStringTokens(node.key)
                     node.DestroyObject()
+                    remaining_loops -= 1
+                    current_time = datetime.now()
+                    new_loop_time = current_time - start_loop_time
+                    if new_loop_time > estimated_loop_time:
+                        estimated_loop_time = new_loop_time
+                    main_frame.UpdateStepEstimatedTimeProgressDialog((current_time-start_time)+(estimated_loop_time*remaining_loops))
                 main_frame.DatasetsUpdated()
+
         finally:
             main_frame.CloseProgressDialog(thaw=True)
         logger.info("Finished")
@@ -226,7 +240,7 @@ class DatasetsListPanel(wx.Panel):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         if len(self.dataset_dialogs.keys()) > 0:
-            main_frame.PulseProgressDialog(GUIText.UPDATING_DATASET_BUSY_MSG)
+            main_frame.StepProgressDialog(GUIText.UPDATING_DATASET_BUSY_MSG, enable=True)
         self.datasets_model.Cleared()
         self.datasets_ctrl.Expander(None)
         for key in list(self.dataset_dialogs.keys()):
@@ -296,6 +310,7 @@ class DatasetDetailsPanel(wx.Panel):
         main_frame.CreateProgressDialog(GUIText.DELETING_BUSY_LABEL,
                                         freeze=True)
         try:
+            main_frame.StepProgressDialog(GUIText.DELETING_BUSY_LABEL, enable=True)
             main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_PREPARING_MSG)
             confirm_dialog = wx.MessageDialog(self, str(self.dataset.key)+GUIText.DELETE_CONFIRMATION
                                               + GUIText.DATASETS_DELETE_CONFIRMATION_WARNING,

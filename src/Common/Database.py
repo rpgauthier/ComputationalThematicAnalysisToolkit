@@ -3,8 +3,12 @@ import sqlite3
 import math
 import os.path
 import ast
+from datetime import datetime, timedelta
+
+import wx
 
 import Common.Constants as Constants
+import Common.CustomEvents as CustomEvents
 from Common.GUIText import Filtering as GUITextFiltering
 
 class DatabaseConnection():
@@ -170,7 +174,6 @@ class DatabaseConnection():
         except sqlite3.Error:
             logger.exception("sql failed with sql error")
         logger.info("Finished")
-
 
     def InsertDataset(self, dataset_key, token_type):
         logger = logging.getLogger(__name__+".InsertDataset")
@@ -811,6 +814,10 @@ class DatabaseConnection():
         logger = logging.getLogger(__name__+".ApplyAllDatasetRules")
         logger.info("Starting")
         try:
+            main_frame = wx.GetApp().GetTopWindow()
+            start_time = datetime.now()
+            remaining_loops = len(rules)
+            estimated_loop_time = timedelta()
             c = self.__conn.cursor()
             sql_select_dataset = """SELECT id, token_type
                                     FROM datasets 
@@ -836,7 +843,9 @@ class DatabaseConnection():
             cur_rule_group = []
             #field, word, pos, action
             for rule in rules:
+                remaining_loops -= 1
                 if cur_rule_action == None:
+                    start_loop_time = datetime.now()
                     cur_rule_action = rule[3]
                 next_rule_action = rule[3]
                 if next_rule_action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
@@ -853,8 +862,14 @@ class DatabaseConnection():
                     #commit after every rule to make sure operations are applied in correct order
                     #TODO Assess if this is needed
                     self.__conn.commit()
+                    new_estimated_loop_time = datetime.now() - start_loop_time
+                    if new_estimated_loop_time > estimated_loop_time:
+                        estimated_loop_time = new_estimated_loop_time
+                    elapsed_time = datetime.now() - start_time
+                    wx.PostEvent(main_frame, CustomEvents.ProgressStepEstimatedTimeEvent(elapsed_time + (estimated_loop_time * remaining_loops)))
                     logger.info("Completed Applying Rule Group %s", str(cur_rule_group))
 
+                    start_loop_time = datetime.now()
                     cur_rule_action = next_rule_action
                     cur_rule_group = [rule]
             
@@ -874,6 +889,10 @@ class DatabaseConnection():
         logger = logging.getLogger(__name__+".ApplyNewDatasetRules")
         logger.info("Starting")
         try:
+            main_frame = wx.GetApp().GetTopWindow()
+            start_time = datetime.now()
+            remaining_loops = len(new_rules)
+            estimated_loop_time = timedelta()
             c = self.__conn.cursor()
             sql_select_dataset = """SELECT id, token_type
                                       FROM datasets 
@@ -891,6 +910,7 @@ class DatabaseConnection():
             #field, word, pos, action
             for rule in new_rules:
                 if cur_rule_action == None:
+                    start_loop_time = datetime.now()
                     cur_rule_action = rule[3]
                 next_rule_action = rule[3]
                 if next_rule_action == Constants.FILTER_RULE_REMOVE_SPACY_AUTO_STOPWORDS:
@@ -907,8 +927,14 @@ class DatabaseConnection():
                     #commit after every rule to make sure operations are applied in correct order
                     #TODO Assess if this is needed
                     self.__conn.commit()
+                    new_estimated_loop_time = datetime.now() - start_loop_time
+                    if new_estimated_loop_time > estimated_loop_time:
+                        estimated_loop_time = new_estimated_loop_time
+                    elapsed_time = datetime.now() - start_time
+                    wx.PostEvent(main_frame, CustomEvents.ProgressStepEstimatedTimeEvent(elapsed_time + (estimated_loop_time * remaining_loops)))
                     logger.info("Completed Applying Rule Group %s", str(cur_rule_group))
 
+                    start_loop_time = datetime.now()
                     cur_rule_action = next_rule_action
                     cur_rule_group = [rule]
             

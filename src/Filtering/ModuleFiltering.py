@@ -687,7 +687,7 @@ class WordsPanel(wx.Panel):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         self.Freeze()
-        main_frame.PulseProgressDialog(GUIText.FILTERS_DISPLAY_STRINGS_BUSY_MSG1+self.word_type+GUIText.FILTERS_DISPLAY_STRINGS_BUSY_MSG2+str(self.parent_frame.name))
+        main_frame.StepProgressDialog(GUIText.FILTERS_DISPLAY_STRINGS_BUSY_MSG1+self.word_type+GUIText.FILTERS_DISPLAY_STRINGS_BUSY_MSG2+str(self.parent_frame.name), enable=True)
         try:
             search_term = self.searchctrl.GetValue()
             self.words_list.Update(search_term)

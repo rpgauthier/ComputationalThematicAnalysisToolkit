@@ -4,6 +4,8 @@ class Common:
     WARNING = "Warning"
     ERROR = "Error"
     INFORMATION = "Information"                           
+    UNKNOWN = "Unknown"
+    DETAILS = "Details"
 
     CONFIRM_REQUEST = "Please Confirm"
     INPUT_REQUEST = "Please provide Input"
@@ -94,6 +96,9 @@ class Common:
     NUMBER_OF_CODES = "# of Codes"
 
     SIZE_WARNING_MSG = "WARNING: may take some time for large datasets"
+    TOTAL_TIME_LABEL = "Total Time:"
+    CURRENT_STEP_LABEL = "Current Step: "
+    CURRENT_STEP_TIME_LABEL = "Current Step Time:"
 
     MULTIPROCESSING_WARNING_MSG = "A cpu intensive operation is currently in progress."\
                                   "\n Please try current action again after this operation has completed"
@@ -138,14 +143,16 @@ class Main(Common):
     LOAD_BUSY_MSG_SAMPLE = "Loaded Sample: "
     LOAD_BUSY_MSG_CODES = "Loading Codes"
     LOAD_BUSY_MSG_THEMES = "Loading Themes"
-    LOAD_BUSY_MSG_CONFIG = "Loading Configurations."
+    LOAD_BUSY_MSG_CONFIG = "Loading Configurations"
+    LOAD_BUSY_MSG_MEMORY = "Loading Memory"
 
     SAVE_BUSY_LABEL = "Saving Workspace"
-    SAVE_BUSY_MSG = "Please Wait while data is saved.\n"
-    AUTO_SAVE_BUSY_MSG = "Please Wait while data is autosaved.\n"
+    SAVE_BUSY_MSG = "Please wait while data is saved.\n"
+    AUTO_SAVE_BUSY_LABEL = "Autosaving Workspace"
+    AUTO_SAVE_BUSY_MSG = "- please wait while data is autosaved."
     SAVE_BUSY_MSG_FILE = "Saving File: "
     SAVE_BUSY_MSG_NOTES = "Saving Notes to text."
-    SAVE_BUSY_MSG_CONFIG = "Saving Configurations."
+    SAVE_BUSY_MSG_CONFIG = "Saving Configurations"
     SAVE_BUSY_MSG_DATASETS = "Saving Dataset: "
     SAVE_BUSY_MSG_SAMPLES = "Saving Sample: "
     SAVE_BUSY_MSG_CODES = "Saving Codes"
@@ -180,6 +187,9 @@ class Main(Common):
     OPTIONS_MULTIPLEDATASETS = "Allow Multiple Datasets Mode (not yet fully tested)"
     OPTIONS_ADJUSTABLE_LABEL_FIELDS = "Allow adjusting label fields during retrieval"
     OPTIONS_ADJUSTABLE_COMPUTATIONAL_FIELDS = "Allow adjusting computational fields during retrieval"
+
+    OF_AN_ESTIMATED = "of an estimated "
+    COMPLETED_IN = "- completed in "
 
     #Menu related text
     MODE_MENU = "Mode"
@@ -346,33 +356,38 @@ class Datasets(Common):
     RETRIEVING_BEGINNING_MSG = "Please wait while dataset is retrieved.\n"
     RETRIEVING_BUSY_REMOVE_SUBREDDIT_ARCHIVE_MSG = "Deleting local archive for subreddit: "
     RETRIEVING_BUSY_PUSHSHIFT_DATA = "Retrieving Data from Pushshift"
-    RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_MSG = "Preparing to download Submission Data"
-    RETRIEVING_BUSY_DOWNLOADING_COMMENTS_MSG = "Preparing to download Comment Data"
-    RETRIEVING_BUSY_DOWNLOADING_TWITTER_TWEETS_MSG = "Preparing to download Twitter tweets data"
-    RETRIEVING_BUSY_DOWNLOADING_ALL_MSG = "Downloading all data for month: "
-    RETRIEVING_BUSY_DOWNLOADING_NEW_MSG = "Downloading new data for month: "
+    RETRIEVING_BUSY_DOWNLOADING_SUBMISSIONS_STEP = "Downloading Submission Data"
+    RETRIEVING_BUSY_DOWNLOADING_COMMENTS_STEP = "Downloading Comment Data"
+    RETRIEVING_BUSY_DOWNLOADING_TWITTER_TWEETS_STEP = "Downloading Twitter tweets data"
+    RETRIEVING_BUSY_DOWNLOADING_ALL_MSG = "- all data for month: "
+    RETRIEVING_BUSY_DOWNLOADING_NEW_MSG = "- new data for month: "
     RETRIEVING_BUSY_IMPORTING_SUBMISSION_MSG = "Importing required submission data"
     RETRIEVING_BUSY_IMPORTING_COMMENT_MSG = "Importing required comment data"
     RETRIEVING_BUSY_IMPORTING_TWITTER_TWEET_MSG = "Importing required Twitter tweets data"
-    RETRIEVING_BUSY_IMPORTING_FILE_MSG = "Importing from file: "
+    RETRIEVING_BUSY_IMPORTING_FILE_MSG = "- importing from file: "
+
     RETRIEVING_BUSY_PREPARING_DISCUSSION_MSG = "Preparing Discussion Data for Application use"
     RETRIEVING_BUSY_PREPARING_SUBMISSION_MSG = "Preparing Submission Data for Application use"
     RETRIEVING_BUSY_PREPARING_COMMENT_MSG = "Preparing Comment Data for Application use."
     RETRIEVING_BUSY_SEARCHING_DATA_MSG1 = "Selecting Data that contains ["
     RETRIEVING_BUSY_SEARCHING_DATA_MSG2 = "] in a text field."
     
+    RETRIEVING_BUSY_IMPORTING_CSV_MSG = "Importing from file: "
     RETRIEVING_BUSY_PREPARING_CSV_MSG = "Preparing CSV Data for Application use."
     RETRIEVING_BUSY_PREPARING_TWITTER_MSG = "Preparing Twitter Data for Application use."
     RETRIEVING_BUSY_CONSTRUCTING_MSG = "Datasets are being constructed."
 
     TWITTER_RATE_LIMIT_REACHED_MSG = "Warning: Twitter API rate limit has been reached. The number of tweets will be shortened."
 
-    TOKENIZING_BUSY_STARTING_FIELD_MSG = "Starting to tokenize field: "
-    TOKENIZING_BUSY_COMPLETED_FIELD_MSG1 = "Completed tokenizing "
+    TOKENIZING_BUSY_STEP = "Tokenizing Data"
+    TOKENIZING_BUSY_STARTING_FIELD_MSG = "- Starting to tokenize field: "
+    TOKENIZING_BUSY_COMPLETED_FIELD_MSG1 = "-- completed tokenizing threads "
     TOKENIZING_BUSY_COMPLETED_FIELD_MSG2 = " of "
     TOKENIZING_BUSY_COMPLETED_FIELD_MSG3 = " for field: "
-    TOKENIZING_BUSY_STARTING_TFIDF_MSG = "Starting to calculate TFIDF values"
-    TOKENIZING_BUSY_COMPLETED_TFIDF_MSG = "Completed to calculating TFIDF values"
+
+    TOKENIZING_BUSY_STEP_TFIDF_STEP = "Calculating TFIDF values"
+    TOKENIZING_BUSY_STARTING_TFIDF_MSG = "- Starting to calculate TFIDF values"
+    TOKENIZING_BUSY_COMPLETED_TFIDF_MSG = "- Completed to calculating TFIDF values"
 
     CHANGING_NAME_BUSY_LABEL = "Changing Name"
     CHANGING_NAME_BUSY_PREPARING_MSG = "Preparing to Update Dataset Name\n"
@@ -583,7 +598,7 @@ class Samples(Main):
                                 "\nTo generate this type of sample you need to save the workspace"
     GENERATING_DEFAULT_LABEL = "Generating Sample"
     GENERATING_DEFAULT_MSG = "Begining Generation."
-    GENERATING_PREPARING_MSG = "\nDatasets are being prepared"
+    GENERATING_PREPARING_MSG = "Datasets are being prepared"
     GENERATING_RANDOM_SUBLABEL = "Creating Random Sample: "
     GENERATING_CUSTOM_SUBLABEL = "Creating Custom Sample: "
     GENERATING_LDA_SUBLABEL = "Creating LDA Topic Sample: "
@@ -669,17 +684,19 @@ class Collection(Main, Datasets):
 
     DELETING_BUSY_LABEL = "Deleting Datasets"
     DELETING_BUSY_PREPARING_MSG = "Preparing to Delete Selected Datasets"
-    DELETING_BUSY_REMOVING_MSG = "Deleting Dataset: "
+    DELETING_BUSY_REMOVING_MSG = "- Deleting Dataset: "
 
     ADDING_COMPUTATIONAL_FIELDS_BUSY_LABEL = "Adding Computational Fields"
     ADDING_LABEL_FIELDS_BUSY_LABEL = "Adding Label Fields"
     ADDING_FIELDS_BUSY_PREPARING_MSG = "Preparing to Add Selected Fields"
-    ADDING_FIELDS_BUSY_MSG = "Adding Selection: "
+    ADDING_FIELDS_BUSY_LABEL = "Adding Fields"
+    ADDING_FIELDS_BUSY_MSG = "- Adding Selection: "
 
     REMOVING_COMPUTATIONAL_FIELDS_BUSY_LABEL = "Removing Computational Fields"
     REMOVING_LABEL_FIELDS_BUSY_LABEL = "Removing Label Fields"
     REMOVING_FIELDS_BUSY_PREPARING_MSG = "Preparing to Remove Selected Fields"
-    REMOVING_FIELDS_BUSY_MSG = "Removing Selection: "
+    REMOVING_FIELDS_BUSY_LABEL = "Removing Fields"
+    REMOVING_FIELDS_BUSY_MSG = "- Removing Selection: "
 
     UPDATING_DATASET_BUSY_MSG = "Updating Data Collection's Dataset Panel"
 

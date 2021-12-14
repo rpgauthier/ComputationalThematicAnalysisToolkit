@@ -43,12 +43,12 @@ class ChangeTokenizationChoiceThread(Thread):
         db_conn = Database.DatabaseConnection(self.main_frame.current_workspace.name)
         db_conn.UpdateDatasetTokenType(self.dataset.key, self.new_choice)
 
-        wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_BUSY_MSG))
+        wx.PostEvent(self.main_frame, CustomEvents.ProgressStepEvent({'label':GUITextFiltering.FILTERS_APPLYING_RULES_BUSY_MSG, 'enable':True}))
         db_conn.ApplyAllDatasetRules(self.dataset.key, self.dataset.filter_rules)
         db_conn.RefreshStringTokensIncluded(self.dataset.key)
         db_conn.RefreshStringTokensRemoved(self.dataset.key)
 
-        wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_UPDATING_COUNTS))
+        wx.PostEvent(self.main_frame, CustomEvents.ProgressStepEvent({'label':GUITextFiltering.FILTERS_UPDATING_COUNTS, 'enable':True}))
         counts = db_conn.GetStringTokensCounts(self.dataset.key)
         self.dataset.total_docs = counts['documents']
         self.dataset.total_tokens = counts['tokens']
@@ -57,6 +57,7 @@ class ChangeTokenizationChoiceThread(Thread):
         self.dataset.total_docs_remaining = included_counts['documents']
         self.dataset.total_tokens_remaining = included_counts['tokens']
         self.dataset.total_uniquetokens_remaining = included_counts['unique_tokens']
+        wx.PostEvent(self.main_frame, CustomEvents.ProgressStepEvent({'label':GUITextFiltering.FILTERS_UPDATING_COUNTS, 'enable':False}))
 
         #return event from thread
         result = {}

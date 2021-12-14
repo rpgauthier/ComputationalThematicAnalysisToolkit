@@ -196,6 +196,8 @@ class LoadThread(Thread):
                     wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.LOAD_BUSY_MSG_THEMES))
                     with open(self.current_workspace_path+"/themes.pk", 'rb') as infile:
                         result['themes'] = pickle.load(infile)
+
+                wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.LOAD_BUSY_LABEL,'enable':False}))
             
                 if ver < version.parse('0.8.5'):
                     self.Upgrade0_8_5(result, ver)
@@ -215,8 +217,8 @@ class LoadThread(Thread):
         wx.PostEvent(self._notify_window, CustomEvents.LoadResultEvent(result))
 
     def Upgrade0_8_5(self, result, ver):
-        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_WORKSPACE1 + str(ver) \
-                                                                     + GUIText.UPGRADE_BUSY_MSG_WORKSPACE2 + '0.8.5'))
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE2+'0.8.5',
+                                                                          'enable':True}))
         def UpgradeConfig(config, ver):
             if ver < version.parse('0.8.1'):
                 config['options'] = {}
@@ -453,9 +455,12 @@ class LoadThread(Thread):
         #upgrade codes
         UpgradeCodes(result, ver)
 
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE2+'0.8.5',
+                                                                          'enable':False}))
+
     def Upgrade0_8_6(self, result, ver):
-        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_WORKSPACE1 + str(ver) \
-                                                                     + GUIText.UPGRADE_BUSY_MSG_WORKSPACE2 + '0.8.6'))
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE2+'0.8.6',
+                                                                          'enable':True}))
         #Updated config
         if 'adjustable_includedfields_mode' in result['config']['options']:
             result['config']['options']['adjustable_computation_fields_mode'] = result['config']['options']['adjustable_includedfields_mode']
@@ -643,9 +648,12 @@ class LoadThread(Thread):
                     dataset.retrieval_details['end_date'] = end_datetime
                 dataset.last_changed_dt = datetime.now()
 
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE2+'0.8.5',
+                                                                          'enable':False}))
+
     def Upgrade0_8_7(self, result, ver):
-        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_WORKSPACE1 + str(ver) \
-                                                                     + GUIText.UPGRADE_BUSY_MSG_WORKSPACE2 + '0.8.7'))
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE2+'0.8.7',
+                                                                          'enable':True}))
 
         def UpgradeDatabase(result, ver):
             wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent(GUIText.UPGRADE_BUSY_MSG_DATABASE))
@@ -656,3 +664,6 @@ class LoadThread(Thread):
                 db_conn.RefreshStringTokensRemoved(dataset_key)
         
         UpgradeDatabase(result, ver)
+
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressStepEvent({'label':GUIText.UPGRADE_BUSY_MSG_WORKSPACE1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE2+'0.8.5',
+                                                                          'enable':False}))
