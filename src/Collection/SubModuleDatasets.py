@@ -174,7 +174,7 @@ class DatasetsListPanel(wx.Panel):
         main_frame.CreateProgressDialog(GUIText.CHANGING_NAME_LABEL,
                                         freeze=True)
         try:
-            main_frame.StepProgressDialog(GUIText.CHANGING_NAME_STEP, enable=True)
+            main_frame.StepProgressDialog(GUIText.CHANGING_NAME_STEP)
             node = self.datasets_model.ItemToObject(event.GetItem())
             if isinstance(node, Datasets.Dataset):
                 new_name = event.GetValue()
@@ -195,8 +195,8 @@ class DatasetsListPanel(wx.Panel):
         main_frame.CreateProgressDialog(GUIText.DELETING_BUSY_LABEL,
                                         freeze=True)
         try:
-            main_frame.StepProgressDialog(GUIText.DELETING_BUSY_LABEL, enable=True)
             main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_PREPARING_MSG)
+            main_frame.StepProgressDialog(GUIText.DELETING_BUSY_LABEL)
             start_time = datetime.now()
             remaining_loops = len(delete_nodes)
             #perform delete on any selected groups or grouped datasets
@@ -245,7 +245,7 @@ class DatasetsListPanel(wx.Panel):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         if len(self.dataset_dialogs.keys()) > 0:
-            main_frame.StepProgressDialog(GUIText.UPDATING_DATASET_BUSY_MSG, enable=True)
+            main_frame.StepProgressDialog(GUIText.UPDATING_DATASET_BUSY_MSG)
         self.datasets_model.Cleared()
         self.datasets_ctrl.Expander(None)
         for key in list(self.dataset_dialogs.keys()):
@@ -315,8 +315,8 @@ class DatasetDetailsPanel(wx.Panel):
         main_frame.CreateProgressDialog(GUIText.DELETING_BUSY_LABEL,
                                         freeze=True)
         try:
-            main_frame.StepProgressDialog(GUIText.DELETING_BUSY_LABEL, enable=True)
             main_frame.PulseProgressDialog(GUIText.DELETING_BUSY_PREPARING_MSG)
+            main_frame.StepProgressDialog(GUIText.DELETING_BUSY_LABEL)
             confirm_dialog = wx.MessageDialog(self, str(self.dataset.key)+GUIText.DELETE_CONFIRMATION
                                               + GUIText.DATASETS_DELETE_CONFIRMATION_WARNING,
                                               GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)

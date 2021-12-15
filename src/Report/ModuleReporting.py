@@ -212,7 +212,7 @@ class ReportingPanel(wx.Panel):
         logger.info("Starting")
         self.Freeze()
         main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.LOAD_BUSY_MSG_CONFIG)
+        main_frame.StepProgressDialog(GUIText.LOAD_BUSY_CONFIG_STEP)
         self.quotations_model.Cleared()
         self.quotations_ctrl.Expander(None)
         if 'notes' in saved_data:

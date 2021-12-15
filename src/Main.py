@@ -219,8 +219,6 @@ class MainFrame(wx.Frame):
         self.SetMenuBar(self.menu_bar)
 
         CustomEvents.EVT_PROGRESS(self, self.OnProgress)
-        CustomEvents.EVT_PROGRESS_STEP(self, self.OnProgressStep)
-        CustomEvents.EVT_PROGRESS_STEP_ESTIMATED_TIME(self, self.OnProgressStepEstimatedTime)
 
         self.Layout()
         self.Fit()
@@ -298,8 +296,9 @@ class MainFrame(wx.Frame):
                 self.CreateProgressDialog(title=GUIText.NEW_BUSY_LABEL,
                                         warning=GUIText.SIZE_WARNING_MSG,
                                         freeze=True)
-                self.StepProgressDialog(GUIText.NEW_BUSY_LABEL, enable=True)
                 self.PulseProgressDialog(GUIText.NEW_BUSY_MSG)
+                self.StepProgressDialog(GUIText.NEW_BUSY_STEP)
+                
 
                 self.Freeze()
 
@@ -388,9 +387,10 @@ class MainFrame(wx.Frame):
                     self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG)
 
                     self.save_path = file_dialog.GetPath()
-                    self.StepProgressDialog(GUIText.LOAD_BUSY_MSG_FILE_STEP + str(self.save_path), enable=True)
-                    logger.info("loading file: %s", self.save_path)
                     self.name = file_dialog.GetFilename()[:-4]
+                    self.StepProgressDialog(GUIText.LOAD_BUSY_MSG_FILE_STEP + str(self.name))
+                    self.PulseProgressDialog(self.save_path)
+                    logger.info("loading file: %s", self.save_path)
                     self.SetTitle(GUIText.APP_NAME+" - "+self.name)
 
                     self.load_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
@@ -433,9 +433,10 @@ class MainFrame(wx.Frame):
                 self.PulseProgressDialog(GUIText.LOAD_BUSY_MSG)
 
                 self.save_path = ""
-                self.StepProgressDialog(GUIText.LOAD_BUSY_MSG_FILE_STEP + str(Constants.AUTOSAVE_PATH), enable=True)
-                logger.info("loading file: %s", Constants.AUTOSAVE_PATH)
                 self.name = 'Last_AutoSave'
+                self.StepProgressDialog(GUIText.LOAD_BUSY_MSG_FILE_STEP + str(self.name))
+                self.PulseProgressDialog(Constants.AUTOSAVE_PATH)
+                logger.info("loading file: %s", Constants.AUTOSAVE_PATH)
                 self.SetTitle(GUIText.APP_NAME+" - "+self.name)
 
                 self.load_workspace = tempfile.TemporaryDirectory(dir=Constants.CURRENT_WORKSPACE_PATH)
@@ -455,7 +456,7 @@ class MainFrame(wx.Frame):
             self.load_workspace.cleanup()
             self.load_workspace = None
         else:
-            self.StepProgressDialog(GUIText.LOAD_BUSY_MSG_MEMORY_STEP, enable=True)
+            self.StepProgressDialog(GUIText.LOAD_BUSY_MSG_MEMORY_STEP)
             saved_data = event.data['config']
 
             #reset objects
@@ -576,7 +577,8 @@ class MainFrame(wx.Frame):
                                       freeze=True)
             self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG)
 
-            self.StepProgressDialog(GUIText.SAVE_BUSY_MSG_STEP + str(self.save_path), enable=True)
+            self.StepProgressDialog(GUIText.SAVE_BUSY_MSG_STEP + str(self.name))
+            self.PulseProgressDialog(self.save_path)
             logger.info("saving file: %s", self.save_path)
 
             self.PulseProgressDialog(GUIText.SAVE_BUSY_MSG_NOTES)
@@ -612,8 +614,7 @@ class MainFrame(wx.Frame):
         self.CreateProgressDialog(title=GUIText.SAVE_BUSY_LABEL,
                                   warning=GUIText.SIZE_WARNING_MSG,
                                   freeze=True)
-        self.PulseProgressDialog(GUIText.AUTO_SAVE_BUSY_MSG)
-        self.StepProgressDialog(GUIText.AUTO_SAVE_BUSY_STEP, enable=True)
+        self.StepProgressDialog(GUIText.AUTO_SAVE_BUSY_STEP)
         logger.info("auto saving workspace to [%s]", Constants.AUTOSAVE_PATH)
 
         notes_text = self.notes_notebook.Save()
@@ -783,14 +784,13 @@ class MainFrame(wx.Frame):
             wx.MessageBox(GUIText.EXPORT_PROJECT_ERROR_NO_DATA)
         logger.info("Finished")
 
-    def OnProgressStep(self, event):
-        self.StepProgressDialog(event.data['label'], event.data['enable'])
-    
-    def OnProgressStepEstimatedTime(self, event):
-        self.UpdateStepEstimatedTimeProgressDialog(event.data)
-    
     def OnProgress(self, event):
-        self.PulseProgressDialog(event.data)
+        if 'msg' in event.data:
+            self.PulseProgressDialog(event.data['msg'])
+        if 'step' in event.data:
+            self.StepProgressDialog(event.data['step'])
+        if 'estimated_time' in event.data:
+            self.UpdateStepEstimatedTimeProgressDialog(event.data['estimated_time'])
 
     def OnCloseStart(self, event):
         '''Menu Function for Closing Application'''
@@ -882,7 +882,7 @@ class MainFrame(wx.Frame):
         self.DocumentsUpdated(self)
         self.CodesUpdated()
 
-        self.StepProgressDialog(GUIText.SHUTDOWN_BUSY_POOL_MSG, enable=True)
+        self.StepProgressDialog(GUIText.SHUTDOWN_BUSY_POOL_MSG)
         logger.info("Starting to shut down of process pool")
         self.pool.close()
         self.pool.join()
@@ -907,11 +907,8 @@ class MainFrame(wx.Frame):
             self.progress_dialog.Show()
         self.progress_dialog_references += 1
     
-    def StepProgressDialog(self, label, enable=False):
-        if enable:
-            self.progress_dialog.StartStep(label)
-        else:
-            self.progress_dialog.EndStep()
+    def StepProgressDialog(self, label):
+        self.progress_dialog.StartStep(label)
     
     def UpdateStepEstimatedTimeProgressDialog(self, value=None):
         if self.progress_dialog is not None:
@@ -919,13 +916,13 @@ class MainFrame(wx.Frame):
 
     def PulseProgressDialog(self, message=""):
         if self.progress_dialog is not None:
-            self.progress_dialog.Pulse(message)
+            self.progress_dialog.AddMsg(message)
 
     def CloseProgressDialog(self, message=GUIText.FINISHED, thaw=False, close=False):
         if self.progress_dialog is not None:
             self.progress_dialog_references -= 1
             if self.progress_dialog_references == 0:
-                self.progress_dialog.EndPulse(message)
+                self.progress_dialog.End(message)
                 if close:
                     self.progress_dialog.Close()
         if thaw:
@@ -1075,12 +1072,11 @@ class CustomProgressDialog(wx.Dialog):
             self.current_step_time_label.SetLabel(str(elapsed_step_time).split('.')[0])
             if self.step_remaining_time_estimate != None:
                 if elapsed_step_time > self.step_remaining_time_estimate:
-                    self.estimated_step_time_label.SetLabel(GUIText.OF_AN_ESTIMATED_LABEL+GUIText.UNKNOWN)
-                    self.step_remaining_time_estimate == None
+                    self.step_remaining_time_estimate = self.step_remaining_time_estimate * 2
+                    self.estimated_step_time_label.SetLabel(GUIText.OF_AN_ESTIMATED_LABEL+str(self.step_remaining_time_estimate).split('.')[0])
                     self.gauge.Pulse()
-                else:
-                    per = elapsed_step_time / self.step_remaining_time_estimate
-                    self.gauge.SetValue(int(per*100))
+                per = elapsed_step_time / self.step_remaining_time_estimate
+                self.gauge.SetValue(int(per*100))
 
     def StartStep(self, label):
         if self.step_start_time != None:
@@ -1096,7 +1092,24 @@ class CustomProgressDialog(wx.Dialog):
         self.Fit()
         self.gauge.Pulse()
     
-    def EndStep(self):
+    def UpdateRemainingStepTime(self, value):
+        self.step_remaining_time_estimate = value
+        if value == None:
+            self.estimated_step_time_label.SetLabel("")
+            self.gauge.Pulse()
+        else:
+            self.estimated_step_time_label.SetLabel(GUIText.OF_AN_ESTIMATED_LABEL+str(value).split('.')[0])
+            per = (datetime.now() - self.step_start_time) / self.step_remaining_time_estimate
+            self.gauge.SetValue(int(per*100))
+            self.Fit()
+
+    def AddMsg(self, text):
+        self.text.AppendText("\n"+text)
+        if self.step_remaining_time_estimate == None:
+            self.gauge.Pulse()
+    
+    def End(self, text):
+        self.timer.Stop()
         if self.step_start_time != None:
             elapsed_step_time = datetime.now() - self.step_start_time
             self.text.AppendText("\n"+GUIText.COMPLETED_IN_LABEL+ str(elapsed_step_time).split('.')[0])
@@ -1104,24 +1117,6 @@ class CustomProgressDialog(wx.Dialog):
             self.step_remaining_time_estimate = None
             self.estimated_step_time_label.SetLabel("")
             self.gauge.Pulse()
-
-    def UpdateRemainingStepTime(self, value):
-        if value == None:
-            self.estimated_step_time_label.SetLabel("")
-            self.gauge.Pulse()
-        else:
-            self.step_remaining_time_estimate = value
-            self.estimated_step_time_label.SetLabel(GUIText.OF_AN_ESTIMATED_LABEL+str(value).split('.')[0])
-            per = (datetime.now() - self.step_start_time) / self.step_remaining_time_estimate
-            self.gauge.SetValue(int(per*100))
-            self.Fit()
-
-    def Pulse(self, text):
-        self.text.AppendText("\n"+text)
-        self.gauge.Pulse()
-    
-    def EndPulse(self, text):
-        self.timer.Stop()
         self.current_step_text.SetLabel(text)
         self.text.AppendText("\n\n"+text)
         current_time = datetime.now()
@@ -1131,6 +1126,7 @@ class CustomProgressDialog(wx.Dialog):
             elapsed_step_time = datetime.now() - self.step_start_time
             self.current_step_time_label.SetLabel(str(elapsed_step_time).split('.')[0])
         self.gauge.SetValue(self.gauge.GetRange())
+        self.Fit()
         self.ok_button.Enable()
 
 class OptionsDialog(wx.Dialog):

@@ -42,7 +42,7 @@ class DataNotebook(FNB.FlatNotebook):
                 self.DeletePage(index)
             del self.dataset_data_tabs[key]
         for key in main_frame.datasets:
-            main_frame.StepProgressDialog(GUIText.REFRESHING_DATASETS_BUSY_MSG+str(main_frame.datasets[key].name), enable=True)
+            main_frame.StepProgressDialog(GUIText.REFRESHING_DATASETS_BUSY_STEP+str(main_frame.datasets[key].name))
             if key in self.dataset_data_tabs:
                 self.dataset_data_tabs[key].Update()
             else:
@@ -429,7 +429,7 @@ class DatasetPanel(wx.Panel):
         main_frame.CreateProgressDialog(GUIText.CHANGING_NAME_LABEL,
                                         freeze=True)
         try:
-            main_frame.StepProgressDialog(GUIText.CHANGING_NAME_STEP, enable=True)
+            main_frame.StepProgressDialog(GUIText.CHANGING_NAME_STEP)
             node = self.dataset
             if isinstance(node, Datasets.Dataset):
                 new_name = self.name_ctrl.GetValue()
@@ -453,7 +453,7 @@ class DatasetPanel(wx.Panel):
         language_index = self.language_ctrl.GetSelection()
         if node.language != Constants.AVAILABLE_DATASET_LANGUAGES1[language_index]:
             main_frame.CreateProgressDialog(GUIText.CHANGING_LANGUAGE_BUSY_LABEL, freeze=True)
-            main_frame.StepProgressDialog(GUIText.CHANGING_LANGUAGE_STEP, enable=True)
+            main_frame.StepProgressDialog(GUIText.CHANGING_LANGUAGE_STEP)
             node.language = Constants.AVAILABLE_DATASET_LANGUAGES1[language_index]
             main_frame.multiprocessing_inprogress_flag = True
             self.tokenization_thread = DatasetsThreads.TokenizerThread(self, main_frame, node, rerun=True)

@@ -578,7 +578,7 @@ class FilterPanel(wx.Panel):
         logger = logging.getLogger(__name__+".FilterPanel["+str(self.name)+"].Load")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
-        main_frame.PulseProgressDialog(GUIText.LOAD_FILTERING_BUSY_MSG+str(self.name))
+        main_frame.StepProgressDialog(GUIText.LOAD_FILTERING_BUSY_MSG+str(self.name))
 
         self.rules_panel.tokenization_choice.SetSelection(self.dataset.tokenization_choice)
 
@@ -721,7 +721,7 @@ class WordsPanel(wx.Panel):
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
         self.Freeze()
-        main_frame.StepProgressDialog(GUIText.FILTERS_DISPLAY_STRINGS_BUSY_STEP1+self.word_type+GUIText.FILTERS_DISPLAY_STRINGS_BUSY_STEP2+str(self.parent_frame.name), enable=True)
+        main_frame.StepProgressDialog(GUIText.FILTERS_DISPLAY_STRINGS_BUSY_STEP1+self.word_type+GUIText.FILTERS_DISPLAY_STRINGS_BUSY_STEP2+str(self.parent_frame.name))
         try:
             search_term = self.searchctrl.GetValue()
             self.words_list.ResetData(search_term)

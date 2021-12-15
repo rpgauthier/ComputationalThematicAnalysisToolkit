@@ -14,7 +14,7 @@ def CaptureTokens(dataset_key, main_frame):
     logger = logging.getLogger(__name__+".CaptureTokens")
     logger.info("Starting")
     token_dict = {}
-    main_frame.StepProgressDialog(GUIText.GENERATING_PREPARING_MSG, enable=True)
+    main_frame.StepProgressDialog(GUIText.GENERATING_PREPARING_MSG)
     
     dataset = main_frame.datasets[dataset_key]
 

@@ -137,47 +137,45 @@ class Main(Common):
 
     NEW_BUSY_LABEL = "Creating New Workspace"
     NEW_BUSY_MSG = "Please Wait while new workspace is created.\n"
+    NEW_BUSY_STEP = "Creating New Workspace"
 
     LOAD_BUSY_LABEL = "Loading Workspace"
     LOAD_BUSY_MSG = "Please Wait while data is loaded.\n"
     LOAD_BUSY_MSG_FILE_STEP = "Loading File: "
-    LOAD_BUSY_MSG_DATASET_MSG = "Loaded Dataset: "
-    LOAD_BUSY_MSG_SAMPLE_MSG = "Loaded Sample: "
-    LOAD_BUSY_MSG_CODES_MSG = "Loading Codes"
-    LOAD_BUSY_MSG_THEMES_MSG = "Loading Themes"
-    LOAD_BUSY_MSG_CONFIG_MSG = "Loading Configurations"
+    LOAD_BUSY_MSG_DATASET_MSG = "- loaded Dataset: "
+    LOAD_BUSY_MSG_SAMPLE_MSG = "- loaded Sample: "
+    LOAD_BUSY_MSG_CODES_MSG = "- loading Codes"
+    LOAD_BUSY_MSG_THEMES_MSG = "- loading Themes"
+    LOAD_BUSY_MSG_CONFIG_MSG = "- loading Configurations"
     LOAD_BUSY_MSG_MEMORY_STEP = "Loading Memory"
 
     SAVE_BUSY_LABEL = "Saving Workspace"
     SAVE_BUSY_MSG = "Please wait while data is saved.\n"
     SAVE_BUSY_MSG_STEP = "Saving File: "
-    SAVE_BUSY_MSG_NOTES = "Saving Notes to text."
-    SAVE_BUSY_MSG_CONFIG = "Saving Configurations"
-    SAVE_BUSY_MSG_DATASETS = "Saving Dataset: "
-    SAVE_BUSY_MSG_SAMPLES = "Saving Sample: "
-    SAVE_BUSY_MSG_CODES = "Saving Codes"
-    SAVE_BUSY_MSG_THEMES = "Saving Themes"
-    SAVE_BUSY_MSG_COMPRESSING = "Writing Saved Data"
+    SAVE_BUSY_MSG_NOTES = "- saving Notes to text."
+    SAVE_BUSY_MSG_CONFIG = "- saving Configurations"
+    SAVE_BUSY_MSG_DATASETS = "- saving Dataset: "
+    SAVE_BUSY_MSG_SAMPLES = "- saving Sample: "
+    SAVE_BUSY_MSG_CODES = "- saving Codes"
+    SAVE_BUSY_MSG_THEMES = "- saving Themes"
+    SAVE_BUSY_MSG_COMPRESSING = "- writing Saved Data"
 
-    AUTO_SAVE_BUSY_MSG = "Please wait while data is autosaved.\n"
     AUTO_SAVE_BUSY_STEP = "Autosaving Workspace"
 
     UPGRADE_BUSY_MSG_WORKSPACE_STEP1 = "Upgrading Workspace version from  "
     UPGRADE_BUSY_MSG_WORKSPACE_STEP2 = " to "
-    UPGRADE_BUSY_MSG_DATASETS_MSG = "Upgrading Datasets"
-    UPGRADE_BUSY_MSG_DATABASE_MSG = "Upgrading Database"
-    UPGRADE_BUSY_MSG_DATABASE_CREATE_MSG = "Converting Workspace to Use Database"
-    UPGRADE_BUSY_MSG_SAMPLES_MSG = "Upgrading Samples"
-    UPGRADE_BUSY_MSG_CODES_MSG = "Upgrading Codes"
-    UPGRADE_BUSY_MSG_THEMES_MSG = "Upgrading Themes"
+    UPGRADE_BUSY_MSG_DATASETS_MSG = "- upgrading Datasets"
+    UPGRADE_BUSY_MSG_DATABASE_MSG = "- upgrading Database"
+    UPGRADE_BUSY_MSG_DATABASE_CREATE_MSG = "- converting Workspace to Use Database"
+    UPGRADE_BUSY_MSG_SAMPLES_MSG = "- upgrading Samples"
+    UPGRADE_BUSY_MSG_CODES_MSG = "- upgrading Codes"
+    UPGRADE_BUSY_MSG_THEMES_MSG = "- upgrading Themes"
 
     SHUTDOWN_BUSY_LABEL = "Shutting Down Application"
-    SHUTDOWN_BUSY_POOL_MSG = "Shutting down Process Pool"
+    SHUTDOWN_BUSY_POOL_MSG = "- shutting down Process Pool"
     
     NAME_MISSING_ERROR = "Please enter a Name."
     FILENAME_MISSING_ERROR = "Please enter a Filename"
-    NAME_DUPLICATE_ERROR = "Same name already exists."\
-                           "\nPlease choose a different name."
     
     OF_AN_ESTIMATED_LABEL = "of an estimated "
     COMPLETED_IN_LABEL = "- completed in "
@@ -323,7 +321,7 @@ class Datasets(Common):
     CUSTOMIZE_LABEL_FIELDS = "Customize Label Fields"
     CUSTOMIZE_COMPUTATIONAL_FIELDS = "Customize Computational Fields"
     DATASET_DELETE_TOOLTIP = "Delete this dataset from the workspace"
-    REFRESHING_DATASETS_BUSY_MSG = "Refreshing Data for Dataset: "
+    REFRESHING_DATASETS_BUSY_STEP = "Refreshing Data for Dataset: "
     
     #Common Dialog
     DATASET_CONFIGURATIONS = "Dataset Configurations"
@@ -714,7 +712,6 @@ class Filtering(Main, Datasets):
     FILTERS_LABEL = "Filter Tokens"
     SAMPLES_LABEL = "Samples List"
 
-    FILTERS_PREPARING_MSG = "Please wait while datasets are prepared for token filtering for field: "
     FILTERS_FIELDS = "Fields"
     FILTERS_WORDS = "Words"
     FILTERS_POS = "Parts-of-Speech"
@@ -849,8 +846,8 @@ class Sampling(Samples):
 class Coding(Main):
     CODING_NOTES_LABEL = "Coding Notes"
 
-    LOAD_BUSY_MSG_CONFIG = "Loading Coding Configurations"
-    SAVE_BUSY_MSG_CONFIG ="Saving Coding Configurations"
+    LOAD_BUSY_CONFIG_STEP = "Loading Coding Configurations"
+    SAVE_BUSY_CONFIG_STEP ="Saving Coding Configurations"
 
     DATACOLLECTION_LIST = "Data Collection List"
 
@@ -891,17 +888,14 @@ class Coding(Main):
     DELETE_QUOTATIONS = "Delete Quotations"
     CONFIRM_DELETE_QUOTATIONS = "Are you sure you want to delete selected quotations?"
 
-    LOAD_BUSY_MSG_CONFIG = "Loading Coding Configurations"
-    SAVE_BUSY_MSG_CONFIG ="Saving Coding Configurations"
-
 class Reviewing(Main):
     DOCUMENTS = "Documents"
-    LOAD_BUSY_MSG_CONFIG = "Loading Reviewing Configurations"
-    SAVE_BUSY_MSG_CONFIG ="Saving Reviewing Configurations"
+    LOAD_BUSY_CONFIG_STEP = "Loading Reviewing Configurations"
+    SAVE_BUSY_CONFIG_STEP ="Saving Reviewing Configurations"
 
 class Reporting(Main):
-    LOAD_BUSY_MSG_CONFIG = "Loading Reporting Configurations"
-    SAVE_BUSY_MSG_CONFIG ="Saving Reporting Configurations"
+    LOAD_BUSY_CONFIG_STEP = "Loading Reporting Configurations"
+    SAVE_BUSY_CONFIG_STEP ="Saving Reporting Configurations"
 
     THEME_FILTERS = "Filter Themes"
     CODE_FILTERS = "Filter Codes"

@@ -60,7 +60,7 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False, tfidf_updat
     def TokenizationController(field, field_data):
         logger.info("Preparing Processes for %s, %s, for %s documents", repr(dataset), repr(field), str(len(field_data)))
         nonlocal main_frame
-        wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_STARTING_FIELD_MSG+str(field.name)))
+        wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'msg':GUIText.TOKENIZING_BUSY_STARTING_FIELD_MSG+str(field.name)}))
         results = []
 
         total = len(field_data)
@@ -90,9 +90,9 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False, tfidf_updat
         
         completed = 0
         start_time = datetime.now()
-        wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
+        wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'msg':GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
                                                                +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG2+str(len(results))\
-                                                               +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(field.name)))
+                                                               +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(field.name)}))
         if not db_conn.CheckIfFieldExists(dataset.key, field.key):
             db_conn.InsertField(dataset.key, field.key)
         res_count = 0
@@ -104,9 +104,9 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False, tfidf_updat
             db_conn.InsertStringTokens(dataset.key, field.key, new_tokensets)
             completed += 1
             logger.info("%s %s", repr(field), completed)
-            wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
+            wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'msg':GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
                                                                    +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG2+str(len(results))\
-                                                                   +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(field.name)))
+                                                                   +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(field.name)}))
 
             current_time = datetime.now()
             if res_count < len(results)/2:
@@ -122,7 +122,7 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False, tfidf_updat
                 else:
                     estimated_remaining_sec = estimated_loop_time.total_seconds() * (remaining_field_count-1)
                 estimated_remaining_time = timedelta(seconds=estimated_remaining_sec)
-                wx.PostEvent(main_frame, CustomEvents.ProgressStepEstimatedTimeEvent(elapsed_time + estimated_remaining_time))
+                wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'estimated_time':elapsed_time + estimated_remaining_time}))
         dataset.tokenization_package_versions = package_versions
 
     def FieldTokenizer(field):
@@ -157,9 +157,9 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False, tfidf_updat
         if estimated_loop_time == None or estimated_loop_time < new_estimated_loop_time:
             estimated_loop_time = new_estimated_loop_time
         elapsed_time = datetime.now() - start_time
-        wx.PostEvent(main_frame, CustomEvents.ProgressStepEstimatedTimeEvent(elapsed_time + (estimated_loop_time * remaining_field_count)))
+        wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'estimated_time':elapsed_time + (estimated_loop_time * remaining_field_count)}))
 
-    wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label':GUIText.TOKENIZING_BUSY_STEP, 'enable':True}))
+    wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'step':GUIText.TOKENIZING_BUSY_STEP}))
     field_count = len(dataset.computational_fields)
     remaining_field_count = field_count
     start_time = datetime.now()
@@ -180,7 +180,7 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False, tfidf_updat
 
     #calculate tfidf scores for all stored string tokens if any changes occured
     if stringfield_count > 0 or tfidf_update:
-        wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label':GUIText.TOKENIZING_BUSY_STEP_TFIDF_STEP, 'enable':True}))
+        wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'step':GUIText.TOKENIZING_BUSY_STEP_TFIDF_STEP}))
         db_conn.UpdateStringTokensTFIDF(dataset.key)
         counts = db_conn.GetStringTokensCounts(dataset.key)
         dataset.total_docs = counts['documents']
@@ -238,7 +238,7 @@ def ApplyFilterAllRules(dataset, main_frame):
     logger = logging.getLogger(__name__+".ApplyFilterAllRules")
     logger.info("Starting")
     db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
-    wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label':GUITextFiltering.FILTERS_APPLYING_RULES_STEP, 'enable':True}))
+    wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'step':GUITextFiltering.FILTERS_APPLYING_RULES_STEP}))
     mapped_rules = []
     for field_name, word, pos, action in dataset.filter_rules:
         include = False
@@ -253,14 +253,13 @@ def ApplyFilterAllRules(dataset, main_frame):
         if include:
             mapped_rules.append((field_name, word, pos, action))
     db_conn.ApplyAllDatasetRules(dataset.key, mapped_rules)
-    wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label':GUITextFiltering.FILTERS_UPDATING_COUNTS_STEP, 'enable':True}))
+    wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'step':GUITextFiltering.FILTERS_UPDATING_COUNTS_STEP}))
     db_conn.RefreshStringTokensIncluded(dataset.key)
     db_conn.RefreshStringTokensRemoved(dataset.key)
     included_counts = db_conn.GetIncludedStringTokensCounts(dataset.key)
     dataset.total_docs_remaining = included_counts['documents']
     dataset.total_tokens_remaining = included_counts['tokens']
     dataset.total_uniquetokens_remaining = included_counts['unique_tokens']
-    wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label':GUITextFiltering.FILTERS_UPDATING_COUNTS_STEP, 'enable':False}))
     logger.info("Finished")
 
 def ApplyFilterNewRules(dataset, main_frame, new_rules):
@@ -268,7 +267,7 @@ def ApplyFilterNewRules(dataset, main_frame, new_rules):
     logger.info("Starting")
     if len(new_rules) > 0:
         db_conn = Database.DatabaseConnection(main_frame.current_workspace.name)
-        wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label': GUITextFiltering.FILTERS_APPLYING_RULES_STEP, 'enable':True}))
+        wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'step': GUITextFiltering.FILTERS_APPLYING_RULES_STEP}))
         mapped_rules = []
         for field_name, word, pos, action in new_rules:
             include = False
@@ -283,14 +282,13 @@ def ApplyFilterNewRules(dataset, main_frame, new_rules):
             if include:
                 mapped_rules.append((field_name, word, pos, action))
         db_conn.ApplyNewDatasetRules(dataset.key, mapped_rules)
-        wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label': GUITextFiltering.FILTERS_UPDATING_COUNTS_STEP, 'enable':True}))
+        wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'step': GUITextFiltering.FILTERS_UPDATING_COUNTS_STEP}))
         db_conn.RefreshStringTokensIncluded(dataset.key)
         db_conn.RefreshStringTokensRemoved(dataset.key)
         included_counts = db_conn.GetIncludedStringTokensCounts(dataset.key)
         dataset.total_docs_remaining = included_counts['documents']
         dataset.total_tokens_remaining = included_counts['tokens']
         dataset.total_uniquetokens_remaining = included_counts['unique_tokens']
-        wx.PostEvent(main_frame, CustomEvents.ProgressStepEvent({'label': GUITextFiltering.FILTERS_UPDATING_COUNTS_STEP, 'enable':False}))
     logger.info("Finished")
 
 def DatasetTypeLabel(dataset):

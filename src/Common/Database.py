@@ -866,10 +866,11 @@ class DatabaseConnection():
                     if new_estimated_loop_time > estimated_loop_time:
                         estimated_loop_time = new_estimated_loop_time
                     elapsed_time = datetime.now() - start_time
-                    wx.PostEvent(main_frame, CustomEvents.ProgressStepEstimatedTimeEvent(elapsed_time + (estimated_loop_time * remaining_loops)))
-                    wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_GROUP_MSG))
+                    new_msg = GUITextFiltering.FILTERS_APPLYING_RULES_GROUP_MSG
                     for cur_rule in cur_rule_group:
-                        wx.PostEvent(main_frame, CustomEvents.ProgressEvent("-- "+str(cur_rule)))
+                        new_msg += "\n-- "+str(cur_rule)
+                    wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'estimated_time':elapsed_time + (estimated_loop_time * remaining_loops),
+                                                                         'msg':new_msg}))
                     logger.info("Completed Applying Rule Group containing [%s] rules", str(len(cur_rule_group)))
 
                     start_loop_time = datetime.now()
@@ -881,9 +882,10 @@ class DatabaseConnection():
                 #execute the rule group
                 c.execute(sql, sql_parameters)
                 self.__conn.commit()
-                wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_GROUP_MSG))
+                new_msg = GUITextFiltering.FILTERS_APPLYING_RULES_GROUP_MSG
                 for cur_rule in cur_rule_group:
-                    wx.PostEvent(main_frame, CustomEvents.ProgressEvent("-- "+str(cur_rule)))
+                    new_msg += "\n-- "+str(cur_rule)
+                wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'msg':new_msg}))
                 logger.info("Completed Applying Rule Group containing [%s] rules", str(len(cur_rule_group)))
 
             c.close()
@@ -937,10 +939,11 @@ class DatabaseConnection():
                     if new_estimated_loop_time > estimated_loop_time:
                         estimated_loop_time = new_estimated_loop_time
                     elapsed_time = datetime.now() - start_time
-                    wx.PostEvent(main_frame, CustomEvents.ProgressStepEstimatedTimeEvent(elapsed_time + (estimated_loop_time * remaining_loops)))
-                    wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_GROUP_MSG))
+                    new_msg = GUITextFiltering.FILTERS_APPLYING_RULES_GROUP_MSG
                     for cur_rule in cur_rule_group:
-                        wx.PostEvent(main_frame, CustomEvents.ProgressEvent("-- "+str(cur_rule)))
+                        new_msg += "\n-- "+str(cur_rule)
+                    wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'estimated_time':elapsed_time + (estimated_loop_time * remaining_loops),
+                                                                         'msg':new_msg}))
                     logger.info("Completed Applying Rule Group containing [%s] rules", str(len(cur_rule_group)))
 
                     start_loop_time = datetime.now()
@@ -952,9 +955,10 @@ class DatabaseConnection():
                 #execute the rule group
                 c.execute(sql, sql_parameters)
                 self.__conn.commit()
-                wx.PostEvent(main_frame, CustomEvents.ProgressEvent(GUITextFiltering.FILTERS_APPLYING_RULES_GROUP_MSG))
+                new_msg = GUITextFiltering.FILTERS_APPLYING_RULES_GROUP_MSG
                 for cur_rule in cur_rule_group:
-                    wx.PostEvent(main_frame, CustomEvents.ProgressEvent("-- "+str(cur_rule)))
+                    new_msg += "\n-- "+str(cur_rule)
+                wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'msg':new_msg}))
                 logger.info("Completed Applying Rule Group containing [%s] rules", str(len(cur_rule_group)))
 
             c.close()
