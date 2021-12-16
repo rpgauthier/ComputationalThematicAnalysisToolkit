@@ -6,7 +6,7 @@ To Access most recent version: https://github.com/rpgauthier/ComputationalThemat
 
 Installers avaliable for Windows 10 x64 and OSX 
 
-## To Modify or Build using pip on windows or equalivilent on OSX
+## To Modify or Build using pip on Windows and OSX
 Download or Fork repository
 Open src folder in an IDE (tested in VS Code)
 
@@ -20,10 +20,11 @@ Open src folder in an IDE (tested in VS Code)
 
 ### Needed applications
 - python 3.9
+- pyinstaller 4.5.1 - For Windows
 - Inno Setup Compiler - For Windows
 - packages - For OSX
 
-### Needed Packages
+### Needed Packages (there may be others)
 - pip install psutil
 - pip install wxPython
 - pip install pandas
@@ -40,6 +41,7 @@ Open src folder in an IDE (tested in VS Code)
 - pip install networkx
 - pip install pyinstaller
 - pip install pytz
+- pip install lxml
 
 ### Additional Steps
 - python -m spacy download fr_core_news_sm

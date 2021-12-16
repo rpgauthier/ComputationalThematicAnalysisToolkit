@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-# python3 -m PyInstaller --windowed --additional-hooks-dir=. pyinstaller-Windows10x64.spec
+# pyinstaller pyinstaller-Windows10x64.spec --additional-hooks-dir=.
 
 import sys
 sys.setrecursionlimit(5000)
@@ -18,7 +18,6 @@ a = Analysis(['src/Main.py'],
                     ('C:/Program Files/Python39/Lib/site-packages/xmlschema/schemas', 'xmlschema/schemas')],
              hiddenimports=['sklearn.utils._weight_vector', 'wx._xml', 'PIL.ImageFont'],
              hookspath=['.'],
-             hooksconfig={},
              runtime_hooks=[],
              excludes=['torch'],
              win_no_prefer_redirects=False,
@@ -36,11 +35,7 @@ exe = EXE(pyz,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          console=False,
-          disable_windowed_traceback=False,
-          target_arch=None,
-          codesign_identity=None,
-          entitlements_file=None )
+          console=False )
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
