@@ -23,29 +23,28 @@ class CollectionPanel(wx.Panel):
         self.labelfields_dialogs = {}
         self.computationfields_dialogs = {}
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(self.sizer)
+
         #splitter used to control panels that appear in this module
-        self.splitter = wx.SplitterWindow(self)
-
+        
         #Each of the panels that could be used for this module:
-        self.datasetdetails_panel = SubModuleDatasets.DatasetDetailsPanel(self.splitter, self)
+        self.datasetretrieval_panel = SubModuleDatasets.DatasetRetrievalPanel(self)
+        self.sizer.Add(self.datasetretrieval_panel)
 
+        self.splitter = wx.SplitterWindow(self)
+        self.datasetdetails_panel = SubModuleDatasets.DatasetDetailsPanel(self.splitter, self)
         self.datasetslist_panel = SubModuleDatasets.DatasetsListPanel(self.splitter, self)
         self.datasetslist_panel.datasets_ctrl.Bind(dv.EVT_DATAVIEW_ITEM_ACTIVATED, self.OnShowData)
         self.datasetslist_panel.Hide()
-        
         self.datasetsdata_notebook = DatasetsGUIs.DataNotebook(self.splitter)
         self.datasetsdata_notebook.Bind(FNB.EVT_FLATNOTEBOOK_PAGE_CHANGED, self.OnChangeDatasetDataTab)
-
         self.splitter.SetMinimumPaneSize(20)
         self.splitter.SplitHorizontally(self.datasetdetails_panel, self.datasetsdata_notebook)
         sash_height = int(self.datasetdetails_panel.GetBestSize().GetHeight()) + 5
         self.splitter.SetSashPosition(sash_height)
+        self.splitter.Hide()
         
-        sizer.Add(self.splitter, proportion=1, flag=wx.EXPAND, border=5)
-        self.SetSizer(sizer)
-
         #Module's notes
         main_frame = wx.GetApp().GetTopWindow()
         self.notes_panel = Notes.NotesPanel(main_frame.notes_notebook, self)
@@ -94,9 +93,21 @@ class CollectionPanel(wx.Panel):
         #sets time that dataset was updated to flag for saving
         #trigger updates of any submodules that use the datasets for rendering
         self.Freeze()
+        main_frame = wx.GetApp().GetTopWindow()
+
         self.datasetslist_panel.DatasetsUpdated()
         self.datasetsdata_notebook.DatasetsUpdated()
-        main_frame = wx.GetApp().GetTopWindow()
+        
+        self.sizer.Clear()
+        self.splitter.Hide()
+        self.datasetretrieval_panel.Hide()
+        if len(main_frame.datasets) == 0:
+            self.datasetretrieval_panel.Show()
+            self.sizer.Add(self.datasetretrieval_panel, proportion=1, flag=wx.EXPAND, border=5)
+        else:
+            self.splitter.Show()
+            self.sizer.Add(self.splitter, proportion=1, flag=wx.EXPAND, border=5)
+        
         for key in list(self.labelfields_dialogs.keys()):
             dataset = self.labelfields_dialogs[key].dataset
             if dataset.key not in main_frame.datasets:
@@ -122,6 +133,36 @@ class CollectionPanel(wx.Panel):
         logger = logging.getLogger(__name__+".CollectionNotebook.OnToggleDatasets")
         logger.info("Starting")
         main_frame = wx.GetApp().GetTopWindow()
+        self.Freeze()
+        self.sizer.Clear()
+        self.splitter.Hide()
+        self.datasetretrieval_panel.Hide()
+        if len(main_frame.datasets) == 0:
+            self.datasetretrieval_panel.Show()
+            self.sizer.Add(self.datasetretrieval_panel, proportion=1, flag=wx.EXPAND, border=5)
+        else:
+            self.splitter.Show()
+            self.sizer.Add(self.splitter, proportion=1, flag=wx.EXPAND, border=5)
+        if not main_frame.options_dict['adjustable_label_fields_mode']:
+            for key in list(self.labelfields_dialogs.keys()):
+                self.labelfields_dialogs[key].Destroy()
+                del self.labelfields_dialogs[key]
+        if not main_frame.options_dict['adjustable_computation_fields_mode']:
+            for key in list(self.computationfields_dialogs.keys()):
+                self.computationfields_dialogs[key].Destroy()
+                del self.computationfields_dialogs[key]
+        self.datasetretrieval_panel.ChangeMode()
+        index = self.datasetsdata_notebook.GetSelection()
+        if index == -1:
+            self.datasetdetails_panel.ChangeDataset(None)
+            self.datasetslist_panel.DatasetsUpdated()
+        else:
+            selected_panel = self.datasetsdata_notebook.GetPage(index)
+            self.datasetdetails_panel.ChangeDataset(selected_panel.dataset)
+            self.datasetslist_panel.DatasetsUpdated()
+        self.Thaw()
+        
+        #when done inside a freeze it leaves artifacts of previous panel
         old_window = self.splitter.GetWindow1()
         if main_frame.options_dict['multipledatasets_mode'] and old_window != self.datasetslist_panel:
             old_window.Hide()
@@ -136,24 +177,7 @@ class CollectionPanel(wx.Panel):
             sash_height = int(self.datasetdetails_panel.GetBestSize().GetHeight()) + 5
             self.splitter.SetSashPosition(sash_height)
         
-        if not main_frame.options_dict['adjustable_label_fields_mode']:
-            for key in list(self.labelfields_dialogs.keys()):
-                self.labelfields_dialogs[key].Destroy()
-                del self.labelfields_dialogs[key]
-        if not main_frame.options_dict['adjustable_computation_fields_mode']:
-            for key in list(self.computationfields_dialogs.keys()):
-                self.computationfields_dialogs[key].Destroy()
-                del self.computationfields_dialogs[key]
-
-        index = self.datasetsdata_notebook.GetSelection()
-        if index == -1:
-            self.datasetdetails_panel.ChangeDataset(None)
-            self.datasetslist_panel.DatasetsUpdated()
-        else:
-            selected_panel = self.datasetsdata_notebook.GetPage(index)
-            self.datasetdetails_panel.ChangeDataset(selected_panel.dataset)
-            self.datasetslist_panel.DatasetsUpdated()
-        self.Layout()
+        self.Fit()
         logger.info("Finished")
 
     def Load(self, saved_data):
@@ -161,9 +185,21 @@ class CollectionPanel(wx.Panel):
         logger = logging.getLogger(__name__+".CollectionNotebook.Load")
         logger.info("Starting")
         self.Freeze()
-        #TODO confirm that custom load functionality isnt needed to properly reset this panel and this notebook
+        main_frame = wx.GetApp().GetTopWindow()
+        
+        self.sizer.Clear()
+        self.splitter.Hide()
+        self.datasetretrieval_panel.Hide()
+        if len(main_frame.datasets) == 0:
+            self.datasetretrieval_panel.Show()
+            self.sizer.Add(self.datasetretrieval_panel, proportion=1, flag=wx.EXPAND, border=5)
+        else:
+            self.splitter.Show()
+            self.sizer.Add(self.splitter, proportion=1, flag=wx.EXPAND, border=5)
+
         self.datasetslist_panel.DatasetsUpdated()
         self.datasetsdata_notebook.DatasetsUpdated()
+        
         if 'notes' in saved_data:
             self.notes_panel.Load(saved_data['notes'])
         self.Thaw()

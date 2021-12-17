@@ -61,6 +61,8 @@ class Common:
 
     MERGE = "Merge"
     UNMERGE = "Unmerge"
+
+    ENABLE = "Enable"
     
     SOURCE = "Source"
     TYPE = "Type"

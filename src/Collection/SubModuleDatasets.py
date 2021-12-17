@@ -16,7 +16,112 @@ import Common.Database as Database
 import Collection.CollectionDialogs as CollectionDialogs
 import Collection.SubModuleFields as SubModuleFields
 
-#TODO rethink create layout to have more description of the sources similar to create samples panel
+class DatasetRetrievalPanel(wx.Panel):
+    def __init__(self, parent, size=wx.DefaultSize):
+        logger = logging.getLogger(__name__+".DatasetDetailsPanel.__init__")
+        logger.info("Starting")
+        wx.Panel.__init__(self, parent, size=size)
+
+        main_frame = wx.GetApp().GetTopWindow()
+
+        self.tokenization_thread = None
+
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(self.sizer)
+
+        online_box = wx.StaticBox(self, label=GUIText.ONLINE_SOURCES)
+        online_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        online_sizer = wx.StaticBoxSizer(online_box, wx.VERTICAL)
+        self.sizer.Add(online_sizer, 0, wx.ALL, 5)
+
+        reddit_sizer = wx.BoxSizer()
+        online_sizer.Add(reddit_sizer)
+        add_reddit_btn = wx.Button(self, label=GUIText.DATASETS_RETRIEVE_REDDIT)
+        add_reddit_btn.SetToolTip(GUIText.DATASETS_RETRIEVE_REDDIT_TOOLTIP)
+        add_reddit_btn.Bind(wx.EVT_BUTTON, self.OnAddRedditDataset)
+        reddit_sizer.Add(add_reddit_btn, 0, wx.ALL, 5)
+        add_reddit_description = wx.StaticText(self, label=GUIText.REDDIT_DESC)
+        reddit_sizer.Add(add_reddit_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        add_reddit_link = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.REDDIT_URL)
+        reddit_sizer.Add(add_reddit_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        
+        self.twitter_sizer = wx.BoxSizer()
+        online_sizer.Add(self.twitter_sizer)
+        add_twitter_btn = wx.Button(self, label=GUIText.DATASETS_RETRIEVE_TWITTER)
+        add_twitter_btn.SetToolTip(GUIText.DATASETS_RETRIEVE_TWITTER_TOOLTIP)
+        add_twitter_btn.Bind(wx.EVT_BUTTON, self.OnAddTwitterDataset)
+        self.twitter_sizer.Add(add_twitter_btn, 0, wx.ALL, 5)
+        add_twitter_description = wx.StaticText(self, label=GUIText.TWITTER_DESC)
+        self.twitter_sizer.Add(add_twitter_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        add_twitter_link = wx.adv.HyperlinkCtrl(self, label="2", url=GUIText.TWITTER_URL)
+        self.twitter_sizer.Add(add_twitter_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+        
+        if 'twitter_enabled' in main_frame.options_dict and main_frame.options_dict['twitter_enabled']:
+            self.twitter_sizer.ShowItems(True)
+        else:
+            self.twitter_sizer.ShowItems(False)
+
+        local_box = wx.StaticBox(self, label=GUIText.LOCAL_SOURCES)
+        local_box.SetFont(main_frame.DETAILS_LABEL_FONT)
+        local_sizer = wx.StaticBoxSizer(local_box, wx.VERTICAL)
+        self.sizer.Add(local_sizer, 0, wx.ALL, 5)
+
+        csv_sizer = wx.BoxSizer()
+        local_sizer.Add(csv_sizer)
+        add_csv_btn = wx.Button(self, label=GUIText.DATASETS_IMPORT_CSV)
+        add_csv_btn.SetToolTip(GUIText.DATASETS_IMPORT_CSV_TOOLTIP)
+        add_csv_btn.Bind(wx.EVT_BUTTON, self.OnAddCSVDataset)
+        csv_sizer.Add(add_csv_btn, 0, wx.ALL, 5)
+        add_csv_description = wx.StaticText(self, label=GUIText.CSV_DESC)
+        csv_sizer.Add(add_csv_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+
+        CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnTokenizerEnd)
+
+        logger.info("Finished")
+    
+    def OnAddRedditDataset(self, event):
+        logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnAddRedditDataset")
+        logger.info("Starting")
+        #create a retriever of chosen type in a popup
+        main_frame = wx.GetApp().GetTopWindow()
+        CollectionDialogs.RedditDatasetRetrieverDialog(main_frame).Show()
+        logger.info("Finished")
+    
+    def OnAddTwitterDataset(self, event):
+        logger = logging.getLogger(__name__+".DatasetsPanel.OnAddTwitterDataset")
+        logger.info("Starting")
+        #create a retriever of chosen type in a popup
+        main_frame = wx.GetApp().GetTopWindow()
+        CollectionDialogs.TwitterDatasetRetrieverDialog(self).Show()
+        logger.info("Finished")
+
+    def OnAddCSVDataset(self, event):
+        logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnAddCSVDataset")
+        logger.info("Starting")
+        #create a retriever of chosen type in a popup
+        main_frame = wx.GetApp().GetTopWindow()
+        CollectionDialogs.CSVDatasetRetrieverDialog(main_frame).Show()
+        logger.info("Finished")
+
+    def OnTokenizerEnd(self, event):
+        logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnTokenizerEnd")
+        logger.info("Starting")
+        self.tokenization_thread.join()
+        self.tokenization_thread = None
+        main_frame = wx.GetApp().GetTopWindow()
+        main_frame.DatasetsUpdated()
+        main_frame.CloseProgressDialog(thaw=True)
+        main_frame.multiprocessing_inprogress_flag = False
+        logger.info("Finished")
+    
+    def ChangeMode(self):
+        main_frame = wx.GetApp().GetTopWindow()
+        if 'twitter_enabled' in main_frame.options_dict and main_frame.options_dict['twitter_enabled']:
+            self.twitter_sizer.ShowItems(True)
+        else:
+            self.twitter_sizer.ShowItems(False)
+        self.Fit()
+
 class DatasetsListPanel(wx.Panel):
     def __init__(self, parent, module, size=wx.DefaultSize):
         logger = logging.getLogger(__name__+".DatasetsPanel.__init__")
@@ -44,7 +149,7 @@ class DatasetsListPanel(wx.Panel):
         add_csv_btn.SetToolTip(GUIText.DATASETS_IMPORT_CSV_TOOLTIP)
         add_csv_btn.Bind(wx.EVT_BUTTON, self.OnAddCSVDataset)
         create_sizer.Add(add_csv_btn)
-        if 'twitter_enabled' in main_frame.options_dict:
+        if 'twitter_enabled' in main_frame.options_dict and main_frame.options_dict['twitter_enabled']:
             add_twitter_btn = wx.Button(self, label=GUIText.DATASETS_RETRIEVE_TWITTER)
             add_twitter_btn.SetToolTip(GUIText.DATASETS_RETRIEVE_TWITTER_TOOLTIP)
             add_twitter_btn.Bind(wx.EVT_BUTTON, self.OnAddTwitterDataset)
@@ -273,39 +378,12 @@ class DatasetDetailsPanel(wx.Panel):
         self.parent = parent
         self.module = module
         self.dataset = None
-        self.tokenization_thread = None
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
 
         self.ChangeDataset(self.dataset)
 
-        CustomEvents.TOKENIZER_EVT_RESULT(self, self.OnTokenizerEnd)
-
-        logger.info("Finished")
-
-    def OnAddRedditDataset(self, event):
-        logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnAddRedditDataset")
-        logger.info("Starting")
-        #create a retriever of chosen type in a popup
-        main_frame = wx.GetApp().GetTopWindow()
-        CollectionDialogs.RedditDatasetRetrieverDialog(main_frame).Show()
-        logger.info("Finished")
-    
-    def OnAddTwitterDataset(self, event):
-        logger = logging.getLogger(__name__+".DatasetsPanel.OnAddTwitterDataset")
-        logger.info("Starting")
-        #create a retriever of chosen type in a popup
-        main_frame = wx.GetApp().GetTopWindow()
-        CollectionDialogs.TwitterDatasetRetrieverDialog(self).Show()
-        logger.info("Finished")
-
-    def OnAddCSVDataset(self, event):
-        logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnAddCSVDataset")
-        logger.info("Starting")
-        #create a retriever of chosen type in a popup
-        main_frame = wx.GetApp().GetTopWindow()
-        CollectionDialogs.CSVDatasetRetrieverDialog(main_frame).Show()
         logger.info("Finished")
 
     def OnDeleteDataset(self, event):
@@ -337,65 +415,12 @@ class DatasetDetailsPanel(wx.Panel):
         logger.info("Starting")
         self.dataset = dataset
         self.sizer.Clear(True)
-        main_frame = wx.GetApp().GetTopWindow()
         if isinstance(dataset, Datasets.Dataset):
             dataset_panel = DatasetsGUIs.DatasetPanel(self, self.module, dataset, header=True)
             if hasattr(dataset_panel, 'delete_btn'):
                 dataset_panel.delete_btn.Bind(wx.EVT_BUTTON, self.OnDeleteDataset)
             self.sizer.Add(dataset_panel)
-        else:
-            online_box = wx.StaticBox(self, label=GUIText.ONLINE_SOURCES)
-            online_box.SetFont(main_frame.DETAILS_LABEL_FONT)
-            online_sizer = wx.StaticBoxSizer(online_box, wx.VERTICAL)
-            self.sizer.Add(online_sizer, 0, wx.ALL, 5)
-
-            reddit_sizer = wx.BoxSizer()
-            online_sizer.Add(reddit_sizer)
-            add_reddit_btn = wx.Button(self, label=GUIText.DATASETS_RETRIEVE_REDDIT)
-            add_reddit_btn.SetToolTip(GUIText.DATASETS_RETRIEVE_REDDIT_TOOLTIP)
-            add_reddit_btn.Bind(wx.EVT_BUTTON, self.OnAddRedditDataset)
-            reddit_sizer.Add(add_reddit_btn, 0, wx.ALL, 5)
-            add_reddit_description = wx.StaticText(self, label=GUIText.REDDIT_DESC)
-            reddit_sizer.Add(add_reddit_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-            add_reddit_link = wx.adv.HyperlinkCtrl(self, label="1", url=GUIText.REDDIT_URL)
-            reddit_sizer.Add(add_reddit_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
+            self.Layout()
             
-            if 'twitter_enabled' in main_frame.options_dict:
-                twitter_sizer = wx.BoxSizer()
-                online_sizer.Add(twitter_sizer)
-                add_twitter_btn = wx.Button(self, label=GUIText.DATASETS_RETRIEVE_TWITTER)
-                add_twitter_btn.SetToolTip(GUIText.DATASETS_RETRIEVE_TWITTER_TOOLTIP)
-                add_twitter_btn.Bind(wx.EVT_BUTTON, self.OnAddTwitterDataset)
-                twitter_sizer.Add(add_twitter_btn, 0, wx.ALL, 5)
-                add_twitter_description = wx.StaticText(self, label=GUIText.TWITTER_DESC)
-                twitter_sizer.Add(add_twitter_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-                add_twitter_link = wx.adv.HyperlinkCtrl(self, label="2", url=GUIText.TWITTER_URL)
-                twitter_sizer.Add(add_twitter_link, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-            
-            local_box = wx.StaticBox(self, label=GUIText.LOCAL_SOURCES)
-            local_box.SetFont(main_frame.DETAILS_LABEL_FONT)
-            local_sizer = wx.StaticBoxSizer(local_box, wx.VERTICAL)
-            self.sizer.Add(local_sizer, 0, wx.ALL, 5)
-
-            csv_sizer = wx.BoxSizer()
-            local_sizer.Add(csv_sizer)
-            add_csv_btn = wx.Button(self, label=GUIText.DATASETS_IMPORT_CSV)
-            add_csv_btn.SetToolTip(GUIText.DATASETS_IMPORT_CSV_TOOLTIP)
-            add_csv_btn.Bind(wx.EVT_BUTTON, self.OnAddCSVDataset)
-            csv_sizer.Add(add_csv_btn, 0, wx.ALL, 5)
-            add_csv_description = wx.StaticText(self, label=GUIText.CSV_DESC)
-            csv_sizer.Add(add_csv_description, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
-            
-        self.Layout()
-        logger.info("Finished")
-
-    def OnTokenizerEnd(self, event):
-        logger = logging.getLogger(__name__+".DatasetDetailsPanel.OnTokenizerEnd")
-        logger.info("Starting")
-        self.tokenization_thread.join()
-        self.tokenization_thread = None
-        main_frame = wx.GetApp().GetTopWindow()
-        main_frame.DatasetsUpdated()
-        main_frame.CloseProgressDialog(thaw=True)
-        main_frame.multiprocessing_inprogress_flag = False
+        self.Fit()
         logger.info("Finished")

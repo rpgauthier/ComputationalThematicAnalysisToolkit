@@ -460,6 +460,9 @@ class MainFrame(wx.Frame):
             saved_data = event.data['config']
 
             #reset objects
+            if self.options_dialog != None:
+                self.options_dialog.Destroy()
+                self.options_dialog = None
             for key in self.theme_dialogs:
                 self.theme_dialogs[key].Destroy()    
             self.theme_dialogs.clear()
@@ -494,8 +497,6 @@ class MainFrame(wx.Frame):
             self.current_workspace = self.load_workspace
             self.load_workspace = None
 
-            self.ModeChange()
-            
             self.datasets.update(event.data['datasets'])
             self.samples.update(event.data['samples'])
             self.codes.update(event.data['codes'])
@@ -514,6 +515,8 @@ class MainFrame(wx.Frame):
                 self.reviewing_module.Load(saved_data['reviewing_module'])
             if 'reporting_module' in saved_data:
                 self.reporting_module.Load(saved_data['reporting_module'])
+
+            self.ModeChange()
 
             self.toggle_notes_menuitem.Check(check=saved_data['notes_check'])
             self.OnToggleNotes(None)
@@ -1163,11 +1166,17 @@ class OptionsDialog(wx.Dialog):
         twitter_sizer = wx.StaticBoxSizer(twitter_box, wx.VERTICAL)
         sizer.Add(twitter_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
+        self.twitter_toggle_ctrl = wx.CheckBox(self, label=GUIText.ENABLE)
+        if 'twitter_enabled' in main_frame.options_dict:
+            self.twitter_toggle_ctrl.SetValue(main_frame.options_dict['twitter_enabled'])
+        twitter_sizer.Add(self.twitter_toggle_ctrl, 0, wx.ALL, 5)
+        self.twitter_toggle_ctrl.Bind(wx.EVT_CHECKBOX, self.ToggleTwitter)
+
         twitter_consumer_key_label = wx.StaticText(self, label=GUIText.CONSUMER_KEY + ": ")
         self.twitter_consumer_key_ctrl = wx.TextCtrl(self)
         if 'twitter_consumer_key' in main_frame.options_dict:
             self.twitter_consumer_key_ctrl.SetValue(main_frame.options_dict['twitter_consumer_key'])
-        self.adjustable_computation_fields_ctrl.Bind(wx.EVT_TEXT_ENTER, self.ChangeTwitterFields)
+        self.Bind(wx.EVT_TEXT, self.ChangeTwitterKeys, self.twitter_consumer_key_ctrl)
         twitter_consumer_key_sizer = wx.BoxSizer(wx.HORIZONTAL)
         twitter_consumer_key_sizer.Add(twitter_consumer_key_label)
         twitter_consumer_key_sizer.Add(self.twitter_consumer_key_ctrl, wx.EXPAND)
@@ -1177,7 +1186,7 @@ class OptionsDialog(wx.Dialog):
         self.twitter_consumer_secret_ctrl = wx.TextCtrl(self)
         if 'twitter_consumer_secret' in main_frame.options_dict:
             self.twitter_consumer_secret_ctrl.SetValue(main_frame.options_dict['twitter_consumer_secret'])
-        self.adjustable_computation_fields_ctrl.Bind(wx.EVT_TEXT_ENTER, self.ChangeTwitterFields)
+        self.Bind(wx.EVT_TEXT, self.ChangeTwitterKeys, self.twitter_consumer_secret_ctrl)
         twitter_consumer_secret_sizer = wx.BoxSizer(wx.HORIZONTAL)
         twitter_consumer_secret_sizer.Add(twitter_consumer_secret_label)
         twitter_consumer_secret_sizer.Add(self.twitter_consumer_secret_ctrl, wx.EXPAND)
@@ -1186,33 +1195,31 @@ class OptionsDialog(wx.Dialog):
     def ChangeMultipleDatasetMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.multipledatasets_ctrl.GetValue()
-        if main_frame.options_dict['multipledatasets_mode'] != new_mode:
-            main_frame.options_dict['multipledatasets_mode'] = new_mode
-            main_frame.ModeChange()
+        main_frame.options_dict['multipledatasets_mode'] = new_mode
+        main_frame.ModeChange()
         
     def ChangeAdjustableLabelFieldsMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.adjustable_label_fields_ctrl.GetValue()
-        if main_frame.options_dict['adjustable_label_fields_mode'] != new_mode:
-            main_frame.options_dict['adjustable_label_fields_mode'] = new_mode
-            main_frame.ModeChange()
+        main_frame.options_dict['adjustable_label_fields_mode'] = new_mode
+        main_frame.ModeChange()
     
     def ChangeAdjustableComputationalFieldsMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.adjustable_computation_fields_ctrl.GetValue()
-        if main_frame.options_dict['adjustable_computation_fields_mode'] != new_mode:
-            main_frame.options_dict['adjustable_computation_fields_mode'] = new_mode
-            main_frame.ModeChange()
+        main_frame.options_dict['adjustable_computation_fields_mode'] = new_mode
+        main_frame.ModeChange()
     
-    def ChangeTwitterFields(self, event):
+    def ToggleTwitter(self, event):
+        main_frame = wx.GetApp().GetTopWindow()
+        enable_flag = self.twitter_toggle_ctrl.GetValue()
+        main_frame.options_dict['twitter_enabled'] = enable_flag
+        main_frame.ModeChange()
+
+    def ChangeTwitterKeys(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.options_dict['twitter_consumer_key'] = self.twitter_consumer_key_ctrl.GetValue()
         main_frame.options_dict['twitter_consumer_secret'] = self.twitter_consumer_secret_ctrl.GetValue()
-        if main_frame.options_dict['twitter_consumer_key'] != "" and main_frame.options_dict['twitter_consumer_secret'] != "":
-            main_frame.options_dict['twitter_enabled'] = True
-        else:
-            if 'twitter_allowed' in main_frame.options_dict:
-                del main_frame.options_dict['twitter_enabled']
 
 class AboutDialog(wx.Dialog):
     def __init__(self, parent):
