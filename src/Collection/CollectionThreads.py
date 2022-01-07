@@ -195,7 +195,7 @@ class RetrieveRedditDatasetThread(Thread):
                     found = False
                     if str(self.search).lower() in str(full_data[key]['title']).lower():
                         found = True
-                    if not found and str(self.search).lower() in str(full_data[key]['text']).lower():
+                    if not found and str(self.search).lower() in str(full_data[key]['selftext']).lower():
                         found = True
                     if found:
                         data[key] = full_data[key]
