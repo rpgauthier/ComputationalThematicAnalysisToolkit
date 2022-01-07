@@ -142,7 +142,6 @@ available_fields = {
             'computation_fields_default': True,
             'label_fields_default': True,
             },
-        },
         'selftext': {
             'desc': "the raw text of the submission.",
             'type': 'string',
@@ -197,6 +196,7 @@ available_fields = {
             'computation_fields_default': False,
             'label_fields_default': False,
             },
+        },
     ('Reddit', 'comment',): {
         'id': {
             'desc': 'unique Reddit Comment id (may not be unique across other sources/types)',
