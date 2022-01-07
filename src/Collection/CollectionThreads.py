@@ -249,7 +249,7 @@ class RetrieveRedditDatasetThread(Thread):
         
         #retireve data of months that have not been downloaded
         for month in months_notfound:
-            wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent({'msg':GUIText.REDDIT_RETRIEVING_BUSY_DOWNLOADING_ALL_MSG+str(month)}))
+            wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent({'msg':GUIText.RETRIEVING_DOWNLOADING_ALL_MSG+str(month)}))
             loop_start_time = datetime.now()
             try:
                 rdr.RetrieveMonth(subreddit, month, prefix)
@@ -504,7 +504,7 @@ class RetrieveTwitterDatasetThread(Thread):
         rate_limit_reached = False
         #retireve data of months that have not been downloaded
         for month in months_notfound:
-            wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent({'msg':GUIText.REDDIT_RETRIEVING_BUSY_DOWNLOADING_ALL_MSG+str(month)}))
+            wx.PostEvent(self.main_frame, CustomEvents.ProgressEvent({'msg':GUIText.RETRIEVING_DOWNLOADING_ALL_MSG+str(month)}))
             try:
                 rate_limit_reached = twr.RetrieveMonth(auth, name, query, month, end_date, prefix)
                 if rate_limit_reached:
