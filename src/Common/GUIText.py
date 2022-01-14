@@ -311,6 +311,9 @@ class Main(Common):
     NOTES_LABEL = "Notes"
     TWITTER_LABEL = "Twitter"
 
+    MULTIPROCESSING_LABEL = "Multiprocessing Options"
+    MAXIMUM_POOL_SIZE_LABEL = "Maximum Pool Size"
+
 class Datasets(Common):
     #common
     DESCRIPTION = "Description"

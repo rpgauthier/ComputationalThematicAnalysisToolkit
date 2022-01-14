@@ -223,7 +223,7 @@ class SampleCreatePanel(wx.Panel):
             new_sample.tokenization_package_versions = dataset.tokenization_package_versions
             new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
             main_frame.samples[new_sample.key] = new_sample
-            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt)
+            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt, main_frame.pool_num)
             main_frame.StepProgressDialog(GUIText.GENERATING_LDA_MSG3)
             parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.name, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
@@ -238,7 +238,7 @@ class SampleCreatePanel(wx.Panel):
             new_sample.tokenization_package_versions = dataset.tokenization_package_versions
             new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
             main_frame.samples[new_sample.key] = new_sample
-            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt)
+            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt, main_frame.pool_num)
             main_frame.StepProgressDialog(GUIText.GENERATING_BITERM_MSG3)
             parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.name, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
@@ -253,7 +253,7 @@ class SampleCreatePanel(wx.Panel):
             new_sample.tokenization_package_versions = dataset.tokenization_package_versions
             new_sample_panel = TopicSamplePanel(parent_notebook, new_sample, dataset, self.GetParent().GetSize())  
             main_frame.samples[new_sample.key] = new_sample
-            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt)
+            new_sample.GenerateStart(new_sample_panel, main_frame.current_workspace.name, self.start_dt, main_frame.pool_num)
             main_frame.StepProgressDialog(GUIText.GENERATING_NMF_MSG3)
             parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.name, select=True)
             parent_notebook.sample_panels[new_sample.key] = new_sample_panel
@@ -1236,7 +1236,8 @@ class TopicSamplePanel(AbstractSamplePanel):
         main_frame = wx.GetApp().GetTopWindow()
         if self.sample.generated_flag == False:
             main_frame.multiprocessing_inprogress_flag = True
-            self.sample.GenerateStart(self)
+            start_dt = datetime.now()
+            self.sample.GenerateStart(self, main_frame.current_workspace.name, start_dt, main_frame.pool_num)
         else:
             self.DisplayModel()
             self.parts_panel.parts_ctrl.Expander(None)

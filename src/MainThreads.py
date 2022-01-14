@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import psutil
 import tarfile
 from threading import Thread
 import shutil
@@ -206,6 +207,9 @@ class LoadThread(Thread):
                 if ver < version.parse('0.8.7'):
                     self.Upgrade0_8_7(result, ver)
                     ver = version.parse('0.8.7')
+                if ver < version.parse('0.8.11'):
+                    self.Upgrade0_8_11(result, ver)
+                    ver = version.parse('0.8.11')
 
         except:
             wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent({'msg':GUIText.LOAD_OPEN_FAILURE + self.save_path}))
@@ -655,3 +659,12 @@ class LoadThread(Thread):
                 db_conn.RefreshStringTokensRemoved(dataset_key)
         
         UpgradeDatabase(result, ver)
+    
+    def Upgrade0_8_11(self, result, ver):
+        wx.PostEvent(self._notify_window, CustomEvents.ProgressEvent({'step':GUIText.UPGRADE_BUSY_MSG_WORKSPACE_STEP1+str(ver)+GUIText.UPGRADE_BUSY_MSG_WORKSPACE_STEP2+'0.8.11'}))
+        cpus = psutil.cpu_count(logical=False)
+        if cpus is None or cpus < 2:
+            pool_num = 1
+        else:
+            pool_num = cpus-1
+        result['config']['pool_num'] = pool_num

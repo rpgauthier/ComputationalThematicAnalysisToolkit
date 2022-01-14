@@ -330,7 +330,7 @@ class LDASample(TopicSample):
     def eta(self):
         return self._eta
 
-    def GenerateStart(self, notify_window, current_workspace_path, start_dt):
+    def GenerateStart(self, notify_window, current_workspace_path, start_dt, pool_num):
         logger = logging.getLogger(__name__+"."+repr(self)+".GenerateStart")
         logger.info("Starting")
         self.start_dt = start_dt
@@ -341,7 +341,8 @@ class LDASample(TopicSample):
                                                                 self.num_topics,
                                                                 self._num_passes,
                                                                 self.alpha,
-                                                                self.eta)
+                                                                self.eta,
+                                                                pool_num)
         logger.info("Finished")
     
     def GenerateFinish(self, result, dataset, current_workspace):
@@ -419,7 +420,7 @@ class BitermSample(TopicSample):
     def num_passes(self):
         return self._num_passes
     
-    def GenerateStart(self, notify_window, current_workspace_path, start_dt):
+    def GenerateStart(self, notify_window, current_workspace_path, start_dt, pool_num):
         logger = logging.getLogger(__name__+"."+repr(self)+".GenerateStart")
         logger.info("Starting")
         self.start_dt = start_dt
@@ -508,7 +509,7 @@ class NMFSample(TopicSample):
     def __repr__(self):
         return 'NMFSample[%s][%s]' % (self.name, self.key,)
     
-    def GenerateStart(self, notify_window, current_workspace_path, start_dt):
+    def GenerateStart(self, notify_window, current_workspace_path, start_dt, pool_num):
         logger = logging.getLogger(__name__+"."+repr(self)+".GenerateStart")
         logger.info("Starting")
         self.start_dt = start_dt

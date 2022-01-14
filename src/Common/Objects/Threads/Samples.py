@@ -1,7 +1,6 @@
 import logging
 from threading import Thread
 import os
-import psutil
 import bz2
 import pickle
 import numpy
@@ -34,7 +33,7 @@ class CaptureThread(Thread):
 
 class LDATrainingThread(Thread):
     """LDATrainingThread Class."""
-    def __init__(self, notify_window, current_workspace_path, key, tokensets, num_topics, num_passes, alpha, eta):
+    def __init__(self, notify_window, current_workspace_path, key, tokensets, num_topics, num_passes, alpha, eta, pool_num):
         """Init Worker Thread Class."""
         Thread.__init__(self)
         self.daemon = True
@@ -46,6 +45,7 @@ class LDATrainingThread(Thread):
         self.num_passes = num_passes
         self.alpha = alpha
         self.eta = eta
+        self.pool_num = pool_num
         self.start()
 
     def run(self):
@@ -75,14 +75,8 @@ class LDATrainingThread(Thread):
             eta = self.eta
         else:
             eta = 'auto'
-        
-        cpus = psutil.cpu_count(logical=False)
-        if cpus is None or cpus < 2:
-            workers = 1
-        else:
-            workers = cpus-1
 
-        model = gensim.models.ldamulticore.LdaMulticore(workers=workers,
+        model = gensim.models.ldamulticore.LdaMulticore(workers=self.pool_num,
                                                         corpus=corpus,
                                                         id2word=dictionary,
                                                         num_topics=self.num_topics,

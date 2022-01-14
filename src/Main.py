@@ -4,9 +4,9 @@ from logging.handlers import RotatingFileHandler
 import os
 import platform
 import tempfile
-import multiprocessing
+import billiard
 import psutil
-from datetime import datetime, timedelta
+from datetime import datetime
 import requests
 from packaging import version
 
@@ -46,6 +46,7 @@ class MainFrame(wx.Frame):
 
         #multiprocessing controls
         self.pool = pool
+        self.max_pool_num = self.pool._processes
         self.pool_num = self.pool._processes
         self.multiprocessing_inprogress_flag = False
 
@@ -503,6 +504,17 @@ class MainFrame(wx.Frame):
             self.themes.update(event.data['themes'])
             self.model_iter = saved_data['model_iter']
             self.options_dict = saved_data['options']
+            
+            if self.max_pool_num < saved_data['pool_num']:
+                saved_data['pool_num'] = self.max_pool_num
+            if self.pool_num > saved_data['pool_num']:
+                shrink_by = self.pool_num - saved_data['pool_num']
+                self.pool.shrink(shrink_by)
+            elif self.pool_num < saved_data['pool_num']:
+                grow_by = saved_data['pool_num'] - self.pool_num
+                self.pool.grow(grow_by)
+            self.pool_num = self.pool._processes
+
             if 'collection_module' in saved_data:
                 self.collection_module.Load(saved_data['collection_module'])
             if 'filtering_module' in saved_data:
@@ -593,6 +605,7 @@ class MainFrame(wx.Frame):
             config_data['notes'] = self.notes_panel.Save()
             config_data['datasets'] = list(self.datasets.keys())
             config_data['options'] = self.options_dict
+            config_data['pool_num'] = self.pool_num
             config_data['samples'] = list(self.samples.keys())
             config_data['model_iter'] = self.model_iter
             config_data['codes'] = True
@@ -888,7 +901,6 @@ class MainFrame(wx.Frame):
         self.StepProgressDialog(GUIText.SHUTDOWN_BUSY_POOL_MSG)
         logger.info("Starting to shut down of process pool")
         self.pool.close()
-        self.pool.join()
         logger.info("Finished shutting down process pool")
 
         self.CloseProgressDialog(thaw=True, close=True)
@@ -1192,6 +1204,19 @@ class OptionsDialog(wx.Dialog):
         twitter_consumer_secret_sizer.Add(self.twitter_consumer_secret_ctrl, wx.EXPAND)
         twitter_sizer.Add(twitter_consumer_secret_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
+        multiprocessing_box = wx.StaticBox(self, label=GUIText.MULTIPROCESSING_LABEL)
+        multiprocessing_box.SetFont(main_frame.GROUP_LABEL_FONT)
+        multiprocessing_sizer = wx.StaticBoxSizer(multiprocessing_box, wx.VERTICAL)
+        
+        multiprocessing_poolsize_label = wx.StaticText(self, label=GUIText.MAXIMUM_POOL_SIZE_LABEL + ": ")
+        self.multiprocessing_poolsize_ctrl = wx.SpinCtrl(self, min=1, max=main_frame.max_pool_num, initial=main_frame.pool_num)
+        self.Bind(wx.EVT_SPINCTRL, self.ChangePoolSizer, self.multiprocessing_poolsize_ctrl)
+        multiprocessing_poolsize_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        multiprocessing_poolsize_sizer.Add(multiprocessing_poolsize_label)
+        multiprocessing_poolsize_sizer.Add(self.multiprocessing_poolsize_ctrl)
+        multiprocessing_sizer.Add(multiprocessing_poolsize_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        sizer.Add(multiprocessing_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
     def ChangeMultipleDatasetMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.multipledatasets_ctrl.GetValue()
@@ -1220,6 +1245,17 @@ class OptionsDialog(wx.Dialog):
         main_frame = wx.GetApp().GetTopWindow()
         main_frame.options_dict['twitter_consumer_key'] = self.twitter_consumer_key_ctrl.GetValue()
         main_frame.options_dict['twitter_consumer_secret'] = self.twitter_consumer_secret_ctrl.GetValue()
+    
+    def ChangePoolSizer(self, event):
+        main_frame = wx.GetApp().GetTopWindow()
+        new_pool_num = self.multiprocessing_poolsize_ctrl.GetValue()
+        if main_frame.pool_num > new_pool_num:
+            shrink_by = main_frame.pool_num - new_pool_num
+            main_frame.pool.shrink(shrink_by)
+        if main_frame.pool_num < new_pool_num:
+            grow_by = new_pool_num - main_frame.pool_num
+            main_frame.pool.grow(grow_by)
+        main_frame.pool_num = main_frame.pool._processes
 
 class AboutDialog(wx.Dialog):
     def __init__(self, parent):
@@ -1302,7 +1338,7 @@ def Main():
         pool_num = 1
     else:
         pool_num = cpus-1
-    with multiprocessing.get_context("spawn").Pool(processes=pool_num) as pool:
+    with billiard.get_context("spawn").Pool(processes=pool_num) as pool:
         #start up the GUI
         app = RootApp.RootApp()
         MainFrame(None, -1, GUIText.APP_NAME+" - "+GUIText.NEW_WORKSPACE_NAME,
@@ -1310,8 +1346,8 @@ def Main():
         #start up the main loop
         app.MainLoop()
 
-if __name__ == '__main__': 
-    multiprocessing.freeze_support()
+if __name__ == '__main__':
+    billiard.freeze_support()
     Main()
 
     

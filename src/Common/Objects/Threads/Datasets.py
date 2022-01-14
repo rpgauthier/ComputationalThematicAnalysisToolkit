@@ -23,6 +23,7 @@ class TokenizerThread(Thread):
     def run(self):
         logger = logging.getLogger(__name__+"TokenizerThread["+str(self.dataset.key)+"].run")
         logger.info("Starting")
+        self.main_frame.multiprocessing_inprogress_flag = True
         DatasetsUtilities.TokenizeDataset(self.dataset, self._notify_window, self.main_frame, rerun=self.rerun, tfidf_update=self.tfidf_update)
         result = {}
         wx.PostEvent(self._notify_window, CustomEvents.TokenizerResultEvent(result))
