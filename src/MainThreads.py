@@ -8,7 +8,6 @@ import shutil
 from datetime import datetime
 from packaging import version
 import uuid
-from scipy.sparse import data
 
 import wx
 import pickle

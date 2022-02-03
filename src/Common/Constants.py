@@ -113,7 +113,7 @@ NOT_USEFUL = "Not Useful"
 
 # dialogs
 TWITTER_DIALOG_SIZE = wx.Size(350, -1)
-OPTIONS_DIALOG_SIZE = wx.Size(350, 300)
+OPTIONS_DIALOG_SIZE = wx.Size(350, -1)
 
 #definition of fields available for use from the retrievers
 available_fields = {

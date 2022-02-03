@@ -480,9 +480,9 @@ class Datasets(Common):
     #Tokenizing 
     TOKENIZING_BUSY_STEP = "Tokenizing Data"
     TOKENIZING_BUSY_STARTING_FIELD_MSG = "- Starting to tokenize field: "
-    TOKENIZING_BUSY_COMPLETED_FIELD_MSG1 = "-- completed tokenizing threads "
+    TOKENIZING_BUSY_COMPLETED_FIELD_MSG1 = "-- completed tokenizing "
     TOKENIZING_BUSY_COMPLETED_FIELD_MSG2 = " of "
-    TOKENIZING_BUSY_COMPLETED_FIELD_MSG3 = " for field: "
+    TOKENIZING_BUSY_COMPLETED_FIELD_MSG3 = " enteries for field: "
     TOKENIZING_BUSY_STEP_TFIDF_STEP = "Calculating TFIDF values"
     TOKENIZING_BUSY_STARTING_TFIDF_MSG = "- Starting to calculate TFIDF values"
     TOKENIZING_BUSY_COMPLETED_TFIDF_MSG = "- Completed to calculating TFIDF values"

@@ -91,7 +91,7 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False, tfidf_updat
         completed = 0
         start_time = datetime.now()
         wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'msg':GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
-                                                               +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG2+str(len(results))\
+                                                               +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG2+str(total)\
                                                                +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(field.name)}))
         if not db_conn.CheckIfFieldExists(dataset.key, field.key):
             db_conn.InsertField(dataset.key, field.key)
@@ -102,10 +102,10 @@ def TokenizeDataset(dataset, notify_window, main_frame, rerun=False, tfidf_updat
             package_versions = res.get()[1]
             #insert documents' tokens into database
             db_conn.InsertStringTokens(dataset.key, field.key, new_tokensets)
-            completed += 1
+            completed += len(new_tokensets)
             logger.info("%s %s", repr(field), completed)
             wx.PostEvent(main_frame, CustomEvents.ProgressEvent({'msg':GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG1+str(completed)\
-                                                                   +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG2+str(len(results))\
+                                                                   +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG2+str(total)\
                                                                    +GUIText.TOKENIZING_BUSY_COMPLETED_FIELD_MSG3+str(field.name)}))
 
             current_time = datetime.now()

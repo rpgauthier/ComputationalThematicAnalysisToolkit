@@ -1,10 +1,11 @@
 '''Main Program for MachineThematicAnalysisToolkit'''
+import multiprocessing
+
 import logging
 from logging.handlers import RotatingFileHandler
 import os
 import platform
 import tempfile
-import billiard
 import psutil
 from datetime import datetime
 import requests
@@ -1217,6 +1218,8 @@ class OptionsDialog(wx.Dialog):
         multiprocessing_sizer.Add(multiprocessing_poolsize_sizer, 0, wx.EXPAND | wx.ALL, 5)
         sizer.Add(multiprocessing_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
+        self.Fit()
+
     def ChangeMultipleDatasetMode(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_mode = self.multipledatasets_ctrl.GetValue()
@@ -1249,13 +1252,16 @@ class OptionsDialog(wx.Dialog):
     def ChangePoolSizer(self, event):
         main_frame = wx.GetApp().GetTopWindow()
         new_pool_num = self.multiprocessing_poolsize_ctrl.GetValue()
-        if main_frame.pool_num > new_pool_num:
-            shrink_by = main_frame.pool_num - new_pool_num
-            main_frame.pool.shrink(shrink_by)
-        if main_frame.pool_num < new_pool_num:
-            grow_by = new_pool_num - main_frame.pool_num
-            main_frame.pool.grow(grow_by)
-        main_frame.pool_num = main_frame.pool._processes
+        if not main_frame.multiprocessing_inprogress_flag:
+            main_frame.multiprocessing_inprogress_flag = True
+            if main_frame.pool_num != new_pool_num:
+                main_frame.pool_num = new_pool_num
+                main_frame.pool.close()
+                main_frame.pool = multiprocessing.get_context("spawn").Pool(processes=new_pool_num)
+            main_frame.multiprocessing_inprogress_flag = False
+        else:
+            wx.MessageBox(GUIText.MULTIPROCESSING_WARNING_MSG)
+            self.multiprocessing_poolsize_ctrl.SetValue(main_frame.pool_num)
 
 class AboutDialog(wx.Dialog):
     def __init__(self, parent):
@@ -1338,7 +1344,7 @@ def Main():
         pool_num = 1
     else:
         pool_num = cpus-1
-    with billiard.get_context("spawn").Pool(processes=pool_num) as pool:
+    with multiprocessing.get_context("spawn").Pool(processes=pool_num) as pool:
         #start up the GUI
         app = RootApp.RootApp()
         MainFrame(None, -1, GUIText.APP_NAME+" - "+GUIText.NEW_WORKSPACE_NAME,
@@ -1347,7 +1353,7 @@ def Main():
         app.MainLoop()
 
 if __name__ == '__main__':
-    billiard.freeze_support()
+    multiprocessing.freeze_support()
     Main()
 
     

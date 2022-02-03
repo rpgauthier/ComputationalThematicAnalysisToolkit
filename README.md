@@ -42,6 +42,7 @@ Open src folder in an IDE (tested in VS Code)
 - pip install pyinstaller
 - pip install pytz
 - pip install lxml
+- pip install xmlschema
 
 ### Additional Steps
 - python -m spacy download fr_core_news_sm
