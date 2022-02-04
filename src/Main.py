@@ -508,13 +508,13 @@ class MainFrame(wx.Frame):
             
             if self.max_pool_num < saved_data['pool_num']:
                 saved_data['pool_num'] = self.max_pool_num
-            if self.pool_num > saved_data['pool_num']:
-                shrink_by = self.pool_num - saved_data['pool_num']
-                self.pool.shrink(shrink_by)
-            elif self.pool_num < saved_data['pool_num']:
-                grow_by = saved_data['pool_num'] - self.pool_num
-                self.pool.grow(grow_by)
-            self.pool_num = self.pool._processes
+            if self.pool_num != saved_data['pool_num']:
+                self.multiprocessing_inprogress_flag = True
+                if self.pool_num != saved_data['pool_num']:
+                    self.pool_num = saved_data['pool_num']
+                    self.pool.close()
+                    self.pool = multiprocessing.get_context("spawn").Pool(processes=saved_data['pool_num'])
+                self.multiprocessing_inprogress_flag = False
 
             if 'collection_module' in saved_data:
                 self.collection_module.Load(saved_data['collection_module'])
@@ -641,6 +641,7 @@ class MainFrame(wx.Frame):
         config_data['notes'] = self.notes_panel.Save()
         config_data['datasets'] = list(self.datasets.keys())
         config_data['options'] = self.options_dict
+        config_data['pool_num'] = self.pool_num
         config_data['samples'] = list(self.samples.keys())
         config_data['model_iter'] = self.model_iter
         config_data['codes'] = True
