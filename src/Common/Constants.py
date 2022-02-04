@@ -7,7 +7,7 @@ import wx
 #import wx.lib.agw.flatnotebook as FNB
 import External.wxPython.flatnotebook_fix as FNB
 
-CUR_VER = '0.8.10'
+CUR_VER = '0.8.11'
 
 #Variables to configure GUI
 FNB_STYLE = FNB.FNB_DEFAULT_STYLE|FNB.FNB_HIDE_ON_SINGLE_TAB|FNB.FNB_NO_X_BUTTON|FNB.FNB_FF2

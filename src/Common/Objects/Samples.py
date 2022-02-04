@@ -278,7 +278,7 @@ class TopicSample(Sample):
                     if isinstance(self.parts_dict[topic].parts_dict[subtopic], Part) and topic != 'unknown':
                         UpdateLDATopicPart(topic)
         
-        unknown_list = set(self._tokensets) - document_set
+        unknown_list = list(set(self._tokensets) - document_set)
         unknown_df = document_topic_prob_df[document_topic_prob_df.index.isin(unknown_list)]
         unknown_series = unknown_df.max(axis=1).sort_values()
         new_unknown_list = list(unknown_series.index.values)
