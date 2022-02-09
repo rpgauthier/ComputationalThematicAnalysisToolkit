@@ -101,7 +101,7 @@ class SamplingNotebook(FNB.FlatNotebook):
         selection = event.GetSelection()
         page = self.GetPage(selection)
         if page.sample.key in main_frame.samples:
-            confirm_dialog = wx.MessageDialog(self, str(page.sample)+GUIText.DELETE_CONFIRMATION+GUIText.DELETE_SAMPLE_WARNING,
+            confirm_dialog = wx.MessageDialog(self, str(page.sample.name)+GUIText.DELETE_CONFIRMATION+GUIText.DELETE_SAMPLE_WARNING,
                                               GUIText.CONFIRM_REQUEST, wx.ICON_QUESTION | wx.OK | wx.CANCEL)
             confirm_dialog.SetOKCancelLabels(GUIText.DELETE_SAMPLE_LABEL, GUIText.SKIP)
             if confirm_dialog.ShowModal() == wx.ID_OK:

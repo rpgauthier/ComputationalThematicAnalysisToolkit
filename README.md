@@ -14,9 +14,14 @@ Open src folder in an IDE (tested in VS Code)
 #### Windows:
 1) pyinstaller pyinstaller-Windows10x64.spec --additional-hooks-dir=.
 2) run & compile innosetup_Windows10x64.iss
-#### OSX:
-1) python3 -m PyInstaller --windowed --additional-hooks-dir=. pyinstaller-OSX.spec
-2) run & build packages_OSX.pkgproj
+#### OSX running an intel chip:
+1) change paths in pyinstaller-OSX.spec to where your python site-packages are installed
+2) python -m PyInstaller --windowed --additional-hooks-dir=. pyinstaller-OSX.spec
+3) run & build packages_OSX_x86_64.pkgproj
+### OSX running an M1 chip:
+1) change paths in pyinstaller-OSX.spec to where your python site-packages are installed
+2) python -m PyInstaller --windowed --additional-hooks-dir=. pyinstaller-OSX.spec
+3) run & build packages_OSX_arm64.pkgproj
 
 ### Needed applications
 - python 3.9
