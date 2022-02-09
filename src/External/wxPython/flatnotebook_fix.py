@@ -5829,8 +5829,8 @@ class PageContainer(wx.Panel):
                         self._setCursor = False
 
                 # Support for drag and drop
+                '''Removed due to causing undebugable crash on OSX
                 if event.Dragging() and not (agwStyle & FNB_NODRAG):
-
                     self._isdragging = True
                     draginfo = FNBDragInfo(self, tabIdx)
                     drginfo = pickle.dumps(draginfo)
@@ -5839,6 +5839,7 @@ class PageContainer(wx.Panel):
                     dragSource = FNBDropSource(self)
                     dragSource.SetData(dataobject)
                     dragSource.DoDragDrop(wx.Drag_DefaultMove)
+                '''
 
             if self._nHoveringOverTabIndex != self._nHoveringOverLastTabIndex:
                 self._nHoveringOverLastTabIndex = self._nHoveringOverTabIndex

@@ -1202,7 +1202,8 @@ class DocumentViewModel(dv.PyDataViewModel):
                             for part_item in sample_children:
                                 part_node = self.ItemToObject(part_item)
                                 if isinstance(part_node, Samples.Part):
-                                    part_children = self.GetChildren(part_item, part_children)
+                                    part_children = []
+                                    self.GetChildren(part_item, part_children)
                                     if item in part_children:
                                         return part_item
         return dv.NullDataViewItem
