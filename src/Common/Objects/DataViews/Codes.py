@@ -730,6 +730,9 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
         main_frame = wx.GetApp().GetTopWindow()
         self.datasets = main_frame.datasets
         self.samples = main_frame.samples
+
+        self.connection_objs = {}
+
         self.UseWeakRefs(True)
     
     def UpdateColumnNames(self):
@@ -768,24 +771,35 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
         # item, so we'll use the genre objects as its children and they will
         # end up being the collection of visible roots in our tree.
         objs = self.code.GetConnections(self.datasets, self.samples)
+        objs_dict = dict(zip([obj.key for obj in objs], objs))
         if not parent:
-            for obj in objs:
-                while obj.parent != None:
-                    obj = obj.parent
-                child_item = self.ObjectToItem(obj)
-                if child_item not in children:
+            for dataset_key in self.datasets:
+                include_flag = False
+                for doc_key in self.datasets[dataset_key].selected_documents:
+                    if doc_key in objs_dict:
+                        include_flag = True
+                        break
+                if include_flag:
+                    child_item = self.ObjectToItem(self.datasets[dataset_key])
+                    children.append(child_item)
+            for sample_key in self.samples:
+                include_flag = False
+                for doc_key in self.samples[sample_key].selected_documents:
+                    if doc_key in objs_dict:
+                        include_flag = True
+                        break
+                if include_flag:
+                    child_item = self.ObjectToItem(self.samples[sample_key])
                     children.append(child_item)
             return len(children)
         node = self.ItemToObject(parent)
-        if isinstance(node, Datasets.Dataset):
-            for key in node.documents:
-                if node.documents[key] in objs:
-                    children.append(self.ObjectToItem(node.documents[key]))
-            return len(children)
-        if isinstance(node, Samples.Sample):
-            for key in node.parts_dict:
-                if node.parts_dict[key] in objs:
-                    children.append(self.ObjectToItem(node.parts_dict[key]))
+        if isinstance(node, Datasets.Dataset) or isinstance(node, Samples.Sample):
+            for key in objs_dict:
+                if key in node.selected_documents:
+                    connection_key = (node.key, objs_dict[key])
+                    if connection_key not in self.connection_objs:
+                        self.connection_objs[connection_key] = Generic.Connection(node, objs_dict[key])
+                    children.append(self.ObjectToItem(self.connection_objs[connection_key]))
             return len(children)
         return 0
 
@@ -807,9 +821,9 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
         if not item:
             return dv.NullDataViewItem
         node = self.ItemToObject(item)
-        if node.parent == None:
+        if isinstance(node, Datasets.Dataset) or isinstance(node, Samples.Sample):
             return dv.NullDataViewItem
-        else:
+        elif isinstance(node, Generic.Connection):
             return self.ObjectToItem(node.parent)
 
     def GetValue(self, item, col):
@@ -821,7 +835,14 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
                        2 : "\U0001F6C8" if node.notes != "" else "",
                        }
             return mapper[col]
-        elif isinstance(node, Datasets.Document):
+        elif isinstance(node, Samples.Sample):
+            mapper = { 0 : node.name,
+                       1 : "",
+                       2 : "\U0001F6C8" if node.notes != "" else "",
+                       }
+            return mapper[col]
+        elif isinstance(node, Generic.Connection):
+            node = node.obj
             if node.url != "":
                 segmented_url = node.url.split("/")
                 if segmented_url[len(segmented_url)-1] != '':
@@ -830,38 +851,8 @@ class CodeConnectionsViewModel(dv.PyDataViewModel):
                     node_id = segmented_url[len(segmented_url)-2]
             else:
                 node_id = node.doc_id[2]
-            mapper = { 0 : node_id,
-                       1 : "",
-                       2 : "\U0001F6C8" if node.notes != "" else "",
-                       }
-            return mapper[col]
-        elif isinstance(node, Samples.Sample):
-            mapper = { 0 : node.name,
-                       1 : "",
-                       2 : "\U0001F6C8" if node.notes != "" else "",
-                       }
-            return mapper[col]
-        elif isinstance(node, Samples.TopicMergedPart):
-            mapper = { 0 : repr(node),
-                       1 : "",
-                       2 : "\U0001F6C8" if node.notes != "" else "",
-                       }
-            return mapper[col]
-        elif isinstance(node, Samples.MergedPart):
-            mapper = { 0 : repr(node),
-                       1 : "",
-                       2 : "\U0001F6C8" if node.notes != "" else "",
-                       }
-            return mapper[col]
-        elif isinstance(node, Samples.TopicPart):
-            mapper = { 0 : repr(node),
-                       1 : "",
-                       2 : "\U0001F6C8" if node.notes != "" else "",
-                       }
-            return mapper[col]
-        elif isinstance(node, Samples.Part):
-            mapper = { 0 : repr(node),
-                       1 : "",
+            mapper = { 0 : "",
+                       1 : str(node_id),
                        2 : "\U0001F6C8" if node.notes != "" else "",
                        }
             return mapper[col]
@@ -922,7 +913,8 @@ class CodeConnectionsViewCtrl(dv.DataViewCtrl):
         model = self.GetModel()
         node = model.ItemToObject(item)
         main_frame = wx.GetApp().GetTopWindow()
-        if isinstance(node, Datasets.Document):
+        if isinstance(node, Generic.Connection):
+            node = node.obj
             if node.key not in main_frame.document_dialogs:
                 main_frame.document_dialogs[node.key] = CodesGUIs.DocumentDialog(main_frame, node)
             main_frame.document_dialogs[node.key].Show()

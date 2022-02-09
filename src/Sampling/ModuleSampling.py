@@ -52,8 +52,8 @@ class SamplingNotebook(FNB.FlatNotebook):
         page = self.GetPage(selection)
 
         if page != self.create_page:
-            old_key = page.sample.key
-            with wx.TextEntryDialog(self, GUIText.SAMPLE_NAME_LABEL, value=old_key) as dialog:
+            old_name = page.sample.name
+            with wx.TextEntryDialog(self, GUIText.SAMPLE_NAME_LABEL, value=old_name) as dialog:
                 ok_button = wx.FindWindowById(wx.ID_OK, dialog)
                 ok_button.SetLabel(GUIText.SAMPLE_CHANGE_NAME_LABEL)
                 if dialog.ShowModal() == wx.ID_OK:
@@ -64,8 +64,7 @@ class SamplingNotebook(FNB.FlatNotebook):
                                       GUIText.ERROR, wx.OK | wx.ICON_ERROR)
                         logger.warning('name field is empty')
                     else:
-                        sample = main_frame.samples.pop(old_key)
-                        sample.name = new_name
+                        page.sample.name = new_name
                         self.SetPageText(selection, new_name)
                         main_frame.SamplesUpdated()
                         #hook this up to allow toggle of sample specific actions

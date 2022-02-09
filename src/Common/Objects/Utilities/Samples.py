@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime
 
+import wx
+
 import Common.Objects.Samples as Samples
 import Common.Objects.Datasets as Datasets
 from Common.GUIText import Samples as GUIText
@@ -60,10 +62,14 @@ def SamplesSelected(sample, dataset, obj, value):
         if value:
             sample.selected_documents.append(obj.key)
             sample.last_changed_dt = datetime.now()
+            main_frame = wx.GetApp().GetTopWindow()
+            main_frame.SamplesUpdated()
         else:
             if obj.key in sample.selected_documents:
                 sample.selected_documents.remove(obj.key)
                 sample.last_changed_dt = datetime.now()
+                main_frame = wx.GetApp().GetTopWindow()
+                main_frame.SamplesUpdated()
                 
 def dummy(x):
     return x

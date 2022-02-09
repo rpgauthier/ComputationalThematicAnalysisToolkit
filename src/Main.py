@@ -949,11 +949,12 @@ class MainFrame(wx.Frame):
     def DatasetsUpdated(self, autosave=True):
         logger = logging.getLogger(__name__+".MainFrame.DatasetsUpdated")
         logger.info("Starting")
+        for key in self.code_dialogs:
+            self.code_dialogs[key].RefreshDetails()
         self.collection_module.DatasetsUpdated()
         self.filtering_module.DatasetsUpdated()
         self.sampling_module.DatasetsUpdated()
         self.coding_module.DatasetsUpdated()
-
         if autosave:
             self.AutoSaveStart()
         logger.info("Finished")
@@ -964,6 +965,8 @@ class MainFrame(wx.Frame):
         for key in self.document_dialogs:
             if source != self.document_dialogs[key].document_panel:
                 self.document_dialogs[key].RefreshDetails()
+        for key in self.code_dialogs:
+            self.code_dialogs[key].RefreshDetails()
         self.sampling_module.DocumentsUpdated()
         self.coding_module.DocumentsUpdated(source)
         logger.info("Finished")
@@ -971,6 +974,8 @@ class MainFrame(wx.Frame):
     def SamplesUpdated(self):
         logger = logging.getLogger(__name__+".MainFrame.SamplesUpdated")
         logger.info("Starting")
+        for key in self.code_dialogs:
+            self.code_dialogs[key].RefreshDetails()
         self.sampling_module.SamplesUpdated()
         self.coding_module.DocumentsUpdated(self)
         logger.info("Finished")
