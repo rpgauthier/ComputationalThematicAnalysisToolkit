@@ -231,7 +231,7 @@ class CodesViewCtrl(dv.DataViewCtrl):
 
     def OnShowPopup(self, event):
         menu = wx.Menu()
-        copy_menuitem = menu.Append(wx.ID_COPY, GUIText.COPY)
+        copy_menuitem = menu.Append(wx.ID_ANY, GUIText.COPY)
         self.Bind(wx.EVT_MENU, self.OnCopyItems, copy_menuitem)
         if isinstance(self.GetModel(), CodesViewModel):
             self.selected_item = event.GetItem()
@@ -557,7 +557,7 @@ class ObjectCodesViewCtrl(dv.DataViewCtrl):
 
     def OnShowPopup(self, event):
         menu = wx.Menu()
-        copy_menuitem = menu.Append(wx.ID_COPY, GUIText.COPY)
+        copy_menuitem = menu.Append(wx.ID_ANY, GUIText.COPY)
         self.Bind(wx.EVT_MENU, self.OnCopyItems, copy_menuitem)
         if isinstance(self.GetModel(), CodesViewModel):
             self.selected_item = event.GetItem()
@@ -1494,7 +1494,7 @@ class DocumentViewCtrl(dv.DataViewCtrl):
         model = self.GetModel()
         for row in self.GetSelections():
             line = ''
-            for col in range(0, model.label_column_names):
+            for col in range(0, len(model.label_column_names)):
                 line = line + str(model.GetValue(row, col)) + '\t'
             selected_items.append(line.strip())
         clipdata = wx.TextDataObject()
@@ -1783,7 +1783,7 @@ class ThemesViewCtrl(dv.DataViewCtrl):
 
     def OnShowPopup(self, event):
         menu = wx.Menu()
-        copy_menuitem = menu.Append(wx.ID_COPY, GUIText.COPY)
+        copy_menuitem = menu.Append(wx.ID_ANY, GUIText.COPY)
         self.Bind(wx.EVT_MENU, self.OnCopyItems, copy_menuitem)
         menu.AppendSeparator()
         if isinstance(self.GetModel(), ThemesViewModel):
@@ -2280,8 +2280,7 @@ class DocumentPositionsViewCtrl(dv.DataViewCtrl):
 
     def OnShowPopup(self, event):
         menu = wx.Menu()
-        copy_menuitem = menu.Append(wx.ID_COPY,
-                                    GUIText.COPY)
+        copy_menuitem = menu.Append(wx.ID_ANY, GUIText.COPY)
         self.Bind(wx.EVT_MENU, self.OnCopyItems, copy_menuitem)
         self.PopupMenu(menu)
 
@@ -2531,8 +2530,7 @@ class SelectedQuotationsViewCtrl(dv.DataViewCtrl):
 
     def OnShowPopup(self, event):
         menu = wx.Menu()
-        copy_menuitem = menu.Append(wx.ID_COPY,
-                                    GUIText.COPY)
+        copy_menuitem = menu.Append(wx.ID_ANY, GUIText.COPY)
         self.Bind(wx.EVT_MENU, self.OnCopyItems, copy_menuitem)
         item = event.GetItem()
         model = self.GetModel()

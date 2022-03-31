@@ -344,7 +344,7 @@ class PartsViewCtrl(dv.DataViewCtrl):
         model = self.GetModel()
         for row in self.GetSelections():
             line = ''
-            for col in range(0, model.label_column_names):
+            for col in range(0, len(model.label_column_names)):
                 line = line + str(model.GetValue(row, col)) + '\t'
             selected_items.append(line.strip())
         clipdata = wx.TextDataObject()

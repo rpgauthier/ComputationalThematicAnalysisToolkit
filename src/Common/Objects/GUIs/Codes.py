@@ -579,7 +579,7 @@ class DocumentPanel(wx.Panel):
         self.cur_position = event.GetPosition()
         
         menu = wx.Menu()
-        copy_menuitem = menu.Append(wx.ID_COPY, GUIText.COPY)
+        copy_menuitem = menu.Append(wx.ID_ANY, GUIText.COPY)
         self.Bind(wx.EVT_MENU, self.ForwardEvent, copy_menuitem)
         menu.AppendSeparator()
         
