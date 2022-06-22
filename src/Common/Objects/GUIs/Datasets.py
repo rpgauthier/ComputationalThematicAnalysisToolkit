@@ -25,6 +25,7 @@ class DataNotebook(FNB.FlatNotebook):
 
         #create dictionary to hold instances of dataset data panels for each field available
         self.dataset_data_tabs = {}
+        self.width = size.GetWidth()
 
         self.menu = wx.Menu()
         self.menu_menuitem = None
@@ -48,7 +49,7 @@ class DataNotebook(FNB.FlatNotebook):
             else:
                 if isinstance(main_frame.datasets[key], Datasets.Dataset):
                     if len(main_frame.datasets[key].data) > 0:
-                        self.dataset_data_tabs[key] = DatasetDataPanel(self, main_frame.datasets[key], self.GetSize())
+                        self.dataset_data_tabs[key] = DatasetDataPanel(self, main_frame.datasets[key], self.width)
                         self.AddPage(self.dataset_data_tabs[key], str(key))
         self.Thaw()
         logger.info("Finished")
@@ -471,7 +472,7 @@ class DatasetPanel(wx.Panel):
         logger.info("Finished")
 
 class DatasetDataPanel(wx.Panel):
-    def __init__(self, parent, dataset, size=wx.DefaultSize):
+    def __init__(self, parent, dataset, width, size=wx.DefaultSize):
         wx.Panel.__init__(self, parent=parent, size=size)
         self.dataset = dataset
 
@@ -491,7 +492,7 @@ class DatasetDataPanel(wx.Panel):
         controls_sizer.Add(self.search_count_text, 0, wx.ALL|wx.ALIGN_CENTRE_VERTICAL, 5)
         sizer.Add(controls_sizer, 0, wx.ALL, 5)
 
-        self.datasetdata_grid = DatasetsDataViews.DatasetsDataGrid(self, dataset, self.GetSize())
+        self.datasetdata_grid = DatasetsDataViews.DatasetsDataGrid(self, dataset, width)
         sizer.Add(self.datasetdata_grid, 1, wx.EXPAND)
 
         self.SetSizer(sizer)

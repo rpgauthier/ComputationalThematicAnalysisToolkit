@@ -37,7 +37,7 @@ class CollectionPanel(wx.Panel):
         self.datasetslist_panel = SubModuleDatasets.DatasetsListPanel(self.splitter, self)
         self.datasetslist_panel.datasets_ctrl.Bind(dv.EVT_DATAVIEW_ITEM_ACTIVATED, self.OnShowData)
         self.datasetslist_panel.Hide()
-        self.datasetsdata_notebook = DatasetsGUIs.DataNotebook(self.splitter)
+        self.datasetsdata_notebook = DatasetsGUIs.DataNotebook(self.splitter, self.GetSize())
         self.datasetsdata_notebook.Bind(FNB.EVT_FLATNOTEBOOK_PAGE_CHANGED, self.OnChangeDatasetDataTab)
         self.splitter.SetMinimumPaneSize(20)
         self.splitter.SplitHorizontally(self.datasetdetails_panel, self.datasetsdata_notebook)

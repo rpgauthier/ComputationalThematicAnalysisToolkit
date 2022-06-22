@@ -122,6 +122,7 @@ class MainFrame(wx.Frame):
         self.SetSizer(self.panel_sizer)
 
         #Actions For Main Frame
+        self.Bind(wx.EVT_SIZE,self.OnSize)
         self.Bind(wx.EVT_CLOSE, self.OnCloseStart)
 
         #Actions For Notes Frame
@@ -221,6 +222,7 @@ class MainFrame(wx.Frame):
         self.SetMenuBar(self.menu_bar)
 
         CustomEvents.EVT_PROGRESS(self, self.OnProgress)
+        
 
         self.Layout()
         self.Fit()
@@ -543,8 +545,14 @@ class MainFrame(wx.Frame):
 
         logger.info("Finished")
 
-    def AutoSize(self):
-        width = self.main_notebook.GetCurrentPage().GetSize().GetWidth()
+    def OnSize(self, event):
+        self.AutoSize(event.GetSize().GetWidth())
+        event.Skip(True)
+
+    def AutoSize(self, width = None):
+        if width == None:
+            width = self.main_notebook.GetCurrentPage().GetSize().GetWidth()
+        self.collection_module.datasetsdata_notebook.width = width
         for dataset_key in self.collection_module.datasetsdata_notebook.dataset_data_tabs:
             self.collection_module.datasetsdata_notebook.dataset_data_tabs[dataset_key].datasetdata_grid.AutoSize(width)
         for sample_key in self.sampling_module.sample_panels:
