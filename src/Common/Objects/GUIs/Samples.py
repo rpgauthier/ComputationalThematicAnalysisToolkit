@@ -145,6 +145,7 @@ class SampleCreatePanel(wx.Panel):
                 parent_notebook.InsertPage(len(parent_notebook.sample_panels), new_sample_panel, new_sample.name, select=True)
                 parent_notebook.sample_panels[new_sample.key] = new_sample_panel
                 main_frame.DocumentsUpdated(self)
+                main_frame.AutoSaveStart()
                 main_frame.CloseProgressDialog(thaw=False)
                 self.Thaw()
         elif model_type == 'LDA':
@@ -877,6 +878,7 @@ class TopicSamplePanel(AbstractSamplePanel):
             self.sample.GenerateFinish(event.data, dataset, main_frame.current_workspace.name)
             self.DisplayModel()
             main_frame.DocumentsUpdated(self)
+            main_frame.AutoSaveStart()
         finally:
             main_frame.multiprocessing_inprogress_flag = False
             main_frame.CloseProgressDialog(thaw=False)
