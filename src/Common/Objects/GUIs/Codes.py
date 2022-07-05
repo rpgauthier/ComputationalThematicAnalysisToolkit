@@ -28,10 +28,19 @@ class CodeDialog(wx.Dialog):
         self.codeconnections_panel = CodeConnectionsPanel(self, self.code, size=self.GetSize())
         self.sizer.Add(self.codeconnections_panel, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
+
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
         logger.info("Finished")
     
     def RefreshDetails(self):
         self.codeconnections_panel.RefreshDetails()
+
+    def OnClose(self, event):
+        main_frame = wx.GetApp().GetTopWindow()
+        if self.code.key in main_frame.code_dialogs:
+            main_frame.code_dialogs[self.code.key].Destroy()
+            del main_frame.code_dialogs[self.code.key]
 
 class CodeConnectionsPanel(wx.Panel):
     def __init__(self, parent, code, size):
@@ -125,10 +134,19 @@ class ThemeDialog(wx.Dialog):
         self.theme_panel = ThemePanel(self, self.theme, size=self.GetSize())
         self.sizer.Add(self.theme_panel, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
+
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
         logger.info("Finished")
     
     def RefreshDetails(self):
         self.theme_panel.RefreshDetails()
+    
+    def OnClose(self, event):
+        main_frame = wx.GetApp().GetTopWindow()
+        if self.theme.key in main_frame.theme_dialogs:
+            main_frame.theme_dialogs[self.theme.key].Destroy()
+            del main_frame.theme_dialogs[self.theme.key]
 
 class ThemePanel(wx.Panel):
     def __init__(self, parent, theme, size):
@@ -436,10 +454,20 @@ class DocumentDialog(wx.Dialog):
         self.document_panel = DocumentPanel(self, document, size=self.GetSize())
         self.sizer.Add(self.document_panel, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
+
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
         logger.info("Finished")
     
     def RefreshDetails(self):
         self.document_panel.RefreshDetails()
+    
+    def OnClose(self, event):
+        main_frame = wx.GetApp().GetTopWindow()
+        if self.document.key in main_frame.document_dialogs:
+            main_frame.document_dialogs[self.document.key].Destroy()
+            del main_frame.document_dialogs[self.document.key]
+
 
 class DocumentPanel(wx.Panel):
     def __init__(self, parent, document, size):
