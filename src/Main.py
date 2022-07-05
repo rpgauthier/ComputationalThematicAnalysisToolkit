@@ -716,9 +716,9 @@ class MainFrame(wx.Frame):
                         self.coding_module.coding_datasets_panels[dataset_key].DocumentsUpdated(self)
                         self.coding_module.coding_datasets_panels[dataset_key].codes_model.Cleared()
                         self.coding_module.coding_datasets_panels[dataset_key].codes_ctrl.Expander(None)
-                        for document_key in self.coding_module.coding_datasets_panels[dataset_key].document_windows:
-                            self.coding_module.coding_datasets_panels[dataset_key].document_windows[document_key].codes_model.Cleared()
-                            self.coding_module.coding_datasets_panels[dataset_key].document_windows[document_key].codes_ctrl.Expander(None)
+                        if self.coding_module.coding_datasets_panels[dataset_key].document_window != None:
+                            self.coding_module.coding_datasets_panels[dataset_key].document_window.codes_model.Cleared()
+                            self.coding_module.coding_datasets_panels[dataset_key].document_window.codes_ctrl.Expander(None)
                     self.reviewing_module.themes_model.Cleared()
                     self.reviewing_module.themes_ctrl.Expander(None)
                     self.CodesUpdated()

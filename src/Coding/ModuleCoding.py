@@ -158,7 +158,7 @@ class CodingDatasetPanel(wx.Panel):
         logger.info("Starting")
         wx.Panel.__init__(self, parent, size=size)
 
-        self.document_windows = {}
+        self.document_window = None
 
         self.dataset_key = dataset_key
         self.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -192,22 +192,30 @@ class CodingDatasetPanel(wx.Panel):
             node = self.documentlist_panel.documents_model.ItemToObject(item)
             if isinstance(node, Datasets.Document):
                 self.Freeze()
-                if node.key not in self.document_windows:
-                    self.document_windows[node.key] = CodesGUIs.DocumentPanel(self.splitter, node, size=(self.GetSize().GetWidth(), int(self.GetSize().GetHeight()/4*3)))
-                
                 bottom_window = self.splitter.GetWindow2()
                 bottom_window.Hide()
-                self.splitter.ReplaceWindow(bottom_window, self.document_windows[node.key])
-                self.document_windows[node.key].RefreshDetails()
-                self.document_windows[node.key].Show()
+                if self.document_window == None:
+                    self.document_window = CodesGUIs.DocumentPanel(self.splitter, node, size=(self.GetSize().GetWidth(), int(self.GetSize().GetHeight()/4*3)))
+                    self.splitter.ReplaceWindow(bottom_window, self.document_window)
+                elif self.document_window.document != node:
+                    self.document_window = CodesGUIs.DocumentPanel(self.splitter, node, size=(self.GetSize().GetWidth(), int(self.GetSize().GetHeight()/4*3)))
+                    self.splitter.ReplaceWindow(bottom_window, self.document_window)
+                    bottom_window.Destroy()
+                    
+                self.document_window.RefreshDetails()
+                self.document_window.Show()
                 
                 self.splitter.Refresh()
                 self.Thaw()
         else:
             self.Freeze()
+            
             bottom_window = self.splitter.GetWindow2()
             bottom_window.Hide()
             self.splitter.ReplaceWindow(bottom_window, self.default_document_panel)
+            if self.document_window != None:
+                self.document_window.Destroy()
+                self.document_window = None
             self.codes_model.Cleared()
             self.default_document_panel.Show()
                 
@@ -228,7 +236,8 @@ class CodingDatasetPanel(wx.Panel):
         if bottom_window is not self.default_document_panel:
             self.default_document_panel.Show()
             self.splitter.ReplaceWindow(bottom_window, self.default_document_panel)
-            self.document_windows.clear()
+            self.document_window.Destroy()
+            self.document_window = None
         self.Thaw()
         logger.info("Finished")
 
@@ -242,9 +251,8 @@ class CodingDatasetPanel(wx.Panel):
         self.documentlist_panel.DocumentsUpdated()
         self.codes_model.Cleared()
         self.codes_ctrl.Expander(None)
-        for node_key in self.document_windows:
-            if source != self.document_windows[node_key]:
-                self.document_windows[node_key].RefreshDetails()
+        if self.document_window != None and source != self.document_window:
+                self.document_window.RefreshDetails()
         logger.info("Finished")
     
     def CodesUpdated(self):
@@ -257,7 +265,7 @@ class CodingDatasetPanel(wx.Panel):
         self.documentlist_panel.DocumentsUpdated()
         self.codes_model.Cleared()
         self.codes_ctrl.Expander(None)
-        for node_key in self.document_windows:
-            self.document_windows[node_key].RefreshDetails()
+        if self.document_window != None:
+            self.document_window.RefreshDetails()
         self.codes_model.Cleared()
         logger.info("Finished")
